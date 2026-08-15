@@ -35,7 +35,7 @@
  * 
  * Created by: Joji, Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 08/14/2026
  */
 
 using System.Collections.Generic;
@@ -234,6 +234,26 @@ internal static class CharacterEffectHelper {
         else if (effectName.Contains("Mastery")) {
             ApplySchoolMastery(stats, effectName);
         }
+        else if (effectName.Contains("CriticalHit")) {
+            // Crit gear is school-based; route like damage, only falling back to the
+            // universal bucket when the name carries no valid school.
+            var school = effectName.Contains("All") ? null : ExtractSchoolName(effectName);
+            if (school is not null && MagicSchools.GetMagicSchool(school) is not null) {
+                ApplySchoolEffect(ref stats.m_criticalHitRatingBySchool, school, statistic.m_criticalHitRating);
+            }
+            else {
+                stats.m_criticalHitRatingAll += statistic.m_criticalHitRating;
+            }
+        }
+        else if (effectName.Contains("Block")) {
+            var school = effectName.Contains("All") ? null : ExtractSchoolName(effectName);
+            if (school is not null && MagicSchools.GetMagicSchool(school) is not null) {
+                ApplySchoolEffect(ref stats.m_blockRatingBySchool, school, statistic.m_blockRating);
+            }
+            else {
+                stats.m_blockRatingAll += statistic.m_blockRating;
+            }
+        }
     }
 
     /// <summary>
@@ -261,6 +281,24 @@ internal static class CharacterEffectHelper {
         }
         else if (effectName.Contains("Mastery")) {
             RemoveSchoolMastery(stats, effectName);
+        }
+        else if (effectName.Contains("CriticalHit")) {
+            var school = effectName.Contains("All") ? null : ExtractSchoolName(effectName);
+            if (school is not null && MagicSchools.GetMagicSchool(school) is not null) {
+                ApplySchoolEffect(ref stats.m_criticalHitRatingBySchool, school, -statistic.m_criticalHitRating);
+            }
+            else {
+                stats.m_criticalHitRatingAll -= statistic.m_criticalHitRating;
+            }
+        }
+        else if (effectName.Contains("Block")) {
+            var school = effectName.Contains("All") ? null : ExtractSchoolName(effectName);
+            if (school is not null && MagicSchools.GetMagicSchool(school) is not null) {
+                ApplySchoolEffect(ref stats.m_blockRatingBySchool, school, -statistic.m_blockRating);
+            }
+            else {
+                stats.m_blockRatingAll -= statistic.m_blockRating;
+            }
         }
     }
 

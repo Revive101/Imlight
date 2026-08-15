@@ -33,11 +33,12 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 08/13/2026
+ * Last Updated: 08/14/2026
  */
 
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
+using Imlight.CoreLib.Game.Spells;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using System;
@@ -69,6 +70,50 @@ internal static class CombatActionResolver {
         var charmsAffectingThisSpell = new List<SpellEffect>();
         var allEffects = action.SpellTemplate.m_effects.ToList();
         combatAction.m_xPipCost = GetXPipCost(action.Spell, action.SpellCaster);
+
+        // One combined roll per cast: the target's block is part of the crit chance
+        // (crit vs crit + K * block), so there is no separate block roll. The landed
+        // multiplier varies by the crit/block ratio. Heals crit with no block side.
+        var critMultiplier = 1f;
+        var critPrimaryTarget = action.SelectedTarget;
+        if (critPrimaryTarget is not null) {
+            var spellSchool = MagicSchools.GetMagicSchool(action.Spell.m_magicSchoolID)?.m_schoolName;
+            if (spellSchool is not null) {
+                var isHealCast = action.SpellTemplate.m_effects
+                    .Any(x => x.m_effectType == kSpellEffects.kHeal);
+                var isOffensiveCast = critPrimaryTarget.OccupiedTeam != action.SpellCaster.OccupiedTeam;
+                if (isHealCast || isOffensiveCast) {
+                    var landedCrit = CombatCriticals.RollsCritical(action.SpellCaster, critPrimaryTarget, spellSchool, isHealCast);
+                    if (landedCrit) {
+                        critMultiplier = CombatCriticals.GetCritMultiplier(action.SpellCaster, critPrimaryTarget, spellSchool, isHealCast);
+                    }
+
+                    // The client's sim resolves crit by comparing the roll byte against its own
+                    // chance (roll < chance -> crit); blocksCalculated gates the check. The 2024
+                    // capture's constant 255 misled us (that client compares the other way);
+                    // in-game evidence shows 0 is the crit end for r801440.
+                    combatAction.m_blocksCalculated = true;
+                    combatAction.m_stunResistRoll = 255;
+                    combatAction.m_criticalHitRoll = landedCrit ? (byte) 0 : (byte) 255;
+                    combatAction.m_serializedBlocks = "\u0000\u0000\u0002\u0000";
+                    // Retail's resolved casts carry these exact values (capture-verified).
+                    combatAction.m_shadowPactTarget = action.SpellCaster.SlotIndex;
+                    combatAction.m_pipConversionRoll = -1;
+                    combatAction.m_petCastTarget = -1;
+                    combatAction.m_CritHitList = [new TargetCritHit {
+                        m_target = critPrimaryTarget.SlotIndex,
+                        m_mult = landedCrit ? critMultiplier : 0f,
+                        m_blocked = false,
+                    }];
+
+                    // [CRITDBG] temporary: the wire fields placed on this cast; remove once crits are confirmed.
+                    Logger.Information("[CRITDBG] caster={0} target={1} school={2} heal={3} landed={4} roll={5} mult={6} blocksCalc={7}",
+                        Logger.Args(action.SpellCaster.SlotIndex, critPrimaryTarget.SlotIndex, spellSchool,
+                                    isHealCast, landedCrit, combatAction.m_criticalHitRoll,
+                                    combatAction.m_CritHitList[0].m_mult, combatAction.m_blocksCalculated));
+                }
+            }
+        }
 
         foreach (var spellEffect in action.SpellTemplate.m_effects) {
             var chosenEffect = spellEffect;
@@ -107,7 +152,8 @@ internal static class CombatActionResolver {
             cinematicTime += CombatEffectApplicator.ApplyEffect(chosenEffect,
                                                                 [.. charmsAffectingThisSpell],
                                                                 action.SpellCaster,
-                                                                targets);
+                                                                targets,
+                                                                critMultiplier);
         }
 
         // Remove all charms that were applied to this spell from the caster's hanging effects.

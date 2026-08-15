@@ -478,6 +478,12 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
             return;
         }
+
+        // [CRITDBG] temporary: full wire bytes of the action list for diffing against the retail
+        // capture; remove once critical strikes are confirmed.
+        Logger.Information("[CRITDBG] duel={0} round={1} actionData={2}",
+            Logger.Args(SigilId, Duel.m_roundNum, Convert.ToHexString(buffer)));
+
         var msg = new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATACTIONS {
             DuelID = SigilId,
             ActionData = buffer,

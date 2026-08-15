@@ -557,6 +557,9 @@ public class CombatDuelSubCircle {
             m_maxHandSize = PLAYER_HAND_SIZE,
             m_playerHealth = ParticipantGameStats.m_currentHitpoints,
             m_maxPlayerHealth = ParticipantGameStats.m_baseHitpoints,
+            // The client's crit sim reads the participant level from m_mobLevel (it zeroes its
+            // crit chance below the level threshold when this is missing).
+            m_mobLevel = ParticipantGameStats.Level,
             m_myTeamTurn = _duelActor.Duel.m_firstTeamToAct == 0,
             m_pGameStats = combatStats,
             m_pPlayDeck = new PlayDeck(),

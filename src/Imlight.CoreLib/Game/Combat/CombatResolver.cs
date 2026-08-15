@@ -383,8 +383,9 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
     private void LogCombatAction(QueuedCombatAction action, CombatAction combatAction, bool spellWorthCasting) {
         if (spellWorthCasting) {
             var targetsStringForLog = string.Join(", ", combatAction.m_targetSubcircleList);
-            Logger.Debug("Duel {0} | Slot {1} | Spell {2} hits targets [{3}]",
-                Logger.Args(_duel.m_duelID.Full, action.SpellCaster.SlotIndex, action.Spell.m_templateID, targetsStringForLog));
+            var critSuffix = combatAction.m_CritHitList?.Any(x => x.m_mult > 1f) == true ? " (Crits!)" : "";
+            Logger.Debug("Duel {0} | Slot {1} | Spell {2} hits targets [{3}]{4}",
+                Logger.Args(_duel.m_duelID.Full, action.SpellCaster.SlotIndex, action.Spell.m_templateID, targetsStringForLog, critSuffix));
         }
         else {
             Logger.Debug("Duel {0} | Slot {1} | Spell {3} not worth casting. Passing turn.",
