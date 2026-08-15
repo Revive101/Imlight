@@ -338,24 +338,6 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         }
     }
 
-    // Re-send minion AI moves as MSG_COMBATMOVESELECTION, with the target's raw sigil slot.
-    private void ResendMinionMoveSelections() {
-        EnactActionOnSubCircles(circle => {
-            if (!circle.IsSummonedMinion || !circle.IsAlive || circle.ParticipantObject is null) {
-                return;
-            }
-
-            var action = CombatResolver.GetQueuedAction(circle);
-            if (action is null || action.Spell is null || action.SelectedTarget is null) {
-                SendCombatMoveSelection(circle.ParticipantObject.m_globalID, (byte) CombatMoveType.Pass, null, 0);
-                return;
-            }
-
-            SendCombatMoveSelection(circle.ParticipantObject.m_globalID, (byte) CombatMoveType.Attack,
-                action.Spell, (byte) action.SelectedTarget.SlotIndex);
-        });
-    }
-
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ACTORCOMBATDRAW))]
     private void ReceiveCombatDraw(COMBAT_106_PROTOCOL.MSG_ACTORCOMBATDRAW message) {
         // Find which sub circle this draw request is for.
@@ -1322,6 +1304,25 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
             : CreatureCount < 4 && (CreatureCount < maxCreatures);
 
         return slotAvailable;
+    }
+
+    private void ResendMinionMoveSelections() {
+        EnactActionOnSubCircles(circle => {
+            if (!circle.IsSummonedMinion || !circle.IsAlive || circle.ParticipantObject is null) {
+                return;
+            }
+
+            var action = CombatResolver.GetQueuedAction(circle);
+            if (action is null || action.Spell is null || action.SelectedTarget is null) {
+                SendCombatMoveSelection(circle.ParticipantObject.m_globalID, (byte) CombatMoveType.Pass, null, 0);
+                return;
+            }
+
+            SendCombatMoveSelection(circle.ParticipantObject.m_globalID, (byte) CombatMoveType.Attack,
+                action.Spell, (byte) action.SelectedTarget.SlotIndex);
+        });
+        var delay = TimeSpan.FromSeconds(PLANNING_TIME);
+        Timers.StartSingleTimer(PLANNING_TIME_KEY, new COMBAT_106_PROTOCOL.MSG_PLANNINGPHASEOVER(), delay);
     }
 
 }
