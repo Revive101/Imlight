@@ -54,11 +54,6 @@ internal sealed class ResLearnSpellHandler : BaseResultHandler<ResLearnSpell> {
             return false;
         }
 
-        // The tutorial lists one learn result per school; only the wizard's own school spell is taught.
-        if (spell.m_magicSchoolID != (uint) wizard.MagicSchoolBehavior.MagicSchool) {
-            return true;
-        }
-
         if (!wizard.LearnSpell(spell)) {
             // Already known; the learn is idempotent.
             return true;

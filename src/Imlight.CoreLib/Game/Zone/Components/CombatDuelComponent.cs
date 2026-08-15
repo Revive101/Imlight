@@ -42,7 +42,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 08/14/2026
+ * Last Updated: 08/15/2026
  */
 
 using System;
@@ -1089,6 +1089,16 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     private void HandleFleeAction(CombatDuelSubCircle caster) {
         var actor = caster.ParticipantActor;
         var participantObjId = caster.ParticipantObject.m_globalID;
+
+        // Fleeing drains the player's mana; creature participants have no wizard.
+        if (caster._wizard is not null) {
+            var clientMaxMana = caster._wizard.GameStats.GetClientTypeAlternative().m_baseMana;
+            caster._wizard.UpdateMana(0);
+            actor.Tell(new WIZARD_12_PROTOCOL.MSG_UPDATEMANA {
+                Mana = 0,
+                MaxMana = clientMaxMana,
+            });
+        }
 
         // Inform the client that they've been removed from this duel.
         var defeatMsg = new COMBAT_106_PROTOCOL.MSG_COMBATDEFEAT();
