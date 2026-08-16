@@ -207,6 +207,42 @@ public class CombatDuelSubCircle {
         return new() { m_spellList = _combatDeck.LastGivenHand ?? [] };
     }
 
+    /// <summary>
+    /// Appends the given spells to the current hand, created from the template IDs.
+    /// </summary>
+    internal void AddSpellsToHand(uint[] spellTemplateIds) {
+        if (_combatDeck is null) {
+            return;
+        }
+
+        foreach (var tid in spellTemplateIds ?? []) {
+            var spell = SpellFactory.GetSpell(tid);
+            if (spell is not null) {
+                _combatDeck.AddCardToHand(spell);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Empties the current hand.
+    /// </summary>
+    internal void ClearHand() {
+        _combatDeck?.ClearHand();
+    }
+
+    /// <summary>
+    /// Sets this participant's pips to exactly the given count of generic pips, no power pips, capped at
+    /// the max.
+    /// </summary>
+    internal void SetPips(int count) {
+        if (CombatParticipant is null) {
+            return;
+        }
+
+        CombatParticipant.m_pipCount.m_genericPips = (byte) Math.Clamp(count, 0, MAX_PIP_COUNT);
+        CombatParticipant.m_pipCount.m_powerPips = 0;
+    }
+
     internal void DiscardCard(Spell spell) {
         _combatDeck.Discard(spell);
     }

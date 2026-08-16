@@ -510,6 +510,26 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
     private void StartGoal(QuestInstance questInstance, GoalTemplate goalTemplate) {
         var wizard = GetActiveWizard();
 
+        // Goals with requirements only activate for wizards that meet them (e.g. per-school goals).
+        if (goalTemplate.m_goalRequirements is not null
+            && goalTemplate.m_goalRequirements.m_requirements is not null
+            && goalTemplate.m_goalRequirements.m_requirements.Count > 0) {
+            var requirementsMet = RequirementDispatcher.EvaluateRequirements(
+                requirements: goalTemplate.m_goalRequirements,
+                context: new QuestRequirementContext(
+                    goalTemplate.m_goalRequirements,
+                    SessionActor.ActorRef,
+                    GetActiveGameObject(),
+                    wizard,
+                    questInstance.QuestName,
+                    goalTemplate.m_goalName
+                )
+            );
+            if (!requirementsMet) {
+                return;
+            }
+        }
+
         if (!wizard.StartQuestGoal(questInstance.QuestName, goalTemplate.m_goalName)) {
             Logger.Error("Failed to start goal '{0}' for quest '{1}' for player '{2}'",
                 Logger.Args(goalTemplate.m_goalName, questInstance.QuestName, wizard.CharId));

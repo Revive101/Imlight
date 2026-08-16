@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty, Jeff
  * Version: KALI 1.0
- * Last Updated: 08/13/2026
+ * Last Updated: 08/14/2026
  */
 
 using System;
@@ -777,11 +777,16 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         var coords = Util.GetVectorFromCompactString(location);
         var compressedCoords = coords / 4;
 
+        var directionYaw = coords.W % (2 * Math.PI);
+        if (directionYaw < 0) {
+            directionYaw += 2 * Math.PI;
+        }
+
         var serverTele = new GAME_5_PROTOCOL.MSG_SERVERTELEPORT() {
             LocationX = (ushort) compressedCoords.X,
             LocationY = (ushort) compressedCoords.Y,
             LocationZ = (ushort) compressedCoords.Z,
-            Direction = (byte) coords.W,
+            Direction = (byte) Math.Round(directionYaw / (2 * Math.PI) * 250),
             MobileID = GetActiveGameObject().m_nMobileID,
         };
         var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {

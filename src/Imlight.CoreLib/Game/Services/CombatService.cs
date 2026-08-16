@@ -209,6 +209,18 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
         _currentDuelActor?.Tell(message, SessionActor.ActorRef);
     }
 
+    [MessageHandler(typeof(TUTORIAL_108_PROTOCOL.MSG_TUTORIALREBUILDDUELHAND))]
+    private void ReceiveTutorialRebuildDuelHand(TUTORIAL_108_PROTOCOL.MSG_TUTORIALREBUILDDUELHAND message) {
+        // Sender is forced to SessionActor.ActorRef so the duel matches it to this player's sub-circle; null out
+        // of combat is a harmless no-op.
+        _currentDuelActor?.Tell(message, SessionActor.ActorRef);
+    }
+
+    [MessageHandler(typeof(TUTORIAL_108_PROTOCOL.MSG_TUTORIALGRANTPIPS))]
+    private void ReceiveTutorialGrantPips(TUTORIAL_108_PROTOCOL.MSG_TUTORIALGRANTPIPS message) {
+        _currentDuelActor?.Tell(message, SessionActor.ActorRef);
+    }
+
     private void EquipMount() {
         if (_cachedMountId == 0) {
             // We don't have a cached mount.
