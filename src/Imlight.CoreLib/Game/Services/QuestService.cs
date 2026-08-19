@@ -61,7 +61,7 @@ namespace Imlight.CoreLib.Game.Services;
 internal class QuestService(SessionActor sessionActor) : MessageService(sessionActor) {
 
     private const float DEFAULT_KILL_COLLECT_CHANCE = 0.5f;
-    private const string QUEST_COMPLETED_ENTRY = "Completed";
+    private const string QUEST_COMPLETED_ENTRY = "Complete";
 
     private readonly List<QuestTemplate> _cachedQuestOffers = [];
     private readonly List<QuestTemplate> _cachedQuestTemplates = [];
@@ -643,7 +643,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             });
         }
 
-        // Chain advance: completion stamps the "Completed" registry entry, which is the ReqHasEntry
+        // Chain advance: completion stamps the "Complete" registry entry, which is the ReqHasEntry
         // prerequisite of the next quest in the dungeon's chain.
         TryGrantDungeonQuests(wizard);
     }
