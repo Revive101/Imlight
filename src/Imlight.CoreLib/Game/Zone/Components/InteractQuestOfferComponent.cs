@@ -116,6 +116,10 @@ internal sealed class InteractQuestOfferComponent(ZoneEntity entity)
         }
 
         var state = GetOrUpdatePlayerState(wizard);
+
+        // The memento wizbang tick reads this property; refresh it from live state.
+        WizBang = state.HasAvailableQuest ? WizBangs.StartQuest : WizBangs.None;
+
         if (!state.HasAvailableQuest || state.AvailableQuest == null) {
             yield break;
         }
