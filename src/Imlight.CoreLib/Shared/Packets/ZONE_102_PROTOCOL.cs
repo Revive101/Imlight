@@ -845,6 +845,33 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     }
 
     /// <summary>
+    /// Sent by a result handler to a <see cref="Zone"/> to find the dueling creature that has
+    /// the given player in its aggro radius, e.g. for <c>ResInitiateCombat</c>. Any number of
+    /// creatures may reply; the first reply wins.
+    /// </summary>
+    public sealed class MSG_QUERYNEARESTDUELTARGET : IServerMessage {
+
+        public byte MessageOrder { get; } = 57;
+        public byte ServiceID { get; } = 102;
+
+        public CoreObject PlayerGameObject;
+
+    }
+
+    /// <summary>
+    /// Sent by a dueling creature in response to <see cref="MSG_QUERYNEARESTDUELTARGET"/>.
+    /// </summary>
+    public sealed class MSG_QUERYNEARESTDUELTARGETRSP : IServerMessage {
+
+        public byte MessageOrder { get; } = 58;
+        public byte ServiceID { get; } = 102;
+
+        public IActorRef CreatureActor;
+        public CoreObject CreatureObject;
+
+    }
+
+    /// <summary>
     /// Server-internal: tells a duel component to spawn a summoned minion once the summon cast
     /// animation has played.
     /// </summary>
