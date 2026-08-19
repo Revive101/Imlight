@@ -16,8 +16,12 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
+using System;
 using System.Linq;
 using Raven.Client.Documents;
+using Raven.Client.Documents.Linq;
+using Raven.Client.Documents.Session;
+using Imlight.Common;
 using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imcodec.ObjectProperty.TypeCache;
@@ -31,6 +35,9 @@ public static class WizardCollection {
     public const string CollectionName = "Wizards";
     private static readonly IDocumentStore s_store;
 
+    private static readonly TimeSpan s_nonStaleWaitTimeout
+        = TimeSpan.FromSeconds(ConfigurationManager.Settings["Database.DatabaseWaitForNonStaleResultsTimeout"].AsByte(5));
+
     static WizardCollection()
         => s_store = PlayerDatabase.Instance.Store;
 
@@ -42,8 +49,7 @@ public static class WizardCollection {
         using var session = s_store.OpenSession();
 
         // Return false if the character already exists in the database.
-        var existingCharacter = session.Query<Wizard>()
-            .FirstOrDefault(x => x.CharId == character.CharId);
+        var existingCharacter = GetCharacterByCharId(session, character.CharId);
         if (existingCharacter is not null) {
             return false;
         }
@@ -64,8 +70,7 @@ public static class WizardCollection {
     public static bool DeleteCharacter(ulong id) {
         using var session = s_store.OpenSession();
 
-        var character = session.Query<Wizard>()
-            .FirstOrDefault(x => x.CharId == id);
+        var character = GetCharacterByCharId(session, id);
         if (character is null) {
             return false;
         }
@@ -94,8 +99,7 @@ public static class WizardCollection {
     public static Wizard GetCharacter(ulong id) {
         using var session = s_store.OpenSession();
 
-        var character = session.Query<Wizard>(collectionName: CollectionName)
-            .FirstOrDefault(x => x.CharId == id);
+        var character = GetCharacterByCharId(session, id);
 
         // Query for the account.
         var account = session.Query<Account>(collectionName: AccountCollection.CollectionName)
@@ -120,6 +124,7 @@ public static class WizardCollection {
         using var session = s_store.OpenSession();
 
         var characters = session.Query<Wizard>(collectionName: CollectionName)
+            .Customize(query => query.WaitForNonStaleResults(s_nonStaleWaitTimeout))
             .Where(x => x.AccountId == accountId)
             .ToList();
 
@@ -148,8 +153,7 @@ public static class WizardCollection {
     public static Wizard GetCharacterUnloaded(ulong charId) {
         using var session = s_store.OpenSession();
 
-        var character = session.Query<Wizard>(collectionName: CollectionName)
-            .FirstOrDefault(x => x.CharId == charId);
+        var character = GetCharacterByCharId(session, charId);
 
         return character;
     }
@@ -163,8 +167,7 @@ public static class WizardCollection {
     public static void UpdateCharacterZone(Wizard character, string zoneName, string zoneDisplayName) {
         using var session = s_store.OpenSession();
 
-        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
-            .FirstOrDefault(x => x.CharId == character.CharId);
+        var existingCharacter = GetCharacterByCharId(session, character.CharId);
         if (existingCharacter is null) {
             return;
         }
@@ -184,8 +187,7 @@ public static class WizardCollection {
     public static void UpdateCharacterLocation(Wizard character, Vector3 location, float orientation) {
         using var session = s_store.OpenSession();
 
-        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
-            .FirstOrDefault(x => x.CharId == character.CharId);
+        var existingCharacter = GetCharacterByCharId(session, character.CharId);
         if (existingCharacter is null) {
             return;
         }
@@ -209,8 +211,7 @@ public static class WizardCollection {
                                                      string zoneDisplayName) {
         using var session = s_store.OpenSession();
 
-        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
-            .FirstOrDefault(x => x.CharId == character.CharId);
+        var existingCharacter = GetCharacterByCharId(session, character.CharId);
         if (existingCharacter is null) {
             return;
         }
@@ -229,8 +230,7 @@ public static class WizardCollection {
     public static void UpdateCharacterItems(Wizard wizard) {
         using var session = s_store.OpenSession();
 
-        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
-            .FirstOrDefault(x => x.CharId == wizard.CharId);
+        var existingCharacter = GetCharacterByCharId(session, wizard.CharId);
         if (existingCharacter is null) {
             return;
         }
@@ -249,8 +249,7 @@ public static class WizardCollection {
     public static void UpdateCharacterLevel(Wizard wizard) {
         using var session = s_store.OpenSession();
 
-        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
-            .FirstOrDefault(x => x.CharId == wizard.CharId);
+        var existingCharacter = GetCharacterByCharId(session, wizard.CharId);
         if (existingCharacter is null) {
             return;
         }
@@ -267,8 +266,7 @@ public static class WizardCollection {
     public static void UpdateCharacterMount(Wizard wizard) {
         using var session = s_store.OpenSession();
 
-        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
-            .FirstOrDefault(x => x.CharId == wizard.CharId);
+        var existingCharacter = GetCharacterByCharId(session, wizard.CharId);
         if (existingCharacter is null) {
             return;
         }
@@ -284,8 +282,7 @@ public static class WizardCollection {
     public static void UpdateCharacterNameOverride(Wizard wizard) {
         using var session = s_store.OpenSession();
 
-        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
-            .FirstOrDefault(x => x.CharId == wizard.CharId);
+        var existingCharacter = GetCharacterByCharId(session, wizard.CharId);
         if (existingCharacter is null) {
             return;
         }
@@ -301,8 +298,7 @@ public static class WizardCollection {
     public static void UpdateCharacterInteriorStowedMount(Wizard wizard) {
         using var session = s_store.OpenSession();
 
-        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
-            .FirstOrDefault(x => x.CharId == wizard.CharId);
+        var existingCharacter = GetCharacterByCharId(session, wizard.CharId);
         if (existingCharacter is null) {
             return;
         }
@@ -318,8 +314,7 @@ public static class WizardCollection {
     public static void UpdateCharacterBadgeOverride(Wizard wizard) {
         using var session = s_store.OpenSession();
 
-        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
-            .FirstOrDefault(x => x.CharId == wizard.CharId);
+        var existingCharacter = GetCharacterByCharId(session, wizard.CharId);
         if (existingCharacter is null) {
             return;
         }
@@ -336,8 +331,7 @@ public static class WizardCollection {
     public static void UpdateCharacterSpellbookBehavior(Wizard wizard) {
         using var session = s_store.OpenSession();
 
-        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
-            .FirstOrDefault(x => x.CharId == wizard.CharId);
+        var existingCharacter = GetCharacterByCharId(session, wizard.CharId);
         if (existingCharacter is null) {
             return;
         }
@@ -353,8 +347,7 @@ public static class WizardCollection {
     public static void UpdateCharacterGameStats(Wizard wizard) {
         using var session = s_store.OpenSession();
 
-        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
-            .FirstOrDefault(x => x.CharId == wizard.CharId);
+        var existingCharacter = GetCharacterByCharId(session, wizard.CharId);
         if (existingCharacter is null) {
             return;
         }
@@ -370,8 +363,7 @@ public static class WizardCollection {
     public static void UpdateCharacterPetOwnerBehavior(Wizard wizard) {
         using var session = s_store.OpenSession();
 
-        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
-            .FirstOrDefault(x => x.CharId == wizard.CharId);
+        var existingCharacter = GetCharacterByCharId(session, wizard.CharId);
         if (existingCharacter is null) {
             return;
         }
@@ -387,8 +379,7 @@ public static class WizardCollection {
     public static void UpdateCharacterTimeWentHome(Wizard wizard, long time) {
         using var session = s_store.OpenSession();
 
-        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
-            .FirstOrDefault(x => x.CharId == wizard.CharId);
+        var existingCharacter = GetCharacterByCharId(session, wizard.CharId);
         if (existingCharacter is null) {
             return;
         }
@@ -404,8 +395,7 @@ public static class WizardCollection {
     public static void UpdateCharacterTrainingPoints(Wizard wizard) {
         using var session = s_store.OpenSession();
 
-        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
-            .FirstOrDefault(x => x.CharId == wizard.CharId);
+        var existingCharacter = GetCharacterByCharId(session, wizard.CharId);
         if (existingCharacter is null) {
             return;
         }
@@ -422,8 +412,7 @@ public static class WizardCollection {
     public static void UpdateCharacterFriendBehavior(Wizard wizard) {
         using var session = s_store.OpenSession();
 
-        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
-            .FirstOrDefault(x => x.CharId == wizard.CharId);
+        var existingCharacter = GetCharacterByCharId(session, wizard.CharId);
         if (existingCharacter is null) {
             return;
         }
@@ -440,8 +429,7 @@ public static class WizardCollection {
     public static void LearnSpell(Wizard wizard, uint spellTemplateId) {
         using var session = s_store.OpenSession();
 
-        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
-            .FirstOrDefault(x => x.CharId == wizard.CharId);
+        var existingCharacter = GetCharacterByCharId(session, wizard.CharId);
         if (existingCharacter is null) {
             return;
         }
@@ -458,8 +446,7 @@ public static class WizardCollection {
     public static void UnlearnSpell(Wizard wizard, uint spellTemplateId) {
         using var session = s_store.OpenSession();
 
-        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
-            .FirstOrDefault(x => x.CharId == wizard.CharId);
+        var existingCharacter = GetCharacterByCharId(session, wizard.CharId);
         if (existingCharacter is null) {
             return;
         }
@@ -476,8 +463,7 @@ public static class WizardCollection {
     public static void AddTreasureCard(Wizard wizard, uint spellTemplateId) {
         using var session = s_store.OpenSession();
 
-        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
-            .FirstOrDefault(x => x.CharId == wizard.CharId);
+        var existingCharacter = GetCharacterByCharId(session, wizard.CharId);
         if (existingCharacter is null) {
             return;
         }
@@ -494,8 +480,7 @@ public static class WizardCollection {
     public static void RemoveTreasureCard(Wizard wizard, uint spellTemplateId) {
         using var session = s_store.OpenSession();
 
-        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
-            .FirstOrDefault(x => x.CharId == wizard.CharId);
+        var existingCharacter = GetCharacterByCharId(session, wizard.CharId);
         if (existingCharacter is null) {
             return;
         }
@@ -512,8 +497,7 @@ public static class WizardCollection {
     public static void AddOrUpdateRelationship(Wizard wizard, Relationship relationship) {
         using var session = s_store.OpenSession();
 
-        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
-            .FirstOrDefault(x => x.CharId == wizard.CharId);
+        var existingCharacter = GetCharacterByCharId(session, wizard.CharId);
         if (existingCharacter is null) {
             return;
         }
@@ -532,8 +516,7 @@ public static class WizardCollection {
     public static void RemoveRelationship(Wizard wizard, ulong friendId) {
         using var session = s_store.OpenSession();
 
-        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
-            .FirstOrDefault(x => x.CharId == wizard.CharId);
+        var existingCharacter = GetCharacterByCharId(session, wizard.CharId);
         if (existingCharacter is null) {
             return;
         }
@@ -558,8 +541,7 @@ public static class WizardCollection {
         }
 
         using var session = s_store.OpenSession();
-        var dbWizard = session.Query<Wizard>(collectionName: CollectionName)
-                              .FirstOrDefault(w => w.CharId == wizard.CharId);
+        var dbWizard = GetCharacterByCharId(session, wizard.CharId);
 
         if (dbWizard is null) {
             return false;
@@ -628,5 +610,10 @@ public static class WizardCollection {
 
         return wizard;
     }
+
+    private static Wizard GetCharacterByCharId(IDocumentSession session, ulong charId)
+        => session.Query<Wizard>(collectionName: CollectionName)
+            .Customize(query => query.WaitForNonStaleResults(s_nonStaleWaitTimeout))
+            .FirstOrDefault(character => character.CharId == charId);
 
 }
