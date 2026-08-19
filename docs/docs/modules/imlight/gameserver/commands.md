@@ -101,6 +101,11 @@ Commands are organized into logical groups based on functionality:
 - Position and state debugging
 - Technical diagnostics
 
+**Cheat Commands (`cheat`)**
+- `win` - instantly end the current duel as a player victory
+- `cinematic` - toggle instant spell cinematics for the player's own duels (effects still resolve; only the cinematic pacing collapses)
+- `nofizzle` - toggle spell fizzling off for the player's own casts (the accuracy roll always succeeds; dispel wards still apply)
+
 ## Command Context
 
 The `CommandContext` provides access to execution environment:

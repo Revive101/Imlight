@@ -48,7 +48,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 08/19/2026
  */
 
 using System;
@@ -223,6 +223,7 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
 
     private float ProcessQueuedActions(CombatActionListObj combatActionList) {
         var cinematicTime = 0.0f;
+        var instantCinematics = _subCircles[0]._duelActor.CheatInstantCinematics;
 
         foreach (var action in _queuedCombatActions) {
             // If the caster is dead, skip this action.
@@ -276,7 +277,7 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
             }
         }
 
-        return cinematicTime;
+        return instantCinematics ? 0 : cinematicTime;
     }
 
     private float HandleFizzleAction(QueuedCombatAction action, CombatActionListObj combatActionList) {
@@ -435,6 +436,10 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
 
         if (ConsumeDispell(caster, spell.m_magicSchoolID)) {
             return false;
+        }
+
+        if (caster.CheatNoFizzle) {
+            return true;
         }
 
         var spellAccuracy = (int) spell.m_accuracy;

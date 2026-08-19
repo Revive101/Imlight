@@ -37,7 +37,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 08/19/2026
  */
 
 using System;
@@ -71,6 +71,8 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
     );
 
     private IActorRef _currentDuelActor;
+    private bool _cheatInstantCinematics;
+    private bool _cheatNoFizzle;
     private ulong _cachedMountId;
 
     protected static Props Props(SessionActor parentActor)
@@ -85,7 +87,20 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
     private void RecieveDuelAdd(COMBAT_106_PROTOCOL.MSG_ACTORADDEDTODUEL message) {
         _currentDuelActor = message.DuelActor;
 
-        //Unequip mounts if the player has one equipped
+        if (_cheatInstantCinematics) {
+            _currentDuelActor.Tell(new COMBAT_106_PROTOCOL.MSG_CHEATINSTANTCINEMATICS {
+                Enabled = true
+            });
+        }
+
+        if (_cheatNoFizzle) {
+            _currentDuelActor.Tell(new COMBAT_106_PROTOCOL.MSG_CHEATNOFIZZLE {
+                Enabled = true,
+                Actor = SessionActor.ActorRef
+            });
+        }
+
+        // Unequip mounts if the player has one equipped
         UnEquipMount();
 
         // Set the persistent location and orientation of the wizard
@@ -167,6 +182,44 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
             Actor = SessionActor.ActorRef
         };
         _currentDuelActor.Tell(msg);
+    }
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_CHEATINSTAWIN))]
+    private void ReceiveCheatInstaWin(COMBAT_106_PROTOCOL.MSG_CHEATINSTAWIN message) {
+        if (_currentDuelActor is null) {
+            InformGameClient("You are not in a duel.");
+
+            return;
+        }
+
+        _currentDuelActor.Tell(message);
+    }
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_CHEATTOGGLECINEMATICS))]
+    private void ReceiveCheatToggleCinematics(COMBAT_106_PROTOCOL.MSG_CHEATTOGGLECINEMATICS message) {
+        _cheatInstantCinematics = !_cheatInstantCinematics;
+
+        _currentDuelActor?.Tell(new COMBAT_106_PROTOCOL.MSG_CHEATINSTANTCINEMATICS {
+            Enabled = _cheatInstantCinematics
+        });
+
+        InformGameClient(_cheatInstantCinematics
+            ? "Instant spell cinematics enabled for your duels."
+            : "Instant spell cinematics disabled for your duels.");
+    }
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_CHEATTOGGLENOFIZZLE))]
+    private void ReceiveCheatToggleNoFizzle(COMBAT_106_PROTOCOL.MSG_CHEATTOGGLENOFIZZLE message) {
+        _cheatNoFizzle = !_cheatNoFizzle;
+
+        _currentDuelActor?.Tell(new COMBAT_106_PROTOCOL.MSG_CHEATNOFIZZLE {
+            Enabled = _cheatNoFizzle,
+            Actor = SessionActor.ActorRef
+        });
+
+        InformGameClient(_cheatNoFizzle
+            ? "Spell fizzling disabled for your duels."
+            : "Spell fizzling enabled for your duels.");
     }
 
     [MessageHandler(typeof(DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATMOVE))]

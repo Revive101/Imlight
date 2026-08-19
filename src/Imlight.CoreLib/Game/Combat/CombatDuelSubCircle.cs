@@ -136,6 +136,7 @@ public class CombatDuelSubCircle {
         }
     }
     internal bool IsAlive => ParticipantGameStats?.m_currentHitpoints > 0;
+    internal bool CheatNoFizzle;
     internal CombatDeck _combatDeck;
     internal readonly CombatDuelComponent _duelActor;
     internal Wizard _wizard;
