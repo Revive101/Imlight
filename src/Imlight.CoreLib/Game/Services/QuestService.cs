@@ -629,6 +629,20 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             questName: questInstance.QuestName
         );
 
+        // Fire the "you have learned a new spell!" cinematic for the spell rewards. Only the spells
+        // go here; the gold/XP/item popup is already sent by the drop table handlers (MSG_LOOT).
+        var spellRewards = new LootInfoList {
+            m_loot = []
+        };
+        AppendSpellRewards(spellRewards.m_loot, qTemplate, wizard);
+        if (spellRewards.m_loot.Count > 0
+            && _goalSerializer.Serialize(spellRewards, 1, out var spellRewardData)) {
+            SendToSocket(new WIZARD_12_PROTOCOL.MSG_QUESTREWARDS {
+                QuestID = questInstance.ID,
+                LootList = spellRewardData
+            });
+        }
+
         // Chain advance: completion stamps the "Completed" registry entry, which is the ReqHasEntry
         // prerequisite of the next quest in the dungeon's chain.
         TryGrantDungeonQuests(wizard);
@@ -941,7 +955,45 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         // Convert the result into something we can send over the network.
         var convertedResults = DropTableConverter.ToLootInfoList(rollResult);
 
+        // Spell rewards live in the results, not the drop tables; surface the wizard's own school spell.
+        convertedResults.m_loot ??= [];
+        AppendSpellRewards(convertedResults.m_loot, qTemplate, playerWizard);
+
         return convertedResults;
+    }
+
+    /// <summary>
+    /// Adds the quest's spell rewards to a loot list for the reward previews. Gated results
+    /// are evaluated through the single requirement engine, so a wizard only sees their
+    /// own school's spell; without a wizard, gated results are skipped.
+    /// </summary>
+    internal static void AppendSpellRewards(List<LootInfo> loot, QuestTemplate qTemplate, Wizard playerWizard) {
+        foreach (var learnSpell in qTemplate.m_endResults.m_results.OfType<ResLearnSpell>()) {
+            if (learnSpell.m_templateID == 0) {
+                continue;
+            }
+
+            if (learnSpell.m_requirements is not null) {
+                if (playerWizard is null) {
+                    continue;
+                }
+
+                var requirementContext = new GenericRequirementContext(
+                    requirements: learnSpell.m_requirements,
+                    playerRef: null,
+                    playerObj: null,
+                    wizard: playerWizard
+                );
+                if (!RequirementDispatcher.EvaluateRequirements(learnSpell.m_requirements, requirementContext)) {
+                    continue;
+                }
+            }
+
+            loot.Add(new AddSpellLootInfo {
+                m_lootType = LOOT_TYPE.LOOT_TYPE_ADD_SPELL,
+                m_spellID = learnSpell.m_templateID,
+            });
+        }
     }
 
     private static AssociatedWorldsList GetAssociatedWorlds(QuestTemplate qTemplate) {
