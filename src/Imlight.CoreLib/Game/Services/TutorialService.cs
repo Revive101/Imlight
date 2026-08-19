@@ -26,6 +26,7 @@ using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
 using Imlight.CoreLib.Game.Results;
+using Imlight.CoreLib.Shared.Items;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Collections;
@@ -36,6 +37,8 @@ namespace Imlight.CoreLib.Game.Services;
 internal sealed class TutorialService(SessionActor sessionActor) : MessageService(sessionActor) {
 
     private const string TUTORIAL_QUEST_NAME = "WC-TUT-C05-001";
+    private const string TUTORIAL_INTRO_QUEST_NAME = "Tutorial_Intro";
+    private const string TUTORIAL_INTRO_GOAL_NAME = "OnlyGoal";
     private const uint TUTORIAL_NAME_STRING_ID = 600062081;
     private const string TUTORIAL_EXTERIOR_ZONE_NAME_CONTENTS = "Tutorial_Exterior";
     private const string TUTORIAL_INTERIOR_ZONE_NAME_CONTENTS = "Tutorial_Interior";
@@ -277,6 +280,8 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
         if (goalName == "SkipTutorialGoal") {
             _tutorialInfo.m_tutorialStage = 99;
             RemoveControlQuests(wizard);
+            CompleteTutorialIntro(wizard, playerObj);
+            EquipStarterWandAndDeck(wizard);
             Teleport(ConfigurationManager.Settings["Character.StartingZone"]);
 
             return true;
@@ -377,6 +382,12 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
                 zoneActor: SessionActor.GetZoneActor()
             );
 
+            // The intro quest is the shared finale for the tutorial and the skip flow;
+            // the starter wand and deck must be equipped in both.
+            if (goalInstance.quest.QuestName == TUTORIAL_INTRO_QUEST_NAME) {
+                EquipStarterWandAndDeck(wizard);
+            }
+
             return removeSuccess;
         }
 
@@ -420,6 +431,128 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
     private void RemoveControlQuests(Wizard wizard) {
         foreach (var questName in s_controlQuests) {
             RemoveQuestAndClearFromJournal(wizard, questName);
+        }
+    }
+
+    private bool CompleteTutorialIntro(Wizard wizard, CoreObject playerObj) {
+        // Skippers never run the client's end-of-tutorial flow, so complete Tutorial_Intro here:
+        // OnlyGoal's results are the school spell (ResLearnSpell, school-gated) plus the refills.
+        if (!wizard.QuestBehavior.CurrentQuestInstances.Any(q => q.QuestName == TUTORIAL_INTRO_QUEST_NAME)) {
+            var introTemplate = QuestTemplateCollection.GetQuestByName(TUTORIAL_INTRO_QUEST_NAME);
+            if (introTemplate is null) {
+                Logger.Error("Tutorial intro quest template not found for '{0}'", Logger.Args(TUTORIAL_INTRO_QUEST_NAME));
+
+                return false;
+            }
+
+            wizard.AddQuest(new QuestInstance(introTemplate, wizard.CharId));
+        }
+
+        var instance = wizard.QuestBehavior.CurrentQuestInstances
+            .FirstOrDefault(q => q.QuestName == TUTORIAL_INTRO_QUEST_NAME);
+        var goalInstance = instance?.GoalProgress.FirstOrDefault(g => g.GoalName == TUTORIAL_INTRO_GOAL_NAME);
+        if (goalInstance is null) {
+            return false;
+        }
+
+        var removeSuccess = wizard.CompleteQuestGoal(TUTORIAL_INTRO_QUEST_NAME, TUTORIAL_INTRO_GOAL_NAME);
+
+        var questTemplate = QuestTemplateCollection.GetQuestByName(TUTORIAL_INTRO_QUEST_NAME);
+        var goalTemplate = questTemplate?.m_goals.FirstOrDefault(g => g.m_goalName == TUTORIAL_INTRO_GOAL_NAME);
+        if (goalTemplate is null) {
+            return false;
+        }
+
+        ResultDispatcher.ExecuteResults(
+            actorContext: Context,
+            results: goalTemplate.m_completeResults,
+            playerRef: SessionActor.ActorRef,
+            playerObj: playerObj,
+            questName: TUTORIAL_INTRO_QUEST_NAME,
+            goalName: TUTORIAL_INTRO_GOAL_NAME,
+            zoneActor: SessionActor.GetZoneActor()
+        );
+
+        return removeSuccess;
+    }
+
+    private void EquipStarterWandAndDeck(Wizard wizard) {
+        // The starter kit is config-driven, so resolve the wand and deck by slot rather
+        // than template ID; equip only the first instance of each.
+        EquipFirstStarterItem(wizard, EquipmentSlotType.Weapon);
+        EquipFirstStarterItem(wizard, EquipmentSlotType.Deck);
+    }
+
+    private void EquipFirstStarterItem(Wizard wizard, EquipmentSlotType slotType) {
+        var item = wizard.InventoryBehavior.Items.FirstOrDefault(item => {
+            var template = ItemHelper.GetItemTemplate(item);
+            if (template is null) {
+                return false;
+            }
+
+            return ItemHelper.GetItemSlot(template)?.SlotType == slotType;
+        });
+        if (item is null || wizard.EquipmentBehavior.HasItemEquipped(item.m_globalID)) {
+            return;
+        }
+
+        // Move the item into its slot; this also informs the spellbook for decks and
+        // persists the change.
+        if (!wizard.InventoryToEquipmentTransfer(item.m_globalID, out var equipEffects, out _)) {
+            Logger.Warning("Starter equip failed for item {0} on {1}.",
+                Logger.Args(item.m_globalID.Full, wizard.PlayerNameBehavior.GetWizardName()));
+
+            return;
+        }
+
+        // The client never asked for this equip, so confirm it explicitly.
+        SendEquipItem(item, slotType.ToString());
+        SendAddEffects(equipEffects);
+    }
+
+    private void SendEquipItem(WizClientObjectItem item, string slotName) {
+        SendToSocket(new GAME_5_PROTOCOL.MSG_EQUIPITEM {
+            ItemID = item.m_globalID,
+            SlotName = slotName,
+            IsEquip = 1,
+        });
+
+        var pubItem = ItemHelper.GetPublicItem(item);
+        if (!s_configureItemSerializer.Serialize(pubItem, 1, out var serializedPubItem)) {
+            Logger.Error("Failed to serialize starter item {0} for equip broadcast.",
+                Logger.Args(item.m_globalID.Full));
+
+            return;
+        }
+
+        var gameObject = GetActiveGameObject();
+        if (gameObject is not null) {
+            ZoneBroadcast(new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICEQUIPITEM {
+                GlobalID = gameObject.m_globalID,
+                SerializedInfo = serializedPubItem,
+            }, false);
+        }
+    }
+
+    private void SendAddEffects(List<GameEffectBase> effects) {
+        if (effects is null || effects.Count == 0) {
+            return;
+        }
+
+        var gameObjectId = GetActiveGameObject()?.m_globalID ?? 0;
+        var flags = PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit;
+        foreach (var effect in effects) {
+            if (!s_configureItemSerializer.Serialize(effect, flags, out var serializedEffect)) {
+                Logger.Error("Failed to serialize starter item effect {0}.",
+                    Logger.Args(effect.m_effectNameID));
+
+                continue;
+            }
+
+            SendToSocket(new GAME_5_PROTOCOL.MSG_ADDEFFECT {
+                GameObjectID = gameObjectId,
+                EffectData = serializedEffect,
+            });
         }
     }
 
