@@ -87,7 +87,6 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity)
     private readonly float _interactionRadius = 300.0f;
     private readonly Dictionary<ulong, IActorRef> _playersInInteractionRange = [];
     private readonly Dictionary<ulong, IActorRef> _playersInRenderRange = [];
-    private readonly Dictionary<ulong, WizBangs> _lastSentWizBangs = [];
     private List<IServiceComponent> _serviceComponents = [];
     private Dictionary<int, IServiceComponent> _optionIndexToComponent = [];
     private ServiceMementoBase _serviceMemento;
@@ -121,7 +120,6 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity)
             _playersInRenderRange.Remove(playerObj);
         }
 
-        _lastSentWizBangs.Remove(id);
     }
 
     public override void OnPlayerMove(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) {
@@ -367,33 +365,15 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity)
             }
         }
 
-        // If there are no wizbangs, don't continue.
-        if (activeWizBangs.Count <= 0) {
-            return;
-        }
+        // Get highest priority wizbang for this player, or None to clear.
+        var wizBang = WizBangPriority.GetHighestPriorityWizBang(activeWizBangs);
 
-        // Get highest priority wizbang for this player.
-        var wizBang = WizBangs.None;
-        if (activeWizBangs.Count > 0) {
-            var priorityWizBang = WizBangPriority.GetHighestPriorityWizBang(activeWizBangs);
-            wizBang = priorityWizBang;
-        }
-
-        var playerId = playerWizard.CharId;
-
-        // Check if this wizbang is different from the last one we sent.
-        if (_lastSentWizBangs.TryGetValue(playerId, out var lastWizBang) && lastWizBang == wizBang) {
-            return; 
-        }
-
-        // Cache the new wizbang and send the message.
-        _lastSentWizBangs[playerId] = wizBang;
-
+        // Re-send every tick rather than once per change: a single send can be lost
+        // while the client is still building the scene, and retail re-pushes each update.
         var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG {
             WizBangID = (uint) wizBang,
             GameObjectID = Entity.ActiveGameObject.m_globalID.Full
         };
-
         playerActor.Tell(wizBangMsg);
     }
 
