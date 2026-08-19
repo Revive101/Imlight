@@ -37,14 +37,16 @@
  * 
  * Created by: Jay
  * Version: KALI 1.0
- * Last Updated: 08/13/2026
+ * Last Updated: 08/19/2026
  */
 
 using System;
 using System.Collections.Generic;
 using Akka.Actor;
+using Imcodec.CoreObject;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Player;
@@ -58,6 +60,7 @@ namespace Imlight.CoreLib.Game.DropTables;
 public static class LootGranter {
 
     private const uint LOOT_LIST_SERIALIZATION_FLAGS = 4;
+    private static readonly CoreObjectSerializer s_itemSerializer = new(behaviors: SerializerFlags.None);
 
     /// <summary>
     /// Grants every reward in <paramref name="results"/> to the player and shows the loot popup.
@@ -69,7 +72,7 @@ public static class LootGranter {
         UpdateWizardGold(playerActor, wizard, results.GoldAmount);
         UpdateWizardXP(playerActor, results.ExperienceAmount);
         UpdateWizardTP(playerActor, wizard, results.TrainingPoints);
-        UpdateCharacterItems(wizard, results.Items);
+        UpdateCharacterItems(playerActor, wizard, results.Items);
         SendLootInfoToClient(playerActor, results, wizard);
 
         if (results.GrantsPotionSlot) {
@@ -130,7 +133,7 @@ public static class LootGranter {
         playerActor.Tell(msg);
     }
 
-    private static void UpdateCharacterItems(Wizard wizard, List<DropItemResult> items) {
+    private static void UpdateCharacterItems(IActorRef playerActor, Wizard wizard, List<DropItemResult> items) {
         if (items.Count == 0) {
             return;
         }
@@ -141,13 +144,31 @@ public static class LootGranter {
                 continue;
             }
 
-            if (!wizard.AddItemToInventory(itemGuid, out var _)) {
+            if (!wizard.AddItemToInventory(itemGuid, out var addedItem)) {
                 Logger.Error("Failed to add item {0} to wizard {1}'s inventory.",
                     Logger.Args(item.ItemId, wizard.CharId));
 
                 continue;
             }
+
+            // The attach payload (which carries the inventory) was already sent, so push each
+            // item to the client explicitly or the reward stays invisible this session.
+            SendInventoryAdd(playerActor, wizard, addedItem);
         }
+    }
+
+    private static void SendInventoryAdd(IActorRef playerActor, Wizard wizard, WizClientObjectItem item) {
+        if (!s_itemSerializer.Serialize(item, 1, out var serializedItem)) {
+            Logger.Error("Failed to serialize reward item {0} for inventory-add.",
+                Logger.Args(item.m_globalID.Full));
+
+            return;
+        }
+
+        playerActor.Tell(new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_ADDITEM {
+            GlobalID = wizard.CharId,
+            SerializedItem = serializedItem,
+        });
     }
 
     private static void UpdateWizardPotionMax(IActorRef playerActor, Wizard wizard) {
