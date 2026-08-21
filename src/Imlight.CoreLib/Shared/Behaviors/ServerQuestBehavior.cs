@@ -112,6 +112,15 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
         return removedInstances > 0 || removedIds > 0;
     }
 
+    public void PruneStaleQuestIds() {
+        if (CurrentQuestInstances.Count <= 0) {
+            return;
+        }
+
+        var liveIds = new HashSet<ulong>(CurrentQuestInstances.Select(q => q.ID));
+        CurrentQuestIDs.RemoveAll(id => !liveIds.Contains(id));
+    }
+
     public bool HasQuest(string questName) {
         if (string.IsNullOrWhiteSpace(questName)) {
             return false;

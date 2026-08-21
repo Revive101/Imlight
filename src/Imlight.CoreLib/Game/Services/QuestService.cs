@@ -89,6 +89,10 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
     private void ReceivePostAttach(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE message) {
         var wizard = GetActiveWizard();
 
+        // Drop quest instance IDs that no longer have a backing instance before
+        // any grant or waypoint logic runs on them.
+        wizard.QuestBehavior.PruneStaleQuestIds();
+
         // Dungeon quests are force-added on entry (a quest marked by a ReqInZone requirement for this
         // zone). Grant BEFORE the waypoint check so a fresh quest's enter-the-dungeon goal completes on
         // this same attach.
