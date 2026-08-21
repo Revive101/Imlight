@@ -529,6 +529,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public ByteString EventName;
         public IActorRef PlayerActor;
         public CoreObject? PlayerGameObject;
+        public bool SuppressTeleportResults;
 
     }
 

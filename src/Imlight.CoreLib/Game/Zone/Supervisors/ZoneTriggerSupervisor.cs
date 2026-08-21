@@ -70,9 +70,10 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_POSTEVENT))]
     private void ReceivePostEvent(ZONE_102_PROTOCOL.MSG_POSTEVENT message) {
-        // Client wads pair mutually exclusive triggers on the same event.
-        // Executing every passing trigger lets the wrong one win; fire only the
-        // first in wad order whose requirements pass.
+        // Client wads pair multiple triggers on the same event; every passing trigger fires
+        // (their results are independent), but paired teleporter triggers must not both win:
+        // only the first ResTeleport in wad order may execute.
+        var teleportDispatched = false;
         foreach (var (trigger, triggerActor) in _orderedTriggers) {
             if (trigger.m_fireEvents is null || !trigger.m_fireEvents.Any(x => x == message.EventName)) {
                 continue;
@@ -82,9 +83,16 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
                 continue;
             }
 
-            triggerActor.Forward(message);
+            var hasTeleportResult = trigger.m_results?.m_results?.Any(result => result is ResTeleport) == true;
+            var suppressTeleportResults = hasTeleportResult && teleportDispatched;
+            teleportDispatched |= hasTeleportResult;
 
-            return;
+            triggerActor.Forward(new ZONE_102_PROTOCOL.MSG_POSTEVENT {
+                EventName = message.EventName,
+                PlayerActor = message.PlayerActor,
+                PlayerGameObject = message.PlayerGameObject,
+                SuppressTeleportResults = suppressTeleportResults,
+            });
         }
     }
 
