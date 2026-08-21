@@ -1503,6 +1503,11 @@ public class Wizard : IDisposable {
         }
 
         QuestBehavior.CurrentQuestInstances = uniqueQuests;
+
+        // Prune stale quest IDs whose instance docs were removed above, and persist.
+        QuestBehavior.CurrentQuestIDs.Clear();
+        QuestBehavior.CurrentQuestIDs.AddRange(uniqueQuests.Select(q => q.ID));
+        WizardCollection.UpdateCharacterQuestBehavior(this);
     }
 
     public void Dispose() =>
