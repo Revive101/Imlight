@@ -534,6 +534,28 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     }
 
     /// <summary>
+    /// Sent by a <see cref="VolumeComponent"/> to a player's session when the player entered
+    /// a quest-proximity volume and has one of that volume's goals active. The volume already
+    /// matched the goal to itself; the session only needs to complete it.
+    /// </summary>
+    public sealed class MSG_COMPLETEPROXIMITYGOAL : IServerMessage {
+
+        public byte MessageOrder { get; } = 63;
+        public byte ServiceID { get; } = 102;
+
+        /// <summary>
+        /// The ID of the quest instance that owns the goal the player just completed.
+        /// </summary>
+        public ulong QuestID;
+
+        /// <summary>
+        /// The ID of the goal instance the player just completed by entering the volume.
+        /// </summary>
+        public ulong GoalID;
+
+    }
+
+    /// <summary>
     /// Sent by a <see cref="SessionActor"/> to a <see cref="Zone"/> to request a zone transfer.
     /// </summary>
     public class MSG_ZONETRANSFER : IServerMessage {
