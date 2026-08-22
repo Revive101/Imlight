@@ -26,17 +26,20 @@
  * USAGE EXAMPLE:
  * 
  * NOTE:
+ * Collection goals (tally count > 1) consume the object on use; single-use goals
+ * leave the object in place and drive post-use state via completeResults.
  * 
  * TODO:
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/21/2025
+ * Last Updated: 08/22/2026
  */
 
 using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
+using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Game.WizBang;
 using Imlight.CoreLib.Game.Zone.Core;
@@ -59,7 +62,7 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
     public string InteractWizBang => null;
     public string DisplayKey => null;
 
-    private readonly Dictionary<string, List<ScavengeGoalTemplate>> _scavengeGoalsByQuest = [];
+    private readonly Dictionary<string, List<GoalTemplate>> _usageGoalsByQuest = [];
 
     public static bool ShouldAttachToEntity(CoreTemplate template)
         => template is GameObjectTemplate
@@ -71,7 +74,7 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
         }
 
         // If we did not find any quests with active usage goals, don't show the interaction option at all.
-        if (_scavengeGoalsByQuest.Count == 0) {
+        if (_usageGoalsByQuest.Count == 0) {
             yield break;
         }
 
@@ -81,7 +84,7 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
             yield break;
         }
 
-        // Only show interaction option if player has an active scavenge goal that matches this object.
+        // Only show interaction option if player has an active usage goal that matches this object.
         if (HasActiveMatchingUsageGoal(playerCharacter)) {
             yield return new InteractableOption { m_serviceName = ServiceName };
         }
@@ -96,29 +99,29 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
         NpcIcon = gameObjectTemplate.m_sIcon;
         NpcNameKey = gameObjectTemplate.m_displayName;
 
-        // Get goals that use this interact component.
-        var questTemplates = QuestTemplateCollection
-            .GetAllQuests()
-            .Where(x => x is not null)
-            .ToList();
+        // Register every usage goal whose client tags name this object; the object is
+        // interactable only while one of those goals is active (see GetServiceOptions).
+        foreach (var qTemplate in QuestTemplateCollection.GetAllQuests()) {
+            if (qTemplate is null) {
+                continue;
+            }
 
-        foreach (var qTemplate in questTemplates) {
-            foreach (var goal in qTemplate.m_goals.OfType<ScavengeGoalTemplate>()) {
-                if (DoesGoalMatchObject(gameObjectTemplate, goal)) {
-                    if (_scavengeGoalsByQuest.TryGetValue(qTemplate.m_questName, out var goalList)) {
-                        return;
-                    }
-
-                    goalList = [];
-                    _scavengeGoalsByQuest[qTemplate.m_questName] = goalList;
-                    goalList.Add(goal);
+            foreach (var goal in qTemplate.m_goals) {
+                if (goal.m_goalType != GOAL_TYPE.GOAL_TYPE_USAGE || !DoesGoalMatchObject(gameObjectTemplate, goal)) {
+                    continue;
                 }
+
+                if (!_usageGoalsByQuest.TryGetValue(qTemplate.m_questName, out var goalList)) {
+                    goalList = [];
+                    _usageGoalsByQuest[qTemplate.m_questName] = goalList;
+                }
+                goalList.Add(goal);
             }
         }
     }
 
     public void OnServiceInteraction(IActorRef playerActor, Wizard playerCharacter, CoreObject playerObject, uint serviceOptionIndex) {
-        // Find the first active goal that matches this object's adjectives.
+        // Find the first active goal that matches this object's client tags.
         // This ensures we only complete one goal per interaction, even if multiple goals match.
         var activeGoalData = FindActiveMatchingGoal(playerCharacter);
         if (activeGoalData == null) {
@@ -140,23 +143,31 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
             playerActor.Tell(goalCompleteMsg);
         }
 
-        // Do not delete the object! Sometimes select objects will not be on path,
-        // meaning once we destroy them they won't respawn.
-        // Instead, let the quest template itself decide how to handle the object post-interaction.
-        //Entity.DeleteObject();
+        // Collection goals (tally count > 1, e.g. the Triton cogs) consume the object:
+        // each use removes that instance from the world. Single-use objects (levers,
+        // fairy cages) persist and manage their own post-use state via the goal's
+        // completeResults (dyna-mods).
+        if (goalMax > 1) {
+            var leaveServiceRangeMsg = new GAME_5_PROTOCOL.MSG_LEAVESERVICERANGE {
+                MobileID = Entity.ActiveGameObject.m_globalID.Full
+            };
+            playerActor.Tell(leaveServiceRangeMsg);
+
+            Entity.DeleteObject();
+        }
     }
 
     private bool HasActiveMatchingUsageGoal(Wizard playerCharacter)
         => FindActiveMatchingGoal(playerCharacter) != null;
 
-    private (QuestInstance Quest, ScavengeGoalTemplate Goal, GoalInstance GoalProgress)? FindActiveMatchingGoal(Wizard playerCharacter) {
-        var questsWithActiveScavengeGoals = GetQuestsWithActiveUsageGoals(playerCharacter);
-        if (questsWithActiveScavengeGoals == null) {
+    private (QuestInstance Quest, GoalTemplate Goal, GoalInstance GoalProgress)? FindActiveMatchingGoal(Wizard playerCharacter) {
+        var questsWithActiveUsageGoals = GetQuestsWithActiveUsageGoals(playerCharacter);
+        if (questsWithActiveUsageGoals == null) {
             return null;
         }
 
-        foreach (var quest in questsWithActiveScavengeGoals) {
-            if (!_scavengeGoalsByQuest.TryGetValue(quest.QuestName, out var goals)) {
+        foreach (var quest in questsWithActiveUsageGoals) {
+            if (!_usageGoalsByQuest.TryGetValue(quest.QuestName, out var goals)) {
                 continue;
             }
 
@@ -187,12 +198,7 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
                && goalProgress.CurrentProgress != int.MaxValue
                && (goalName == null || goalProgress.GoalName == goalName);
 
-    private static bool DoesGoalMatchObject(GameObjectTemplate gameObjectTemplate, ScavengeGoalTemplate goal) {
-        // Determine if this goal's scavenge adjectives match any of the object's adjectives.
-        var ourAdjs = gameObjectTemplate.m_adjectiveList;
-        var goalAdjs = goal.m_itemAdjectives;
-
-        return ourAdjs != null && goalAdjs != null && ourAdjs.Any(goalAdjs.Contains);
-    }
+    private static bool DoesGoalMatchObject(GameObjectTemplate gameObjectTemplate, GoalTemplate goal)
+        => goal.m_clientTags?.Contains(gameObjectTemplate.m_objectName) == true;
 
 }
