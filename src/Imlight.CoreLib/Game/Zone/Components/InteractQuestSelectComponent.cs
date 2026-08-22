@@ -130,18 +130,15 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
 
         var (quest, goal, goalProgress) = activeGoalData.Value;
 
-        // Increment the progress for this goal using the proper quest service method.
-        playerCharacter.IncrementQuestGoal(quest.QuestName, goal.m_goalName);
+        // Route the use through the quest service: it increments the tally, reports the
+        // new count to the client (progress SENDGOAL), and completes the goal at the cap.
+        var goalCompleteMsg = new CHARACTER_103_PROTOCOL.MSG_COMPLETEUSAGEGOAL {
+            QuestID = quest.ID,
+            GoalID = goalProgress.ID,
+        };
+        playerActor.Tell(goalCompleteMsg);
 
-        // Check if the goal was completed after incrementing.
         var goalMax = goal.m_tallyCounter?.m_count ?? 1;
-        if (goalProgress.CurrentProgress >= goalMax) {
-            var goalCompleteMsg = new CHARACTER_103_PROTOCOL.MSG_COMPLETEUSAGEGOAL {
-                QuestID = quest.ID,
-                GoalID = goalProgress.ID,
-            };
-            playerActor.Tell(goalCompleteMsg);
-        }
 
         // Collection goals (tally count > 1, e.g. the Triton cogs) consume the object:
         // each use removes that instance from the world. Single-use objects (levers,

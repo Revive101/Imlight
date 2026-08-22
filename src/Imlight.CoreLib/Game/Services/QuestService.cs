@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 04/01/2026
+ * Last Updated: 08/22/2026
  */
 
 using Akka.Actor;
@@ -224,7 +224,16 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             return;
         }
 
-        CompleteGoal(qInstance, gTemplate);
+        wizard.IncrementQuestGoal(qInstance.QuestName, gTemplate.m_goalName);
+
+        var goalMax = gTemplate.m_tallyCounter?.m_count ?? 1;
+        if (gInstance.CurrentProgress >= goalMax) {
+            CompleteGoal(qInstance, gTemplate);
+
+            return;
+        }
+
+        SendGoalMessage(gTemplate, qInstance, 2);
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_COMPLETEPROXIMITYGOAL))]
