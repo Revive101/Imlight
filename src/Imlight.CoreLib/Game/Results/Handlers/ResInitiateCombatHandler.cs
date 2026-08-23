@@ -64,8 +64,15 @@ internal sealed class ResInitiateCombatHandler : BaseResultHandler<ResInitiateCo
             PlayerGameObject = context.GetPlayerObj(),
         };
         var targetResponse = zoneActor
-            .Ask<ZONE_102_PROTOCOL.MSG_QUERYNEARESTDUELTARGETRSP>(targetQuery, queryTimeout).Result;
-        if (targetResponse?.CreatureActor is null) {
+            .Ask<ZONE_102_PROTOCOL.MSG_QUERYNEARESTDUELTARGETRSP>(targetQuery, queryTimeout);
+        if (targetResponse is null) {
+            Logger.Error("Handler failed to retrieve nearest duel target within {0} seconds.",
+                Logger.Args(QUERY_TARGET_TIMEOUT_SECONDS));
+
+            return false;
+        }
+
+        if (targetResponse.Result.CreatureActor is null) {
             Logger.Debug("No dueling creature in aggro range; skipping combat initiation.");
             return true;
         }
@@ -73,7 +80,7 @@ internal sealed class ResInitiateCombatHandler : BaseResultHandler<ResInitiateCo
         var startMsg = new ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL {
             StartingParticipants = new Dictionary<IActorRef, CoreObject> {
                 { context.GetPlayerRef(), context.GetPlayerObj() },
-                { targetResponse.CreatureActor, targetResponse.CreatureObject },
+                { targetResponse.Result.CreatureActor, targetResponse.Result.CreatureObject },
             },
         };
         zoneActor.Tell(startMsg);
