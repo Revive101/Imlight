@@ -56,6 +56,8 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
         "WC-TUT-C05-001", "WC-TUT-C08-001", "WC-TUT-C03-001", "WC-TUT-C03-002",
         "WC-TUT-C09-014", "WC-TUT-C09-016",
     ];
+    private const uint INVENTORY_ADD_SERIALIZATION_FLAGS =
+        (uint) (PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit);
     private static readonly CoreObjectSerializer s_configureItemSerializer
         = new(behaviors: SerializerFlags.None);
 
@@ -620,7 +622,7 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
     }
 
     private void SendInventoryAdd(Wizard wizard, WizClientObjectItem item) {
-        if (!s_configureItemSerializer.Serialize(item, 1, out var serializedItem)) {
+        if (!s_configureItemSerializer.Serialize(item, INVENTORY_ADD_SERIALIZATION_FLAGS, out var serializedItem)) {
             Logger.Error("Failed to serialize starter kit item {0} for inventory-add.",
                 Logger.Args(item.m_globalID.Full));
 
@@ -641,7 +643,7 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
             return;
         }
 
-        if (!s_configureItemSerializer.Serialize(kitItem, 1, out var serializedItem)) {
+        if (!s_configureItemSerializer.Serialize(kitItem, INVENTORY_ADD_SERIALIZATION_FLAGS, out var serializedItem)) {
             Logger.Error("ConfigurePlayer: failed to serialize item {0} for inventory-add.",
                 Logger.Args(kitItem.m_globalID.Full));
 

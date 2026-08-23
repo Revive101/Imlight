@@ -37,7 +37,7 @@
  * 
  * Created by: Jay
  * Version: KALI 1.0
- * Last Updated: 08/19/2026
+ * Last Updated: 08/22/2026
  */
 
 using System;
@@ -60,6 +60,8 @@ namespace Imlight.CoreLib.Game.DropTables;
 public static class LootGranter {
 
     private const uint LOOT_LIST_SERIALIZATION_FLAGS = 4;
+    private const uint INVENTORY_ADD_SERIALIZATION_FLAGS =
+        (uint) (PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit);
     private static readonly CoreObjectSerializer s_itemSerializer = new(behaviors: SerializerFlags.None);
 
     /// <summary>
@@ -158,7 +160,7 @@ public static class LootGranter {
     }
 
     private static void SendInventoryAdd(IActorRef playerActor, Wizard wizard, WizClientObjectItem item) {
-        if (!s_itemSerializer.Serialize(item, 1, out var serializedItem)) {
+        if (!s_itemSerializer.Serialize(item, INVENTORY_ADD_SERIALIZATION_FLAGS, out var serializedItem)) {
             Logger.Error("Failed to serialize reward item {0} for inventory-add.",
                 Logger.Args(item.m_globalID.Full));
 
