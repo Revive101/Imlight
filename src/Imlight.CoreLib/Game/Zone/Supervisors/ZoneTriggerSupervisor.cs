@@ -23,6 +23,8 @@ using Akka.Actor;
 using Nito.AsyncEx.Synchronous;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
+using Imlight.CoreLib.Game.Requirements;
+using Imlight.CoreLib.Game.Requirements.Contexts;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
@@ -42,6 +44,8 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
     private static readonly bool s_randomizeGateways 
         = ConfigurationManager.Settings["April Fools.RandomizeGateways"].AsBool();
 
+    private readonly List<(Trigger Trigger, IActorRef Actor)> _orderedTriggers = [];
+
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS))]
     public override void ReceiveZoneLoadResults(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS message) {
         // Triggers are stored in the client data, except for zone transfers.
@@ -51,8 +55,12 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
         var spawners = message.SpawnData.m_spawners;
         UpdateSpawnResultTriggers(ref replacedTriggers, spawners, message.PathData.m_pathList, message.NodeData.m_nodeList);
 
+        _orderedTriggers.Clear();
         foreach (var trigger in replacedTriggers) {
-            _ = CreateTriggerActor(trigger);
+            var triggerActor = CreateTriggerActor(trigger);
+            if (triggerActor is not null) {
+                _orderedTriggers.Add((trigger, triggerActor));
+            }
         }
 
         // Inform the zone that we have finished initializing all objects.
@@ -62,10 +70,49 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_POSTEVENT))]
     private void ReceivePostEvent(ZONE_102_PROTOCOL.MSG_POSTEVENT message) {
-        // Forward the event to all triggers.
-        foreach (var trigger in EntityActors) {
-            trigger.Forward(message);
+        // Client wads pair multiple triggers on the same event; every passing trigger fires
+        // (their results are independent), but paired teleporter triggers must not both win:
+        // only the first ResTeleport in wad order may execute.
+        var teleportDispatched = false;
+        foreach (var (trigger, triggerActor) in _orderedTriggers) {
+            if (trigger.m_fireEvents is null || !trigger.m_fireEvents.Any(x => x == message.EventName)) {
+                continue;
+            }
+
+            if (!EvaluateRequirements(trigger, message)) {
+                continue;
+            }
+
+            var hasTeleportResult = trigger.m_results?.m_results?.Any(result => result is ResTeleport) == true;
+            var suppressTeleportResults = hasTeleportResult && teleportDispatched;
+            teleportDispatched |= hasTeleportResult;
+
+            triggerActor.Forward(new ZONE_102_PROTOCOL.MSG_POSTEVENT {
+                EventName = message.EventName,
+                PlayerActor = message.PlayerActor,
+                PlayerGameObject = message.PlayerGameObject,
+                SuppressTeleportResults = suppressTeleportResults,
+            });
         }
+    }
+
+    private bool EvaluateRequirements(Trigger trigger, ZONE_102_PROTOCOL.MSG_POSTEVENT message) {
+        if (trigger.m_requirements?.m_requirements is null || trigger.m_requirements.m_requirements.Count == 0) {
+            return true;
+        }
+
+        var queryWizardMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
+        var wizardResponse = message.PlayerActor.Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(queryWizardMsg).Result;
+
+        return RequirementDispatcher.EvaluateRequirements(
+            requirements: trigger.m_requirements,
+            context: new ZoneRequirementContext(
+                trigger.m_requirements,
+                message.PlayerActor,
+                message.PlayerGameObject,
+                wizardResponse.Wizard,
+                ZoneRef,
+                trigger.m_triggerName));
     }
 
     private void UpdateSpawnResultTriggers(ref List<Trigger> clientTriggers, List<SpawnObject> spawners, List<PathObjectTemplate> paths, List<NodeObject> nodes) {

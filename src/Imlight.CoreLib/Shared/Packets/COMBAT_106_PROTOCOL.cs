@@ -208,5 +208,45 @@ public sealed class COMBAT_106_PROTOCOL : IServerProtocol {
         public IActorRef Actor;
 
     }
-    
+
+    internal sealed class MSG_CHEATINSTAWIN : IServerMessage {
+
+        public byte MessageOrder => 21;
+        public byte ServiceID => 106;
+
+    }
+
+    internal sealed class MSG_CHEATTOGGLECINEMATICS : IServerMessage {
+
+        public byte MessageOrder => 22;
+        public byte ServiceID => 106;
+
+    }
+
+    internal sealed class MSG_CHEATINSTANTCINEMATICS : IServerMessage {
+
+        public byte MessageOrder => 23;
+        public byte ServiceID => 106;
+
+        public bool Enabled;
+
+    }
+
+    internal sealed class MSG_CHEATTOGGLENOFIZZLE : IServerMessage {
+
+        public byte MessageOrder => 24;
+        public byte ServiceID => 106;
+
+    }
+
+    internal sealed class MSG_CHEATNOFIZZLE : IServerMessage {
+
+        public byte MessageOrder => 25;
+        public byte ServiceID => 106;
+
+        public bool Enabled;
+        public IActorRef Actor;
+
+    }
+
 }

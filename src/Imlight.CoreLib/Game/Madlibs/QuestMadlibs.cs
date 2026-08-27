@@ -32,7 +32,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/17/2025
+ * Last Updated: 08/21/2026
  */
 
 using Imcodec.ObjectProperty.TypeCache;
@@ -96,19 +96,33 @@ internal static class QuestMadlibs {
     private static MadlibBlock GetMadlibBlockForPersonaGoal(GoalTemplate gTemplate) {
         string firstName = string.Empty;
         string lastName = string.Empty;
+        string title = string.Empty;
+        string nickname = string.Empty;
 
-        // Try to resolve the NPC's display name from the Completion dialog entry.
         if (gTemplate.m_dialogList is ActorDialogList dialogList) {
             var completionDialogEntry = dialogList.m_dialogs
                 .FirstOrDefault(de => de.m_dialogTag == "Completion");
-            var templateId = completionDialogEntry?.m_dialogEntries
-                ?.FirstOrDefault()?.m_actorTemplateID ?? 0;
 
-            if (templateId != 0) {
-                var npcTemplate = CoreObjectFactory.GetCoreTemplate(templateId);
-                if (npcTemplate is GameObjectTemplate npcGameObjectTemplate) {
-                    var npcFullname = npcGameObjectTemplate.m_displayName;
-                    (firstName, lastName) = Locale.GetEnglishNameKeys(npcFullname);
+            // Retail sends the Completion dialog's own NPC madlib block keys;
+            // the blocks are ordered to match the entries.
+            var npcBlock = completionDialogEntry?.m_madlibs?.FirstOrDefault()?.m_madlibBlock;
+            if (npcBlock is not null) {
+                firstName = GetStringArgument(npcBlock, "FIRSTNAME") ?? firstName;
+                lastName = GetStringArgument(npcBlock, "LASTNAME") ?? lastName;
+                title = GetStringArgument(npcBlock, "TITLE") ?? title;
+                nickname = GetStringArgument(npcBlock, "NICKNAME") ?? nickname;
+            }
+            else {
+                // Fallback: resolve the display name from the entry's actor template.
+                var templateId = completionDialogEntry?.m_dialogEntries
+                    ?.FirstOrDefault()?.m_actorTemplateID ?? 0;
+
+                if (templateId != 0) {
+                    var npcTemplate = CoreObjectFactory.GetCoreTemplate(templateId);
+                    if (npcTemplate is GameObjectTemplate npcGameObjectTemplate) {
+                        var npcFullname = npcGameObjectTemplate.m_displayName;
+                        (firstName, lastName) = Locale.GetEnglishNameKeys(npcFullname);
+                    }
                 }
             }
         }
@@ -133,7 +147,11 @@ internal static class QuestMadlibs {
                 },
                 new MadlibArgT_ByteString {
                     m_madlibToken = "TITLE",
-                    m_madlibArgument = "",
+                    m_madlibArgument = title
+                },
+                new MadlibArgT_ByteString {
+                    m_madlibToken = "NICKNAME",
+                    m_madlibArgument = nickname
                 },
                 new MadlibArgT_ByteString {
                     m_madlibToken = "FULLNAME",
@@ -145,6 +163,10 @@ internal static class QuestMadlibs {
 
         return madLibs;
     }
+
+    private static string GetStringArgument(MadlibBlock block, string token)
+        => block.m_madlibs?.OfType<MadlibArgT_ByteString>()
+            .FirstOrDefault(arg => arg.m_madlibToken == token)?.m_madlibArgument;
 
     private static MadlibBlock GetMadlibBlockForTalliedGoal(GoalTemplate gTemplate, GoalInstance gInstance)
         => new() {

@@ -42,7 +42,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 08/14/2026
+ * Last Updated: 08/19/2026
  */
 
 using System;
@@ -138,8 +138,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     private bool _isActive;
     private bool _awaitingCombatMoves;
     private TutorialDuelDirector _tutorialDirector;
-    // Seconds of cinematics before a caster's cast; SummonMinion adds the animation delay to it.
     internal float CurrentActionCinematicOffsetSeconds;
+    internal bool CheatInstantCinematics { get; set; }
 
     public static bool ShouldAttachToEntity(CoreTemplate template)
         => template is GameObjectTemplate gameObjectTemplate
@@ -286,6 +286,10 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_NEWROUND))]
     private void ReceiveNewRound(COMBAT_106_PROTOCOL.MSG_NEWROUND message) {
+        if (!_isActive) {
+            return;
+        }
+
         Logger.Debug("Duel {0} | New round {1} at {2}",
             Logger.Args(Duel.m_duelID.Full, Duel.m_roundNum, DateTime.Now.ToString("HH:mm:ss")));
 
@@ -471,6 +475,10 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ROUNDRESOLUTION))]
     private void ReceiveRoundResolution(COMBAT_106_PROTOCOL.MSG_ROUNDRESOLUTION message) {
+        if (!_isActive) {
+            return;
+        }
+
         // Iterate through dead creature participants and remove them from the duel.
         // Players can be healed and therefore don't need to be removed.
         EnactActionOnSubCircles(circle => {
@@ -1090,6 +1098,16 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         var actor = caster.ParticipantActor;
         var participantObjId = caster.ParticipantObject.m_globalID;
 
+        // Fleeing drains the player's mana; creature participants have no wizard.
+        if (caster._wizard is not null) {
+            var clientMaxMana = caster._wizard.GameStats.GetClientTypeAlternative().m_baseMana;
+            caster._wizard.UpdateMana(0);
+            actor.Tell(new WIZARD_12_PROTOCOL.MSG_UPDATEMANA {
+                Mana = 0,
+                MaxMana = clientMaxMana,
+            });
+        }
+
         // Inform the client that they've been removed from this duel.
         var defeatMsg = new COMBAT_106_PROTOCOL.MSG_COMBATDEFEAT();
         actor.Tell(defeatMsg);
@@ -1165,6 +1183,37 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
         circle.DoPipGain();
     });
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_CHEATINSTAWIN))]
+    private void ReceiveCheatInstaWin(COMBAT_106_PROTOCOL.MSG_CHEATINSTAWIN message) {
+        if (!_isActive) {
+            return;
+        }
+
+        // EndDuel derives the winner from the alive creature count, so zero them first.
+        Timers.CancelAll();
+        EnactActionOnSubCircles(circle => {
+            if (circle.OccupiedTeam == CombatTeam.Monster) {
+                circle.DamageParticipant(int.MaxValue);
+            }
+        });
+
+        EndDuel();
+    }
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_CHEATINSTANTCINEMATICS))]
+    private void ReceiveCheatInstantCinematics(COMBAT_106_PROTOCOL.MSG_CHEATINSTANTCINEMATICS message)
+        => CheatInstantCinematics = message.Enabled;
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_CHEATNOFIZZLE))]
+    private void ReceiveCheatNoFizzle(COMBAT_106_PROTOCOL.MSG_CHEATNOFIZZLE message) {
+        var subCircle = SubCircles.FirstOrDefault(x => x.ParticipantActor == message.Actor);
+        if (subCircle is null) {
+            return;
+        }
+
+        subCircle.CheatNoFizzle = message.Enabled;
+    }
 
     private void EndDuel() {
         // The duel has ended. Inform the clients of the result.

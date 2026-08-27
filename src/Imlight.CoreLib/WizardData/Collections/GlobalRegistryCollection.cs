@@ -51,35 +51,13 @@ public static class GlobalRegistryCollection {
     }
 
     /// <summary>
-    /// Checks if the global registry requirements are met.
+    /// Checks whether a single global registry requirement's value matches. The
+    /// AND/OR/NOT semantics are applied by RequirementDispatcher, the single
+    /// requirement evaluation engine.
     /// </summary>
-    /// <param name="values"> The requirements to check. </param>
-    /// <param name="operatorType"> The operator type to use. </param>
-    /// <returns> True if all requirements are met, false otherwise. </returns>
-    public static bool CheckGlobalRegistryRequirements(RequirementList list) {
-        var allMatched = true;
-        var values = list.m_requirements;
-        var operatorType = list.m_operator;
-
-        foreach (var requirement in values) {
-            if (requirement is ReqGlobalRegistryValue globalReq) {
-                if (!GlobalRegistryValueMet(globalReq)
-                    && operatorType == Operator.ROP_AND) {
-                    return false;
-                }
-
-                allMatched = allMatched && !globalReq.m_applyNOT;
-            }
-            else {
-                Logger.Warning("Holy!!! We found a spawn requirement that isn't a global registry value. " +
-                            "This is a problem. Let Jooty know.");
-            }
-        }
-
-        return allMatched;
-    }
-
-    private static bool GlobalRegistryValueMet(ReqGlobalRegistryValue value) {
+    /// <param name="value"> The requirement to check. </param>
+    /// <returns> True if the value matches its operator, false otherwise. </returns>
+    public static bool GlobalRegistryValueMet(ReqGlobalRegistryValue value) {
         var globalValue = GetRegistryEntry(value.m_entryName);
 
         switch (value.m_operatorType) {

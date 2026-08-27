@@ -21,7 +21,7 @@
  * 
  * PURPOSE:
  * Manages spelldecks for combat-enabled creature entities, initializing 
- * their spellbooks based on specific behavior templates.
+ * their spellbooks from both client spell names and SpiralDB deck data.
  * 
  * USAGE EXAMPLE:
  * var deckComponent = new CombatCreatureDeckComponent(zoneEntity);
@@ -34,7 +34,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 08/15/2026
  */
 
 using System.Collections.Generic;
@@ -77,91 +77,67 @@ internal sealed class CombatCreatureDeckComponent : ZoneEntityComponent, ICompon
         // MobDeckBehaviorTemplate stores spell names directly, if it exists.
         var mobDeck = allBehaviors.OfType<MobDeckBehaviorTemplate>().FirstOrDefault();
         if (mobDeck != null) {
-            InitializeSpellbookFromNames(mobDeck.m_spellList);
+            AddSpellsFromNames(mobDeck.m_spellList);
         }
-        else {
-            // DeckBehaviorTemplate stores a deck name that maps to a SpiralDB spellbook.
-            var deckBehavior = allBehaviors.OfType<DeckBehaviorTemplate>().FirstOrDefault();
-            if (deckBehavior != null) {
-                InitializeSpellbook(GetCreatureSpellbook(deckBehavior.m_defaultDeck));
-            }
-            else {
-                // Neither deck type found — fall back to the default spellbook so the
-                // creature can at least cast basic spells instead of passing all the time.
-                Logger.Warning(
-                    "{0} {1} has no deck behavior — falling back to default spellbook.",
-                    Logger.Args(nameof(ZoneEntity), entity.ActiveGameObject.m_debugName)
-                );
-                InitializeSpellbook(CreatureSpellbookCollection.GetDefaultCreatureSpellbook());
+
+        // DeckBehaviorTemplate stores a deck name that maps to a SpiralDB spellbook.
+        // The deck is the union of both sources: the client's own spell names and the
+        // SpiralDB spellbook named by the deck behavior. Either source may be missing.
+        var deckBehavior = allBehaviors.OfType<DeckBehaviorTemplate>().FirstOrDefault();
+        if (deckBehavior is not null && !string.IsNullOrEmpty(deckBehavior.m_defaultDeck)) {
+            var spellbook = CreatureSpellbookCollection.GetCreatureSpellbook(deckBehavior.m_defaultDeck);
+            if (spellbook is not null) {
+                AddSpellbookSpells(spellbook);
             }
         }
 
-        // A creature with an empty deck (deck absent from SpiralDB, or a mob deck with no usable
-        // names) falls back to the default spellbook so it can cast instead of passing every round.
+        // A creature with an empty deck (no usable client names and no SpiralDB deck) falls
+        // back to the default spellbook so it can cast instead of passing every round.
         if (Spells.Count == 0) {
-            InitializeSpellbook(CreatureSpellbookCollection.GetDefaultCreatureSpellbook());
+            Logger.Warning(
+                "{0} {1} has no usable spells from its client deck or SpiralDB deck, falling back to the default spellbook.",
+                Logger.Args(nameof(ZoneEntity), entity.ActiveGameObject.m_debugName)
+            );
+            AddSpellbookSpells(CreatureSpellbookCollection.GetDefaultCreatureSpellbook());
         }
     }
 
-    private void InitializeSpellbook(CreatureSpellbook spellbook) {
+    private void AddSpellbookSpells(CreatureSpellbook spellbook) {
         foreach (var spellId in spellbook.SpellTemplateIds) {
-            var spell = SpellFactory.GetSpell(spellId);
-
-            if (spell == null) {
-                Logger.Error(
-                    "{0} {1} is missing {2} (SpellId: {3})",
-                    Logger.Args(nameof(ZoneEntity), 
-                                Entity.ActiveGameObject.m_debugName, 
-                                nameof(spell), 
-                                spellId
-                    )
-                );
-
-                continue;
-            }
-
-            // Creatures have infinite spells in their spellbook.
-            var spellData = new SpellData() {
-                m_templateID = spellId,
-                m_quantity = 9999,
-            };
-            Spells.Add(spellData);
+            AddSpell(spellId);
         }
     }
 
-    private void InitializeSpellbookFromNames(List<ByteString> spellNames) {
+    private void AddSpellsFromNames(List<ByteString> spellNames) {
         foreach (var spellName in spellNames) {
             if (spellName.ToString().Length == 0) {
                 continue;
             }
 
+            // Unknown names are skipped; SpellFactory logs the miss.
             var spell = SpellFactory.GetSpell(spellName.ToString());
-            if (spell == null) {
-                Logger.Error(
-                    "{0} {1} has unknown spell \"{2}\" in MobDeckBehaviorTemplate.",
-                    Logger.Args(nameof(ZoneEntity),
-                                Entity.ActiveGameObject.m_debugName,
-                                spellName)
-                );
-                continue;
+            if (spell is not null) {
+                AddSpell(spell.m_templateID);
             }
-
-            Spells.Add(new SpellData {
-                m_templateID = spell.m_templateID,
-                m_quantity = 9999,
-            });
         }
     }
 
-    private static CreatureSpellbook GetCreatureSpellbook(string deckName) {
-        if (string.IsNullOrEmpty(deckName)) {
-            return CreatureSpellbookCollection.GetDefaultCreatureSpellbook();
+    private void AddSpell(uint spellId) {
+        // Both sources may list the same spell; creatures carry one entry per spell.
+        if (Spells.Any(x => x.m_templateID == spellId)) {
+            return;
         }
 
-        var creatureSpellbook = CreatureSpellbookCollection.GetCreatureSpellbook(deckName);
-        creatureSpellbook ??= CreatureSpellbookCollection.GetDefaultCreatureSpellbook();
+        // Unknown spell ids are skipped; SpellFactory logs the miss.
+        if (SpellFactory.GetSpell(spellId) is null) {
+            return;
+        }
 
-        return creatureSpellbook;
+        // Creatures have infinite spells in their spellbook.
+        Spells.Add(new SpellData {
+            m_templateID = spellId,
+            m_quantity = 9999,
+        });
     }
 
 }

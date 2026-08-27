@@ -529,6 +529,29 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public ByteString EventName;
         public IActorRef PlayerActor;
         public CoreObject? PlayerGameObject;
+        public bool SuppressTeleportResults;
+
+    }
+
+    /// <summary>
+    /// Sent by a <see cref="VolumeComponent"/> to a player's session when the player entered
+    /// a quest-proximity volume and has one of that volume's goals active. The volume already
+    /// matched the goal to itself; the session only needs to complete it.
+    /// </summary>
+    public sealed class MSG_COMPLETEPROXIMITYGOAL : IServerMessage {
+
+        public byte MessageOrder { get; } = 63;
+        public byte ServiceID { get; } = 102;
+
+        /// <summary>
+        /// The ID of the quest instance that owns the goal the player just completed.
+        /// </summary>
+        public ulong QuestID;
+
+        /// <summary>
+        /// The ID of the goal instance the player just completed by entering the volume.
+        /// </summary>
+        public ulong GoalID;
 
     }
 
@@ -841,6 +864,33 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte ServiceID { get; } = 102;
 
         public WizZoneData ZoneData;
+
+    }
+
+    /// <summary>
+    /// Sent by a result handler to a <see cref="Zone"/> to find the dueling creature that has
+    /// the given player in its aggro radius, e.g. for <c>ResInitiateCombat</c>. Any number of
+    /// creatures may reply; the first reply wins.
+    /// </summary>
+    public sealed class MSG_QUERYNEARESTDUELTARGET : IServerMessage {
+
+        public byte MessageOrder { get; } = 57;
+        public byte ServiceID { get; } = 102;
+
+        public CoreObject PlayerGameObject;
+
+    }
+
+    /// <summary>
+    /// Sent by a dueling creature in response to <see cref="MSG_QUERYNEARESTDUELTARGET"/>.
+    /// </summary>
+    public sealed class MSG_QUERYNEARESTDUELTARGETRSP : IServerMessage {
+
+        public byte MessageOrder { get; } = 58;
+        public byte ServiceID { get; } = 102;
+
+        public IActorRef CreatureActor;
+        public CoreObject CreatureObject;
 
     }
 

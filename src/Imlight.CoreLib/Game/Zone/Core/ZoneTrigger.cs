@@ -38,7 +38,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 08/21/2026
  */
 
 using System;
@@ -108,7 +108,16 @@ public sealed class ZoneTrigger(IActorRef zoneRef, Zone zone, Trigger trigger)
             }
         }
 
-        ResultDispatcher.ExecuteResults(Context, TriggerData.m_results, message.PlayerActor, message.PlayerGameObject,
+        // Paired teleporter triggers share an event; the supervisor keeps only the first
+        // ResTeleport, so the player is never raced between destinations.
+        var results = TriggerData.m_results;
+        if (message.SuppressTeleportResults && results?.m_results is { Count: > 0 }) {
+            results = new ResultList {
+                m_results = results.m_results.Where(result => result is not ResTeleport).ToList()
+            };
+        }
+
+        ResultDispatcher.ExecuteResults(Context, results, message.PlayerActor, message.PlayerGameObject,
                                        Sender, ZoneRef, triggerName: TriggerData.m_triggerName);
     }
 

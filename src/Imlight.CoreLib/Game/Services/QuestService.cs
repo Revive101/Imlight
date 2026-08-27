@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 04/01/2026
+ * Last Updated: 08/22/2026
  */
 
 using Akka.Actor;
@@ -61,7 +61,7 @@ namespace Imlight.CoreLib.Game.Services;
 internal class QuestService(SessionActor sessionActor) : MessageService(sessionActor) {
 
     private const float DEFAULT_KILL_COLLECT_CHANCE = 0.5f;
-    private const string QUEST_COMPLETED_ENTRY = "Completed";
+    private const string QUEST_COMPLETED_ENTRY = "Complete";
 
     private readonly List<QuestTemplate> _cachedQuestOffers = [];
     private readonly List<QuestTemplate> _cachedQuestTemplates = [];
@@ -88,6 +88,10 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
     [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE))]
     private void ReceivePostAttach(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE message) {
         var wizard = GetActiveWizard();
+
+        // Drop quest instance IDs that no longer have a backing instance before
+        // any grant or waypoint logic runs on them.
+        wizard.QuestBehavior.PruneStaleQuestIds();
 
         // Dungeon quests are force-added on entry (a quest marked by a ReqInZone requirement for this
         // zone). Grant BEFORE the waypoint check so a fresh quest's enter-the-dungeon goal completes on
@@ -216,6 +220,67 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         if (gTemplate.m_goalType != GOAL_TYPE.GOAL_TYPE_USAGE) {
             Logger.Warning("Player '{0}' attempted to complete goal ID '{1}' for quest ID '{2}' but that goal is not a usage goal.",
                 Logger.Args(wizard.CharId, goalId, questId));
+
+            return;
+        }
+
+        wizard.IncrementQuestGoal(qInstance.QuestName, gTemplate.m_goalName);
+
+        var goalMax = gTemplate.m_tallyCounter?.m_count ?? 1;
+        if (gInstance.CurrentProgress >= goalMax) {
+            CompleteGoal(qInstance, gTemplate);
+
+            return;
+        }
+
+        SendGoalMessage(gTemplate, qInstance, 2);
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_COMPLETEPROXIMITYGOAL))]
+    private void ReceiveCompleteProximityGoal(ZONE_102_PROTOCOL.MSG_COMPLETEPROXIMITYGOAL message) {
+        // A volume component matched one of this player's active proximity goals to the
+        // volume they walked into; complete the goal it named.
+        var wizard = GetActiveWizard();
+        var qInstance = wizard.QuestBehavior.CurrentQuestInstances
+            .FirstOrDefault(q => q.ID == message.QuestID);
+        if (qInstance == null) {
+            Logger.Warning("Player '{0}' attempted to complete proximity goal ID '{1}' for quest ID '{2}' but does not have that quest active.",
+                Logger.Args(wizard.CharId, message.GoalID, message.QuestID));
+
+            return;
+        }
+
+        var gInstance = qInstance.GoalProgress
+            .FirstOrDefault(g => g.ID == message.GoalID);
+        if (gInstance == null || !qInstance.IsGoalActive(gInstance.GoalName)) {
+            Logger.Warning("Player '{0}' attempted to complete proximity goal ID '{1}' for quest ID '{2}' but does not have that goal active.",
+                Logger.Args(wizard.CharId, message.GoalID, message.QuestID));
+
+            return;
+        }
+
+        // Get the goal template for this goal.
+        var qTemplate = _cachedQuestTemplates
+            .FirstOrDefault(q => q.m_questName == qInstance.QuestName);
+        if (qTemplate == null) {
+            Logger.Error("Failed to find quest template for quest '{0}' when completing proximity goal ID '{1}'",
+                Logger.Args(qInstance.QuestName, message.GoalID));
+
+            return;
+        }
+
+        var gTemplate = qTemplate.m_goals
+            .FirstOrDefault(g => g.m_goalName == gInstance.GoalName);
+        if (gTemplate == null) {
+            Logger.Error("Failed to find goal template for goal '{0}' in quest '{1}' when completing proximity goal ID '{2}'",
+                Logger.Args(gInstance.GoalName, qInstance.QuestName, message.GoalID));
+
+            return;
+        }
+
+        if (gTemplate.m_goalType != GOAL_TYPE.GOAL_TYPE_WAYPOINT) {
+            Logger.Warning("Player '{0}' attempted to complete proximity goal ID '{1}' for quest ID '{2}' but that goal is not a waypoint goal.",
+                Logger.Args(wizard.CharId, message.GoalID, message.QuestID));
 
             return;
         }
@@ -629,7 +694,21 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             questName: questInstance.QuestName
         );
 
-        // Chain advance: completion stamps the "Completed" registry entry, which is the ReqHasEntry
+        // Fire the "you have learned a new spell!" cinematic for the spell rewards. Only the spells
+        // go here; the gold/XP/item popup is already sent by the drop table handlers (MSG_LOOT).
+        var spellRewards = new LootInfoList {
+            m_loot = []
+        };
+        AppendSpellRewards(spellRewards.m_loot, qTemplate, wizard);
+        if (spellRewards.m_loot.Count > 0
+            && _goalSerializer.Serialize(spellRewards, 1, out var spellRewardData)) {
+            SendToSocket(new WIZARD_12_PROTOCOL.MSG_QUESTREWARDS {
+                QuestID = questInstance.ID,
+                LootList = spellRewardData
+            });
+        }
+
+        // Chain advance: completion stamps the "Complete" registry entry, which is the ReqHasEntry
         // prerequisite of the next quest in the dungeon's chain.
         TryGrantDungeonQuests(wizard);
     }
@@ -941,7 +1020,45 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         // Convert the result into something we can send over the network.
         var convertedResults = DropTableConverter.ToLootInfoList(rollResult);
 
+        // Spell rewards live in the results, not the drop tables; surface the wizard's own school spell.
+        convertedResults.m_loot ??= [];
+        AppendSpellRewards(convertedResults.m_loot, qTemplate, playerWizard);
+
         return convertedResults;
+    }
+
+    /// <summary>
+    /// Adds the quest's spell rewards to a loot list for the reward previews. Gated results
+    /// are evaluated through the single requirement engine, so a wizard only sees their
+    /// own school's spell; without a wizard, gated results are skipped.
+    /// </summary>
+    internal static void AppendSpellRewards(List<LootInfo> loot, QuestTemplate qTemplate, Wizard playerWizard) {
+        foreach (var learnSpell in qTemplate.m_endResults.m_results.OfType<ResLearnSpell>()) {
+            if (learnSpell.m_templateID == 0) {
+                continue;
+            }
+
+            if (learnSpell.m_requirements is not null) {
+                if (playerWizard is null) {
+                    continue;
+                }
+
+                var requirementContext = new GenericRequirementContext(
+                    requirements: learnSpell.m_requirements,
+                    playerRef: null,
+                    playerObj: null,
+                    wizard: playerWizard
+                );
+                if (!RequirementDispatcher.EvaluateRequirements(learnSpell.m_requirements, requirementContext)) {
+                    continue;
+                }
+            }
+
+            loot.Add(new AddSpellLootInfo {
+                m_lootType = LOOT_TYPE.LOOT_TYPE_ADD_SPELL,
+                m_spellID = learnSpell.m_templateID,
+            });
+        }
     }
 
     private static AssociatedWorldsList GetAssociatedWorlds(QuestTemplate qTemplate) {
