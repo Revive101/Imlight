@@ -198,7 +198,7 @@ public static class WizardCollection {
     /// <param name="zoneDisplayName">The display name of the zone.</param>
     public static void UpdateCharacterZone(Wizard character, string zoneName, string zoneDisplayName) {
         UpdateCharacter(character.CharId, existingCharacter => {
-            existingCharacter.PreviousZone = existingCharacter.PreviousZone;
+            existingCharacter.PreviousZone = existingCharacter.Zone;
             existingCharacter.Zone = zoneName;
             existingCharacter.ZoneDisplayName = zoneDisplayName;
         });
