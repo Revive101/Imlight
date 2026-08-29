@@ -312,7 +312,7 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
         // hasn't had enough time to set its Wizard reference yet.
         var wizardObj = GetActiveGameObject();
         if (wizardObj is null) {
-            wizardObj = GetActiveWizard()?.GameObject;
+            wizardObj = GetActiveWizard()?.GetInitializedGameObject();
 
             if (wizardObj is null) {
                 throw new ServiceRetryException("Failed to get active game object for add effects broadcast.");
