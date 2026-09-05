@@ -161,7 +161,10 @@ internal class CharacterService(SessionActor parentActor) : MessageService(paren
         }
 
         // Tell the client we're going to start sending the character list.
-        SendToSocket(new LOGIN_7_PROTOCOL.MSG_STARTCHARACTERLIST());
+        SendToSocket(new LOGIN_7_PROTOCOL.MSG_STARTCHARACTERLIST() {
+            LoginServer = "Imlight.Login", // TODO: This should be sourced from elsewhere.
+            PurchasedCharacterSlots = account.PurchasedCharacterSlots,
+        });
 
         // For every character, we're going to serialize the document and send to the client.
         if (account.Characters.Count > 0) {

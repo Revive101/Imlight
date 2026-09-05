@@ -311,4 +311,26 @@ public static class AccountCollection {
         });
     }
 
+    /// <summary>
+    /// Adds a character slot to an account.
+    /// </summary>
+    /// <param name="accountId">The ID of the account.</param>
+    /// <returns></returns>
+    public static bool AddPurchasedCharacterSlot(ulong accountId) {
+        return UpdateAccount(accountId, account =>
+            ++account.PurchasedCharacterSlots);
+    }
+
+    /// <summary>
+    /// Remove a character slot from an account.
+    /// </summary>
+    /// <param name="accountId">The ID of the account.</param>
+    /// <returns></returns>
+    public static bool RemovePurchasedCharacterSlot(ulong accountId) {
+        return UpdateAccount(accountId, account => {
+            if (account.PurchasedCharacterSlots > 0)
+                --account.PurchasedCharacterSlots;
+        });
+    }
+
 }
