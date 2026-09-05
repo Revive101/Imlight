@@ -108,12 +108,17 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
             .Where(d => string.IsNullOrEmpty(d.ZoneName) 
                      || d.ZoneName.Equals(Entity.Zone.ZoneData.m_zoneName, System.StringComparison.OrdinalIgnoreCase))
             .ToList() ?? [];
+        string persistedState = null;
         foreach (var mod in relevantDynaMods) {
             // If the player has a dynamod that disables this object, do not spawn it for them.
             if (mod.ModState.Equals(DESPAWN_STATE_NAME, System.StringComparison.OrdinalIgnoreCase)) {
                 _playerIgnoreBecauseDynamod[suspect] = wizard;
 
                 return;
+            }
+
+            if (!mod.ModState.Equals(SPAWN_STATE_NAME, System.StringComparison.OrdinalIgnoreCase)) {
+                persistedState = mod.ModState;
             }
         }
 
@@ -136,6 +141,12 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
             // See: "You cannot send MSG_ADDOBJECT in regards to an object if
             // the client has not been told about it with MSG_NEWOBJECT."
             CreateObjectForPlayer(suspect);
+
+            // A dynamod state such as "IdleOpen" is only ever sent as a state change, so a player
+            // arriving in the zone has to be told again or the object reverts to its default.
+            if (persistedState is not null) {
+                Entity.ChangeStateExclusiveSender(persistedState, suspect);
+            }
 
             // Always add the player to the in-range list so the next
             // OnPlayerMove tick can correctly evaluate distance and send
@@ -208,18 +219,22 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ENTERSTATE))]
     public void ReceiveEnterState(ZONE_102_PROTOCOL.MSG_ENTERSTATE msg) {
-        // In the context of the RenderComponent, we only care if "On" or "Off" is the state.
         var isDespawn = msg.StateName.Equals(DESPAWN_STATE_NAME, System.StringComparison.OrdinalIgnoreCase);
         var isSpawn = msg.StateName.Equals(SPAWN_STATE_NAME, System.StringComparison.OrdinalIgnoreCase);
-        if (!isDespawn && !isSpawn) {
-            return;
-        }
 
-        // If so, despawn the object for the sender if the tag matches.
+        // If the tag matches, spawn or despawn the object for the sender.
         var zoneTag = msg.ObjectName;
         if (Entity.Info is not null && Entity.Info.m_zoneTag.Equals(zoneTag, System.StringComparison.OrdinalIgnoreCase)) {
             var player = msg.Sender;
             if (player is null) {
+                return;
+            }
+
+            // Any other state names an object state such as "IdleOpen". Only the client can act
+            // on it, and it never affects whether the object is spawned.
+            if (!isDespawn && !isSpawn) {
+                Entity.ChangeStateExclusiveSender(msg.StateName, player);
+
                 return;
             }
 
