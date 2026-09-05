@@ -26,7 +26,6 @@ using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.Math;
-using System.Collections.Generic;
 
 namespace Imlight.CoreLib.WizardData.Collections;
 
@@ -35,32 +34,81 @@ public static class WizardCollection {
     public const string CollectionName = "Wizards";
     private static readonly IDocumentStore s_store;
 
+    private const int WriteLaneCount = 1 << 8; // 256 lanes
+    private const ulong WriteLaneMask = WriteLaneCount - 1;
+    private static readonly object[] s_writeLanes =
+        Enumerable.Range(0, WriteLaneCount)
+            .Select(_ => new object())
+            .ToArray();
+
+    // Tracks the write lane held by the current thread.
+    // Prevents acquiring a different Wizard lane while one is already held.
+    [ThreadStatic]
+    private static int? s_heldWriteLane;
+    internal static bool HoldsWriteLane => s_heldWriteLane.HasValue;
+
     private static readonly TimeSpan s_nonStaleWaitTimeout
         = TimeSpan.FromSeconds(ConfigurationManager.Settings["Database.DatabaseWaitForNonStaleResultsTimeout"].AsByte(5));
 
     static WizardCollection()
         => s_store = PlayerDatabase.Instance.Store;
 
+    private static T WithWriteLane<T>(ulong charId, Func<T> write) {
+        var laneIndex = (int) (charId & WriteLaneMask);
+        if (s_heldWriteLane is { } heldLane && heldLane != laneIndex)
+            throw new InvalidOperationException($"Cannot acquire wizard lane {laneIndex} while holding wizard lane {heldLane}.");
+
+        var writeLane = s_writeLanes[laneIndex];
+
+        lock (writeLane) {
+            var previousLane = s_heldWriteLane;
+            s_heldWriteLane = laneIndex;
+
+            try {
+                return write();
+            }
+            finally {
+                s_heldWriteLane = previousLane;
+            }
+        }
+    }
+
+    private static bool UpdateCharacter(ulong charId, Action<Wizard> update) {
+        return WithWriteLane(charId, () => {
+            using var session = s_store.OpenSession();
+            var existingCharacter = GetCharacterByCharId(session, charId);
+            if (existingCharacter is null) {
+                return false;
+            }
+
+            update(existingCharacter);
+            session.SaveChanges();
+            return true;
+        });
+    }
+
     /// <summary>
     /// Creates a character in the database.
     /// </summary>
     /// <param name="character"></param>
     public static bool AddCharacter(Wizard character) {
-        using var session = s_store.OpenSession();
+        return WithWriteLane(character.CharId, () => {
+            using var session = s_store.OpenSession();
 
-        // Return false if the character already exists in the database.
-        var existingCharacter = GetCharacterByCharId(session, character.CharId);
-        if (existingCharacter is not null) {
-            return false;
-        }
+            // Return false if the character already exists in the database.
+            var existingCharacter = GetCharacterByCharId(session, character.CharId);
+            if (existingCharacter is not null) {
+                return false;
+            }
 
-        session.Store(character);
-        var metadata = session.Advanced.GetMetadataFor(character);
-        metadata[Raven.Client.Constants.Documents.Metadata.Collection] = CollectionName;
+            session.Store(character);
+            var metadata = session.Advanced.GetMetadataFor(character);
+            metadata[Raven.Client.Constants.Documents.Metadata.Collection] = CollectionName;
 
-        session.SaveChanges();
+            session.SaveChanges();
 
-        return true;
+            return true;
+        });
     }
 
     /// <summary>
@@ -68,23 +116,25 @@ public static class WizardCollection {
     /// </summary>
     /// <param name="id"></param>
     public static bool DeleteCharacter(ulong id) {
-        using var session = s_store.OpenSession();
+        return WithWriteLane(id, () => {
+            using var session = s_store.OpenSession();
 
-        var character = GetCharacterByCharId(session, id);
-        if (character is null) {
-            return false;
-        }
+            var character = GetCharacterByCharId(session, id);
+            if (character is null) {
+                return false;
+            }
 
-        // Delete related items/dynamods/quests data/etc.
-        WizardItemCollection.DeleteInventory(id);
-        WizardPetSnackCollection.DeleteSnackBag(id);
-        DynamodCollection.DeleteAllDynamodSets(id);
-        WizardReagentCollection.DeleteReagentBag(id);
+            // Delete related items/dynamods/quests data/etc.
+            WizardItemCollection.DeleteInventory(id);
+            WizardPetSnackCollection.DeleteSnackBag(id);
+            DynamodCollection.DeleteAllDynamodSets(id);
+            WizardReagentCollection.DeleteReagentBag(id);
 
-        session.Delete(character);
-        session.SaveChanges();
+            session.Delete(character);
+            session.SaveChanges();
 
-        return true;
+            return true;
+        });
     }
 
     /// <summary>
@@ -165,17 +215,11 @@ public static class WizardCollection {
     /// <param name="zoneName">The name of the zone.</param>
     /// <param name="zoneDisplayName">The display name of the zone.</param>
     public static void UpdateCharacterZone(Wizard character, string zoneName, string zoneDisplayName) {
-        using var session = s_store.OpenSession();
-
-        var existingCharacter = GetCharacterByCharId(session, character.CharId);
-        if (existingCharacter is null) {
-            return;
-        }
-
-        existingCharacter.PreviousZone = existingCharacter.PreviousZone;
-        existingCharacter.Zone = zoneName;
-        existingCharacter.ZoneDisplayName = zoneDisplayName;
-        session.SaveChanges();
+        UpdateCharacter(character.CharId, existingCharacter => {
+            existingCharacter.PreviousZone = existingCharacter.Zone;
+            existingCharacter.Zone = zoneName;
+            existingCharacter.ZoneDisplayName = zoneDisplayName;
+        });
     }
 
     /// <summary>
@@ -185,16 +229,10 @@ public static class WizardCollection {
     /// <param name="location">The new location of the character.</param>
     /// <param name="orientation">The new orientation of the character.</param>
     public static void UpdateCharacterLocation(Wizard character, Vector3 location, float orientation) {
-        using var session = s_store.OpenSession();
-
-        var existingCharacter = GetCharacterByCharId(session, character.CharId);
-        if (existingCharacter is null) {
-            return;
-        }
-
-        existingCharacter.Location = location;
-        existingCharacter.Orientation = new Vector3(0, 0, orientation);
-        session.SaveChanges();
+        UpdateCharacter(character.CharId, existingCharacter => {
+            existingCharacter.Location = location;
+            existingCharacter.Orientation = new Vector3(0, 0, orientation);
+        });
     }
 
     /// <summary>
@@ -209,18 +247,12 @@ public static class WizardCollection {
                                                      Vector3 orientation,
                                                      string ZoneName,
                                                      string zoneDisplayName) {
-        using var session = s_store.OpenSession();
-
-        var existingCharacter = GetCharacterByCharId(session, character.CharId);
-        if (existingCharacter is null) {
-            return;
-        }
-
-        existingCharacter.MarkedLocation = location;
-        existingCharacter.MarkedOrientation = orientation;
-        existingCharacter.MarkedZone = ZoneName;
-        existingCharacter.MarkedZoneDisplayName = zoneDisplayName;
-        session.SaveChanges();
+        UpdateCharacter(character.CharId, existingCharacter => {
+            existingCharacter.MarkedLocation = location;
+            existingCharacter.MarkedOrientation = orientation;
+            existingCharacter.MarkedZone = ZoneName;
+            existingCharacter.MarkedZoneDisplayName = zoneDisplayName;
+        });
     }
 
     /// <summary>
@@ -228,18 +260,12 @@ public static class WizardCollection {
     /// </summary>
     /// <param name="wizard">The wizard object containing the updated equipment.</param>
     public static void UpdateCharacterItems(Wizard wizard) {
-        using var session = s_store.OpenSession();
-
-        var existingCharacter = GetCharacterByCharId(session, wizard.CharId);
-        if (existingCharacter is null) {
-            return;
-        }
-
-        existingCharacter.InventoryBehavior = wizard.InventoryBehavior;
-        existingCharacter.EquipmentBehavior = wizard.EquipmentBehavior;
-        existingCharacter.PetSnackBehavior = wizard.PetSnackBehavior;
-        existingCharacter.AlchemyBehavior = wizard.AlchemyBehavior;
-        session.SaveChanges();
+        UpdateCharacter(wizard.CharId, existingCharacter => {
+            existingCharacter.InventoryBehavior = wizard.InventoryBehavior;
+            existingCharacter.EquipmentBehavior = wizard.EquipmentBehavior;
+            existingCharacter.PetSnackBehavior = wizard.PetSnackBehavior;
+            existingCharacter.AlchemyBehavior = wizard.AlchemyBehavior;
+        });
     }
 
     /// <summary>
@@ -247,16 +273,10 @@ public static class WizardCollection {
     /// </summary>
     /// <param name="wizard">The wizard object containing the updated level.</param>
     public static void UpdateCharacterLevel(Wizard wizard) {
-        using var session = s_store.OpenSession();
-
-        var existingCharacter = GetCharacterByCharId(session, wizard.CharId);
-        if (existingCharacter is null) {
-            return;
-        }
-
-        existingCharacter.MagicSchoolBehavior.Level = wizard.MagicSchoolBehavior.Level;
-        existingCharacter.MagicSchoolBehavior.ExperiencePoints = wizard.MagicSchoolBehavior.ExperiencePoints;
-        session.SaveChanges();
+        UpdateCharacter(wizard.CharId, existingCharacter => {
+            existingCharacter.MagicSchoolBehavior.Level = wizard.MagicSchoolBehavior.Level;
+            existingCharacter.MagicSchoolBehavior.ExperiencePoints = wizard.MagicSchoolBehavior.ExperiencePoints;
+        });
     }
 
     /// <summary>
@@ -264,15 +284,8 @@ public static class WizardCollection {
     /// </summary>
     /// <param name="wizard">The wizard whose character mount is being updated.</param>
     public static void UpdateCharacterMount(Wizard wizard) {
-        using var session = s_store.OpenSession();
-
-        var existingCharacter = GetCharacterByCharId(session, wizard.CharId);
-        if (existingCharacter is null) {
-            return;
-        }
-
-        existingCharacter.MountOwnerBehavior = wizard.MountOwnerBehavior;
-        session.SaveChanges();
+        UpdateCharacter(wizard.CharId, existingCharacter =>
+            existingCharacter.MountOwnerBehavior = wizard.MountOwnerBehavior);
     }
 
     /// <summary>
@@ -280,15 +293,8 @@ public static class WizardCollection {
     /// </summary>
     /// <param name="wizard">The wizard object containing the updated character name override.</param>
     public static void UpdateCharacterNameOverride(Wizard wizard) {
-        using var session = s_store.OpenSession();
-
-        var existingCharacter = GetCharacterByCharId(session, wizard.CharId);
-        if (existingCharacter is null) {
-            return;
-        }
-
-        existingCharacter.PlayerNameBehavior.NameOverride = wizard.PlayerNameBehavior.NameOverride;
-        session.SaveChanges();
+        UpdateCharacter(wizard.CharId, existingCharacter =>
+            existingCharacter.PlayerNameBehavior.NameOverride = wizard.PlayerNameBehavior.NameOverride);
     }
 
     /// <summary>
@@ -296,15 +302,8 @@ public static class WizardCollection {
     /// re-equipped outdoors. Written the moment it changes because a zone transfer is a disconnect.
     /// </summary>
     public static void UpdateCharacterInteriorStowedMount(Wizard wizard) {
-        using var session = s_store.OpenSession();
-
-        var existingCharacter = GetCharacterByCharId(session, wizard.CharId);
-        if (existingCharacter is null) {
-            return;
-        }
-
-        existingCharacter.InteriorStowedMountId = wizard.InteriorStowedMountId;
-        session.SaveChanges();
+        UpdateCharacter(wizard.CharId, existingCharacter =>
+            existingCharacter.InteriorStowedMountId = wizard.InteriorStowedMountId);
     }
 
     /// <summary>
@@ -312,15 +311,8 @@ public static class WizardCollection {
     /// </summary>
     /// <param name="wizard">The wizard object containing the updated character badge override.</param>
     public static void UpdateCharacterBadgeOverride(Wizard wizard) {
-        using var session = s_store.OpenSession();
-
-        var existingCharacter = GetCharacterByCharId(session, wizard.CharId);
-        if (existingCharacter is null) {
-            return;
-        }
-
-        existingCharacter.PlayerNameBehavior.BadgeTitle = wizard.PlayerNameBehavior.BadgeTitle;
-        session.SaveChanges();
+        UpdateCharacter(wizard.CharId, existingCharacter =>
+            existingCharacter.PlayerNameBehavior.BadgeTitle = wizard.PlayerNameBehavior.BadgeTitle);
     }
 
     /// <summary>
@@ -329,15 +321,8 @@ public static class WizardCollection {
     /// </summary>
     /// <param name="wizard">The wizard whose spellbook behavior should be persisted.</param>
     public static void UpdateCharacterSpellbookBehavior(Wizard wizard) {
-        using var session = s_store.OpenSession();
-
-        var existingCharacter = GetCharacterByCharId(session, wizard.CharId);
-        if (existingCharacter is null) {
-            return;
-        }
-
-        existingCharacter.SpellbookBehavior = wizard.SpellbookBehavior;
-        session.SaveChanges();
+        UpdateCharacter(wizard.CharId, existingCharacter =>
+            existingCharacter.SpellbookBehavior = wizard.SpellbookBehavior);
     }
 
     /// <summary>
@@ -345,15 +330,8 @@ public static class WizardCollection {
     /// </summary>
     /// <param name="wizard">The wizard object containing the updated game stats</param>
     public static void UpdateCharacterGameStats(Wizard wizard) {
-        using var session = s_store.OpenSession();
-
-        var existingCharacter = GetCharacterByCharId(session, wizard.CharId);
-        if (existingCharacter is null) {
-            return;
-        }
-
-        existingCharacter.GameStats = wizard.GameStats;
-        session.SaveChanges();
+        UpdateCharacter(wizard.CharId, existingCharacter =>
+            existingCharacter.GameStats = wizard.GameStats);
     }
 
     /// <summary>
@@ -361,15 +339,8 @@ public static class WizardCollection {
     /// </summary>
     /// <param name="wizard">The wizard object containing the updated pet owner behavior.</param>
     public static void UpdateCharacterPetOwnerBehavior(Wizard wizard) {
-        using var session = s_store.OpenSession();
-
-        var existingCharacter = GetCharacterByCharId(session, wizard.CharId);
-        if (existingCharacter is null) {
-            return;
-        }
-
-        existingCharacter.PetOwnerBehavior = wizard.PetOwnerBehavior;
-        session.SaveChanges();
+        UpdateCharacter(wizard.CharId, existingCharacter =>
+            existingCharacter.PetOwnerBehavior = wizard.PetOwnerBehavior);
     }
 
     /// <summary>
@@ -377,15 +348,8 @@ public static class WizardCollection {
     /// </summary>
     /// <param name="wizard">The wizard to update the time for</param>
     public static void UpdateCharacterTimeWentHome(Wizard wizard, long time) {
-        using var session = s_store.OpenSession();
-
-        var existingCharacter = GetCharacterByCharId(session, wizard.CharId);
-        if (existingCharacter is null) {
-            return;
-        }
-
-        existingCharacter.TimeHomeLastClicked = time;
-        session.SaveChanges();
+        UpdateCharacter(wizard.CharId, existingCharacter =>
+            existingCharacter.TimeHomeLastClicked = time);
     }
 
     /// <summary>
@@ -393,15 +357,8 @@ public static class WizardCollection {
     /// </summary>
     /// <param name="wizard">The wizard object containing the updated training points count.</param>
     public static void UpdateCharacterTrainingPoints(Wizard wizard) {
-        using var session = s_store.OpenSession();
-
-        var existingCharacter = GetCharacterByCharId(session, wizard.CharId);
-        if (existingCharacter is null) {
-            return;
-        }
-
-        existingCharacter.MagicSchoolBehavior.TrainingPoints = wizard.MagicSchoolBehavior.TrainingPoints;
-        session.SaveChanges();
+        UpdateCharacter(wizard.CharId, existingCharacter =>
+            existingCharacter.MagicSchoolBehavior.TrainingPoints = wizard.MagicSchoolBehavior.TrainingPoints);
     }
 
     /// <summary>
@@ -410,15 +367,8 @@ public static class WizardCollection {
     /// </summary>
     /// <param name="wizard">The wizard whose friend behavior should be persisted.</param>
     public static void UpdateCharacterFriendBehavior(Wizard wizard) {
-        using var session = s_store.OpenSession();
-
-        var existingCharacter = GetCharacterByCharId(session, wizard.CharId);
-        if (existingCharacter is null) {
-            return;
-        }
-
-        existingCharacter.FriendsBehavior = wizard.FriendsBehavior;
-        session.SaveChanges();
+        UpdateCharacter(wizard.CharId, existingCharacter =>
+            existingCharacter.FriendsBehavior = wizard.FriendsBehavior);
     }
 
     /// <summary>
@@ -427,15 +377,8 @@ public static class WizardCollection {
     /// <param name="wizard">The wizard to add the spell to.</param>
     /// <param name="spellTemplateId">The ID of the spell template to add.</param>
     public static void LearnSpell(Wizard wizard, uint spellTemplateId) {
-        using var session = s_store.OpenSession();
-
-        var existingCharacter = GetCharacterByCharId(session, wizard.CharId);
-        if (existingCharacter is null) {
-            return;
-        }
-
-        existingCharacter.SpellbookBehavior.LearnedSpellTemplateIds.Add(spellTemplateId);
-        session.SaveChanges();
+        UpdateCharacter(wizard.CharId, existingCharacter =>
+            existingCharacter.SpellbookBehavior.LearnedSpellTemplateIds.Add(spellTemplateId));
     }
 
     /// <summary>
@@ -444,15 +387,8 @@ public static class WizardCollection {
     /// <param name="wizard">The wizard whose spellbook will be modified.</param>
     /// <param name="spellTemplateId">The ID of the spell template to be removed.</param>
     public static void UnlearnSpell(Wizard wizard, uint spellTemplateId) {
-        using var session = s_store.OpenSession();
-
-        var existingCharacter = GetCharacterByCharId(session, wizard.CharId);
-        if (existingCharacter is null) {
-            return;
-        }
-
-        existingCharacter.SpellbookBehavior.LearnedSpellTemplateIds.Remove(spellTemplateId);
-        session.SaveChanges();
+        UpdateCharacter(wizard.CharId, existingCharacter =>
+            existingCharacter.SpellbookBehavior.LearnedSpellTemplateIds.Remove(spellTemplateId));
     }
 
     /// <summary>
@@ -461,15 +397,8 @@ public static class WizardCollection {
     /// <param name="wizard">The wizard to add the treasure card to.</param>
     /// <param name="spellTemplateId">The template ID of the spell to add as a treasure card.</param>
     public static void AddTreasureCard(Wizard wizard, uint spellTemplateId) {
-        using var session = s_store.OpenSession();
-
-        var existingCharacter = GetCharacterByCharId(session, wizard.CharId);
-        if (existingCharacter is null) {
-            return;
-        }
-
-        existingCharacter.SpellbookBehavior.AddTreasureCard(spellTemplateId);
-        session.SaveChanges();
+        UpdateCharacter(wizard.CharId, existingCharacter =>
+            existingCharacter.SpellbookBehavior.AddTreasureCard(spellTemplateId));
     }
 
     /// <summary>
@@ -478,15 +407,8 @@ public static class WizardCollection {
     /// <param name="wizard">The wizard whose spellbook will be modified.</param>
     /// <param name="spellTemplateId">The template ID of the treasure card to remove.</param>
     public static void RemoveTreasureCard(Wizard wizard, uint spellTemplateId) {
-        using var session = s_store.OpenSession();
-
-        var existingCharacter = GetCharacterByCharId(session, wizard.CharId);
-        if (existingCharacter is null) {
-            return;
-        }
-
-        existingCharacter.SpellbookBehavior.RemoveTreasureCard(spellTemplateId);
-        session.SaveChanges();
+        UpdateCharacter(wizard.CharId, existingCharacter =>
+            existingCharacter.SpellbookBehavior.RemoveTreasureCard(spellTemplateId));
     }
 
     /// <summary>
@@ -495,17 +417,10 @@ public static class WizardCollection {
     /// <param name="wizard">The wizard to add the relationship to.</param>
     /// <param name="relationship">The relationship to add.</param>
     public static void AddOrUpdateRelationship(Wizard wizard, Relationship relationship) {
-        using var session = s_store.OpenSession();
-
-        var existingCharacter = GetCharacterByCharId(session, wizard.CharId);
-        if (existingCharacter is null) {
-            return;
-        }
-
-        existingCharacter.FriendsBehavior ??= new();
-        existingCharacter.FriendsBehavior.AddOrUpdateRelationship(relationship);
-
-        session.SaveChanges();
+        UpdateCharacter(wizard.CharId, existingCharacter => {
+            existingCharacter.FriendsBehavior ??= new();
+            existingCharacter.FriendsBehavior.AddOrUpdateRelationship(relationship);
+        });
     }
 
     /// <summary>
@@ -514,20 +429,8 @@ public static class WizardCollection {
     /// <param name="wizard">The wizard to remove the relationship from.</param>
     /// <param name="friendId">The ID of the friend to remove.</param>
     public static void RemoveRelationship(Wizard wizard, ulong friendId) {
-        using var session = s_store.OpenSession();
-
-        var existingCharacter = GetCharacterByCharId(session, wizard.CharId);
-        if (existingCharacter is null) {
-            return;
-        }
-
-        if (existingCharacter.FriendsBehavior is null) {
-            return;
-        }
-
-        existingCharacter.FriendsBehavior.Breakup(friendId);
-
-        session.SaveChanges();
+        UpdateCharacter(wizard.CharId, existingCharacter =>
+            existingCharacter.FriendsBehavior?.Breakup(friendId));
     }
 
     /// <summary>
@@ -540,17 +443,8 @@ public static class WizardCollection {
             return false;
         }
 
-        using var session = s_store.OpenSession();
-        var dbWizard = GetCharacterByCharId(session, wizard.CharId);
-
-        if (dbWizard is null) {
-            return false;
-        }
-
-        dbWizard.QuestBehavior = wizard.QuestBehavior;
-        session.SaveChanges();
-
-        return true;
+        return UpdateCharacter(wizard.CharId, dbWizard =>
+            dbWizard.QuestBehavior = wizard.QuestBehavior);
     }
 
     private static Wizard LoadWizard(Wizard wizard) {
