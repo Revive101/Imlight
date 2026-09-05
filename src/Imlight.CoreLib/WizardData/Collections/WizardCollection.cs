@@ -41,6 +41,12 @@ public static class WizardCollection {
             .Select(_ => new object())
             .ToArray();
 
+    // Tracks the write lane held by the current thread.
+    // Prevents acquiring a different Wizard lane while one is already held.
+    [ThreadStatic]
+    private static int? s_heldWriteLane;
+    internal static bool HoldsWriteLane => s_heldWriteLane.HasValue;
+
     private static readonly TimeSpan s_nonStaleWaitTimeout
         = TimeSpan.FromSeconds(ConfigurationManager.Settings["Database.DatabaseWaitForNonStaleResultsTimeout"].AsByte(5));
 
@@ -48,10 +54,22 @@ public static class WizardCollection {
         => s_store = PlayerDatabase.Instance.Store;
 
     private static T WithWriteLane<T>(ulong charId, Func<T> write) {
-        var writeLane = s_writeLanes[(int)(charId & WriteLaneMask)];
+        var laneIndex = (int) (charId & WriteLaneMask);
+        if (s_heldWriteLane is { } heldLane && heldLane != laneIndex)
+            throw new InvalidOperationException($"Cannot acquire wizard lane {laneIndex} while holding wizard lane {heldLane}.");
+
+        var writeLane = s_writeLanes[laneIndex];
 
         lock (writeLane) {
-            return write();
+            var previousLane = s_heldWriteLane;
+            s_heldWriteLane = laneIndex;
+
+            try {
+                return write();
+            }
+            finally {
+                s_heldWriteLane = previousLane;
+            }
         }
     }
 

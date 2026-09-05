@@ -21,9 +21,8 @@ using Raven.Client.Documents;
 using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models.Misc;
 using Imlight.CoreLib.WizardData.Models.Player;
-using Imlight.CoreLib.Shared.Behaviors;
-using Imlight.CoreLib.WizardData.Implementations;
-using Imcodec.ObjectProperty.TypeCache;
+using Raven.Client.Documents.Session;
+using System;
 
 namespace Imlight.CoreLib.WizardData.Collections;
 
@@ -36,32 +35,118 @@ public static class AccountCollection {
         s_store = PlayerDatabase.Instance.Store;
     }
 
+    private const int WriteLaneCount = 1 << 6; // 64 lanes
+    private const ulong WriteLaneMask = WriteLaneCount - 1;
+    private static readonly object[] s_writeLanes =
+        Enumerable.Range(0, WriteLaneCount)
+            .Select(_ => new object())
+            .ToArray();
+
+    // Tracks the write lane held by the current thread.
+    // Enforces that an account lock is acquired before a character lock
+    // and prevents acquiring multiple Account lanes at the same time.
+    [ThreadStatic]
+    private static int? s_heldWriteLane;
+
+    private static T WithWriteLane<T>(ulong accountId, Func<T> write) {
+        if (WizardCollection.HoldsWriteLane)
+            throw new InvalidOperationException("Cannot acquire an account write lane while holding a wizard write lane.");
+
+        var laneIndex = (int) (accountId & WriteLaneMask);
+        if (s_heldWriteLane is { } heldLane && heldLane != laneIndex)
+            throw new InvalidOperationException($"Cannot acquire account lane {laneIndex} while holding account lane {heldLane}.");
+
+        var writeLane = s_writeLanes[laneIndex];
+
+        lock (writeLane) {
+            var previousLane = s_heldWriteLane;
+            s_heldWriteLane = laneIndex;
+
+            try {
+                return write();
+            }
+            finally {
+                s_heldWriteLane = previousLane;
+            }
+        }
+    }
+
+    private static bool UpdateAccount(ulong accountId, Action<Account> update) {
+        return WithWriteLane(accountId, () => {
+            using var session = s_store.OpenSession();
+
+            var existingAccount = session.Query<Account>(collectionName: CollectionName)
+                .FirstOrDefault(account => account.AccountId == accountId);
+
+            if (existingAccount is null)
+                return false;
+
+            update(existingAccount);
+
+            session.SaveChanges();
+
+            return true;
+        });
+    }
+
+    private static ulong? GetAccountId(string username) {
+        using var session = s_store.OpenSession();
+
+        return session.Query<Account>(collectionName: CollectionName)
+            .Where(account => account.Username == username)
+            .Select(account => (ulong?) account.AccountId)
+            .FirstOrDefault();
+    }
+
+    private static bool UpdateAccount(string username, Action<Account> update) {
+        var accountId = GetAccountId(username);
+
+        if (accountId is null)
+            return false;
+
+        return UpdateAccount(accountId.Value, update);
+    }
+
+    private static Account LoadAccountDetails(IDocumentSession session, Account account) {
+        WizardCollection.LoadWizardsOntoAccount(account.AccountId, ref account);
+
+        var infractions = session.Query<Infraction>(collectionName: InfractionCollection.CollectionName)
+            .Where(i => i.AccountId == account.AccountId)
+            .ToList();
+
+        account.InfractionHistory = new InfractionHistory(account.AccountId, infractions);
+
+        return account;
+    }
+
     /// <summary>
     /// Creates a new account in the database.
     /// </summary>
     /// <param name="account">The account to be created.</param>
     /// <returns>True if the account is successfully created, false if the account already exists.</returns>
     public static bool CreateAccount(Account account) {
-        using var session = s_store.OpenSession();
+        return WithWriteLane(account.AccountId, () => {
+            using var session = s_store.OpenSession();
 
-        // Return false if the account already exists.
-        if (session.Query<Account>(collectionName: CollectionName)
-                   .Any(c => c.Username == account.Username)) {
-            return false;
-        }
+            // Return false if the account already exists.
+            if (session.Query<Account>(collectionName: CollectionName)
+                       .Any(c => c.Username == account.Username)) {
+                return false;
+            }
 
-        // Foreach character in the account, add it to the database.
-        foreach (var character in account.Characters) {
-            WizardCollection.AddCharacter(character);
-        }
+            // Foreach character in the account, add it to the database.
+            foreach (var character in account.Characters) {
+                WizardCollection.AddCharacter(character);
+            }
 
-        session.Store(account);
-        var metadata = session.Advanced.GetMetadataFor(account);
-        metadata[Raven.Client.Constants.Documents.Metadata.Collection] = CollectionName;
+            session.Store(account);
+            var metadata = session.Advanced.GetMetadataFor(account);
+            metadata[Raven.Client.Constants.Documents.Metadata.Collection] = CollectionName;
 
-        session.SaveChanges();
-        
-        return true;
+            session.SaveChanges();
+
+            return true;
+        });
     }
 
     /// <summary>
@@ -70,26 +155,33 @@ public static class AccountCollection {
     /// <param name="username">The username of the account to delete.</param>
     /// <returns>True if the account was successfully deleted, false otherwise.</returns>
     public static bool DeleteAccount(string username) {
-        using var session = s_store.OpenSession();
+        var id = GetAccountId(username);
 
-        // Load the account with the characters included.
-        var account = session.Query<Account>(collectionName: CollectionName)
-            .Include(c => c.CharacterIds)
-            .FirstOrDefault(c => c.Username == username);
-        if (account is null) {
+        if (id is null)
             return false;
-        }
 
-        // Delete the characters.
-        foreach (var characterId in account.CharacterIds) {
-            WizardCollection.DeleteCharacter(characterId);
-        }
+        var accountId = id.Value;
 
-        // Delete the account.
-        session.Delete(account);
-        session.SaveChanges();
+        return WithWriteLane(accountId, () => {
+            using var session = s_store.OpenSession();
 
-        return true;
+            var account = session.Query<Account>(collectionName: CollectionName)
+                .FirstOrDefault(a => a.AccountId == accountId);
+
+            if (account is null)
+                return false;
+
+            // Delete the characters.
+            foreach (var characterId in account.CharacterIds) {
+                WizardCollection.DeleteCharacter(characterId);
+            }
+
+            // Delete the account.
+            session.Delete(account);
+            session.SaveChanges();
+
+            return true;
+        });
     }
 
     /// <summary>
@@ -100,25 +192,12 @@ public static class AccountCollection {
     public static Account GetAccount(ulong id) {
         using var session = s_store.OpenSession();
 
-        // Load the account with the characters included.
         var account = session.Query<Account>(collectionName: CollectionName)
-            .FirstOrDefault(c => c.AccountId == id);
-        if (account is null) {
-            return null;
-        }
+            .FirstOrDefault(a => a.AccountId == id);
 
-        // Load the characters.
-        var _ = WizardCollection.LoadWizardsOntoAccount(account.AccountId, ref account);
-
-        // Load infractions. The constructor will load the action history.
-        var infractions = session.Query<Infraction>(collectionName: InfractionCollection.CollectionName)
-            .Where(i => i.AccountId == account.AccountId)
-            .ToList();
-
-        // Rebuild the InfractionHistory object.
-        account.InfractionHistory = new InfractionHistory(account.AccountId, infractions);
-
-        return account;
+        return account is null
+            ? null
+            : LoadAccountDetails(session, account);
     }
 
     /// <summary>
@@ -129,25 +208,12 @@ public static class AccountCollection {
     public static Account GetAccount(string username) {
         using var session = s_store.OpenSession();
 
-        // Load the account with the characters included.
         var account = session.Query<Account>(collectionName: CollectionName)
-            .FirstOrDefault(c => c.Username == username);
-        if (account is null) {
-            return null;
-        }
+            .FirstOrDefault(a => a.Username == username);
 
-        // Load the characters if the account is not null.
-        var _ = WizardCollection.LoadWizardsOntoAccount(account.AccountId, ref account);
-
-        // Load infractions. The constructor will load the action history.
-        var infractions = session.Query<Infraction>(collectionName: InfractionCollection.CollectionName)
-            .Where(i => i.AccountId == account.AccountId)
-            .ToList();
-
-        // Rebuild the InfractionHistory object.
-        account.InfractionHistory = new InfractionHistory(account.AccountId, infractions);
-
-        return account;
+        return account is null
+            ? null
+            : LoadAccountDetails(session, account);
     }
 
     /// <summary>
@@ -156,20 +222,9 @@ public static class AccountCollection {
     /// <param name="account">The account to be locked.</param>
     /// <returns>True if the account was successfully locked, false otherwise.</returns>
     public static bool LockAccount(string username) {
-        using var session = s_store.OpenSession();
-
-        // Load the account with the characters included.
-        var existingAccount = session.Query<Account>(collectionName: CollectionName)
-            .Include(c => c.CharacterIds)
-            .FirstOrDefault(c => c.Username == username);
-        if (existingAccount is null) {
-            return false;
-        }
-
-        existingAccount.IsLocked = true;
-        session.SaveChanges();
-
-        return true;
+        return UpdateAccount(username, account => {
+            account.IsLocked = true;
+        });
     }
 
     /// <summary>
@@ -178,20 +233,9 @@ public static class AccountCollection {
     /// <param name="username">The username of the account to unlock.</param>
     /// <returns>True if the account was successfully unlocked, false otherwise.</returns>
     public static bool UnlockAccount(string username) {
-        using var session = s_store.OpenSession();
-
-        // Load the account with the characters included.
-        var existingAccount = session.Query<Account>(collectionName: CollectionName)
-            .Include(c => c.CharacterIds)
-            .FirstOrDefault(c => c.Username == username);
-        if (existingAccount is null) {
-            return false;
-        }
-
-        existingAccount.IsLocked = false;
-        session.SaveChanges();
-
-        return true;
+        return UpdateAccount(username, account => {
+            account.IsLocked = false;
+        });
     }
 
     /// <summary>
@@ -201,21 +245,10 @@ public static class AccountCollection {
     /// <param name="newPassword">The new password.</param>
     /// <returns>True if the password was successfully changed, false otherwise.</returns>
     public static bool ChangePassword(string username, string newPassword) {
-        using var session = s_store.OpenSession();
-
-        // Load the account with the characters included.
-        var existingAccount = session.Query<Account>(collectionName: CollectionName)
-            .Include(c => c.CharacterIds)
-            .FirstOrDefault(c => c.Username == username);
-        if (existingAccount is null) {
-            return false;
-        }
-
-        var passwordHash = DatabaseUtilities.CreateHashedPassword(newPassword);
-        existingAccount.PasswordHash = passwordHash;
-        session.SaveChanges();
-
-        return true;
+        return UpdateAccount(username, account => {
+            var passwordHash = DatabaseUtilities.CreateHashedPassword(newPassword);
+            account.PasswordHash = passwordHash;
+        });
     }
 
     /// <summary>
@@ -225,20 +258,9 @@ public static class AccountCollection {
     /// <param name="authLevel">The new authentication level.</param>
     /// <returns>True if the update was successful, false otherwise.</returns>
     public static bool UpdateAuthLevel(string username, AuthLevel authLevel) {
-        using var session = s_store.OpenSession();
-
-        // Load the account with the characters included.
-        var existingAccount = session.Query<Account>(collectionName: CollectionName)
-            .Include(c => c.CharacterIds)
-            .FirstOrDefault(c => c.Username == username);
-        if (existingAccount is null) {
-            return false;
-        }
-
-        existingAccount.AuthLevel = authLevel;
-        session.SaveChanges();
-
-        return true;
+        return UpdateAccount(username, account => {
+            account.AuthLevel = authLevel;
+        });
     }
 
     /// <summary>
@@ -248,19 +270,9 @@ public static class AccountCollection {
     /// <param name="characterId"></param>
     /// <returns></returns>
     public static bool AddCharacterToAccount(ulong accountId, ulong characterId) {
-        using var session = s_store.OpenSession();
-
-        // Start by loading an account, if one exists.
-        var existingAccount = session.Query<Account>(collectionName: CollectionName)
-            .FirstOrDefault(c => c.AccountId == accountId);
-        if (existingAccount is null) {
-            return false;
-        }
-
-        existingAccount.CharacterIds.Add(characterId);
-        session.SaveChanges();
-
-        return true;
+        return UpdateAccount(accountId, account => {
+            account.CharacterIds.Add(characterId);
+        });
     }
 
     /// <summary>
@@ -270,19 +282,9 @@ public static class AccountCollection {
     /// <param name="characterId"></param>
     /// <returns></returns>
     public static bool DeleteCharacterFromAccount(ulong accountId, ulong characterId) {
-        using var session = s_store.OpenSession();
-
-        // Start by loading an account, if one exists.
-        var existingAccount = session.Query<Account>(collectionName: CollectionName)
-            .FirstOrDefault(c => c.AccountId == accountId);
-        if (existingAccount is null) {
-            return false;
-        }
-
-        existingAccount.CharacterIds.Remove(characterId);
-        session.SaveChanges();
-
-        return true;
+        return UpdateAccount(accountId, account => {
+            account.CharacterIds.Remove(characterId);
+        });
     }
 
     /// <summary>
@@ -290,37 +292,23 @@ public static class AccountCollection {
     /// </summary>
     /// <param name="accountId">The ID of the account to add the infraction to.</param>
     /// <param name="infractionId">The ID of the infraction to add.</param>
-    public static void AddInfractionToAccount(ulong accountId, ulong infractionId) {
-        using var session = s_store.OpenSession();
-
-        // Start by loading an account, if one exists.
-        var existingAccount = session.Query<Account>(collectionName: CollectionName)
-            .FirstOrDefault(c => c.AccountId == accountId);
-        if (existingAccount is null) {
-            return;
-        }
-
-        existingAccount.InfractionIds.Add(infractionId);
-        session.SaveChanges();
+    /// <returns></returns>
+    public static bool AddInfractionToAccount(ulong accountId, ulong infractionId) {
+        return UpdateAccount(accountId, account => {
+            account.InfractionIds.Add(infractionId);
+        });
     }
 
     /// <summary>
     /// Removes an infraction from an account.
     /// </summary>
     /// <param name="accountId">The ID of the account.</param>
-    /// <param name="infractionIndex">The index of the infraction to remove.</param>
-    public static void RemoveInfractionFromAccount(ulong accountId, ulong infractionIndex) {
-        using var session = s_store.OpenSession();
-
-        // Start by loading an account, if one exists.
-        var existingAccount = session.Query<Account>(collectionName: CollectionName)
-            .FirstOrDefault(c => c.AccountId == accountId);
-        if (existingAccount is null) {
-            return;
-        }
-
-        existingAccount.InfractionIds.Remove(infractionIndex);
-        session.SaveChanges();
+    /// <param name="infractionId">The ID of the infraction to remove.</param>
+    /// <returns></returns>
+    public static bool RemoveInfractionFromAccount(ulong accountId, ulong infractionId) {
+        return UpdateAccount(accountId, account => {
+            account.InfractionIds.Remove(infractionId);
+        });
     }
 
 }
