@@ -18,19 +18,19 @@
  * ========================================================================
  * INTERACT QUEST SELECT COMPONENT
  * ========================================================================
- * 
+ *
  * PURPOSE:
  * Handles a quest goal where the player's goal is to interact with a
  * specific object in the game world.
- * 
+ *
  * USAGE EXAMPLE:
- * 
+ *
  * NOTE:
  * Collection goals (tally count > 1) consume the object on use; single-use goals
  * leave the object in place and drive post-use state via completeResults.
- * 
+ *
  * TODO:
- * 
+ *
  * Created by: Jooty
  * Version: KALI 1.0
  * Last Updated: 08/22/2026
@@ -195,7 +195,14 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
                && goalProgress.CurrentProgress != int.MaxValue
                && (goalName == null || goalProgress.GoalName == goalName);
 
-    private static bool DoesGoalMatchObject(GameObjectTemplate gameObjectTemplate, GoalTemplate goal)
-        => goal.m_clientTags?.Contains(gameObjectTemplate.m_objectName) == true;
+    private static bool DoesGoalMatchObject(GameObjectTemplate gameObjectTemplate, GoalTemplate goal) {
+        if (goal.m_clientTags?.Contains(gameObjectTemplate.m_objectName) == true) {
+            return true;
+        }
+
+        return goal is ScavengeGoalTemplate scavengeGoal
+            && gameObjectTemplate.m_adjectiveList is not null
+            && scavengeGoal.m_itemAdjectives?.Any(gameObjectTemplate.m_adjectiveList.Contains) == true;
+    }
 
 }
