@@ -92,6 +92,7 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
     protected override void OnPreDispose() {
         var gameObj = GetActiveGameObject();
         if (gameObj is null) {
+            base.OnPreDispose();
             return;
         }
 
