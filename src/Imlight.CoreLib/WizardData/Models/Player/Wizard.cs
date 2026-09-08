@@ -54,6 +54,7 @@ public class Wizard {
     public ulong InteriorStowedMountId { get; set; }
     public string MarkedZone { get; set; }
     public string MarkedZoneDisplayName { get; set; }
+    public uint LastLoginTime { get; set; }
     public long TimeHomeLastClicked { get; set; }
     public byte World { get; set; }
     public Vector3 Location {
@@ -342,6 +343,13 @@ public class Wizard {
 
         // Persistent save.
         WizardCollection.UpdateCharacterGameStats(this);
+    }
+
+    public void UpdateLastLoginTime(uint time) {
+        LastLoginTime = time;
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterLastLoginTime(this);
     }
 
     public void UpdateTrainingPoints(int newTrainingPoints) {

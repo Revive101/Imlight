@@ -124,6 +124,7 @@ internal static class CharacterHelper {
             m_name = character.PlayerNameBehavior.NameOverride,
             m_location = character.ZoneDisplayName,
             m_globalID = (GID) character.CharId,
+            m_lastLoginTime = character.LastLoginTime,
             m_templateID = 1,
             m_userID = (GID) character.AccountId,
             m_equipmentInfoList = GetEquipmentList(character.EquipmentBehavior),

@@ -85,8 +85,10 @@ internal class WizardService(SessionActor sessionActor) : MessageService(session
         => _activeWizardGameObject = message.WizardGameObject;
 
     [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_SETACTIVEWIZARD))]
-    private void ReceiveSetActiveWizard(CHARACTER_103_PROTOCOL.MSG_SETACTIVEWIZARD message)
-        => _activeWizard = message.Wizard;
+    private void ReceiveSetActiveWizard(CHARACTER_103_PROTOCOL.MSG_SETACTIVEWIZARD message) {
+        _activeWizard = message.Wizard;
+        _activeWizard.UpdateLastLoginTime((uint) DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+    }
 
     [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD))]
     private void ReceiveQueryActiveWIzard(CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD message)
