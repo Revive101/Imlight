@@ -6,8 +6,8 @@ disagree, **the tree wins**: update this file, don't churn the code.
 
 ## 1. Project snapshot
 
-- **Repo:** `Revive101/Imlight`, an independent Wizard101 private server, written
-  entirely in C#. Client target: **r801440** (modern). Mainline branch:
+- **Repo:** `Revive101/Imlight`, an independent private server project, written
+  entirely in C# for a modern client. Mainline branch:
   `quality-assurance`.
 - **Stack:** .NET 10 (`net10.0`), Akka.NET actors, RavenDB (player data), SpiralDB
   (world data), Imcodec submodule (wire types, generated from the client's own
@@ -114,11 +114,19 @@ Header rules:
   edited years later still say `Created by: Jooty`; that is the convention
   (`QuestService.cs`, `InteractReagentComponent.cs`). For a brand-new file, use
   the git author of its first commit (when I author on your behalf, your handle).
+- **AI-assisted files are credited explicitly.** When an AI agent contributed to
+  the file (drafted, edited, reviewed, or authored), list that agent alongside
+  the human author in the banner, with the exact model. Format:
+  `Created by: <human-author> with <agent-name> (<exact-model>)`. If the AI was
+  the sole author, still lead with the responsible human's handle and append the
+  agent line the same way. Never drop the agent or elide the model to a vague
+  "AI" once it has meaningfully contributed.
 - **`Last Updated:`** is bumped to today's date (zero-padded `MM/DD/YYYY`, e.g.
   `04/01/2026`) whenever the file is substantively changed.
 - `Version:` stays `KALI 1.0`; only the project bumps it.
 - The `PURPOSE:`/`USAGE EXAMPLE:`/`NOTE:`/`TODO:` sections are terse. Empty
-  sections stay empty (with a trailing space); that is the existing shape.
+  sections keep the bare ` * ` spacer line (no content); that is the existing
+  shape. Do not add filler just to fill them.
 
 ## 7. Comments: the rule
 
@@ -171,7 +179,7 @@ truly needs it. No paragraphs on self-evident lines, ever.
   ```
 - **A comment above a function definition that is not a `///` summary is never, never allowed:**
   ```
-  // NOTE: must be protected — reflection-based handler registration on derived entity types
+  // NOTE: must be protected: reflection-based handler registration on derived entity types
   // (CombatMinionEntity) cannot see a private base-class method.
   [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ENTITYCOMPONENTREQUESTIDENTITYRSP))]
   protected void ReceiveComponentIdentity(ZONE_102_PROTOCOL.MSG_ENTITYCOMPONENTREQUESTIDENTITYRSP message) {
@@ -232,8 +240,6 @@ truly needs it. No paragraphs on self-evident lines, ever.
 - `using` order varies (System-first vs System-last); match the file.
 - Constant casing varies (SCREAMING vs PascalCase); match the file, PascalCase
   for new ones.
-- `src/.idea/` contains 3 tiny tracked IDE-local files (`.gitignore`, `.name`),
-  harmless residue; leave alone unless asked.
 - `.scratch/` is an empty scratch space for one-off work; don't commit to it
   without asking.
 
