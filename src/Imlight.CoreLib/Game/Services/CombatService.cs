@@ -389,7 +389,7 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
         // hasn't had enough time to set its Wizard reference yet.
         var wizardObj = GetActiveGameObject();
         if (wizardObj is null) {
-            wizardObj = GetActiveWizard().GameObject;
+            wizardObj = GetActiveWizard()?.GetInitializedGameObject();
 
             if (wizardObj is null) {
                 Logger.Error("Failed to get wizard object for adding effects.");
