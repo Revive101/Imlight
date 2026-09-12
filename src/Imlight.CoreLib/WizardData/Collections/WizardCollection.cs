@@ -353,6 +353,14 @@ public static class WizardCollection {
     }
 
     /// <summary>
+    /// Updates the last time a wizard was selected from the character screen.
+    /// </summary>
+    public static void UpdateCharacterLastLoginTime(Wizard wizard) {
+        UpdateCharacter(wizard.CharId, existingCharacter =>
+            existingCharacter.LastLoginTime = wizard.LastLoginTime);
+    }
+
+    /// <summary>
     /// Updates the training points of a wizard.
     /// </summary>
     /// <param name="wizard">The wizard object containing the updated training points count.</param>
