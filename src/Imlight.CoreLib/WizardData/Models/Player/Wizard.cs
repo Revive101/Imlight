@@ -140,6 +140,7 @@ public class Wizard {
             ? ConfigurationManager.Settings["Character.StartingZone"]
             : TutorialStartingZone;
         World = ConfigurationManager.Settings["Character.StartingWorld"].AsByte();
+        LastLoginTime = (uint) DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
         // Do behaviors.
         WizardAvatar = avatar;
