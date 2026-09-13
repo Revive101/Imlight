@@ -63,6 +63,10 @@ internal class GameTransitionService(SessionActor sessionActor) : MessageService
 
     [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_SELECTCHARACTER))]
     private void ReceiveSelectCharacter(LOGIN_7_PROTOCOL.MSG_SELECTCHARACTER message) {
+        SendToSocket(new LOGIN_7_PROTOCOL.MSG_CHARACTERSELECTED() {
+            PrepPhase = 1,
+        });
+
         // If the socket account cannot be found, send the client an error.
         var account = GetSocketAccount();
         if (account is null) {
