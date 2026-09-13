@@ -151,6 +151,10 @@ public static class WizardCollection {
 
         var character = GetCharacterByCharId(session, id);
 
+        if (character is null) {
+            return null;
+        }
+
         // Query for the account.
         var account = session.Query<Account>(collectionName: AccountCollection.CollectionName)
             .FirstOrDefault(x => x.AccountId == character.AccountId);

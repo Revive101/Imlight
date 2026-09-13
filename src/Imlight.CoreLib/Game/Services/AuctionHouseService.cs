@@ -206,7 +206,7 @@ internal class AuctionHouseService(SessionActor sessionActor) : MessageService(s
 
         // Add item to inventory
         var addItemMsg = new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_ADDITEM {
-            GlobalID = wizard.CharId,
+            GlobalID = wizard.GameObjectID,
             SerializedItem = itemData,
         };
         SendToSocket(addItemMsg);
@@ -326,7 +326,7 @@ internal class AuctionHouseService(SessionActor sessionActor) : MessageService(s
 
         // Remove item from inventory.
         var removeItemMsg = new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_REMOVEITEM {
-            GlobalID = wizard.CharId,
+            GlobalID = wizard.GameObjectID,
             ItemID = item.m_globalID
         };
         SendToSocket(removeItemMsg);

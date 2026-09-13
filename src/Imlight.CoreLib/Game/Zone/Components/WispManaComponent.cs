@@ -96,7 +96,7 @@ internal sealed class WispManaComponent : ZoneEntityComponent, IComponentFactory
             playerActor.Tell(manaUpdateMsg);
 
             SendStateChange();
-            SendDestroy(playerWizard.CharId);
+            SendDestroy(playerWizard.GameObjectID);
             playerWizard.UpdateMana(currentMana + manaUpdate);
         }
     }

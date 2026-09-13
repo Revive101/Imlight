@@ -87,7 +87,7 @@ internal class PotionService(SessionActor sessionActor) : MessageService(session
         if (currentHealth < baseHealth) { // If health is full, no need to heal.
             // Inform the player's game client that their health has been updated.
             var healthUpdateMsg = new WIZARD_12_PROTOCOL.MSG_UPDATEHEALTH() {
-                CharacterID = wizard.CharId,
+                CharacterID = wizard.GameObjectID,
                 NewHealth = baseHealth,
                 NewHealthMax = msgBaseHealth,
                 DisplayDiff = 1
