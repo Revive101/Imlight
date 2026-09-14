@@ -909,22 +909,40 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
             return;
         }
 
-        if(!wizard.AddItemToInventory(message.Item, out WizClientObjectItem itemCoreObject)) {
-            Logger.Warning("Could not add item to inventory.");
+        // Add item to inventory
+        var coSerializer = new CoreObjectSerializer(
+            behaviors: Imcodec.ObjectProperty.SerializerFlags.None
+        );
 
-            var msg = new WIZARD_12_PROTOCOL.MSG_PCS_PURCHASE_RESPONSE {
-                Item = message.Item,
-                Error = 1,
-                Cost = amountToPay,
-                Count = message.Count,
-                Gifted = (byte) (message.Recipient == 0 ? 0 : 1),
-                Type = message.Type
-            };
-            SendToSocket(msg);
-            return;
+        // todo: serialize the item only once   
+        for (uint i = 0; i < message.Count; i++) {
+            if (!wizard.AddItemToInventory(message.Item, out WizClientObjectItem itemCoreObject)) {
+                Logger.Warning("Could not add item to inventory.");
+
+                var msg = new WIZARD_12_PROTOCOL.MSG_PCS_PURCHASE_RESPONSE {
+                    Item = message.Item,
+                    Error = 1,
+                    Cost = amountToPay,
+                    Count = message.Count,
+                    Gifted = (byte) (message.Recipient == 0 ? 0 : 1),
+                    Type = message.Type
+                };
+                SendToSocket(msg);
+                return;
+            }
+
+            if (!coSerializer.Serialize(itemCoreObject, 24, out var serializedItem)) {
+                Logger.Warning("Failed to serialize core object.");
+                return;
+            }
+
+            SendToSocket(new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_ADDITEM {
+                GlobalID = wizard.CharId,
+                SerializedItem = serializedItem
+            });
         }
-        wizard.Account.SetCrowns(wizard.Account.Crowns - amountToPay);
 
+        wizard.Account.SetCrowns(wizard.Account.Crowns - amountToPay);
         SendToSocket(new WIZARD_12_PROTOCOL.MSG_PCS_PURCHASE_RESPONSE {
             Item = message.Item,
             Error = 0,
@@ -940,21 +958,6 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
             TotalCrowns = wizard.Account.Crowns,
             CharacterID = wizard.CharId,
             CacheBalanceForCSSegmentation = (byte) 1
-        });
-
-        // Add item to inventory
-        var coSerializer = new CoreObjectSerializer(
-            behaviors: Imcodec.ObjectProperty.SerializerFlags.None
-        );
-
-        if (!coSerializer.Serialize(itemCoreObject, 24, out var serializedItem)) {
-            Logger.Warning("Failed to serialize core object.");
-            return;
-        }
-
-        SendToSocket(new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_ADDITEM {
-            GlobalID = wizard.CharId,
-            SerializedItem = serializedItem
         });
 
     }
