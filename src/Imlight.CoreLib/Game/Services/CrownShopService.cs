@@ -29,7 +29,7 @@
  * 
  * NOTE:
  * 
- * There are following itemFlags:
+ * There are following (possible) itemFlags:
  *  0x0001 (Bit 0)	FLAG_NoTrade	The purchased item cannot be placed in the Shared Bank or traded to other characters on the account.
  *  0x0002 (Bit 1)	FLAG_NoAuction	The purchased item cannot be auctioned at the Bazaar.
  *  0x0004 (Bit 2)	FLAG_NoSell	The item cannot be sold to regular vendors for gold.
@@ -53,19 +53,22 @@
  * 
  * Created by: Phill030
  * Version: KALI 1.0
- * Last Updated: 13.09.2026
+ * Last Updated: 14.09.2026
  */
 
 using Akka.Actor;
-using Akka.Util.Internal;
+using Imcodec.CoreObject;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
 using Imlight.CoreLib.Shared.Networking;
+using Imlight.CoreLib.Shared.Resources;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices.Marshalling;
+using System.Text.Json;
 
 namespace Imlight.CoreLib.Game.Services;
 
@@ -784,16 +787,16 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
         }
 
         SendToSocket(new WIZARD_12_PROTOCOL.MSG_PCS_SEGDATA_RESPONSE {
-            Success = 1,
+            Success = (byte)1,
             Data = serializedData
-        });
+});
 
         // We need to call this to "sync" the CrownShop Crown-Balance, else it just says 0
         SendToSocket(new WIZARD_12_PROTOCOL.MSG_CROWNBALANCE {
-            Failure = 0,
+            Failure = (byte)0,
             TotalCrowns = wizard.Account.Crowns,
             CharacterID = wizard.CharId,
-            CacheBalanceForCSSegmentation = 1
+            CacheBalanceForCSSegmentation = (byte)1
         });
     }
 
@@ -861,5 +864,98 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
             UpdateID = nextUpdateId,
             Error = 0,
         });
+    }
+
+    [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_PCS_UPDATEUSERWISHLIST))]
+    private void ReceiveWishlistUpdate(WIZARD_12_PROTOCOL.MSG_PCS_UPDATEUSERWISHLIST message) { }
+
+    // This checks if the item *can* be bought (NOT if the player has enough money) (Time ran out, etc.)
+    [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_PCS_PRICE_LOCK_REQUEST))]
+    private void ReceivePriceLockReq(WIZARD_12_PROTOCOL.MSG_PCS_PRICE_LOCK_REQUEST message) {
+        // TODO: There must be a list with itemId, saleId and prices stored somewhere in the DB
+        Logger.Information("Received MSG_PCS_PRICE_LOCK_REQUEST");
+
+        var msg = new WIZARD_12_PROTOCOL.MSG_PCS_PRICE_LOCK_RESPONSE {
+            CostCrowns = 1,
+            CostGold = 0,
+            CostTickets = 0,
+            Error = 0,
+            Item = message.Item
+        };
+
+        SendToSocket(msg);
+    }
+
+    // The client requests to buy [N amount] of this item (and possibly gift it to another player),
+    // which will be removed(?) from the list of things they can buy (if enabled).
+    [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_PCS_PURCHASE_REQUEST))]
+    private void ReceivePurchaseRequest(WIZARD_12_PROTOCOL.MSG_PCS_PURCHASE_REQUEST message) {
+        var wizard = GetActiveWizard();
+        Logger.Information("Received MSG_PCS_PURCHASE_REQUEST");
+        Logger.Information(JsonSerializer.Serialize(message));
+
+        // todo: cost needs to be compared to the item stored in the DB, or else the client could bypass this!!
+        var amountToPay = message.Count * message.Cost;
+        if (wizard.Account.Crowns < amountToPay) {
+            var msg = new WIZARD_12_PROTOCOL.MSG_PCS_PURCHASE_RESPONSE {
+                Item = message.Item,
+                Error = 1,
+                Cost = amountToPay,
+                Count = message.Count,
+                Gifted = (byte)(message.Recipient == 0 ? 0 : 1),
+                Type = message.Type
+            };
+            SendToSocket(msg);
+            return;
+        }
+
+        if(!wizard.AddItemToInventory(message.Item, out WizClientObjectItem itemCoreObject)) {
+            Logger.Warning("Could not add item to inventory.");
+
+            var msg = new WIZARD_12_PROTOCOL.MSG_PCS_PURCHASE_RESPONSE {
+                Item = message.Item,
+                Error = 1,
+                Cost = amountToPay,
+                Count = message.Count,
+                Gifted = (byte) (message.Recipient == 0 ? 0 : 1),
+                Type = message.Type
+            };
+            SendToSocket(msg);
+            return;
+        }
+        wizard.Account.SetCrowns(wizard.Account.Crowns - amountToPay);
+
+        SendToSocket(new WIZARD_12_PROTOCOL.MSG_PCS_PURCHASE_RESPONSE {
+            Item = message.Item,
+            Error = 0,
+            Cost = amountToPay,
+            Count = message.Count,
+            Gifted = (byte) (message.Recipient == 0 ? 0 : 1),
+            Type = message.Type
+        });
+
+        // Sync crowns
+        SendToSocket(new WIZARD_12_PROTOCOL.MSG_CROWNBALANCE {
+            Failure = (byte) 0,
+            TotalCrowns = wizard.Account.Crowns,
+            CharacterID = wizard.CharId,
+            CacheBalanceForCSSegmentation = (byte) 1
+        });
+
+        // Add item to inventory
+        var coSerializer = new CoreObjectSerializer(
+            behaviors: Imcodec.ObjectProperty.SerializerFlags.None
+        );
+
+        if (!coSerializer.Serialize(itemCoreObject, 24, out var serializedItem)) {
+            Logger.Warning("Failed to serialize core object.");
+            return;
+        }
+
+        SendToSocket(new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_ADDITEM {
+            GlobalID = wizard.CharId,
+            SerializedItem = serializedItem
+        });
+
     }
 }
