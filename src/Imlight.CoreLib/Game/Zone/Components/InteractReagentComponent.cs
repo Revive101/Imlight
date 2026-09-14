@@ -132,13 +132,13 @@ internal sealed class InteractReagentComponent(ZoneEntity entity)
 
         // Inform the game client that the player has gathered reagents.
         var reagents = isRare ? new[] { reagent, rareReagent } : [reagent];
-        SendPlayerReagentAddMessage(playerActor, reagents, playerCharacter.CharId);
+        SendPlayerReagentAddMessage(playerActor, reagents, playerCharacter.GameObjectID);
 
         // Inform the game client that they have gathered loot.
         SendPlayerLootInfoMessage(playerActor, new Dictionary<ulong, int> {
             [reagent.m_templateID] = reagent.m_quantity,
             [rareReagent?.m_templateID ?? 0] = rareReagent?.m_quantity ?? 0,
-        }, playerCharacter.CharId);
+        }, playerCharacter.GameObjectID);
 
         // Play the pickup sound.
         if (isRare) {

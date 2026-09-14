@@ -106,7 +106,7 @@ internal class WizardService(SessionActor sessionActor) : MessageService(session
         }
 
         var levelUpMessage = new WIZARD_12_PROTOCOL.MSG_LEVELUP {
-            GlobalID = _activeWizard.CharId,
+            GlobalID = _activeWizard.GameObjectID,
             NewLevel = _activeWizard.MagicSchoolBehavior.Level,
             Data = "0000000000"
         };
@@ -161,7 +161,7 @@ internal class WizardService(SessionActor sessionActor) : MessageService(session
             // The player leveled up. AddExperiencePoints already called SetLevel internally,
             // so we just need to broadcast the level-up and send stat updates to the client.
             var levelUpMessage = new WIZARD_12_PROTOCOL.MSG_LEVELUP {
-                GlobalID = _activeWizard.CharId,
+                GlobalID = _activeWizard.GameObjectID,
                 NewLevel = afterLevel,
                 Data = "0000000000"
             };
@@ -203,7 +203,7 @@ internal class WizardService(SessionActor sessionActor) : MessageService(session
 
         // Inform the client of the XP change.
         var addXpMsg = new WIZARD_12_PROTOCOL.MSG_UPDATEXP {
-            GlobalID = _activeWizard.CharId,
+            GlobalID = _activeWizard.GameObjectID,
             XP = xpGained,
             OldXP = beforeXP,
         };

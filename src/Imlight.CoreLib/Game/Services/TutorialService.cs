@@ -414,7 +414,7 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
         var clientMax = wizard.GameStats.GetClientTypeAlternative().m_baseHitpoints;
         wizard.UpdateHealth(full);
         SendToSocket(new WIZARD_12_PROTOCOL.MSG_UPDATEHEALTH {
-            CharacterID = wizard.CharId,
+            CharacterID = wizard.GameObjectID,
             NewHealth = full,
             NewHealthMax = clientMax,
         });
@@ -630,7 +630,7 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
         }
 
         SendToSocket(new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_ADDITEM {
-            GlobalID = wizard.CharId,
+            GlobalID = wizard.GameObjectID,
             SerializedItem = serializedItem,
         });
     }
@@ -651,7 +651,7 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
         }
 
         SendToSocket(new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_ADDITEM {
-            GlobalID = wizard.CharId,
+            GlobalID = wizard.GameObjectID,
             SerializedItem = serializedItem,
         });
     }

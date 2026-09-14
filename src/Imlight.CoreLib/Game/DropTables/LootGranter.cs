@@ -168,7 +168,7 @@ public static class LootGranter {
         }
 
         playerActor.Tell(new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_ADDITEM {
-            GlobalID = wizard.CharId,
+            GlobalID = wizard.GameObjectID,
             SerializedItem = serializedItem,
         });
     }
@@ -203,7 +203,7 @@ public static class LootGranter {
         }
 
         var lootMsg = new WIZARD_12_PROTOCOL.MSG_LOOT() {
-            GlobalID = wizard.CharId,
+            GlobalID = wizard.GameObjectID,
             LootList = serializedLootList
         };
 
