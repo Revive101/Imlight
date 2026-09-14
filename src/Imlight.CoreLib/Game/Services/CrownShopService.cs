@@ -29,7 +29,20 @@
  * 
  * NOTE:
  * 
- * 
+ * There are following itemFlags:
+ *  0x0001 (Bit 0)	FLAG_NoTrade	The purchased item cannot be placed in the Shared Bank or traded to other characters on the account.
+ *  0x0002 (Bit 1)	FLAG_NoAuction	The purchased item cannot be auctioned at the Bazaar.
+ *  0x0004 (Bit 2)	FLAG_NoSell	The item cannot be sold to regular vendors for gold.
+ *  0x0008 (Bit 3)	FLAG_NoDrop	Item cannot be deleted / dropped from inventory without extra confirmation.
+ *  0x0010 (Bit 4)	FLAG_No_PvP	Item cannot be used in PvP (Ranked or Practice).
+ *  0x0020 (Bit 5)	FLAG_CrownsOnly	Flags the item as a Crowns-exclusive item in the UI (shows Crowns badge).
+ *  0x0040 (Bit 6)	FLAG_NoGift	Disallows gifting this specific item to friends (similar to m_noGift).
+ *  0x0080 (Bit 7)	FLAG_Retired	Marks the item as retired / legacy (often hidden or archived).
+ *  0x0100 (Bit 8)	FLAG_NoDye	Item cannot be dyed in the Dye Shop.
+ *  0x0200 (Bit 9)	FLAG_PvPCurrencyOnly	Item can only be purchased with PvP Arena Tickets / currency.
+ *  0x0400 (Bit 10)	FLAG_ArenaPointsOnly	Item is restricted to Arena point purchases.
+ *  0x0800 (Bit 11)	FLAG_DoubleConfirmDrop	Requires double confirmation when trashing/deleting the item.
+ *  0x1000 (Bit 12)	FLAG_NoBargain	Prevents discount / bargain calculations on the item.
  * 
  * TODO:
  * - Item purchasing
@@ -752,7 +765,7 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
             m_accountIsMember = 0,
             m_accountIsCSR = 0,
             m_accountNCrownsSpent = 0,
-            m_accountNCrownsInWallet = 1258291200,
+            m_accountNCrownsInWallet = wizard.Account.Crowns,
             m_accountNDaysSinceItemPurchased = [],
             m_numOfParticularItemInInventory = [],
             m_numItemsOfCategoryInInventory = [],
@@ -770,12 +783,18 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
             return;
         }
 
-        var msg = new WIZARD_12_PROTOCOL.MSG_PCS_SEGDATA_RESPONSE {
+        SendToSocket(new WIZARD_12_PROTOCOL.MSG_PCS_SEGDATA_RESPONSE {
             Success = 1,
             Data = serializedData
-        };
+        });
 
-        SendToSocket(msg);
+        // We need to call this to "sync" the CrownShop Crown-Balance, else it just says 0
+        SendToSocket(new WIZARD_12_PROTOCOL.MSG_CROWNBALANCE {
+            Failure = 0,
+            TotalCrowns = wizard.Account.Crowns,
+            CharacterID = wizard.CharId,
+            CacheBalanceForCSSegmentation = 1
+        });
     }
 
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_PCS_LIST_REQUEST))]
@@ -786,15 +805,15 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
         foreach (var (id, name) in _mounts) {
             items.Add(new CrownShopItem {
                 m_itemTemplateId = id,
-                m_itemFlags = 0,
+                m_itemFlags = 0, // possible item flags are listed above (typically 0)
                 m_goldCost = 0,
                 m_crownsCost = 1,
                 m_ticketCost = 0,
-                m_displayPriority = "10:2176,19:2944,0:7104",
+                m_displayPriority = "10:2176,19:2944,0:7104", // Category:Position ?
                 m_strikethruCrowns = 0,
                 m_strikethruGold = 0,
                 m_description = name,
-                m_saleID = 5129,
+                m_saleID = 5129, // A unique ID per sale/item offer
                 m_recommendIfOwned = false,
                 m_combatOnly = false,
                 m_noGift = false,
