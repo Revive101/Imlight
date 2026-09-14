@@ -333,6 +333,12 @@ public static class AccountCollection {
         });
     }
 
+    /// <summary>
+    /// Updates the crowns balance for the specified account.
+    /// </summary>
+    /// <param name="accountId">The unique identifier of the account to update.</param>
+    /// <param name="crownsAmount">The crowns balance to assign to the account.</param>
+    /// <returns>true if the account was updated; otherwise, false.</returns>
     public static bool UpdateCrowns(ulong accountId, int crownsAmount) {
         return UpdateAccount(accountId, acc => {
             acc.Crowns = crownsAmount;
