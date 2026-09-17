@@ -271,9 +271,11 @@ internal class ChatService(SessionActor sessionActor) : MessageService(sessionAc
             return;
         }
         
-        // We only care about the ID sent here. It's the ID of the core object, but Imlight serialized
-        // it using the character ID.
-        var persistentCharacter = WizardCollection.GetCharacter(message.BuddyID);
+        if (!Wizard.TryGetCharacterId(message.BuddyID, out var characterId)) {
+            return;
+        }
+
+        var persistentCharacter = WizardCollection.GetCharacter(characterId);
         if (persistentCharacter is null) {
             return;
         }
@@ -312,7 +314,7 @@ internal class ChatService(SessionActor sessionActor) : MessageService(sessionAc
         => ChatLogCollection.AddChatLog(new ChatLog() {
             TimeStamp = DateTime.UtcNow,
             ZoneName = character.Zone,
-            CharacterId = charObj.m_globalID,
+            CharacterId = character.CharId,
             AccountId = character.AccountId,
             Message = message,
         });

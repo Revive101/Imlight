@@ -99,7 +99,7 @@ internal class CommandModifyProtocol : CommandProtocol {
 
         // Create the network message and send it.
         var networkMessage = new GAME_5_PROTOCOL.MSG_ADDEFFECT() {
-            GameObjectID = Context.Character.CharId,
+            GameObjectID = Context.Character.GameObjectID,
             EffectData = serializedEffect
         };
         Context.SessionActor.Tell(networkMessage, null);
@@ -149,7 +149,7 @@ internal class CommandModifyProtocol : CommandProtocol {
         }
 
         var networkMessage = new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_ADDITEM {
-            GlobalID = Context.Character.CharId,
+            GlobalID = Context.Character.GameObjectID,
             SerializedItem = serializedCoreObject
         };
         Context.SessionActor.Tell(networkMessage, null);
@@ -199,7 +199,7 @@ internal class CommandModifyProtocol : CommandProtocol {
         }
 
         var networkMessage = new PET_9_PROTOCOL.MSG_PETSNACKADD {
-            GlobalID = Context.Character.CharId,
+            GlobalID = Context.Character.GameObjectID,
             Data = serializedSnackObj
         };
         Context.SessionActor.Tell(networkMessage, null);
@@ -212,7 +212,7 @@ internal class CommandModifyProtocol : CommandProtocol {
         Context.SessionActor.Tell(acquireMessage, null);
 
         var updateMessage = new PET_9_PROTOCOL.MSG_PETSNACKUPDATE {
-            GlobalID = Context.Character.CharId,
+            GlobalID = Context.Character.GameObjectID,
             ItemID = snackObj.m_globalID,
             Quantity = snackObj.m_quantity
         };
@@ -263,7 +263,7 @@ internal class CommandModifyProtocol : CommandProtocol {
         }
 
         var networkMessage = new WIZARD_12_PROTOCOL.MSG_REAGENTADD {
-            GlobalID = Context.Character.CharId,
+            GlobalID = Context.Character.GameObjectID,
             Data = serializedReagentObj
         };
         Context.SessionActor.Tell(networkMessage, null);
@@ -276,7 +276,7 @@ internal class CommandModifyProtocol : CommandProtocol {
         Context.SessionActor.Tell(acquireMessage, null);
 
         var updateMessage = new WIZARD_12_PROTOCOL.MSG_REAGENTUPDATE {
-            GlobalID = Context.Character.CharId,
+            GlobalID = Context.Character.GameObjectID,
             ItemID = reagentObj.m_globalID,
             Quantity = reagentObj.m_quantity
         };

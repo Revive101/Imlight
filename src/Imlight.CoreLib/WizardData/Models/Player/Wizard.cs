@@ -42,10 +42,23 @@ public class Wizard {
     public ulong CharId {
         get;
         set {
+            var gameObjectId = GetGameObjectId(value);
             field = value;
             GameObject.m_characterId = (GID) value;
-            GameObject.m_globalID = value;
+            GameObject.m_globalID = gameObjectId;
+            GameObject.m_permID = gameObjectId;
         }
+    }
+    [JsonIgnore] public ulong GameObjectID => GetGameObjectId(CharId);
+
+    // Player objects use a separate ID from saved characters. Zero means no player.
+    // Keep this mapping here so offline callers do not need an attached Wizard.
+    public static ulong GetGameObjectId(ulong charId) => charId == 0 ? 0 : checked(charId + 2);
+
+    // Only for player object IDs; item, NPC and zone IDs use their own identities.
+    public static bool TryGetCharacterId(ulong gameObjectId, out ulong charId) {
+        charId = gameObjectId > 2 ? gameObjectId - 2 : 0;
+        return charId != 0;
     }
     public string Zone { get; set; }
     public string ZoneDisplayName { get; set; }
@@ -97,7 +110,8 @@ public class Wizard {
         set {
             ArgumentNullException.ThrowIfNull(value);
             value.m_characterId = (GID) CharId;
-            value.m_globalID = CharId;
+            value.m_globalID = GameObjectID;
+            value.m_permID = GameObjectID;
             if (_hasLocation) {
                 value.m_location = field.m_location;
             }
@@ -140,6 +154,7 @@ public class Wizard {
             ? ConfigurationManager.Settings["Character.StartingZone"]
             : TutorialStartingZone;
         World = ConfigurationManager.Settings["Character.StartingWorld"].AsByte();
+        LastLoginTime = (uint) DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
         // Do behaviors.
         WizardAvatar = avatar;

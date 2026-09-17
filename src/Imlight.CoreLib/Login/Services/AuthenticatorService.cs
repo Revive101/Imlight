@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Imlight
  * Copyright (C) 2025 Revive101
  *
@@ -50,6 +50,8 @@ internal class AuthenticatorService(SessionActor parentActor) : MessageService(p
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new AuthenticatorService(parentActor));
 
+    private Account? _validatedAccount;
+
     // Received when a user is trying to authenticate.
     [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_V3))]
     private void ReceiveUserAuth(LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_V3 message) {
@@ -94,20 +96,21 @@ internal class AuthenticatorService(SessionActor parentActor) : MessageService(p
             
             return;
         }
-        else {
-            // Otherwise, inform the socket that the authentication was successful.
-            SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_RSP {
-                Error = (int) UserAuthenResult.Success,
-                Reason = "",
-                UserID = authReply._account.AccountId,
-                PayingUser = 1,
-                TimeStamp = "",
-                Rec1 = authReply._rec1,
-                //Flags = (int) authReply._account.GetAccountFlags(),
-            });
-        }
 
-        SendClientToLogin(authReply._account);
+        _validatedAccount = authReply._account;
+
+        TellOtherServices(new ACCOUNT_104_PROTOCOL.MSG_ACCOUNT { Account = authReply._account });
+
+        // Otherwise, inform the socket that the authentication was successful.
+        SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_RSP {
+            Error = (int) UserAuthenResult.Success,
+            Reason = "",
+            UserID = authReply._account.AccountId,
+            PayingUser = 1,
+            TimeStamp = "",
+            Rec1 = authReply._rec1,
+            //Flags = (int) authReply._account.GetAccountFlags(),
+        });
     }
 
     private void ValidateUser(LOGIN_7_PROTOCOL.MSG_USER_VALIDATE message) {
@@ -117,7 +120,13 @@ internal class AuthenticatorService(SessionActor parentActor) : MessageService(p
                 Error = (int) validationReply._result,
                 Reason = validationReply._result.ToString(),
             });
+
+            return;
         }
+
+        _validatedAccount = validationReply._account;
+
+        TellOtherServices(new ACCOUNT_104_PROTOCOL.MSG_ACCOUNT { Account = validationReply._account });
 
         // Inform the socket that they've been validated.
         SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_VALIDATE_RSP {
@@ -127,22 +136,28 @@ internal class AuthenticatorService(SessionActor parentActor) : MessageService(p
             PayingUser = 1,
             //Flags = (int) validationReply._account.GetAccountFlags(),
         });
-
-        SendClientToLogin(validationReply._account);
     }
 
-    private void SendClientToLogin(Account account) {
-        // Inform the SessionActor of the account.
-        TellOtherServices(new ACCOUNT_104_PROTOCOL.MSG_ACCOUNT { Account = account });
+    [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_REQUESTCHARACTERLIST))]
+    private void ReceiveRequestCharacterList(LOGIN_7_PROTOCOL.MSG_REQUESTCHARACTERLIST message) {
+        if (_validatedAccount is null)
+            throw new SessionFatalException(
+                "Character list requested before successful validation.");
 
+        if (!AdmitClientToLogin(_validatedAccount))
+            return;
+
+        TellOtherServices(new LOGIN_108_PROTOCOL.MSG_REQUESTCHARACTERLIST());
+    }
+
+    private bool AdmitClientToLogin(Account account) {
         // Enqueue ourselves to the connected server. Inform the socket if its been placed into a queue and
         // what position it could potentially be in.
         var serverEnqueueResult = SessionActor.EnqueueToServer();
         if (serverEnqueueResult.Failed) {
-            var clientResponse = new LOGIN_7_PROTOCOL.MSG_USER_ADMIT_IND {
+            SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_ADMIT_IND {
                 Status = 0,
-            };
-            SendToSocket(clientResponse);
+            });
 
             // Explicitly inform the socket about this.
             var clientExplicitFailedResponse = new EXTENDEDBASE_2_PROTOCOL.MSG_SERVERMESSAGE {
@@ -151,17 +166,20 @@ internal class AuthenticatorService(SessionActor parentActor) : MessageService(p
             SendToSocket(clientExplicitFailedResponse);
 
             CloseSession();
-        }
-        else {
-            var clientResponse = new LOGIN_7_PROTOCOL.MSG_USER_ADMIT_IND {
-                PositionInQueue = (uint) serverEnqueueResult.PositionInQueue,
-                Status = serverEnqueueResult.Status,
-            };
-            SendToSocket(clientResponse);
 
-            // Add the player to the online player collection.
-            AddToOnlineCollection(account);
+            return false;
         }
+
+        var clientResponse = new LOGIN_7_PROTOCOL.MSG_USER_ADMIT_IND {
+            PositionInQueue = (uint) serverEnqueueResult.PositionInQueue,
+            Status = serverEnqueueResult.Status,
+        };
+        SendToSocket(clientResponse);
+
+        // Add the player to the online player collection.
+        AddToOnlineCollection(account);
+
+        return true;
     }
 
     private void AddToOnlineCollection(Account account) {

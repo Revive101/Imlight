@@ -51,7 +51,7 @@ internal sealed class ResAddHealthHandler : BaseResultHandler<ResAddHealth> {
         var clientMax = wizard.GameStats.GetClientTypeAlternative().m_baseHitpoints;
         wizard.UpdateHealth(full);
         context.GetPlayerRef().Tell(new WIZARD_12_PROTOCOL.MSG_UPDATEHEALTH {
-            CharacterID = wizard.CharId,
+            CharacterID = wizard.GameObjectID,
             NewHealth = full,
             NewHealthMax = clientMax,
         });

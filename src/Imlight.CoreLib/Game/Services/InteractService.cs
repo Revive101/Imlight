@@ -59,7 +59,7 @@ internal class InteractService(SessionActor sessionActor) : MessageService(sessi
 
         // A player is closing their shop
         if (message.ServiceName == "") {
-            CloseShop(wizard.CharId);
+            CloseShop(wizard.GameObjectID);
             return;
         }
 
@@ -106,16 +106,16 @@ internal class InteractService(SessionActor sessionActor) : MessageService(sessi
         serviceMementoComponent.ActorRef.Tell(msg);
     }
 
-    private void CloseShop(ulong charId) {
+    private void CloseShop(ulong gameObjectId) {
         var enableMovementStateMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE() {
-            GameObjectID = charId,
+            GameObjectID = gameObjectId,
             State = StringHash.Compute("Moving"),
             IgnoreIfCurrentStateIsOff = 1
         };
         ZoneBroadcast(enableMovementStateMsg, false);
 
         var clearWizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG() {
-            GameObjectID = charId,
+            GameObjectID = gameObjectId,
             WizBangID = (uint) WizBangs.None
         };
         ZoneBroadcast(clearWizBangMsg, false);
