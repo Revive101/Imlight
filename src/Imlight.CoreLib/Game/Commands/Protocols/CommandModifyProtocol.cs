@@ -20,6 +20,7 @@ using System;
 using Akka.Actor;
 using Imcodec.CoreObject;
 using Imcodec.MessageLayer.Generated;
+using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Game.Cantrips;
 using Imlight.CoreLib.Shared.Character;
@@ -31,7 +32,8 @@ namespace Imlight.CoreLib.Game.Commands.Protocols;
 
 internal class CommandModifyProtocol : CommandProtocol {
 
-    private const uint SPEED_EFFECT_NAME = 6543894; //unfunctional rn
+    // StringHash of "SpeedBuff" which can be found in Root.wad/GameEffectData/CanonicalStatEffect.xml
+    private const uint SPEED_EFFECT_NAME = 6543894;
 
     internal override string Group { get; set; } = "mod";
 
@@ -74,9 +76,9 @@ internal class CommandModifyProtocol : CommandProtocol {
 
     [Command("speed")]
     [AuthRequired(AuthLevel.QualityAssurance)]
-    private void SetSpeedCommand(string speedMultiplier) {
+    private void SetSpeedCommand(string speedBonus) {
         // Try to parse the speed multiplier.
-        if (!int.TryParse(speedMultiplier, out var speedMultiplierInt)) {
+        if (!int.TryParse(speedBonus, out var speedBonusInt)) {
             InformSenderClient("Invalid speed multiplier.");
 
             return;
@@ -84,16 +86,18 @@ internal class CommandModifyProtocol : CommandProtocol {
 
         // Create the speed effect.
         var effect = new SpeedEffect() {
-            m_speedMultiplier = speedMultiplierInt,
+            m_speedMultiplier = speedBonusInt, // Speed is not a multiplier, but a percentage bonus! (+50%, etc.)
             m_effectNameID = SPEED_EFFECT_NAME,
-            m_itemSlotID = 100
+            m_itemSlotID = 0 //  Should be 0 when effects are not bound to an equipped gear slot!
         };
+
         var coreObjectSerializer = new CoreObjectSerializer(
             behaviors: Imcodec.ObjectProperty.SerializerFlags.None
         );
-        if (!coreObjectSerializer.Serialize(effect, 1, out var serializedEffect)) {
-            InformSenderClient("Failed to serialize speed effect.");
 
+        var flags = PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit;
+        if (!coreObjectSerializer.Serialize(effect, flags, out var serializedEffect)) {
+            InformSenderClient("Failed to serialize speed effect.");
             return;
         }
 
@@ -104,7 +108,12 @@ internal class CommandModifyProtocol : CommandProtocol {
         };
         Context.SessionActor.Tell(networkMessage, null);
 
-        InformSenderClient($"Increased speed multiplier by {speedMultiplierInt}.");
+        if (speedBonusInt > 0) {
+            InformSenderClient($"Increased speed by {speedBonusInt}%.");
+        }
+        else {
+            InformSenderClient($"Decreased speed by {speedBonusInt}%.");
+        }
     }
 
     [Command("additem")]
