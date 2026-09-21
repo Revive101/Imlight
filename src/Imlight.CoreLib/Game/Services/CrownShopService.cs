@@ -765,7 +765,7 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
             m_bIsValidSegmentationData = true,
             m_playerLevel = wizard.MagicSchoolBehavior.Level,
             m_playerSchoolOfFocus = "St", // First two letters of the school?!
-            m_accountNDaysAged = 7172719,
+            m_accountNDaysAged = (int) (DateTime.Now - wizard.Account.CreationTime).TotalDays,
             m_accountNDaysSinceLastLogin = 0,
             m_accountNDaysSinceLastPurchase = 0,
             m_accountNDaysLastCrownsPurchase = 0,
