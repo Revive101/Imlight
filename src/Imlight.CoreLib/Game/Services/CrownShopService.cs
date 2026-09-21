@@ -899,6 +899,10 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
             OpenBoosterPack(wizard, message.Item);
         } else {
             // Add item to inventory
+            // todo: serialize the item only once   
+            var coSerializer = new CoreObjectSerializer(
+                behaviors: Imcodec.ObjectProperty.SerializerFlags.None
+            );
             for (uint i = 0; i < message.Count; i++) {
                 if (!wizard.AddItemToInventory(message.Item, out WizClientObjectItem itemCoreObject)) {
                     Logger.Warning("Could not add item to inventory.");
@@ -914,11 +918,6 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
                     SendToSocket(msg);
                     return;
                 }
-
-                // todo: serialize the item only once   
-                var coSerializer = new CoreObjectSerializer(
-                    behaviors: Imcodec.ObjectProperty.SerializerFlags.None
-                );
 
                 if (!coSerializer.Serialize(itemCoreObject, 24, out var serializedItem)) {
                     Logger.Warning("Failed to serialize core object.");
