@@ -61,14 +61,17 @@ using Imcodec.CoreObject;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
+using Imcodec.Types;
 using Imlight.Common;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Models.Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices.Marshalling;
 using System.Text.Json;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Imlight.CoreLib.Game.Services;
 
@@ -740,15 +743,18 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
     }
 };
 
-    private readonly IReadOnlyList<(uint Id, string Name)> _mounts = new[]
-    {
-        (191229u, "Enchanted Broom (PERM)"),
-        (191230u, "Purple Glider (PERM)"),
-        (191231u, "Horned Sweeper (PERM)"),
-        (191237u, "Chestnut Pony (PERM)"),
-        (191238u, "White Mare (PERM)"),
-        (191239u, "Black Stallion (PERM)"),
-    };
+
+    private static List<CrownShopItem> s_catalogCache;
+    private static readonly object s_catalogLock = new();
+    private static readonly Lazy<HashSet<ulong>> s_boosterPackIds = new(() =>
+        CoreObjectFactory.TemplateManifest.m_serializedTemplates
+            .Where(t => t.m_filename.Contains("BoosterPack", StringComparison.OrdinalIgnoreCase))
+            .Select(t => (ulong) t.m_id)
+            .ToHashSet()
+    );
+
+    private static bool IsBoosterPack(ulong templateId)
+        => s_boosterPackIds.Value.Contains(templateId);
 
     protected static Props Props(SessionActor parentActor)
             => Akka.Actor.Props.Create(() => new CrownShopService(parentActor));
@@ -804,29 +810,8 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
     private void ReceiveCrownShopListRequest(WIZARD_12_PROTOCOL.MSG_PCS_LIST_REQUEST message) {
         var wizard = GetActiveWizard();
 
-        var items = new List<CrownShopItem>();
-        foreach (var (id, name) in _mounts) {
-            items.Add(new CrownShopItem {
-                m_itemTemplateId = id,
-                m_itemFlags = 0, // possible item flags are listed above (typically 0)
-                m_goldCost = 0,
-                m_crownsCost = 1,
-                m_ticketCost = 0,
-                m_displayPriority = "10:2176,19:2944,0:7104", // Category:Position ?
-                m_strikethruCrowns = 0,
-                m_strikethruGold = 0,
-                m_description = name,
-                m_saleID = 5129, // A unique ID per sale/item offer
-                m_recommendIfOwned = false,
-                m_combatOnly = false,
-                m_noGift = false,
-                m_segReqsStatement = "",
-                m_segReqsPoolsStatements = []
-            });
-        }
-
         var crownShopData = new CrownShopData {
-            m_items = items,
+            m_items = GetOrCreateCatalog(),
             m_crownShopLayout = new CrownShopLayout {
                 m_categories = _categories.ToList(),
                 m_tabs = _tabs.ToList(),
@@ -840,7 +825,7 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
                 m_csvNItemsList = "",
                 m_csvNItemsCategoryList = "",
                 m_csvNDaysSinceItemPurchasedList = "",
-                m_csvHasBadgeList = "DefeatMorganthe,KillMallistaire,FinishAR-PostLM-MAIN-001,FinishNV-CONA-MAIN-005,WinNightmare,FinishAR-PostWL-MAIN-001,Raid01_QuestComplete_01,Raid02_QuestComplete_01,FinishAllSelenopolisStoryQuests,Raid03_QuestComplete_01,FinishAllDarkmoorMainQuests,Raid04_QuestComplete_01"
+                m_csvHasBadgeList = ""
             },
             m_wishlistMaxSize = 30,
             m_wishlistSBExpansionSize = 10
@@ -909,39 +894,45 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
             return;
         }
 
-        // Add item to inventory
-        var coSerializer = new CoreObjectSerializer(
-            behaviors: Imcodec.ObjectProperty.SerializerFlags.None
-        );
+        // Booster packs should NEVER be added to the inventory! If done so, the client is unable to join anymore!
+        if (IsBoosterPack(message.Item)) {
+            OpenBoosterPack(wizard, message.Item);
+        } else {
+            // Add item to inventory
+            for (uint i = 0; i < message.Count; i++) {
+                if (!wizard.AddItemToInventory(message.Item, out WizClientObjectItem itemCoreObject)) {
+                    Logger.Warning("Could not add item to inventory.");
 
-        // todo: serialize the item only once   
-        for (uint i = 0; i < message.Count; i++) {
-            if (!wizard.AddItemToInventory(message.Item, out WizClientObjectItem itemCoreObject)) {
-                Logger.Warning("Could not add item to inventory.");
+                    var msg = new WIZARD_12_PROTOCOL.MSG_PCS_PURCHASE_RESPONSE {
+                        Item = message.Item,
+                        Error = 1,
+                        Cost = amountToPay,
+                        Count = message.Count,
+                        Gifted = (byte) (message.Recipient == 0 ? 0 : 1),
+                        Type = message.Type
+                    };
+                    SendToSocket(msg);
+                    return;
+                }
 
-                var msg = new WIZARD_12_PROTOCOL.MSG_PCS_PURCHASE_RESPONSE {
-                    Item = message.Item,
-                    Error = 1,
-                    Cost = amountToPay,
-                    Count = message.Count,
-                    Gifted = (byte) (message.Recipient == 0 ? 0 : 1),
-                    Type = message.Type
-                };
-                SendToSocket(msg);
-                return;
+                // todo: serialize the item only once   
+                var coSerializer = new CoreObjectSerializer(
+                    behaviors: Imcodec.ObjectProperty.SerializerFlags.None
+                );
+
+                if (!coSerializer.Serialize(itemCoreObject, 24, out var serializedItem)) {
+                    Logger.Warning("Failed to serialize core object.");
+                    return;
+                }
+
+                SendToSocket(new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_ADDITEM {
+                    GlobalID = wizard.CharId,
+                    SerializedItem = serializedItem
+                });
             }
-
-            if (!coSerializer.Serialize(itemCoreObject, 24, out var serializedItem)) {
-                Logger.Warning("Failed to serialize core object.");
-                return;
-            }
-
-            SendToSocket(new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_ADDITEM {
-                GlobalID = wizard.CharId,
-                SerializedItem = serializedItem
-            });
         }
 
+        
         wizard.Account.SetCrowns(wizard.Account.Crowns - amountToPay);
         SendToSocket(new WIZARD_12_PROTOCOL.MSG_PCS_PURCHASE_RESPONSE {
             Item = message.Item,
@@ -959,6 +950,106 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
             CharacterID = wizard.CharId,
             CacheBalanceForCSSegmentation = (byte) 1
         });
+    }
 
+    private void OpenBoosterPack(Wizard wizard, ulong packTemplateId) {
+        var lootItems = new List<LootInfo>();
+
+        for (int i = 0; i < 7; i++) {
+            lootItems.Add(new ItemLootInfo {
+                m_lootType = LOOT_TYPE.LOOT_TYPE_ITEM,
+                m_itemID = (GID) packTemplateId,
+                m_numItems = 1
+            });
+        }
+
+        var lootInfoList = new LootInfoList {
+            m_loot = lootItems,
+            m_goldInfo = null,
+            m_lootRarityList = new LootRarityList { m_loot = [] }
+        };
+
+        var serializer = new ObjectSerializer(Versionable: false);
+        if (serializer.Serialize(lootInfoList, 4, out var serializedLoot)) {
+            SendToSocket(new WIZARD_12_PROTOCOL.MSG_LOOT {
+                GlobalID = wizard.GameObjectID,
+                LootList = serializedLoot
+            });
+        }
+    }
+
+    private static List<CrownShopItem> GetOrCreateCatalog() {
+        if (s_catalogCache != null) {
+            return s_catalogCache;
+        }
+
+        lock (s_catalogLock) {
+            if (s_catalogCache != null) return s_catalogCache;
+            var catalog = new List<CrownShopItem>();
+            var templates = CoreObjectFactory.TemplateManifest.m_serializedTemplates;
+            foreach (var entry in templates) {
+                string path = entry.m_filename;
+                ulong id = entry.m_id;
+                string displayPriority = null;
+
+                // Permanent Mounts
+                if (path.StartsWith("ObjectData/Mounts/", StringComparison.OrdinalIgnoreCase)
+                    && !path.Contains("1Day", StringComparison.OrdinalIgnoreCase)
+                    && !path.Contains("7Day", StringComparison.OrdinalIgnoreCase)) {
+                    displayPriority = "2:1,19:1,0:1"; // Cat 2: Permanent Mounts, 19: Everything
+                }
+
+                // Card Packs
+                else if (path.StartsWith("ObjectData/BoosterPack-Set-", StringComparison.OrdinalIgnoreCase)
+                         && !path.Contains("Dummy", StringComparison.OrdinalIgnoreCase)) {
+                    displayPriority = "20:1,19:1,0:1"; // Cat 20: Boosters / Packs
+                }
+
+                // Pets
+                else if (path.StartsWith("ObjectData/Pets/", StringComparison.OrdinalIgnoreCase)) {
+                    displayPriority = "4:1,19:1,0:1"; // Cat 4: Pets
+                }
+
+                // Elixirs
+                else if (path.Contains("Elixir", StringComparison.OrdinalIgnoreCase)
+                         && path.StartsWith("ObjectData/", StringComparison.OrdinalIgnoreCase)) {
+                    displayPriority = "16:1,19:1,0:1"; // Cat 16: Elixirs
+                }
+
+                // Special Sets / Bundles
+                else if (path.StartsWith("ObjectData/SpecialSets/", StringComparison.OrdinalIgnoreCase)) {
+                    displayPriority = "8:1,19:1,0:1"; // Cat 8: Clothing Bundles
+                }
+
+                else if (path.StartsWith("ObjectData/Housing/Deeds/", StringComparison.OrdinalIgnoreCase)
+                         || path.EndsWith("PropertyDeed.xml", StringComparison.OrdinalIgnoreCase)) {
+                    displayPriority = "5:1,19:1,0:1"; // Cat 5: Houses (Tab 44)
+                }
+
+                if (displayPriority != null) {
+                    catalog.Add(new CrownShopItem {
+                        m_itemTemplateId = id,
+                        m_itemFlags = 0,
+                        m_goldCost = 0,
+                        m_crownsCost = 1, // Set default Crowns price
+                        m_ticketCost = 0,
+                        m_displayPriority = displayPriority,
+                        m_strikethruCrowns = 0,
+                        m_strikethruGold = 0,
+                        m_description = "", // Client pulls the real name/desc via Template ID
+                        m_saleID = 5129,
+                        m_recommendIfOwned = false,
+                        m_combatOnly = false,
+                        m_noGift = false,
+                        m_segReqsStatement = "",
+                        m_segReqsPoolsStatements = []
+                    });
+                }
+            }
+
+            s_catalogCache = catalog;
+            Logger.Information("CrownShop: Loaded {0} special items into the Crown Shop.", Logger.Args(s_catalogCache.Count));
+            return s_catalogCache;
+        }
     }
 }
