@@ -926,7 +926,7 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
                 }
 
                 SendToSocket(new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_ADDITEM {
-                    GlobalID = wizard.CharId,
+                    GlobalID = wizard.GameObjectID,
                     SerializedItem = serializedItem
                 });
             }
