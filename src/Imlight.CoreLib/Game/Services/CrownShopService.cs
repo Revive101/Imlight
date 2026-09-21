@@ -69,9 +69,7 @@ using Imlight.CoreLib.WizardData.Models.Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices.Marshalling;
 using System.Text.Json;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Imlight.CoreLib.Game.Services;
 
@@ -983,7 +981,10 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
         }
 
         lock (s_catalogLock) {
-            if (s_catalogCache != null) return s_catalogCache;
+            if (s_catalogCache != null) {
+                return s_catalogCache;
+            }
+
             var catalog = new List<CrownShopItem>();
             var templates = CoreObjectFactory.TemplateManifest.m_serializedTemplates;
             foreach (var entry in templates) {
@@ -1025,12 +1026,17 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
                     displayPriority = "5:1,19:1,0:1"; // Cat 5: Houses (Tab 44)
                 }
 
+                else if (path.StartsWith("ObjectData/Emotes")) {
+                    // TODO: Split teleport effects and Emotes
+                    displayPriority = "31:1,19:1,0:1";
+                }
+
                 if (displayPriority != null) {
                     catalog.Add(new CrownShopItem {
                         m_itemTemplateId = id,
                         m_itemFlags = 0,
                         m_goldCost = 0,
-                        m_crownsCost = 1, // Set default Crowns price
+                        m_crownsCost = 1,
                         m_ticketCost = 0,
                         m_displayPriority = displayPriority,
                         m_strikethruCrowns = 0,
