@@ -1550,4 +1550,40 @@ public class Wizard {
         WizardCollection.UpdateCharacterQuestBehavior(this);
     }
 
+    public void UnlockCustomEmote(int emoteBit) {
+        if (emoteBit < 0 || emoteBit >= 96) {
+            return;
+        }
+
+        if (emoteBit < 32) {
+            GameStats.m_purchasedCustomEmotes1 |= (1u << emoteBit);
+        }
+        else if (emoteBit < 64) {
+            GameStats.m_purchasedCustomEmotes2 |= (1u << (emoteBit - 32));
+        }
+        else {
+            GameStats.m_purchasedCustomEmotes3 |= (1u << (emoteBit - 64));
+        }
+
+        WizardCollection.UpdateCharacterGameStats(this);
+    }
+
+    public void UnlockCustomTeleportEffect(int emoteBit) {
+        if (emoteBit < 0 || emoteBit >= 96) {
+            return;
+        }
+
+        if (emoteBit < 32) {
+            GameStats.m_purchasedCustomTeleportEffects1 |= (1u << emoteBit);
+        }
+        else if (emoteBit < 64) {
+            GameStats.m_purchasedCustomTeleportEffects2 |= (1u << (emoteBit - 32));
+        }
+        else {
+            GameStats.m_purchasedCustomTeleportEffects3 |= (1u << (emoteBit - 64));
+        }
+
+        WizardCollection.UpdateCharacterGameStats(this);
+    }
+
 }

@@ -897,6 +897,19 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
             OpenBoosterPack(wizard, message.Item);
         } else {
             // Add item to inventory
+
+            // Check if the item is emote or teleport effect
+            var template = CoreObjectFactory.GetCoreTemplate(message.Item);
+            var customEmote = template?.m_behaviors?.OfType<CustomEmoteBehaviorTemplate>().FirstOrDefault();
+            if (customEmote != null && customEmote.m_bitFieldNumber >= 0) {
+                if (customEmote.m_emoteType == CustomEmoteType.CE_Teleport) {
+                    wizard.UnlockCustomTeleportEffect(customEmote.m_bitFieldNumber);
+                }
+                else {
+                    wizard.UnlockCustomEmote(customEmote.m_bitFieldNumber);
+                }
+            }
+
             // todo: serialize the item only once   
             var coSerializer = new CoreObjectSerializer(
                 behaviors: Imcodec.ObjectProperty.SerializerFlags.None
@@ -1026,9 +1039,13 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
                     displayPriority = "5:1,19:1,0:1"; // Cat 5: Houses (Tab 44)
                 }
 
-                else if (path.StartsWith("ObjectData/Emotes")) {
-                    // TODO: Split teleport effects and Emotes
-                    displayPriority = "31:1,19:1,0:1";
+                else if (path.StartsWith("ObjectData/Emotes/")) {
+                    if (path.Contains("Teleport", StringComparison.OrdinalIgnoreCase)) {
+                        displayPriority = "32:1,19:1,0:1"; // Cat 32: Teleport Effects (Tab 45)
+                    }
+                    else {
+                        displayPriority = "31:1,19:1,0:1"; // Cat 31: Emotes (Tab 45)
+                    }
                 }
 
                 if (displayPriority != null) {
