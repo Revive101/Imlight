@@ -16,7 +16,6 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-using Nito.AsyncEx.Synchronous;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -43,32 +42,39 @@ internal sealed class ZonePathSupervisor(Core.Zone zone) : ZoneEntitySupervisor(
         var nodeData = message.NodeData;
         var creatureSpawnData = message.SpawnData;
 
-        foreach (var path in pathData.m_pathList) {
-            var nodes = GetNodesForPath(path, nodeData);
-            var creatures = GetCreaturesForPath(path, creatureSpawnData);
-
-            var pathActor = CreatePathActor(path, nodes, creatures);
-            EntityActors.Add(pathActor);
+        var nodesById = new Dictionary<ulong, NodeObject>();
+        foreach (var node in nodeData.m_nodeList) {
+            nodesById.TryAdd(node.m_id.Full, node);
         }
 
-        // Inform the zone that the supervisor has finished loading.
-        var rsp = new ZONE_102_PROTOCOL.MSG_ZONESUPERVISORLOADRESULTS { SupervisorName = GetType().Name };
-        ZoneRef.Tell(rsp);
+        foreach (var path in pathData.m_pathList) {
+            if (!TryGetNodesForPath(path, nodesById, out var nodes)) {
+                continue;
+            }
+
+            var creatures = GetCreaturesForPath(path, creatureSpawnData);
+            var pathActor = Context.ActorOf(Props.Create(() => new ZonePath(path, nodes, creatures, ZoneRef, Zone)));
+            BeginEntityLoad(pathActor, path.m_name);
+        }
+
+        ReportLoadedWhenEntitiesLoad();
     }
 
-    private static List<NodeObject> GetNodesForPath(PathObjectTemplate path, NodeTemplateList nodeData) {
-        var nodeList = new List<NodeObject>();
+    private static bool TryGetNodesForPath(PathObjectTemplate path, Dictionary<ulong, NodeObject> nodesById,
+                                           out List<NodeObject> nodes) {
+        nodes = new List<NodeObject>(path.m_nodeIDs.Count);
         foreach (var id in path.m_nodeIDs) {
-            var node = nodeData.m_nodeList.Find(n => n.m_id == id);
-            if (node is not null) {
-                nodeList.Add(node);
+            if (!nodesById.TryGetValue(id.Full, out var node)) {
+                Logger.Error("Path {Path} names node {NodeId}, which is not in the node data; skipping the path.",
+                    Logger.Args(path.m_name, id.Full));
+
+                return false;
             }
-            else {
-                throw new Exception($"Node with ID {id.Full} not found in node data.");
-            }
+
+            nodes.Add(node);
         }
 
-        return nodeList;
+        return true;
     }
 
     private static List<SpawnObject> GetCreaturesForPath(PathObjectTemplate path, SpawnManager spawnData) {
@@ -109,24 +115,6 @@ internal sealed class ZonePathSupervisor(Core.Zone zone) : ZoneEntitySupervisor(
         }
 
         return creatureList;
-    }
-
-    private IActorRef CreatePathActor(PathObjectTemplate path, List<NodeObject> nodes, List<SpawnObject> creatures) {
-        var pathActor = Context.ActorOf(Props.Create(() => new ZonePath(path, nodes, creatures, ZoneRef, Zone)));
-
-        try {
-            // Send a message to the object and await a reply to ensure it has been created and initialized successfully.
-            var msg = new ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN();
-            var timeout = TimeSpan.FromMilliseconds(OBJECT_CREATION_TIMEOUT_IN_MS);
-            var result = pathActor.Ask<ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADRESULTS>(msg, timeout).WaitAndUnwrapException();
-        }
-        catch (Exception ex) {
-            Logger.Error("Failed to create path actor {0}: {1}", Logger.Args(path.m_name, ex.Message));
-
-            return null;
-        }
-
-        return pathActor;
     }
 
 }

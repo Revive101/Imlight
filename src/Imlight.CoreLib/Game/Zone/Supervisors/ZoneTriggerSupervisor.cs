@@ -20,7 +20,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
-using Nito.AsyncEx.Synchronous;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
 using Imlight.CoreLib.Game.Requirements;
@@ -57,16 +56,16 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
 
         _orderedTriggers.Clear();
         foreach (var trigger in replacedTriggers) {
-            var triggerActor = CreateTriggerActor(trigger);
-            if (triggerActor is not null) {
-                _orderedTriggers.Add((trigger, triggerActor));
-            }
+            var triggerActor = Context.ActorOf(Props.Create(() => new ZoneTrigger(ZoneRef, Zone, trigger)));
+            BeginEntityLoad(triggerActor, trigger?.m_triggerName);
+            _orderedTriggers.Add((trigger, triggerActor));
         }
 
-        // Inform the zone that we have finished initializing all objects.
-        var reply = new ZONE_102_PROTOCOL.MSG_ZONESUPERVISORLOADRESULTS { SupervisorName = nameof(ZoneTriggerSupervisor) };
-        Sender.Tell(reply);
+        ReportLoadedWhenEntitiesLoad();
     }
+
+    protected override void OnEntityLoadFailed(IActorRef entityActor)
+        => _orderedTriggers.RemoveAll(x => x.Actor.Equals(entityActor));
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_POSTEVENT))]
     private void ReceivePostEvent(ZONE_102_PROTOCOL.MSG_POSTEVENT message) {
@@ -179,27 +178,6 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
         }
 
         return triggers;
-    }
-
-    private IActorRef CreateTriggerActor(Trigger trigger) {
-        var objectActor = Context.ActorOf(Props.Create(() => new ZoneTrigger(ZoneRef, Zone, trigger)));
-
-        try {
-            // Send a message to the object and await a reply to ensure it has been created and initialized successfully.
-            var msg = new ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN();
-            var timeout = TimeSpan.FromMilliseconds(OBJECT_CREATION_TIMEOUT_IN_MS);
-            var result = objectActor.Ask<ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADRESULTS>(msg, timeout).WaitAndUnwrapException();
-
-            EntityActors.Add(objectActor);
-        }
-        catch (Exception ex) {
-            Logger.Error("Failed to create trigger actor for {0} {1} ({2}).",
-                Logger.Args(nameof(Trigger), trigger.m_triggerName, ex.Message));
-
-            return null;
-        }
-
-        return objectActor;
     }
 
 }
