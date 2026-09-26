@@ -25,9 +25,8 @@
  * 
  * USAGE EXAMPLE:
  * var components = ZoneEntityComponentRegistry.GetRegisteredComponents();
- * foreach (var (componentType, shouldAttachMethod) in components) {
- *     var shouldAttach = (bool)shouldAttachMethod.Invoke(null, [template]);
- *     if (shouldAttach) {
+ * foreach (var (componentType, shouldAttachToEntity) in components) {
+ *     if (shouldAttachToEntity(template)) {
  *         AddComponent(componentType);
  *     }
  * }
@@ -38,7 +37,7 @@
  *
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 09/26/2026
  */
 
 using System;
@@ -69,7 +68,7 @@ internal interface IComponentFactory {
 /// </summary>
 internal static class ZoneEntityComponentRegistry {
 
-    private static readonly Dictionary<System.Type, MethodInfo> s_componentFactories = [];
+    private static readonly Dictionary<System.Type, Func<CoreTemplate, bool>> s_componentFactories = [];
     
     static ZoneEntityComponentRegistry() {
         var componentTypes = AppDomain.CurrentDomain
@@ -88,14 +87,14 @@ internal static class ZoneEntityComponentRegistry {
             );
 
             if (shouldAttachMethod != null) {
-                s_componentFactories.Add(componentType, shouldAttachMethod);
+                s_componentFactories.Add(componentType, shouldAttachMethod.CreateDelegate<Func<CoreTemplate, bool>>());
             }
         }
 
         Logger.Information("Registered {0} component factories", Logger.Args(s_componentFactories.Count));
     }
 
-    public static IReadOnlyDictionary<System.Type, MethodInfo> GetRegisteredComponents() 
+    public static IReadOnlyDictionary<System.Type, Func<CoreTemplate, bool>> GetRegisteredComponents() 
         => s_componentFactories;
 
 }

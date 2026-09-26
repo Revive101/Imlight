@@ -37,13 +37,11 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 06/28/2026
+ * Last Updated: 09/26/2026
  */
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
 using Akka.Actor;
 
@@ -66,81 +64,19 @@ public class ReceiveProtocolDispatcher : ReceiveActor {
 
     public Dictionary<Type, MethodInfo> MessageHandlers { get; private set; }
 
-    private readonly Dictionary<Type, Action<object>> _handlerCache = [];
-
     protected ReceiveProtocolDispatcher() {
-        SetMessageHandlers();
+        MessageHandlers = MessageHandlerTable.HandlersOf(GetType());
         ConfigureReceivers();
     }
 
     protected virtual void ConfigureReceivers() => Receive<object>(message => {
-        var messageType = message.GetType();
-
-        if (!_handlerCache.TryGetValue(messageType, out var handler)) {
-            handler = BuildCompiledHandler(messageType);
-            _handlerCache[messageType] = handler; // null is a valid sentinel — means "no handler"
-        }
-
+        var handler = MessageHandlerTable.DispatcherFor(GetType(), message.GetType());
         if (handler is null) {
             Unhandled(message);
             return;
         }
 
-        handler(message);
+        handler(this, message);
     });
 
-    private Action<object> BuildCompiledHandler(Type messageType) {
-        var matching = MessageHandlers
-            .Where(kvp => kvp.Key.IsAssignableFrom(messageType))
-            .Select(kvp => kvp.Value)
-            .ToList();
-
-        if (matching.Count == 0) {
-            return null;
-        }
-
-        // Chain multiple handlers (rare, but supported) via delegate combination.
-        Action<object> combined = null;
-
-        foreach (var method in matching) {
-            var instance = Expression.Constant(this);
-            var parameters = method.GetParameters();
-
-            if (parameters.Length == 0) {
-                // Parameterless handler (just ignore the incoming message)
-                var call = Expression.Call(instance, method);
-                var lambda = Expression.Lambda<Action<object>>(
-                    call, Expression.Parameter(typeof(object), "_"));
-                combined += lambda.Compile();
-            } else {
-                // Single-parameter handler: cast object -> concrete type.
-                var param = Expression.Parameter(typeof(object));
-                var cast = Expression.Convert(param, parameters[0].ParameterType);
-                var call = Expression.Call(instance, method, cast);
-                var lambda = Expression.Lambda<Action<object>>(call, param);
-                combined += lambda.Compile();
-            }
-        }
-
-        return combined;
-    }
-
-    private void SetMessageHandlers() {
-        MessageHandlers = [];
-
-        // Get all methods in this actor with a message handling attribute
-        var methods = this
-            .GetType()
-            .GetMethods(BindingFlags.Instance
-                        | BindingFlags.Public
-                        | BindingFlags.NonPublic
-                        | BindingFlags.FlattenHierarchy)
-            .Where(method => method.GetCustomAttributes<MessageHandlerAttribute>().Any());
-
-        foreach (var method in methods) {
-            var type = method.GetCustomAttributes<MessageHandlerAttribute>().First().MessageType;
-            MessageHandlers.Add(type, method);
-        }
-    }
-    
 }

@@ -963,4 +963,18 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
 
     }
 
+    /// <summary>
+    /// Timer-fired message to a zone supervisor or <see cref="ZonePath"/> that gives up on entities that
+    /// never answered their <see cref="MSG_ZONEOBJECTLOADBEGIN"/>. <see cref="Entity"/> names one entity;
+    /// null means every entity still loading.
+    /// </summary>
+    public sealed class MSG_ENTITYLOADTIMEOUT : IServerMessage {
+
+        public byte MessageOrder { get; } = 64;
+        public byte ServiceID { get; } = 102;
+
+        public IActorRef Entity;
+
+    }
+
 }

@@ -32,12 +32,10 @@ namespace Imlight.CoreLib.Game.Zone.Supervisors;
 /// That responsibility is left to the <see cref="GameServer"/> itself.
 /// </summary>
 /// <param name="zone">The zone that this supervisor is responsible for.</param>
-internal sealed class ZonePlayerSupervisor(Core.Zone zone) : ZoneEntitySupervisor(zone), IWithTimers {
+internal sealed class ZonePlayerSupervisor(Core.Zone zone) : ZoneEntitySupervisor(zone) {
 
     private readonly Core.Zone _zone = zone;
     private const int HEAL_INTERVAL_PER_MINUTE_IN_SECONDS = 5;
-
-    public ITimerScheduler Timers { get; set; }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS))]
     public override void ReceiveZoneLoadResults(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS message) {
