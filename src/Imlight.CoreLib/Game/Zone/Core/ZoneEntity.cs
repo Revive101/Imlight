@@ -407,7 +407,9 @@ public class ZoneEntity(
     }
 
     public WizClientObject GetClientBehaviorInstance() {
-        var gameObj = BuildClientObject<WizClientObject>();
+        var gameObj = ActiveGameObject is WizClientPet pet
+            ? BuildClientPet(pet)
+            : BuildClientObject<WizClientObject>();
 
         // This one must be done manually.
         var statsComponent = GetComponentOfType<StatsComponent>();
@@ -429,6 +431,17 @@ public class ZoneEntity(
         _ => GetClientBehaviorInstance(),
     };
 
+    private WizClientPet BuildClientPet(WizClientPet pet) {
+        var petCopy = BuildClientObject<WizClientPet>();
+
+        // Parity with live (m_leashed true, m_characterId 0 for a pet). The leash behavior
+        // element drives following, not these fields.
+        petCopy.m_leashed = pet.m_leashed;
+        petCopy.m_characterId = pet.m_characterId;
+
+        return petCopy;
+    }
+
     private T BuildClientObject<T>() where T : ClientObject, new() {
         var gameObj = new T() {
             m_debugName = ActiveGameObject.m_debugName,
@@ -444,7 +457,10 @@ public class ZoneEntity(
             m_characterId = ActiveGameObject.m_globalID,
         };
 
-        gameObj = CoreObjectFactory.InitializeCoreObjectBehaviors(gameObj, Template);
+        // A pet's behaviors come from PetFactory (look, name, and the leash after the template's slots).
+        if (ActiveGameObject is not WizClientPet) {
+            gameObj = CoreObjectFactory.InitializeCoreObjectBehaviors(gameObj, Template);
+        }
 
         // Let each component contribute its behaviors.
         foreach (var (component, _) in Components) {
@@ -453,10 +469,9 @@ public class ZoneEntity(
                     continue;
                 }
 
-                var clientInstance = serverBehavior.GetClientBehaviorInstance();
-
                 // Check to see if there is already a behavior of this type in the list.
                 // If there is, replace it.
+                var clientInstance = serverBehavior.GetClientBehaviorInstance();
                 var existing = gameObj.m_inactiveBehaviors
                     .Where(x => x is not null)
                     .FirstOrDefault(x => x.GetType() == clientInstance.GetType());

@@ -19,6 +19,8 @@ public class ZonePriorityMailbox : UnboundedStablePriorityMailbox {
             ZONE_102_PROTOCOL.MSG_PLAYERMOVE    => 0,
             ZONE_102_PROTOCOL.MSG_CREATUREMOVE  => 1,
             ZONE_102_PROTOCOL.MSG_ZONEBROADCAST => 2,
+            // A summoned pet's spawn must stay ahead of the broadcast that dismisses it.
+            ZONE_102_PROTOCOL.MSG_SPAWNENTITY   => 2,
             _ => 10,
         };
     }
