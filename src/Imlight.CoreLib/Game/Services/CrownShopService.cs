@@ -65,11 +65,13 @@ using Imcodec.Types;
 using Imlight.Common;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
+using Imlight.CoreLib.WizardData.Models.World;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json;
 
 namespace Imlight.CoreLib.Game.Services;
 
@@ -77,7 +79,7 @@ namespace Imlight.CoreLib.Game.Services;
 internal class CrownShopService(SessionActor sessionActor) : MessageService(sessionActor) {
 
     // One tab can have multiple categories (Gear -> Hat, Robe, Shoes, etc.)
-    private readonly IReadOnlyList<CrownShopCategoryMenu> _tabs = new[] {
+    private static readonly IReadOnlyList<CrownShopCategoryMenu> _tabs = new[] {
         new CrownShopCategoryMenu() {
             m_name = "CrownShopSWF_DailySpiral",
             m_ID = 36,
@@ -167,8 +169,7 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
             m_tags = "Wishlist"
         }
     };
-
-    private readonly IReadOnlyList<CrownShopCategory> _categories = new[] {
+    private static readonly IReadOnlyList<CrownShopCategory> _categories = new[] {
     new CrownShopCategory() {
         m_name = "CrownShopSWF_CategoryFeatured",
         m_ID = 0,
@@ -741,9 +742,16 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
     }
 };
 
+    private static readonly CrownShopLayout s_layout = new() {
+        m_categories = _categories.ToList(),
+        m_tabs = _tabs.ToList()
+    };
 
     private static List<CrownShopItem> s_catalogCache;
+    private static Dictionary<ulong, CrownShopItem> s_catalogById;
     private static readonly object s_catalogLock = new();
+    private static readonly ConcurrentDictionary<ulong, Dictionary<RarityType, List<(BoosterDropItem Item, RarityType Rarity)>>> s_packDropPools = new();
+
     private static readonly Lazy<HashSet<ulong>> s_boosterPackIds = new(() =>
         CoreObjectFactory.TemplateManifest.m_serializedTemplates
             .Where(t => t.m_filename.Contains("BoosterPack", StringComparison.OrdinalIgnoreCase))
@@ -751,8 +759,14 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
             .ToHashSet()
     );
 
-    private static bool IsBoosterPack(ulong templateId)
-        => s_boosterPackIds.Value.Contains(templateId);
+    private static bool IsBoosterPack(ulong templateId) {
+        if (s_boosterPackIds.Value.Contains(templateId)) {
+            return true;
+        }
+
+        var template = CoreObjectFactory.GetCoreTemplate(templateId);
+        return template is BoosterPackTemplate;
+    }
 
     protected static Props Props(SessionActor parentActor)
             => Akka.Actor.Props.Create(() => new CrownShopService(parentActor));
@@ -760,11 +774,13 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_PCS_SEGDATA_REQUEST))]
     private void ReceiveCrownShopSegDataRequest(WIZARD_12_PROTOCOL.MSG_PCS_SEGDATA_REQUEST message) {
         var wizard = GetActiveWizard();
+        var schoolStr = wizard.MagicSchoolBehavior.MagicSchool.ToString();
+        var schoolCode = schoolStr.Length >= 2 ? schoolStr[..2] : schoolStr;
 
         var segmentationInputData = new SegmentationInputData() {
             m_bIsValidSegmentationData = true,
             m_playerLevel = wizard.MagicSchoolBehavior.Level,
-            m_playerSchoolOfFocus = "St", // First two letters of the school?!
+            m_playerSchoolOfFocus = schoolCode,
             m_accountNDaysAged = (int) (DateTime.Now - wizard.Account.CreationTime).TotalDays,
             m_accountNDaysSinceLastLogin = 0,
             m_accountNDaysSinceLastPurchase = 0,
@@ -791,16 +807,16 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
         }
 
         SendToSocket(new WIZARD_12_PROTOCOL.MSG_PCS_SEGDATA_RESPONSE {
-            Success = (byte)1,
+            Success = (byte) 1,
             Data = serializedData
-});
+        });
 
         // We need to call this to "sync" the CrownShop Crown-Balance, else it just says 0
         SendToSocket(new WIZARD_12_PROTOCOL.MSG_CROWNBALANCE {
-            Failure = (byte)0,
+            Failure = (byte) 0,
             TotalCrowns = wizard.Account.Crowns,
             CharacterID = wizard.CharId,
-            CacheBalanceForCSSegmentation = (byte)1
+            CacheBalanceForCSSegmentation = (byte) 1
         });
     }
 
@@ -810,13 +826,10 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
 
         var crownShopData = new CrownShopData {
             m_items = GetOrCreateCatalog(),
-            m_crownShopLayout = new CrownShopLayout {
-                m_categories = _categories.ToList(),
-                m_tabs = _tabs.ToList(),
-            },
+            m_crownShopLayout = s_layout,
             m_recomendedItems = new LevelData() {
                 m_level = wizard.MagicSchoolBehavior.Level,
-                m_categoryData = new List<CategoryData>()
+                m_categoryData = []
             },
             m_crownShopSegReqsSummary = new CrownShopSegReqsSummary() {
                 m_anySegReqsRelyOnWebData = false,
@@ -852,15 +865,23 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_PCS_UPDATEUSERWISHLIST))]
     private void ReceiveWishlistUpdate(WIZARD_12_PROTOCOL.MSG_PCS_UPDATEUSERWISHLIST message) { }
 
-    // This checks if the item *can* be bought (NOT if the player has enough money) (Time ran out, etc.)
+    // This checks if the item *can* be bought (NOT if the player has enough money) (Event time ran out, etc.)
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_PCS_PRICE_LOCK_REQUEST))]
     private void ReceivePriceLockReq(WIZARD_12_PROTOCOL.MSG_PCS_PRICE_LOCK_REQUEST message) {
-        // TODO: There must be a list with itemId, saleId and prices stored somewhere in the DB
-        Logger.Information("Received MSG_PCS_PRICE_LOCK_REQUEST");
+        Logger.Information("Received MSG_PCS_PRICE_LOCK_REQUEST for item {0}", Logger.Args(message.Item));
+
+        int crownsCost = 1;
+        int goldCost = 0;
+
+        GetOrCreateCatalog();
+        if (s_catalogById != null && s_catalogById.TryGetValue(message.Item, out var item)) {
+            crownsCost = (int) item.m_crownsCost;
+            goldCost = (int) item.m_goldCost;
+        }
 
         var msg = new WIZARD_12_PROTOCOL.MSG_PCS_PRICE_LOCK_RESPONSE {
-            CostCrowns = 1,
-            CostGold = 0,
+            CostCrowns = crownsCost,
+            CostGold = goldCost,
             CostTickets = 0,
             Error = 0,
             Item = message.Item
@@ -874,28 +895,32 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_PCS_PURCHASE_REQUEST))]
     private void ReceivePurchaseRequest(WIZARD_12_PROTOCOL.MSG_PCS_PURCHASE_REQUEST message) {
         var wizard = GetActiveWizard();
-        Logger.Information("Received MSG_PCS_PURCHASE_REQUEST");
-        Logger.Information(JsonSerializer.Serialize(message));
+        Logger.Information("Received MSG_PCS_PURCHASE_REQUEST for item {0} (count {1})", Logger.Args(message.Item, message.Count));
 
-        // todo: cost needs to be compared to the item stored in the DB, or else the client could bypass this!!
-        var amountToPay = message.Count * message.Cost;
+        // Authoritative cost lookup from catalog
+        GetOrCreateCatalog();
+        int unitCost = message.Cost;
+        if (s_catalogById != null && s_catalogById.TryGetValue(message.Item, out var catalogItem) && catalogItem.m_crownsCost > 0) {
+            unitCost = (int) catalogItem.m_crownsCost;
+        }
+
+        int amountToPay = (int) (message.Count * unitCost);
         if (wizard.Account.Crowns < amountToPay) {
             var msg = new WIZARD_12_PROTOCOL.MSG_PCS_PURCHASE_RESPONSE {
                 Item = message.Item,
                 Error = 1,
                 Cost = amountToPay,
                 Count = message.Count,
-                Gifted = (byte)(message.Recipient == 0 ? 0 : 1),
+                Gifted = (byte) (message.Recipient == 0 ? 0 : 1),
                 Type = message.Type
             };
             SendToSocket(msg);
             return;
         }
 
-        // Booster packs should NEVER be added to the inventory! If done so, the client is unable to join anymore!
-        if (IsBoosterPack(message.Item)) {
-            OpenBoosterPack(wizard, message.Item);
-        } else {
+        var isBooster = IsBoosterPack(message.Item);
+
+        if (!isBooster) {
             // Add item to inventory
 
             // Check if the item is emote or teleport effect
@@ -942,7 +967,6 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
             }
         }
 
-        
         wizard.Account.SetCrowns(wizard.Account.Crowns - amountToPay);
         SendToSocket(new WIZARD_12_PROTOCOL.MSG_PCS_PURCHASE_RESPONSE {
             Item = message.Item,
@@ -960,31 +984,200 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
             CharacterID = wizard.CharId,
             CacheBalanceForCSSegmentation = (byte) 1
         });
+
+        if (isBooster) {
+            for (uint i = 0; i < message.Count; i++) {
+                OpenBoosterPack(wizard, message.Item);
+            }
+        }
+    }
+
+    private static RarityType DetermineSlotRarity(string slotName) {
+        if (string.IsNullOrEmpty(slotName)) {
+            return RarityType.RT_COMMON;
+        }
+        if (slotName.Contains("Epic", StringComparison.OrdinalIgnoreCase)) {
+            return RarityType.RT_EPIC;
+        }
+        if (slotName.Contains("UltraRare", StringComparison.OrdinalIgnoreCase) ||
+            slotName.Contains("Ultra-Rare", StringComparison.OrdinalIgnoreCase)) {
+            return RarityType.RT_ULTRARARE;
+        }
+        if (slotName.Contains("Rare", StringComparison.OrdinalIgnoreCase)) {
+            return RarityType.RT_RARE;
+        }
+        if (slotName.Contains("Uncommon", StringComparison.OrdinalIgnoreCase)) {
+            return RarityType.RT_UNCOMMON;
+        }
+        return RarityType.RT_COMMON;
+    }
+
+    private static List<(BoosterDropItem Item, RarityType Rarity)> GetEligibleDrops(BoosterPackModel packModel, RarityType slotRarity) {
+        var pools = s_packDropPools.GetOrAdd(packModel.TemplateID, _ => {
+            var dict = new Dictionary<RarityType, List<(BoosterDropItem Item, RarityType Rarity)>>();
+            var rarities = new[] {
+                RarityType.RT_COMMON,
+                RarityType.RT_UNCOMMON,
+                RarityType.RT_RARE,
+                RarityType.RT_ULTRARARE,
+                RarityType.RT_EPIC
+            };
+
+            foreach (var r in rarities) {
+                var list = new List<(BoosterDropItem Item, RarityType Rarity)>();
+
+                void AddTier(string tierKey, RarityType rarity) {
+                    if (packModel.Drops != null && packModel.Drops.TryGetValue(tierKey, out var tierList) && tierList != null) {
+                        foreach (var item in tierList) {
+                            list.Add((item, rarity));
+                        }
+                    }
+                }
+
+                AddTier("Common", RarityType.RT_COMMON);
+                if (r >= RarityType.RT_UNCOMMON) {
+                    AddTier("Uncommon", RarityType.RT_UNCOMMON);
+                }
+                if (r >= RarityType.RT_RARE) {
+                    AddTier("Rare", RarityType.RT_RARE);
+                }
+                if (r >= RarityType.RT_ULTRARARE) {
+                    AddTier("UltraRare", RarityType.RT_ULTRARARE);
+                }
+                if (r >= RarityType.RT_EPIC) {
+                    AddTier("Epic", RarityType.RT_EPIC);
+                }
+
+                // Fallback
+                if (list.Count == 0 && packModel.Drops != null) {
+                    foreach (var (key, dropList) in packModel.Drops) {
+                        var tierRarity = DetermineSlotRarity(key);
+                        if (dropList != null) {
+                            foreach (var item in dropList) {
+                                list.Add((item, tierRarity));
+                            }
+                        }
+                    }
+                }
+
+                dict[r] = list;
+            }
+
+            return dict;
+        });
+
+        if (pools.TryGetValue(slotRarity, out var eligible) && eligible.Count > 0) {
+            return eligible;
+        }
+
+        return pools.TryGetValue(RarityType.RT_COMMON, out var commonList) ? commonList : [];
     }
 
     private void OpenBoosterPack(Wizard wizard, ulong packTemplateId) {
-        var lootItems = new List<LootInfo>();
+        var template = CoreObjectFactory.GetCoreTemplate(packTemplateId);
+        var boosterTemplate = template as BoosterPackTemplate;
+        if (boosterTemplate == null) {
+            Logger.Warning("Template {0} is not a BoosterPackTemplate.", Logger.Args(packTemplateId));
+            return;
+        }
 
-        for (int i = 0; i < 7; i++) {
-            lootItems.Add(new ItemLootInfo {
-                m_lootType = LOOT_TYPE.LOOT_TYPE_ITEM,
-                m_itemID = (GID) packTemplateId,
-                m_numItems = 1
-            });
+        var lootItems = new List<LootInfo>();
+        var lootRarities = new List<LootRarity>();
+        var rng = Random.Shared;
+        var coSerializer = new CoreObjectSerializer(
+            behaviors: Imcodec.ObjectProperty.SerializerFlags.None
+        );
+
+        if (BoosterPackCollection.TryGetBoosterPack(packTemplateId, out var packModel) && packModel != null) {
+            var slots = packModel.Slots != null && packModel.Slots.Count > 0
+                ? packModel.Slots
+                : boosterTemplate.m_lootTables;
+
+            if (slots == null || slots.Count == 0) {
+                throw new InvalidOperationException($"Booster pack {packTemplateId} has no defined slots or loot tables.");
+            }
+
+            foreach (var slotName in slots) {
+                var slotRarity = DetermineSlotRarity(slotName);
+                var eligibleItems = GetEligibleDrops(packModel, slotRarity);
+
+                if (eligibleItems.Count == 0) {
+                    Logger.Warning("Booster pack {0} has no eligible drops in SpiralDB for slot {1}.", Logger.Args(packTemplateId, slotName));
+                    continue;
+                }
+
+                var (pickedItem, pickedRarity) = eligibleItems[rng.Next(eligibleItems.Count)];
+
+                bool isTreasureCard = string.Equals(pickedItem.Type, "TreasureCard", StringComparison.OrdinalIgnoreCase)
+                    || (string.IsNullOrEmpty(pickedItem.Type) && packModel.PackType == PackType.TreasureCards);
+
+                if (isTreasureCard) {
+                    lootItems.Add(new TreasureCardLootInfo {
+                        m_lootType = LOOT_TYPE.LOOT_TYPE_TREASURE_CARD,
+                        m_spellID = (uint) pickedItem.Id,
+                        m_numItems = 1
+                    });
+
+                    lootRarities.Add(new LootRarity {
+                        m_rarity = pickedRarity,
+                        m_lootGid = (GID) pickedItem.Id,
+                        m_odds = 0
+                    });
+
+                    wizard.SpellbookBehavior.AddTreasureCard((uint) pickedItem.Id);
+                    WizardCollection.AddTreasureCard(wizard, (uint) pickedItem.Id);
+                }
+                else {
+                    lootItems.Add(new ItemLootInfo {
+                        m_lootType = LOOT_TYPE.LOOT_TYPE_ITEM,
+                        m_itemID = (GID) pickedItem.Id,
+                        m_numItems = 1
+                    });
+
+                    lootRarities.Add(new LootRarity {
+                        m_rarity = pickedRarity,
+                        m_lootGid = (GID) pickedItem.Id,
+                        m_odds = 0
+                    });
+
+                    if (wizard.AddItemToInventory(pickedItem.Id, out WizClientObjectItem itemCoreObject)) {
+                        if (coSerializer.Serialize(itemCoreObject, 24, out var serializedItem)) {
+                            SendToSocket(new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_ADDITEM {
+                                GlobalID = wizard.GameObjectID,
+                                SerializedItem = serializedItem
+                            });
+                        }
+                    }
+                    else {
+                        Logger.Warning("Could not add booster pack item {0} to inventory.", Logger.Args(pickedItem.Id));
+                    }
+                }
+            }
+        }
+        else {
+            throw new InvalidOperationException($"Booster pack {packTemplateId} not found in SpiralDB!");
         }
 
         var lootInfoList = new LootInfoList {
             m_loot = lootItems,
             m_goldInfo = null,
-            m_lootRarityList = new LootRarityList { m_loot = [] }
+            m_lootRarityList = new LootRarityList {
+                m_loot = lootRarities
+            }
         };
 
         var serializer = new ObjectSerializer(Versionable: false);
         if (serializer.Serialize(lootInfoList, 4, out var serializedLoot)) {
-            SendToSocket(new WIZARD_12_PROTOCOL.MSG_LOOT {
-                GlobalID = wizard.GameObjectID,
-                LootList = serializedLoot
+            SendToSocket(new WIZARD_12_PROTOCOL.MSG_CROWNSBUYCONFIRM {
+                Failure = 0,
+                WebFailure = 0,
+                Credits = wizard.Account.Crowns,
+                Data = serializedLoot,
+                TemplateID = packTemplateId
             });
+        }
+        else {
+            Logger.Error("Failed to serialize LootInfoList for booster pack.");
         }
     }
 
@@ -1070,6 +1263,10 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
             }
 
             s_catalogCache = catalog;
+            s_catalogById = catalog
+                .GroupBy(i => (ulong) i.m_itemTemplateId)
+                .ToDictionary(g => g.Key, g => g.First());
+
             Logger.Information("CrownShop: Loaded {0} special items into the Crown Shop.", Logger.Args(s_catalogCache.Count));
             return s_catalogCache;
         }
