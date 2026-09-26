@@ -35,7 +35,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 07/02/2026
+ * Last Updated: 09/26/2026
  */
 
 using System;
@@ -102,7 +102,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     private readonly IActorRef _pathSupervisor;
     private readonly Stopwatch _zoneLoadTimer;
     private readonly Dictionary<IActorRef, IServerMessage> _pendingPlayerEvents = [];
-    private readonly List<ushort> _mobileIdMap = [];
+    private readonly HashSet<ushort> _mobileIdMap = [];
     private readonly Dictionary<IActorRef, bool> _supervisorLoadResults = [];
     private readonly HashSet<GID> _criticalObjectIds = [];
     private bool _isLoading;
@@ -239,7 +239,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
             return;
         }
 
-        if (!_mobileIdMap.Contains(message.PlayerObject.m_nMobileID)) {
+        if (!IsMobileIdInUse(message.PlayerObject.m_nMobileID)) {
             return;
         }
 
@@ -252,7 +252,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
             return;
         }
 
-        if (!_mobileIdMap.Contains(message.CreatureObject.m_nMobileID)) {
+        if (!IsMobileIdInUse(message.CreatureObject.m_nMobileID)) {
             return;
         }
 
@@ -499,6 +499,14 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         }
     }
 
+    internal ushort ReserveMobileId() => GenerateReservedObjectIdentifier();
+
+    private bool IsMobileIdInUse(ushort mobileId) {
+        lock (_mobileIdLock) {
+            return _mobileIdMap.Contains(mobileId);
+        }
+    }
+
     private ushort GenerateReservedObjectIdentifier() {
         lock (_mobileIdLock) {
             // Find first available ID in reserved range.
@@ -527,9 +535,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_RELEASEMOBILEID))]
     private void ReceiveReleaseMobileId(ZONE_102_PROTOCOL.MSG_RELEASEMOBILEID message) {
         lock (_mobileIdLock) {
-            if (_mobileIdMap.Contains(message.MobileId)) {
-                _mobileIdMap.Remove(message.MobileId);
-            }
+            _mobileIdMap.Remove(message.MobileId);
         }
     }
 
