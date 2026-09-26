@@ -246,4 +246,17 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
 
     }
 
+    /// <summary>
+    /// Sent by the ShopService to the EquipmentService after the equipped pet item changed its look or
+    /// name: the pet following its owner is replaced by one built from <see cref="PetItemId"/>.
+    /// </summary>
+    public sealed class MSG_RESUMMONPET : IServerMessage {
+
+        public byte MessageOrder { get; } = 22;
+        public byte ServiceID { get; } = 103;
+
+        public ulong PetItemId;
+
+    }
+
 }

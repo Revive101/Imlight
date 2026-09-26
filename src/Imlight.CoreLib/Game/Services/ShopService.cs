@@ -21,7 +21,7 @@
  * 
  * PURPOSE:
  * Manages player shop interactions, including item buying, selling, 
- * and dyeing mechanics within the game server session.
+ * dyeing and pet renaming within the game server session.
  * 
  * USAGE EXAMPLE:
  * Internal service handling shop-related messages and transactions 
@@ -33,12 +33,13 @@
  * 
  * Created by: Jooty, Joji
  * Version: KALI 1.0
- * Last Updated: 06/27/2026
+ * Last Updated: 09/26/2026
  */
 
 using System;
 using Akka.Actor;
 using Imcodec.MessageLayer.Generated;
+using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.CoreObject;
 using Imcodec.Types;
@@ -46,7 +47,10 @@ using Imlight.Common;
 using Imlight.CoreLib.Shared.Items;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.Shared.Networking;
+using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
+using Imlight.CoreLib.Game.Pet;
 using Imlight.CoreLib.Game.Zone.Components;
 using Imlight.CoreLib.Game.WizBang;
 
@@ -56,6 +60,9 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
 
     private const float SELL_MODIFIER = 0.05f;
     private const float DYED_ITEM_COST_MULTIPLIER = 1.225f;
+    // Public equipment carries each dye layer in 5 bits.
+    private const int MaxDye = 31;
+    private const PropertyFlags EquippedItemMask = PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit;
 
     private static readonly CoreObjectSerializer s_itemSerializer = new(
         behaviors: Imcodec.ObjectProperty.SerializerFlags.None
@@ -155,9 +162,17 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
             }
         }
 
-        // Cost is 22.5% of the item's base cost
-        var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID);
-        var dyeCost = (int) Math.Ceiling(template.m_baseCost * 0.225f);
+        var template = CoreObjectFactory.GetCoreTemplate(item.m_templateID) as WizItemTemplate;
+        if (template is null || !IsValidDye(item, template, message)) {
+            Logger.Warning("Rejected dye {0}/{1}/{2} for item {3} (template {4})",
+                Logger.Args(message.texture, message.decal, message.decal2, item.m_globalID, item.m_templateID.Full));
+
+            SendToSocket(new WIZARD_12_PROTOCOL.MSG_DYECONFIRM { Failure = 1 });
+
+            return;
+        }
+
+        var dyeCost = PriceModifiersConfig.GetDyeCost(template, message.texture, message.decal);
         if (dyeCost > wizard.GameStats.m_currentGold) {
             var dyeDenyMsg = new WIZARD_12_PROTOCOL.MSG_DYECONFIRM { Failure = 1 };
             SendToSocket(dyeDenyMsg);
@@ -182,36 +197,7 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
         // If the item is equipped, update the client's local item cache with the
         // new colors IN PLACE using MSG_EQUIPMENTBEHAVIOR_EQUIPITEM. 
         if (isEquipped) {
-            var slotName = ItemHelper.GetItemSlot(template).ToString();
-
-            // Serialize the item with new colors for the local player's cache.
-            if (!s_itemSerializer.Serialize(item, 1, out var localData)) {
-                Logger.Error("Failed to serialize dyed item {0} for local update",
-                    Logger.Args(item.m_globalID));
-
-                return;
-            }
-
-            SendToSocket(new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_EQUIPITEM {
-                GlobalID = wizard.GameObjectID,
-                SlotName = slotName,
-                IsValid = 1,
-                SerializedItem = localData
-            });
-
-            // Broadcast updated public appearance so other players see the new colors.
-            var pubItem = ItemHelper.GetPublicItem(item);
-            if (!s_itemSerializer.Serialize(pubItem, 1, out var pubData)) {
-                Logger.Error("Failed to serialize item {0} for dye broadcast",
-                    Logger.Args(item.m_globalID));
-                    
-                return;
-            }
-
-            ZoneBroadcast(new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICEQUIPITEM {
-                GlobalID = wizard.GameObjectID,
-                SerializedInfo = pubData
-            }, false);
+            SendEquippedItemRefresh(wizard, item, template);
         }
 
         // Confirm success to the client.
@@ -223,6 +209,66 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
             thirdLayer = message.decal2
         };
         SendToSocket(msgConfirm);
+
+        ResummonIfEquippedPet(wizard, item);
+    }
+
+    [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_PETRENAMEREQUEST))]
+    private void ReceivePetRenameRequest(WIZARD_12_PROTOCOL.MSG_PETRENAMEREQUEST message) {
+        var wizard = GetActiveWizard();
+
+        // The dye shop's pet name tab lists backpack and equipped pets alike.
+        var pet = wizard.InventoryBehavior.GetItem(message.itemGlobalID)
+            ?? wizard.EquipmentBehavior.GetItem(message.itemGlobalID);
+        if (pet is null || !CoreObjectFactory.FindBehaviorInstance<ClientPetNameBehavior>(pet, out _)) {
+            Logger.Warning("Player tried to rename item {0}, which is not one of their pets.",
+                Logger.Args(message.itemGlobalID));
+
+            SendPetRenameDeny();
+
+            return;
+        }
+
+        if (!WizardNameBank.IsValidPetName(message.petName)) {
+            Logger.Warning("Player tried to rename pet {0} with name keys {1}, which are not in the pet name tables.",
+                Logger.Args(pet.m_globalID, message.petName));
+
+            SendPetRenameDeny();
+
+            return;
+        }
+
+        var renameCost = PriceModifiersConfig.GetPetRenameCost();
+        if (renameCost > wizard.GameStats.m_currentGold) {
+            SendPetRenameDeny();
+
+            return;
+        }
+
+        if (!WizardItemCollection.ApplyPetName(pet, message.petName)) {
+            Logger.Error("Failed to save name keys {0} for pet {1}",
+                Logger.Args(message.petName, pet.m_globalID));
+
+            SendPetRenameDeny();
+
+            return;
+        }
+
+        PetFactory.TrySetPetName(pet, message.petName);
+
+        wizard.RemoveGold(renameCost);
+        SendToSocket(new WIZARD_12_PROTOCOL.MSG_UPDATEGOLD {
+            Gold = wizard.GameStats.m_currentGold,
+            MaxGold = wizard.GameStats.m_baseGoldPouch
+        });
+
+        // The client renames its own copy of the pet on success; the confirm carries no name.
+        SendToSocket(new WIZARD_12_PROTOCOL.MSG_PETRENAMECONFIRM { Failure = 0 });
+
+        Logger.Information("Pet {0} renamed to {1} for {2} gold.",
+            Logger.Args(pet.m_globalID, WizardNameBank.GetPetEnglishName(message.petName), renameCost));
+
+        ResummonIfEquippedPet(wizard, pet);
     }
 
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_DONESHOPPING))]
@@ -274,6 +320,75 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
         };
         SendToSocket(shopDenyMsg);
     }
+
+    private void SendPetRenameDeny()
+        => SendToSocket(new WIZARD_12_PROTOCOL.MSG_PETRENAMECONFIRM { Failure = 1 });
+
+    private void SendEquippedItemRefresh(Wizard wizard, WizClientObjectItem item, WizItemTemplate template) {
+        var slot = ItemHelper.GetItemSlot(template);
+        if (slot is null) {
+            Logger.Error("Dyed item {0} has no equipment slot", Logger.Args(item.m_globalID));
+
+            return;
+        }
+
+        // Serialize the item with new colors for the local player's cache.
+        if (!s_itemSerializer.Serialize(item, EquippedItemMask, out var localData)) {
+            Logger.Error("Failed to serialize dyed item {0} for local update",
+                Logger.Args(item.m_globalID));
+
+            return;
+        }
+
+        SendToSocket(new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_EQUIPITEM {
+            GlobalID = wizard.GameObjectID,
+            SlotName = slot.SlotType.ToString(),
+            IsValid = 1,
+            SerializedItem = localData
+        });
+
+        // Broadcast updated public appearance so other players see the new colors.
+        var pubItem = ItemHelper.GetPublicItem(item);
+        if (!s_itemSerializer.Serialize(pubItem, 1, out var pubData)) {
+            Logger.Error("Failed to serialize item {0} for dye broadcast",
+                Logger.Args(item.m_globalID));
+
+            return;
+        }
+
+        ZoneBroadcast(new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICEQUIPITEM {
+            GlobalID = wizard.GameObjectID,
+            SerializedInfo = pubData
+        }, false);
+    }
+
+    private void ResummonIfEquippedPet(Wizard wizard, WizClientObjectItem item) {
+        // A summoned pet carries its look and name from when it was summoned.
+        if (wizard.EquipmentBehavior.GetEquippedPetId() == item.m_globalID) {
+            TellOtherServices(new CHARACTER_103_PROTOCOL.MSG_RESUMMONPET { PetItemId = item.m_globalID });
+        }
+    }
+
+    private static bool IsValidDye(WizClientObjectItem item, WizItemTemplate template,
+                                   WIZARD_12_PROTOCOL.MSG_DYEREQUEST message) {
+        if (!IsDyeInRange(message.texture) || !IsDyeInRange(message.decal) || !IsDyeInRange(message.decal2)) {
+            return false;
+        }
+
+        if (!PetFactory.IsPetTemplate(template.m_templateID)) {
+            return true;
+        }
+
+        // A pet's colors are its template's own texture choices, so no dye beyond them is offered.
+        return IsPetLayerDye(message.texture, item.m_primaryColor, template.m_numPrimaryColors)
+            && IsPetLayerDye(message.decal, item.m_secondaryColor, template.m_numSecondaryColors)
+            && IsPetLayerDye(message.decal2, item.m_pattern, template.m_numPatterns);
+    }
+
+    private static bool IsDyeInRange(int dye) => dye is >= 0 and <= MaxDye;
+
+    private static bool IsPetLayerDye(int dye, int currentDye, int templateColorCount)
+        => dye == currentDye || (templateColorCount > 1 && dye < templateColorCount);
 
     private void SendShopDenyMessage() {
         var shopDenyMsg = new WIZARD_12_PROTOCOL.MSG_SHOPBUYCONFIRM {

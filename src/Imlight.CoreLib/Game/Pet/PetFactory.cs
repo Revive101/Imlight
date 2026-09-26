@@ -108,6 +108,27 @@ public class PetFactory : RootDirectoryResourceSingleton<PetFactory>, IMemoryStr
         return pet;
     }
 
+    /// <summary>
+    /// Gives a pet item new packed name keys.
+    /// </summary>
+    /// <param name="pet">The pet item.</param>
+    /// <param name="nameKeys">The packed name keys the client renders the name from.</param>
+    /// <returns>False if the item has no pet name behavior.</returns>
+    public static bool TrySetPetName(WizClientObjectItem pet, uint nameKeys) {
+        if (!CoreObjectFactory.FindBehaviorInstance<ClientPetNameBehavior>(pet, out var petName)) {
+            return false;
+        }
+
+        petName.m_nameKeys = nameKeys;
+
+        // The item behavior keeps the same parts unpacked; they are saved but never transmitted.
+        if (CoreObjectFactory.FindBehaviorInstance<ClientPetItemBehavior>(pet, out var petItem)) {
+            (petItem.m_firstName, petItem.m_middleName, petItem.m_lastName) = WizardNameBank.GetNameParts(nameKeys);
+        }
+
+        return true;
+    }
+
     public static WizClientPet CreatePetGameObject(WizClientObjectItem pet, GID ownerId) {
         var genericPetObject = new WizClientPet();
         CoreObjectFactory.InitializeCoreObjectBehaviors(genericPetObject, GENERIC_PET_TEMPLATE_ID);

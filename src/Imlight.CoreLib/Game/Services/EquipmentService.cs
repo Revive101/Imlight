@@ -276,6 +276,21 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
         _summonedPetId = coreObj.m_globalID;
     }
 
+    [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_RESUMMONPET))]
+    private void ReceiveResummonPet(CHARACTER_103_PROTOCOL.MSG_RESUMMONPET message) {
+        // A pet that is not out picks the change up on its next summon.
+        if (_summonedPetId == 0) {
+            return;
+        }
+
+        var equipment = GetActiveWizard()?.EquipmentBehavior;
+        if (equipment is null || equipment.GetEquippedPetId() != message.PetItemId) {
+            return;
+        }
+
+        SpawnPetEntity(equipment.GetItem(message.PetItemId));
+    }
+
     private void DismissPetEntity() {
         if (_summonedPetId == 0) {
             return;
