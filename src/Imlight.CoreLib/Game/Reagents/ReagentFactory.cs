@@ -35,7 +35,7 @@
  * 
  * Created by: Joji, Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 09/26/2026
  */
 
 using System.Collections.Generic;
@@ -72,7 +72,7 @@ internal class ReagentFactory : RootDirectoryResourceSingleton<ReagentFactory>, 
                 continue;
             }
 
-            var key = template.m_objectName.ToString().ToLower();
+            var key = template.m_objectName.ToString().ToLowerInvariant();
             s_reagentTemplates[key] = template;
             count++;
         }
@@ -104,7 +104,7 @@ internal class ReagentFactory : RootDirectoryResourceSingleton<ReagentFactory>, 
     /// <param name="reagentName">The base name of the reagent.</param>
     /// <returns>A <see cref="ClientReagentItem"/> instance if found; otherwise, null.</returns>
     internal static ClientReagentItem GetHarvestable(string reagentName) {
-        var normalized = reagentName.ToLower();
+        var normalized = reagentName.ToLowerInvariant();
         if (!normalized.Contains("harvest")) {
             normalized = "harvest-" + normalized;
         }
@@ -153,7 +153,7 @@ internal class ReagentFactory : RootDirectoryResourceSingleton<ReagentFactory>, 
         }
 
         var prefixMatch = s_reagentTemplates
-            .FirstOrDefault(kp => kp.Key.StartsWith(normalized));
+            .FirstOrDefault(kp => kp.Key.StartsWith(normalized, System.StringComparison.Ordinal));
         if (prefixMatch.Key is not null) {
             return prefixMatch.Value;
         }
@@ -177,7 +177,7 @@ internal class ReagentFactory : RootDirectoryResourceSingleton<ReagentFactory>, 
     }
 
     private static string NormalizeName(string name) {
-        var normalized = name.ToLower();
+        var normalized = name.ToLowerInvariant();
 
         if (normalized.Contains("flax")) {
             return "flax-01";

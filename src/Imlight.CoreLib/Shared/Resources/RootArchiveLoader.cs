@@ -116,7 +116,7 @@ internal static class RootArchiveLoader {
         var files = new Dictionary<FileEntry, Memory<byte>?>();
 
         foreach (var file in s_rootWad.Files
-            .Where(x => x.Key.StartsWith(directoryName) && x.Key != directoryName)) {
+            .Where(x => x.Key.StartsWith(directoryName, StringComparison.Ordinal) && x.Key != directoryName)) {
             var fileName = file.Key;
             var fileRecord = file.Value;
 
