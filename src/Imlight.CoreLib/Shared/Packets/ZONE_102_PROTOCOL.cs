@@ -832,6 +832,21 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     }
 
     /// <summary>
+    /// Requests the zone to spawn a new entity from a CoreObject + CoreTemplate.
+    /// </summary>
+    public sealed class MSG_SPAWNENTITY : IServerMessage {
+
+        public byte MessageOrder { get; } = 64;
+        public byte ServiceID { get; } = 102;
+
+        public CoreObject CoreObject;
+        public CoreTemplate Template;
+        /// <summary>Optional: the player actor requesting the spawn (for routing).</summary>
+        public IActorRef Requester;
+
+    }
+
+    /// <summary>
     /// Timer-fired message that releases a mobile ID back to the pool after a cooldown,
     /// preventing races between MSG_REMOVEOBJECT delivery and mobile ID reuse.
     /// </summary>
@@ -960,6 +975,32 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte ServiceID { get; } = 102;
 
         public string ZoneName;
+
+    }
+
+    /// <summary>
+    /// Response to MSG_SPAWNENTITY with the created entity actor reference.
+    /// </summary>
+    public sealed class MSG_SPAWNENTITYRSP : IServerMessage {
+
+        public byte MessageOrder { get; } = 65;
+        public byte ServiceID { get; } = 102;
+
+        public IActorRef EntityActor;
+        public CoreObject SpawnedObject;
+
+    }
+
+    /// <summary>
+    /// Sent by an owner's EquipmentService to the zone's objects: the summoned pet whose world GID is
+    /// <see cref="PetGlobalId"/> leaves the world for everyone in the zone.
+    /// </summary>
+    public sealed class MSG_DISMISSPET : IServerMessage {
+
+        public byte MessageOrder { get; } = 66;
+        public byte ServiceID { get; } = 102;
+
+        public ulong PetGlobalId;
 
     }
 

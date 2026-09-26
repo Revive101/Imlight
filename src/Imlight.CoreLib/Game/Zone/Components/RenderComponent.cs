@@ -36,7 +36,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 07/02/2026
+ * Last Updated: 09/26/2026
  */
 
 using System.Collections.Generic;
@@ -80,8 +80,10 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
         || template is CombatSigilTemplate; // bug fix: combat sigil templtaes don't have any behaviors
 
     public override void OnStart() {
-        // A combat minion never distance-culls; it lives only for the duel.
+        // A combat minion never distance-culls; it lives only for the duel. A summoned pet
+        // follows its owner, so the spawn location it would be culled by goes stale.
         _doesDistanceCheck = !Entity.IsCombatOnlyMinion
+            && Entity.ActiveGameObject is not WizClientPet
             && Entity.Template.m_behaviors
                 .OfType<AnimationBehaviorTemplate>()
                 .Any(anim => anim.m_bFadesIn || anim.m_bFadesOut);

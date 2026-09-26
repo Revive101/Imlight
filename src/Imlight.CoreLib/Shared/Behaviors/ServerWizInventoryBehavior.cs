@@ -132,7 +132,9 @@ public class ServerWizInventoryBehavior : IClientBehaviorProvider<ClientWizInven
     public ClientWizInventoryBehavior GetClientBehaviorInstance() => new() {
         m_numItemsAllowed = s_maxItemsAllowed,
         m_numJewelsAllowed = s_maxJewelsAllowed,
-        m_itemList = Items.ConvertAll(item => (CoreObject) item)
+        m_itemList = Items.ConvertAll(item =>
+            (item as IClientBehaviorProvider<CoreObject>)?.GetClientBehaviorInstance() ?? item)
+
     };
 
 }

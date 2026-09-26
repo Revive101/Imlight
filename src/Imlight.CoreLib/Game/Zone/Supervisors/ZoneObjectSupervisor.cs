@@ -107,6 +107,32 @@ internal sealed class ZoneObjectSupervisor(Core.Zone zone) : ZoneEntitySuperviso
             && adjectives.Any(adj => adj.Equals("Critical", StringComparison.OrdinalIgnoreCase));
     }
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_SPAWNENTITY))]
+    private void ReceiveSpawnEntity(ZONE_102_PROTOCOL.MSG_SPAWNENTITY message) {
+        var coreObject = message.CoreObject;
+        var template = message.Template;
+
+        var objectActor = CreateEntityActor(coreObject, template, null);
+        if (objectActor is null) {
+            Logger.Error("Failed to spawn entity from MSG_SPAWNENTITY.");
+            return;
+        }
+
+        // Spawned entities (summoned pets) can be stopped while the zone lives on.
+        Context.Watch(objectActor);
+
+        // Reply with the created entity.
+        var rsp = new ZONE_102_PROTOCOL.MSG_SPAWNENTITYRSP {
+            EntityActor = objectActor,
+            SpawnedObject = coreObject
+        };
+        Sender.Tell(rsp);
+    }
+
+    [MessageHandler(typeof(Terminated))]
+    private void ReceiveEntityTerminated(Terminated message)
+        => EntityActors.Remove(message.ActorRef);
+
     private void RegisterCriticalObject(GID id) {
         var msg = new ZONE_102_PROTOCOL.MSG_REGISTERCRITICALOBJECT {
             ObjectID = id

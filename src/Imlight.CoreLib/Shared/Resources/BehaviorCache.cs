@@ -78,7 +78,6 @@ public static class BehaviorCache {
         // ======================================================================
         // Below are behaviors the client fails on. Unsure as to why.
         // ======================================================================
-        //case 0x673324BA: return new ClientPetOwnerBehavior();
         //case 0x06060FD8: return new GamebryoClientLeashBehavior();
         //case 0x2A34C1B2: return new ClientInfractionBehavior();
         // ======================================================================

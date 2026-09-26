@@ -27,9 +27,11 @@ using Newtonsoft.Json;
 namespace Imlight.CoreLib.Shared.Behaviors;
 
 public record PetEggData {
+    
     public ulong GlobalId { get; set; }
     public ulong PetTemplateId { get; set; }
     public int HatchTimeEpoch { get; set; }
+    
 }
 
 public class ServerPetOwnerBehavior : IClientBehaviorProvider<ClientPetOwnerBehavior> {
@@ -42,7 +44,8 @@ public class ServerPetOwnerBehavior : IClientBehaviorProvider<ClientPetOwnerBeha
     public byte MaxSlots { get; set; }
     public uint LastEnergyTickEpoch { get; private set; }
     public int Energy { get; private set; }
-    public bool PlayingAsPet { get; set; }
+    // The client's switch-to-pet mode (MSG_SWITCHTOPET), not "a pet is equipped".
+    [JsonIgnore] public bool PlayingAsPet { get; set; }
 
     /// <summary>
     /// Persisted egg data. Rebuilt into _runtimeEggs on load.
@@ -55,6 +58,16 @@ public class ServerPetOwnerBehavior : IClientBehaviorProvider<ClientPetOwnerBeha
     /// the client learns about eggs via MSG_PETEGGMORPHED/MSG_PETMORPHINGSLOT messages.
     /// </summary>
     [JsonIgnore] public List<CraftingSlot> MorphingSlots { get; private set; }
+
+    /// <summary>
+    /// The template ID of the currently equipped pet (0 if none).
+    /// </summary>
+    public ulong EquippedPetTemplateId { get; set; }
+
+    /// <summary>
+    /// The inventory item GlobalID of the currently equipped pet (0 if none).
+    /// </summary>
+    public ulong EquippedPetGlobalId { get; set; }
 
     // ctor
     public ServerPetOwnerBehavior() 
@@ -178,6 +191,23 @@ public class ServerPetOwnerBehavior : IClientBehaviorProvider<ClientPetOwnerBeha
         var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
         return [.. MorphingSlots.Where(e => e.m_timeFinished > now)];
+    }
+
+    /// <summary>
+    /// Marks a pet as equipped, storing its template and item IDs.
+    /// </summary>
+    public void EquipPet(WizItemTemplate template, WizClientObjectItem item) {
+        EquippedPetTemplateId = item.m_templateID;
+        EquippedPetGlobalId = item.m_globalID;
+    }
+
+    /// <summary>
+    /// Marks the pet as unequipped.
+    /// </summary>
+    public void UnequipPet() {
+        EquippedPetTemplateId = 0;
+        EquippedPetGlobalId = 0;
+        PlayingAsPet = false;
     }
 
     /// <summary>

@@ -37,7 +37,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 09/26/2026
  */
 
 using System;
@@ -395,21 +395,30 @@ public class ZoneEntity(
     }
 
     public WizClientObject GetClientBehaviorInstance() {
-        var gameObj = new WizClientObject() {
-            m_debugName = ActiveGameObject.m_debugName,
-            m_globalID = ActiveGameObject.m_globalID,
-            m_location = ActiveGameObject.m_location,
-            m_nMobileID = ActiveGameObject.m_nMobileID,
-            m_orientation = ActiveGameObject.m_orientation,
-            m_permID = ActiveGameObject.m_permID,
-            m_templateID = ActiveGameObject.m_templateID,
-            m_zoneTagID = ActiveGameObject.m_zoneTagID,
-            m_inactiveBehaviors = ActiveGameObject.m_inactiveBehaviors ?? [],
-            m_fScale = 1,
-            m_characterId = ActiveGameObject.m_globalID,
-        };
+        var gameObj = ActiveGameObject is WizClientPet
+            ? new WizClientPet()
+            : new WizClientObject();
 
-        gameObj = CoreObjectFactory.InitializeCoreObjectBehaviors(gameObj, Template);
+        gameObj.m_debugName = ActiveGameObject.m_debugName;
+        gameObj.m_globalID = ActiveGameObject.m_globalID;
+        gameObj.m_location = ActiveGameObject.m_location;
+        gameObj.m_nMobileID = ActiveGameObject.m_nMobileID;
+        gameObj.m_orientation = ActiveGameObject.m_orientation;
+        gameObj.m_permID = ActiveGameObject.m_permID;
+        gameObj.m_templateID = ActiveGameObject.m_templateID;
+        gameObj.m_zoneTagID = ActiveGameObject.m_zoneTagID;
+        gameObj.m_fScale = 1;
+        gameObj.m_characterId = ActiveGameObject.m_globalID;
+
+        gameObj.m_inactiveBehaviors = ActiveGameObject.m_inactiveBehaviors ?? [];
+
+        // Parity with live (m_leashed true, m_characterId 0 for a pet). The leash behavior
+        // element drives following, not these fields.
+        if (ActiveGameObject is WizClientPet pet) {
+            var petCopy = (WizClientPet) gameObj;
+            petCopy.m_leashed = pet.m_leashed;
+            petCopy.m_characterId = pet.m_characterId;
+        }
 
         // Let each component contribute its behaviors.
         foreach (var (component, _) in Components) {
@@ -418,10 +427,9 @@ public class ZoneEntity(
                     continue;
                 }
 
-                var clientInstance = serverBehavior.GetClientBehaviorInstance();
-
                 // Check to see if there is already a behavior of this type in the list.
                 // If there is, replace it.
+                var clientInstance = serverBehavior.GetClientBehaviorInstance();
                 var existing = gameObj.m_inactiveBehaviors
                     .Where(x => x is not null)
                     .FirstOrDefault(x => x.GetType() == clientInstance.GetType());

@@ -468,6 +468,7 @@ public static class WizardCollection {
         var items = session.Query<WizClientObjectItem>(collectionName: WizardItemCollection.CollectionName)
             .Where(x => x.m_characterId == wizard.CharId)
             .ToList();
+
         wizard.InventoryBehavior.Items = [.. items
             .Where(i => wizard.InventoryBehavior.InventoryItemIds
             .Contains(i.m_globalID))
