@@ -21,6 +21,7 @@ using Imcodec.CoreObject;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Game.Cantrips;
+using Imlight.CoreLib.Game.Pet;
 using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
@@ -131,7 +132,10 @@ internal class CommandModifyProtocol : CommandProtocol {
             return;
         }
 
-        var addedItemSuccess = Context.Character.AddItemToInventory(templateIdLong, out var coreObject);
+        WizClientObjectItem coreObject;
+        var addedItemSuccess = PetFactory.IsPetTemplate((uint) templateIdLong)
+            ? Context.Character.AddHatchedPetToInventory((uint) templateIdLong, out coreObject)
+            : Context.Character.AddItemToInventory(templateIdLong, out coreObject);
         if (!addedItemSuccess) {
             InformSenderClient("Could not add item to inventory.");
 
