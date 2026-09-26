@@ -173,6 +173,11 @@ public sealed class COMBAT_106_PROTOCOL : IServerProtocol {
         public string[] MobAdjectives;
         public ulong[] MobTemplateIds;
 
+        /// <summary>
+        /// Character IDs of every player who fought in the duel, the winner included.
+        /// </summary>
+        public ulong[] AllyCharIds;
+
     }
 
     public sealed class MSG_COMBATEFFECT : IServerMessage {

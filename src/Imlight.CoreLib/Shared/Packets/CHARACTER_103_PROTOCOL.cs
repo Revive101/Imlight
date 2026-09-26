@@ -18,6 +18,7 @@
 
 using Akka.Actor;
 using Imcodec.IO;
+using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.Types;
 using Imlight.CoreLib.Shared.Networking;
@@ -243,6 +244,22 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
         public byte ServiceID { get; } = 103;
 
         public ulong EggGlobalId;
+
+    }
+
+    /// <summary>
+    /// Asks an online player's session to answer another player's MSG_BUDDYSTATS request from its live
+    /// character, replying straight to the requester's session.
+    /// </summary>
+    public sealed class MSG_BUDDYSTATSFWD : IServerMessage {
+
+        public byte MessageOrder { get; } = 23;
+        public byte ServiceID { get; } = 103;
+
+        public GAME_5_PROTOCOL.MSG_BUDDYSTATS Request;
+        public ulong BuddyCharId;
+        public IActorRef Requester;
+        public ulong RequesterGameObjectId;
 
     }
 

@@ -38,7 +38,7 @@
  * 
  * Created by: Jooty, Joji
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 09/26/2026
  */
 
 using Akka.Actor;
@@ -146,6 +146,8 @@ internal class WizardService(SessionActor sessionActor) : MessageService(session
             MaxEnergy = baseStats.m_petEnergy
         };
         SendToSocket(petEnergyMessage);
+
+        AnnounceLevelChange();
     }
 
     [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_GAINXP))]
@@ -199,6 +201,8 @@ internal class WizardService(SessionActor sessionActor) : MessageService(session
                 MaxEnergy = baseStats.m_petEnergy
             };
             SendToSocket(petEnergyMessage);
+
+            AnnounceLevelChange();
         }
 
         // Inform the client of the XP change.
@@ -209,6 +213,12 @@ internal class WizardService(SessionActor sessionActor) : MessageService(session
         };
         SendToSocket(addXpMsg);
     }
+
+    private void AnnounceLevelChange()
+        => TellOtherServices(new GROUP_109_PROTOCOL.MSG_LEVELCHANGED {
+            CharId = _activeWizard.CharId,
+            NewLevel = (uint) _activeWizard.MagicSchoolBehavior.Level
+        });
 
     #endregion
 

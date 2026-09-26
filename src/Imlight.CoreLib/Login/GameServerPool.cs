@@ -35,7 +35,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 06/27/2026
+ * Last Updated: 09/26/2026
  */
 
 using System;
@@ -46,6 +46,7 @@ using Akka.Actor;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Game;
+using Imlight.CoreLib.Game.Groups;
 using Imlight.Common;
 
 namespace Imlight.CoreLib.Login;
@@ -63,6 +64,9 @@ internal class GameServerPool : ReceiveProtocolDispatcher {
 
     public GameServerPool() {
         this._gameServers = [];
+
+        // Groups span every realm, so the pool owns the one directory all game servers share.
+        Context.ActorOf(GroupDirectory.Props(), nameof(GroupDirectory));
 
         Logger.Information("GameServerPool created.");
     }
