@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Imlight
  * Copyright (C) 2025 Revive101
  *
@@ -106,7 +106,7 @@ internal class ControlService : MessageService, IHandshakeService {
         // Once the session is created, we need to send a heartbeat to keep it active.
         // To do that. we'll have this actor send a message to itself on interval to check on the heartbeat.
         var heartbeatInterval = TimeSpan.FromSeconds(_keepAliveInterval);
-        Timers.StartPeriodicTimer("SessionAcceptTimer", "SessionAcceptTimer", heartbeatInterval, heartbeatInterval);
+        Timers.StartPeriodicTimer("KeepAliveHeartbeat", "KeepAliveHeartbeat", heartbeatInterval, heartbeatInterval);
 
         _responseStopwatch.Reset();
     }
