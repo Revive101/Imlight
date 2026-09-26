@@ -39,8 +39,6 @@
  * consumed. Crits are gated by the config's level threshold.
  * 
  * TODO:
- * - Confirm the per-tier m_capValue semantics against the client.
- * - Confirm how a target "resists" a crit heal in retail.
  * 
  * Created by: Jooty
  * Version: KALI 1.0
@@ -56,11 +54,7 @@ namespace Imlight.CoreLib.Game.Combat;
 
 internal static class CombatCriticals {
 
-    // Soft cap on crit chance; a crit is never guaranteed.
-    private const float MAX_CHANCE = 0.95f;
-
-    // K band, and the fallback curve when the client config is unavailable:
-    // linear from 200 at level 10 to 400 at level 170, clamped.
+    private const float MAX_CHANCE = 0.95f; // Client has a soft cap.
     private const float RATING_K_MIN = 200f;
     private const float RATING_K_MAX = 400f;
     private const float RATING_K_SLOPE = 1.25f;
@@ -74,10 +68,10 @@ internal static class CombatCriticals {
         return Math.Min(MAX_CHANCE, rating / (rating + GetRatingK(level)));
     }
 
-    // One combined roll: the target's block is part of the crit chance, so a
-    // separate block roll does not exist. Heals have no block side; they roll
-    // the rating against K alone and can never be blocked.
     internal static bool RollsCritical(CombatDuelSubCircle caster, CombatDuelSubCircle target, string school, bool isHeal) {
+        // One combined roll: the target's block is part of the crit chance, so a
+        // separate block roll does not exist. Heals have no block side; they roll
+        // the rating against K alone and can never be blocked.
         var level = GetLevel(caster);
         if (level < WizStatisticEffectConfigLoader.GetCriticalHitLevelThreshold()) {
             return false;
@@ -99,11 +93,11 @@ internal static class CombatCriticals {
         return Rolls(chance);
     }
 
-    // The landed crit multiplier, from the crit/block ratio:
-    // 2 - (3 * block) / (crit + 3 * block). Ranges from just above 1
-    // (block near crit) to 2 (crit far above block). Heals are never
-    // blocked, so they always land the full x2.
     internal static float GetCritMultiplier(CombatDuelSubCircle caster, CombatDuelSubCircle target, string school, bool isHeal) {
+        // The landed crit multiplier, from the crit/block ratio:
+        // 2 - (3 * block) / (crit + 3 * block). Ranges from just above 1
+        // (block near crit) to 2 (crit far above block). Heals are never
+        // blocked, so they always land the full x2.
         var crit = GetCriticalRating(caster, school);
         var block = isHeal ? 0f : GetBlockRating(target, school);
 
@@ -115,7 +109,6 @@ internal static class CombatCriticals {
         return 2f - 3f * block / denominator;
     }
 
-    // Reads and consumes the caster's Vengeance (crit chance boost) hanging effect.
     private static float GetCritBoostPercent(CombatDuelSubCircle caster) {
         var boost = caster._hangingEffects.FirstOrDefault(x => x.m_effectType == kSpellEffects.kCritBoost);
         if (boost is null) {
@@ -127,7 +120,6 @@ internal static class CombatCriticals {
         return boost.m_effectParam / 100f;
     }
 
-    // Reads and consumes the target's Conviction (block chance boost) hanging effect.
     private static float GetCritBlockPercent(CombatDuelSubCircle target) {
         var block = target._hangingEffects.FirstOrDefault(x => x.m_effectType == kSpellEffects.kCritBlock);
         if (block is null) {
@@ -139,7 +131,6 @@ internal static class CombatCriticals {
         return block.m_effectParam / 100f;
     }
 
-    // Universal rating plus any school-specific rating (GetStatBySchool returns 0 when the list is null).
     private static float GetCriticalRating(CombatDuelSubCircle sc, string school) {
         var stats = sc.ParticipantGameStats;
         if (stats is null) {
@@ -160,10 +151,10 @@ internal static class CombatCriticals {
 
     private static int GetLevel(CombatDuelSubCircle sc) => sc.ParticipantGameStats?.Level ?? 0;
 
-    // The level-scaled K: the client's crit divisor (100 + 3 * level in the
-    // shipped config), clamped into the 200-400 band. Falls back to a linear
-    // curve when the config is missing.
     private static float GetRatingK(int level) {
+        // The level-scaled K: the client's crit divisor (100 + 3 * level in the
+        // shipped config), clamped into the 200-400 band. Falls back to a linear
+        // curve when the config is missing.
         var divisor = WizStatisticEffectConfigLoader.GetCritDivisor(level);
         if (divisor <= 0f) {
             divisor = RATING_K_MIN + (level - RATING_K_BASE_LEVEL) * RATING_K_SLOPE;
