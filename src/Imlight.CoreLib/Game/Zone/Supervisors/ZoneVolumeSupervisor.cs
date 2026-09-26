@@ -50,8 +50,6 @@ internal sealed class ZoneVolumeSupervisor(Core.Zone zone) : ZoneEntitySuperviso
             var template = CoreObjectFactory.GetCoreTemplate(volume.m_templateID);
             var objectActor = CreateEntityActor(coreObject, template, null);
 
-            EntityActors.Add(objectActor);
-
             // Send the volume details to the object actor.
             var volumeDetails = new ZONE_102_PROTOCOL.MSG_VOLUMEDETAILS { 
                 Volume = volume,
@@ -59,9 +57,7 @@ internal sealed class ZoneVolumeSupervisor(Core.Zone zone) : ZoneEntitySuperviso
             objectActor.Tell(volumeDetails);
         }
 
-        // Inform the zone that we have finished initializing all objects.
-        var reply = new ZONE_102_PROTOCOL.MSG_ZONESUPERVISORLOADRESULTS { SupervisorName = nameof(ZoneVolumeSupervisor) };
-        Sender.Tell(reply);
+        ReportLoadedWhenEntitiesLoad();
     }
 
 }

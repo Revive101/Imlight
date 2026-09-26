@@ -29,15 +29,16 @@
  * var component = entity.GetComponentOfType<PathMovementComponent>();
  * 
  * NOTE:
- * Uses Akka actor model for component communication.
+ * Each entity is one actor. Its components are plain objects it hosts: they are created, awoken
+ * and started synchronously on load, and every message for them runs on this actor's thread.
  * Components are attached automatically based on entity templates.
- * Requires mobile ID allocation from the zone.
+ * Mobile IDs come straight from the zone's reserved range.
  *
  * TODO:
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 09/26/2026
  */
 
 using System;
@@ -72,10 +73,9 @@ public class ZoneEntity(
     CoreTemplate template,
     CoreObjectInfo info,
     IActorRef zoneRef,
-    Zone zone) : ReceiveProtocolDispatcher, IClientBehaviorProvider<WizClientObject> {
+    Zone zone) : ReceiveProtocolDispatcher, IClientBehaviorProvider<WizClientObject>, IWithTimers {
 
-    private const uint MOBILE_ID_REQUEST_TIMEOUT_IN_MS = 2500;
-
+    public ITimerScheduler Timers { get; set; }
     public IActorRef SelfRef { get; protected set; } 
     public CoreObject ActiveGameObject { get; protected set; } = activeGameObject;
     public CoreTemplate Template { get; protected set; } = template;
@@ -92,6 +92,9 @@ public class ZoneEntity(
     }
 
     protected readonly Dictionary<ZoneEntityComponent, IActorRef> Components = [];
+    private readonly List<ZoneEntityComponent> _componentOrder = [];
+
+    internal IActorRef CurrentSender => Sender;
 
     /// <summary>
     /// Gets a list of components of the specified type.
@@ -120,16 +123,12 @@ public class ZoneEntity(
             m_despawnEffect = StringHash.Compute(effectName),
         };
 
-        // Send kill-pill to all components.
-        foreach (var (_, actor) in Components) {
-            actor.Tell(PoisonPill.Instance);
-        }
-        
         var serializer = new ObjectSerializer(
             Behaviors: SerializerFlags.None
         );
         if (!serializer.Serialize(despawnEffects, 1, out var serializedData)) {
             Logger.Error("Failed to serialize despawn");
+            Context.Stop(Self);
 
             return;
         }
@@ -244,28 +243,22 @@ public class ZoneEntity(
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN))]
     protected virtual void ReceiveObjectLoadBegin() {
+        this.SelfRef = Self;
+
         if (ActiveGameObject is not null) {
-            MobileID = GetMobileIDFromZone();
+            MobileID = ReserveMobileId();
         }
 
         AutoAttachComponents();
 
-        this.SelfRef = Self;
-
-        // Send two start messages here: OnAwake and OnStart.
-        // OnAwake is early initialization. It's meant to configure dependent components that are guaranteed to be present.
-        // OnStart is late initialization. 
-        // We're also asking instead of telling, to ensure that all components receive `OnAwake` before `OnStart`.
-
-        // Notify each component that the entity has been initialized (OnAwake).
-        var initializedMsg = new ZONE_102_PROTOCOL.MSG_ZONEOBJECTINITIALIZED();
-        foreach (var (_, actor) in Components) {
-            var _ = actor.Ask(initializedMsg).Result;
+        // Two passes: every component is awoken (OnAwake) before any is started (OnStart), so OnStart
+        // may rely on every other component being configured.
+        foreach (var component in _componentOrder) {
+            RunLifecycleStep(component);
         }
 
-        // Send a message to the zone to indicate that the entity has been loaded (OnStart).
-        foreach (var (_, actor) in Components) {
-            var _ = actor.Ask(initializedMsg).Result;
+        foreach (var component in _componentOrder) {
+            RunLifecycleStep(component);
         }
 
         Sender.Tell(new ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADRESULTS());
@@ -291,10 +284,14 @@ public class ZoneEntity(
             return;
         }
 
-        foreach (var (_, actor) in Components) {
-            actor.Forward(message);
+        foreach (var component in _componentOrder) {
+            DispatchToComponent(component, message);
         }
     }
+
+    [MessageHandler(typeof(ComponentMessage))]
+    private protected void ReceiveComponentMessage(ComponentMessage envelope)
+        => DispatchToComponent(envelope.Component, envelope.Message);
 
     #endregion
 
@@ -304,17 +301,15 @@ public class ZoneEntity(
     protected virtual void AutoAttachComponents() {
         var template = Template;
 
-        foreach (var (componentType, shouldAttachMethod) in ZoneEntityComponentRegistry.GetRegisteredComponents()) {
-            // One component's ShouldAttachToEntity (or AddComponent) throwing must never abort the rest of
-            // this entity's components or wedge the zone load. Reflection Invoke wraps the real error in a
+        foreach (var (componentType, shouldAttachToEntity) in ZoneEntityComponentRegistry.GetRegisteredComponents()) {
+            // One component's ShouldAttachToEntity (or constructor) throwing must never abort the rest of
+            // this entity's components or wedge the zone load. Activator wraps a constructor's error in a
             // TargetInvocationException; log the inner message and skip only that one component.
             try {
-                var shouldAttach = (bool) shouldAttachMethod.Invoke(null, [template]);
-                if (shouldAttach) {
+                if (shouldAttachToEntity(template)) {
                     AddComponent(componentType);
                 }
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 Logger.Warning("Component {0} threw while attaching to a '{1}' entity, skipping it: {2}",
                     Logger.Args(componentType.Name, template?.GetType().Name ?? "?", (ex.InnerException ?? ex).Message));
             }
@@ -354,21 +349,43 @@ public class ZoneEntity(
     /// </summary>
     /// <param name="type">The type of the component to add.</param>
     protected void AddComponent(System.Type type) {
-        var props = Props.Create(type, this);
-        var componentName = type.Name;
-
-        // Ensure the component name is valid for an actor path.
-        if (string.IsNullOrEmpty(componentName) || componentName.StartsWith('$') || !IsValidActorName(componentName)) {
-            componentName = $"Component_{Guid.NewGuid()}";
+        var component = (ZoneEntityComponent) Activator.CreateInstance(type, this);
+        var componentRef = new ComponentActorRef((IInternalActorRef) Self, component);
+        component.AttachTo(componentRef);
+        if (component is IWithTimers withTimers) {
+            withTimers.Timers = new ComponentTimerScheduler(Timers, component);
         }
 
-        // Create the component actor and request its identity.
-        var componentActor = Context.ActorOf(props, componentName);
-        var identityMsg = new ZONE_102_PROTOCOL.MSG_ENTITYCOMPONENTREQUESTIDENTITY();
-        var identityRsp = componentActor.Ask<ZONE_102_PROTOCOL.MSG_ENTITYCOMPONENTREQUESTIDENTITYRSP>(identityMsg).Result;
-
-        Components.Add(identityRsp.Component, componentActor);
+        Components.Add(component, componentRef);
+        _componentOrder.Add(component);
     }
+
+    private void RunLifecycleStep(ZoneEntityComponent component) {
+        try {
+            component.RunLifecycleStep();
+        } catch (Exception ex) {
+            Logger.Error("Component {Component} of {Entity} failed to initialize: {Exception}",
+                Logger.Args(component.GetType().Name, DescribeForLog(), ex));
+        }
+    }
+
+    private void DispatchToComponent(ZoneEntityComponent component, object message) {
+        var handler = MessageHandlerTable.DispatcherFor(component.GetType(), message.GetType());
+        if (handler is null) {
+            return;
+        }
+
+        // A failing handler must not take the entity and its other components down with it.
+        try {
+            handler(component, message);
+        } catch (Exception ex) {
+            Logger.Error("Component {Component} of {Entity} failed on {Message}: {Exception}",
+                Logger.Args(component.GetType().Name, DescribeForLog(), message.GetType().Name, ex));
+        }
+    }
+
+    private string DescribeForLog()
+        => ActiveGameObject?.m_debugName?.ToString() ?? GetType().Name;
 
     private static bool IsValidActorName(string name) {
         foreach (char c in name) {
@@ -379,23 +396,41 @@ public class ZoneEntity(
         return true;
     }
 
-    private ushort GetMobileIDFromZone() {
+    private ushort ReserveMobileId() {
         try {
-            var requestMsg = new ZONE_102_PROTOCOL.MSG_GETRESERVEDMOBILEID();
-            var timeout = TimeSpan.FromMilliseconds(MOBILE_ID_REQUEST_TIMEOUT_IN_MS);
-            var requestRsp = ZoneRef.Ask<ZONE_102_PROTOCOL.MSG_GETRESERVEDMOBILEIDRSP>(requestMsg, timeout).Result;
-
-            return requestRsp.MobileID;
-        }
-        catch (Exception e) {
-            Logger.Error("Failed to get mobile ID from zone: {0}", Logger.Args(e.Message));
+            return Zone.ReserveMobileId();
+        } catch (Exception e) {
+            Logger.Error("Failed to get mobile ID from zone: {Reason}", Logger.Args(e.Message));
 
             return 0;
         }
     }
 
     public WizClientObject GetClientBehaviorInstance() {
-        var gameObj = new WizClientObject() {
+        var gameObj = BuildClientObject<WizClientObject>();
+
+        // This one must be done manually.
+        var statsComponent = GetComponentOfType<StatsComponent>();
+        if (statsComponent is not null) {
+            gameObj.m_gameStats = statsComponent.Stats.GetCombatGameStats();
+        }
+
+        return gameObj;
+    }
+
+    /// <summary>
+    /// Gets the object sent to clients in MSG_NEWOBJECT. Its class follows the entity's own object, because
+    /// the client builds the object from the template and reads that class's properties from the payload.
+    /// </summary>
+    public ClientObject GetClientObject() => ActiveGameObject switch {
+        ClientReagentItem => BuildClientObject<ClientReagentItem>(),
+        ClientPetSnackItem => BuildClientObject<ClientPetSnackItem>(),
+        WizClientObjectItem => BuildClientObject<WizClientObjectItem>(),
+        _ => GetClientBehaviorInstance(),
+    };
+
+    private T BuildClientObject<T>() where T : ClientObject, new() {
+        var gameObj = new T() {
             m_debugName = ActiveGameObject.m_debugName,
             m_globalID = ActiveGameObject.m_globalID,
             m_location = ActiveGameObject.m_location,
@@ -430,12 +465,6 @@ public class ZoneEntity(
                     gameObj.m_inactiveBehaviors[idx] = clientInstance;
                 }
             }
-        }
-
-        // This one must be done manually.
-        var statsComponent = GetComponentOfType<StatsComponent>();
-        if (statsComponent is not null) {
-            gameObj.m_gameStats = statsComponent.Stats.GetCombatGameStats();
         }
 
         return gameObj;
