@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 09/26/2026
  */
 
 using System.Collections.Generic;
@@ -78,7 +78,7 @@ internal class AccessPassManager : RootSingleResourceSingleton<AccessPassManager
     /// <param name="zoneName">The name of the zone to check.</param>
     /// <returns>True if the zone exists, false otherwise.</returns>
     internal static bool DoesZoneExist(string zoneName)
-        => s_zones.Any(zone => zone.Equals(zoneName?.ToLower(), System.StringComparison.CurrentCultureIgnoreCase));
+        => s_zones.Any(zone => zone.Equals(zoneName, System.StringComparison.OrdinalIgnoreCase));
 
     /// <summary>
     /// Checks if a zone name contains a partial zone name.
@@ -86,7 +86,7 @@ internal class AccessPassManager : RootSingleResourceSingleton<AccessPassManager
     /// <param name="partialZoneName">The partial zone name to check.</param>
     /// <returns>True if the zone name contains the partial zone name, false otherwise.</returns>
     internal static string GetContainedZoneName(string partialZoneName)
-        => s_zones.FirstOrDefault(zone => zone.Contains(partialZoneName, System.StringComparison.CurrentCultureIgnoreCase));
+        => s_zones.FirstOrDefault(zone => zone.Contains(partialZoneName, System.StringComparison.OrdinalIgnoreCase));
 
     void IMemoryStreamDisposable.DisposeStream() => base.Stream?.Dispose();
 

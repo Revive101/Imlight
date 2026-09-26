@@ -48,7 +48,7 @@ internal sealed class InteractAuctionHouseComponent(ZoneEntity entity)
         // or if the template is a vendor as per game client data.
         => template is GameObjectTemplate goTemplate
         && goTemplate.m_behaviors.Any(x => x is NPCBehaviorTemplate)
-        && goTemplate.m_objectName.ToString().ToLower() == s_auctionHouseName;
+        && goTemplate.m_objectName.ToString().ToLowerInvariant() == s_auctionHouseName;
 
     public IEnumerable<ServiceOptionBase> GetServiceOptions(Wizard _)
         => [

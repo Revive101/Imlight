@@ -78,6 +78,12 @@ internal sealed class ZoneSigilSupervisor(Core.Zone zone) : ZoneEntitySupervisor
 
             var template = (GameObjectTemplate) CoreObjectFactory.GetCoreTemplate(objectInfo.m_templateID);
             var coreObject = CoreObjectFactory.FinalizeCoreObject(objectInfo, template);
+            if (coreObject is null) {
+                Logger.Warning("Could not finalize combat sigil (template {TemplateId}); skipping.",
+                    Logger.Args(objectInfo.m_templateID));
+
+                continue;
+            }
 
             // Sometimes the sigil may spawn in the ground.
             var newLoc = coreObject.m_location;
@@ -94,9 +100,13 @@ internal sealed class ZoneSigilSupervisor(Core.Zone zone) : ZoneEntitySupervisor
             _sigils.Add(coreObject, objectActor);
         }
 
-        // Inform the zone that we have finished initializing all objects.
-        var reply = new ZONE_102_PROTOCOL.MSG_ZONESUPERVISORLOADRESULTS { SupervisorName = nameof(ZoneObjectSupervisor) };
-        Sender.Tell(reply);
+        ReportLoadedWhenEntitiesLoad();
+    }
+
+    protected override void OnEntityLoadFailed(IActorRef entityActor) {
+        foreach (var coreObject in _sigils.Where(x => x.Value.Equals(entityActor)).Select(x => x.Key).ToList()) {
+            _sigils.Remove(coreObject);
+        }
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL))]

@@ -33,14 +33,16 @@
  * }
  * 
  * NOTE:
- * Components use Akka message handlers for event communication.
+ * Components are plain objects hosted by their entity's actor: the entity runs their
+ * [MessageHandler] methods on its own thread, and Self, Sender and Timers behave as in an actor.
+ * ActorRef routes a message to this component only.
  * Lifecycle methods follow a specific order: OnAwake, OnStart, OnZoneStart.
  *
  * TODO:
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 09/26/2026
  */
 
 using Akka.Actor;
@@ -130,12 +132,17 @@ public interface IZoneComponent {
 /// <summary>
 /// Base class for components that implements common functionality
 /// </summary>
-public abstract class ZoneEntityComponent(ZoneEntity entity) : ReceiveProtocolDispatcher, IZoneComponent {
+public abstract class ZoneEntityComponent(ZoneEntity entity) : IZoneComponent {
 
+    /// <summary>
+    /// The reference that delivers a message to this component alone, through its entity's mailbox.
+    /// </summary>
     public IActorRef ActorRef { get; private set; }
     protected ZoneEntity Entity { get; private set; } = entity;
     protected Zone Zone => Entity.Zone;
     protected IActorRef ZoneActor => Entity.ZoneRef;
+    protected IActorRef Self => ActorRef;
+    protected IActorRef Sender => Entity.CurrentSender;
     private bool _enabled = true;
     private bool _awakeCalled = false;
 
@@ -159,13 +166,27 @@ public abstract class ZoneEntityComponent(ZoneEntity entity) : ReceiveProtocolDi
         OnDisabled();
     }
 
+    internal void AttachTo(IActorRef componentRef) => ActorRef = componentRef;
+
+    internal void RunLifecycleStep() {
+        if (!_enabled) {
+            return;
+        }
+
+        if (!_awakeCalled) {
+            _awakeCalled = true;
+            OnAwake();
+        } else {
+            OnStart();
+        }
+    }
+
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONESTART))]
     public void ReceiveZoneStart() {
         if (!_enabled) {
             return;
         }
 
-        ActorRef = Self;
         OnZoneStart();
     }
 
@@ -194,36 +215,6 @@ public abstract class ZoneEntityComponent(ZoneEntity entity) : ReceiveProtocolDi
         }
 
         OnPlayerMove(message.PlayerObject, message.PlayerActor, message.PlayerWizard);
-    }
-
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ENTITYCOMPONENTREQUESTIDENTITY))]
-    public void ReceiveRequestIdentity() {
-        if (!_enabled) {
-            return;
-        }
-
-        Sender.Tell(new ZONE_102_PROTOCOL.MSG_ENTITYCOMPONENTREQUESTIDENTITYRSP { Component = this });
-    }
-
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTINITIALIZED))]
-    public void ReceiveObjectStart() {
-        ActorRef = Self;
-        
-        if (!_enabled) {
-            Sender.Tell(new ZONE_102_PROTOCOL.MSG_ZONEOBJECTINITIALIZED());
-            
-            return;
-        }
-
-        if (!_awakeCalled) {
-            _awakeCalled = true;
-            OnAwake();
-            Sender.Tell(new ZONE_102_PROTOCOL.MSG_ZONEOBJECTINITIALIZED());
-        }
-        else {
-            OnStart();
-            Sender.Tell(new ZONE_102_PROTOCOL.MSG_ZONEOBJECTINITIALIZED());
-        }
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_CREATUREMOVE))]

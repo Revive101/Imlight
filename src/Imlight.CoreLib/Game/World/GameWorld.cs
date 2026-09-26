@@ -36,7 +36,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 08/13/2026
+ * Last Updated: 09/26/2026
  */
 
 using System;
@@ -201,7 +201,7 @@ public class GameWorld : ReceiveProtocolDispatcher, IWithTimers {
             // This will cause the instance container to create the zone actor.
             instanceContainer.Tell(message);
 
-            ProcessTransfersForInstanceContainer(zonePath);
+            ProcessTransfersForInstanceContainer(zonePath, ownerId);
         }
         else {
             // Create the new public zone and inform it of the load results.
@@ -275,17 +275,18 @@ public class GameWorld : ReceiveProtocolDispatcher, IWithTimers {
 
     public void HandleOtherZoneTransfer(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message) {
         // Get the zone if it's already loaded; or, create a new one if it's not.
-        IActorRef zone;
-        if (!_publicZones.TryGetValue(message.DestinationZone, out var value)) {
-            zone = CreateZoneLoader(message.DestinationZone);
+        if (!_publicZones.TryGetValue(message.DestinationZone, out var zone)) {
+            // A second player entering while the zone still loads waits for the same load.
+            if (!_zoneLoaderActors.ContainsKey(message.DestinationZone)) {
+                CreateZoneLoader(message.DestinationZone);
+                _instanceCreationCalledByMap.AddOrSet(message.DestinationZone, (message.OwnerCharId, message.IsPrivate));
+            }
 
             // We want to wait until the zone is fully loaded before transferring the player.
             _awaitingTransfers.Add(message, Sender);
-            _instanceCreationCalledByMap.AddOrSet(message.DestinationZone, (message.OwnerCharId, message.IsPrivate));
         }
         else {
             // If the zone is already loaded, we can transfer the player immediately.
-            zone = value;
             zone.Forward(message);
         }
     }
@@ -379,7 +380,7 @@ public class GameWorld : ReceiveProtocolDispatcher, IWithTimers {
         }
     }
 
-    private void ProcessTransfersForInstanceContainer(string zonePath) {
+    private void ProcessTransfersForInstanceContainer(string zonePath, ulong ownerId) {
         var transfers = _awaitingTransfers.Where(t => t.Key.DestinationZone == zonePath);
         if (transfers is null || !transfers.Any()) {
             Logger.Error("{Name} received unexpected zone load result for {ZoneName}",
@@ -389,7 +390,13 @@ public class GameWorld : ReceiveProtocolDispatcher, IWithTimers {
         }
 
         foreach (var (transferMsg, transferActor) in transfers) {
-            _instanceContainers[transferMsg.OwnerCharId].Tell(transferMsg, transferActor);
+            // The instance was loaded for its owner. Anyone else who asked for this zone meanwhile gets their own
+            // instance, through a fresh transfer.
+            if (transferMsg.OwnerCharId == ownerId) {
+                _instanceContainers[ownerId].Tell(transferMsg, transferActor);
+            } else {
+                Self.Tell(transferMsg, transferActor);
+            }
 
             _awaitingTransfers.Remove(transferMsg);
         }

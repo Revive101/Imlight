@@ -70,12 +70,10 @@ internal sealed class ZoneObjectSupervisor(Core.Zone zone) : ZoneEntitySuperviso
                 RegisterCriticalObject(coreObject.m_globalID);
             }
 
-            var objectActor = CreateEntityActor(coreObject, template, objectInfo);
+            CreateEntityActor(coreObject, template, objectInfo);
         }
 
-        // Inform the zone that we have finished initializing all objects.
-        var reply = new ZONE_102_PROTOCOL.MSG_ZONESUPERVISORLOADRESULTS { SupervisorName = nameof(ZoneObjectSupervisor) };
-        Sender.Tell(reply);
+        ReportLoadedWhenEntitiesLoad();
     }
 
     private static bool IsObjectEligibleForSpawn(CoreObjectInfo objectInfo) {

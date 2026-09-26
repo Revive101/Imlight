@@ -30,16 +30,18 @@
  * 
  * NOTE:
  * Ensure ConfigurationManager.Initialize() is called before accessing settings.
+ * Values parse with the invariant culture: decimals use '.', whatever the machine's locale.
  *
  * TODO:
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 09/26/2026
  */
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 
@@ -160,7 +162,7 @@ public static class ConfigurationManager {
             }
 
             // Convert to the requested type.
-            return (T) Convert.ChangeType(value, typeof(T));
+            return (T) Convert.ChangeType(value, typeof(T), CultureInfo.InvariantCulture);
         }
         catch {
             return defaultValue;
@@ -178,12 +180,12 @@ public static class ConfigurationManager {
             string trimmedLine = line.Trim();
 
             // Skip empty lines and comments.
-            if (string.IsNullOrWhiteSpace(trimmedLine) || trimmedLine.StartsWith(";")) {
+            if (string.IsNullOrWhiteSpace(trimmedLine) || trimmedLine.StartsWith(';')) {
                 continue;
             }
 
             // Check if this is a section header.
-            if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]")) {
+            if (trimmedLine.StartsWith('[') && trimmedLine.EndsWith(']')) {
                 currentSection = trimmedLine.Substring(1, trimmedLine.Length - 2).Trim();
                 currentSectionSettings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 s_sections[currentSection] = currentSectionSettings;
@@ -259,7 +261,7 @@ public static class ConfigurationManager {
         /// </summary>
         /// <returns>The byte value</returns>
         public byte AsByte()
-            => string.IsNullOrEmpty(_value) ? (byte) 0 : Convert.ToByte(_value);
+            => string.IsNullOrEmpty(_value) ? (byte) 0 : Convert.ToByte(_value, CultureInfo.InvariantCulture);
 
         /// <summary>
         /// Converts the value to a byte with a default if conversion fails
@@ -280,7 +282,7 @@ public static class ConfigurationManager {
         /// </summary>
         /// <returns>The signed byte value</returns>
         public sbyte AsSByte()
-            => string.IsNullOrEmpty(_value) ? (sbyte) 0 : Convert.ToSByte(_value);
+            => string.IsNullOrEmpty(_value) ? (sbyte) 0 : Convert.ToSByte(_value, CultureInfo.InvariantCulture);
 
         /// <summary>
         /// Converts the value to a signed byte with a default if conversion fails
@@ -301,7 +303,7 @@ public static class ConfigurationManager {
         /// </summary>
         /// <returns>The short value</returns>
         public short AsShort()
-            => string.IsNullOrEmpty(_value) ? (short) 0 : Convert.ToInt16(_value);
+            => string.IsNullOrEmpty(_value) ? (short) 0 : Convert.ToInt16(_value, CultureInfo.InvariantCulture);
 
         /// <summary>
         /// Converts the value to a short with a default if conversion fails
@@ -322,7 +324,7 @@ public static class ConfigurationManager {
         /// </summary>
         /// <returns>The unsigned short value</returns>
         public ushort AsUShort()
-            => string.IsNullOrEmpty(_value) ? (ushort) 0 : Convert.ToUInt16(_value);
+            => string.IsNullOrEmpty(_value) ? (ushort) 0 : Convert.ToUInt16(_value, CultureInfo.InvariantCulture);
 
         /// <summary>
         /// Converts the value to an unsigned short with a default if conversion fails
@@ -343,7 +345,7 @@ public static class ConfigurationManager {
         /// </summary>
         /// <returns>The integer value</returns>
         public int AsInt()
-            => string.IsNullOrEmpty(_value) ? 0 : Convert.ToInt32(_value);
+            => string.IsNullOrEmpty(_value) ? 0 : Convert.ToInt32(_value, CultureInfo.InvariantCulture);
 
         /// <summary>
         /// Converts the value to an integer with a default if conversion fails
@@ -364,7 +366,7 @@ public static class ConfigurationManager {
         /// </summary>
         /// <returns>The unsigned integer value</returns>
         public uint AsUInt()
-            => string.IsNullOrEmpty(_value) ? 0u : Convert.ToUInt32(_value);
+            => string.IsNullOrEmpty(_value) ? 0u : Convert.ToUInt32(_value, CultureInfo.InvariantCulture);
 
         /// <summary>
         /// Converts the value to an unsigned integer with a default if conversion fails
@@ -385,7 +387,7 @@ public static class ConfigurationManager {
         /// </summary>
         /// <returns>The long value</returns>
         public long AsLong()
-            => string.IsNullOrEmpty(_value) ? 0L : Convert.ToInt64(_value);
+            => string.IsNullOrEmpty(_value) ? 0L : Convert.ToInt64(_value, CultureInfo.InvariantCulture);
 
         /// <summary>
         /// Converts the value to a long with a default if conversion fails
@@ -406,7 +408,7 @@ public static class ConfigurationManager {
         /// </summary>
         /// <returns>The unsigned long value</returns>
         public ulong AsULong()
-            => string.IsNullOrEmpty(_value) ? 0UL : Convert.ToUInt64(_value);
+            => string.IsNullOrEmpty(_value) ? 0UL : Convert.ToUInt64(_value, CultureInfo.InvariantCulture);
 
         /// <summary>
         /// Converts the value to an unsigned long with a default if conversion fails
@@ -431,7 +433,7 @@ public static class ConfigurationManager {
                 return false;
             }
 
-            return _value.ToLower() switch {
+            return _value.ToLowerInvariant() switch {
                 "true" or "yes" or "1" or "on" or "enabled" => true,
                 _ => false
             };
@@ -482,7 +484,7 @@ public static class ConfigurationManager {
         /// </summary>
         /// <returns>The float value</returns>
         public float AsFloat()
-            => string.IsNullOrEmpty(_value) ? 0f : Convert.ToSingle(_value);
+            => string.IsNullOrEmpty(_value) ? 0f : Convert.ToSingle(_value, CultureInfo.InvariantCulture);
 
         /// <summary>
         /// Converts the value to a float with a default if conversion fails
@@ -503,7 +505,7 @@ public static class ConfigurationManager {
         /// </summary>
         /// <returns>The double value</returns>
         public double AsDouble()
-            => string.IsNullOrEmpty(_value) ? 0d : Convert.ToDouble(_value);
+            => string.IsNullOrEmpty(_value) ? 0d : Convert.ToDouble(_value, CultureInfo.InvariantCulture);
 
         /// <summary>
         /// Converts the value to a double with a default if conversion fails
@@ -524,7 +526,7 @@ public static class ConfigurationManager {
         /// </summary>
         /// <returns>The decimal value</returns>
         public decimal AsDecimal()
-            => string.IsNullOrEmpty(_value) ? 0m : Convert.ToDecimal(_value);
+            => string.IsNullOrEmpty(_value) ? 0m : Convert.ToDecimal(_value, CultureInfo.InvariantCulture);
 
         /// <summary>
         /// Converts the value to a decimal with a default if conversion fails

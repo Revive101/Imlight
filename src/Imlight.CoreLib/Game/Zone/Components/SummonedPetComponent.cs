@@ -86,8 +86,8 @@ internal sealed class SummonedPetComponent(ZoneEntity entity) : ZoneEntityCompon
             MobileId = Entity.MobileID
         });
 
-        // The entity actor is this component's parent; stopping it stops every component with it.
-        Context.Parent.Tell(PoisonPill.Instance);
+        // The entity hosts this component; stopping it stops every component with it.
+        Entity.SelfRef.Tell(PoisonPill.Instance);
     }
 
 }

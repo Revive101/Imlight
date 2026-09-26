@@ -37,13 +37,15 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 06/27/2026
+ * Last Updated: 09/26/2026
  */
 
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Threading;
 using Imcodec.Cryptography;
 using Imcodec.IO;
 using Imcodec.ObjectProperty;
@@ -63,6 +65,7 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
     public static TemplateManifest TemplateManifest;
 
     private static readonly ConcurrentDictionary<ulong, CoreTemplate> s_templateCache = new();
+    private static Dictionary<ulong, TemplateLocation> s_templateLocations;
 
     protected override void AfterLoad() {
         var serializer = new BindSerializer();
@@ -167,9 +170,7 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
 
         // Slow path: load from disk.
         return s_templateCache.GetOrAdd(id, _ => {
-            var templateLocation = TemplateManifest.m_serializedTemplates
-                .FirstOrDefault(x => x.m_id == id);
-            if (templateLocation is null) {
+            if (!TemplateLocations().TryGetValue(id, out var templateLocation)) {
                 Logger.Error("Could not find CoreTemplate by ID {Tid}. Finding the template failed.", 
                     Logger.Args(id));
                 return null;
@@ -183,6 +184,21 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
 
             return templateObj;
         });
+    }
+
+    private static Dictionary<ulong, TemplateLocation> TemplateLocations()
+        => LazyInitializer.EnsureInitialized(ref s_templateLocations, IndexTemplateLocations);
+
+    private static Dictionary<ulong, TemplateLocation> IndexTemplateLocations() {
+        // The first entry wins for a duplicated id.
+        var locations = new Dictionary<ulong, TemplateLocation>(TemplateManifest.m_serializedTemplates.Count);
+        foreach (var location in TemplateManifest.m_serializedTemplates) {
+            if (location is not null) {
+                locations.TryAdd(location.m_id, location);
+            }
+        }
+
+        return locations;
     }
 
     /// <summary>
@@ -267,7 +283,8 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
         obj.m_orientation = objInfo.m_orientation;
         obj.m_fScale = objInfo.m_fScale;
         obj.m_globalID = RandomGen.GenerateGUID();
-        obj.m_permID = RandomGen.GenerateHash($"{obj.m_zoneTagID}{obj.m_templateID}{obj.m_location.X}");
+        obj.m_permID = RandomGen.GenerateHash(string.Create(CultureInfo.InvariantCulture,
+            $"{obj.m_zoneTagID}{obj.m_templateID}{obj.m_location.X}"));
         obj.m_zoneTagID = StringHash.Compute(objInfo.m_zoneTag);
         obj.m_debugName = objInfo.m_zoneTag;
 

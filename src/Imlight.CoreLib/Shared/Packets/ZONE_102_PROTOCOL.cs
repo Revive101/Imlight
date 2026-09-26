@@ -836,7 +836,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     /// </summary>
     public sealed class MSG_SPAWNENTITY : IServerMessage {
 
-        public byte MessageOrder { get; } = 64;
+        public byte MessageOrder { get; } = 65;
         public byte ServiceID { get; } = 102;
 
         public CoreObject CoreObject;
@@ -979,11 +979,25 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     }
 
     /// <summary>
+    /// Timer-fired message to a zone supervisor or <see cref="ZonePath"/> that gives up on entities that
+    /// never answered their <see cref="MSG_ZONEOBJECTLOADBEGIN"/>. <see cref="Entity"/> names one entity;
+    /// null means every entity still loading.
+    /// </summary>
+    public sealed class MSG_ENTITYLOADTIMEOUT : IServerMessage {
+
+        public byte MessageOrder { get; } = 64;
+        public byte ServiceID { get; } = 102;
+
+        public IActorRef Entity;
+
+    }
+
+    /// <summary>
     /// Response to MSG_SPAWNENTITY with the created entity actor reference.
     /// </summary>
     public sealed class MSG_SPAWNENTITYRSP : IServerMessage {
 
-        public byte MessageOrder { get; } = 65;
+        public byte MessageOrder { get; } = 66;
         public byte ServiceID { get; } = 102;
 
         public IActorRef EntityActor;
@@ -997,7 +1011,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     /// </summary>
     public sealed class MSG_DISMISSPET : IServerMessage {
 
-        public byte MessageOrder { get; } = 66;
+        public byte MessageOrder { get; } = 67;
         public byte ServiceID { get; } = 102;
 
         public ulong PetGlobalId;
