@@ -118,6 +118,9 @@ internal sealed class ZoneObjectSupervisor(Core.Zone zone) : ZoneEntitySuperviso
             return;
         }
 
+        // Spawned entities (summoned pets) can be stopped while the zone lives on.
+        Context.Watch(objectActor);
+
         // Reply with the created entity.
         var rsp = new ZONE_102_PROTOCOL.MSG_SPAWNENTITYRSP {
             EntityActor = objectActor,
@@ -125,6 +128,10 @@ internal sealed class ZoneObjectSupervisor(Core.Zone zone) : ZoneEntitySuperviso
         };
         Sender.Tell(rsp);
     }
+
+    [MessageHandler(typeof(Terminated))]
+    private void ReceiveEntityTerminated(Terminated message)
+        => EntityActors.Remove(message.ActorRef);
 
     private void RegisterCriticalObject(GID id) {
         var msg = new ZONE_102_PROTOCOL.MSG_REGISTERCRITICALOBJECT {

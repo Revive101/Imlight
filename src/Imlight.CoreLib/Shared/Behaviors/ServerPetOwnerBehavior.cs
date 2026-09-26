@@ -44,7 +44,8 @@ public class ServerPetOwnerBehavior : IClientBehaviorProvider<ClientPetOwnerBeha
     public byte MaxSlots { get; set; }
     public uint LastEnergyTickEpoch { get; private set; }
     public int Energy { get; private set; }
-    public bool PlayingAsPet { get; set; }
+    // The client's switch-to-pet mode (MSG_SWITCHTOPET), not "a pet is equipped".
+    [JsonIgnore] public bool PlayingAsPet { get; set; }
 
     /// <summary>
     /// Persisted egg data. Rebuilt into _runtimeEggs on load.
@@ -198,7 +199,6 @@ public class ServerPetOwnerBehavior : IClientBehaviorProvider<ClientPetOwnerBeha
     public void EquipPet(WizItemTemplate template, WizClientObjectItem item) {
         EquippedPetTemplateId = item.m_templateID;
         EquippedPetGlobalId = item.m_globalID;
-        PlayingAsPet = true;
     }
 
     /// <summary>

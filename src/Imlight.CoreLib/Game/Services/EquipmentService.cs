@@ -72,6 +72,7 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
         versionable: false,
         behaviors: SerializerFlags.None
     );
+    private ulong _summonedPetId;
 
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new InventoryService(parentActor));
@@ -190,6 +191,9 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
         // This needs to be done before we unequip the item, because we need to know what slot it was in.
         var slot = wizEquipmentBehavior.GetSlotOfItem(itemId);
 
+        // The client's unequip request carries no slot name, so the pet is recognized by its slot.
+        var isPet = wizEquipmentBehavior.GetEquippedPetId() == itemId;
+
         if (!wizard.EquipmentToInventoryTransfer(itemId, out var removedEffects)) {
             // If this fails, there is perhaps desync between the server and the client.
             // Send a message to the client to assure them that the server does not have the item equipped.
@@ -212,7 +216,9 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
             WizardCollection.UpdateCharacterInteriorStowedMount(wizard);
         }
 
-        // TODO: Unleash pet zone entity when spawn/despawn is implemented.
+        if (isPet) {
+            DismissPetEntity();
+        }
     }
 
     private void SpawnPetEntity(WizClientObjectItem petItem = null) {
@@ -257,13 +263,31 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
         coreObj.m_location = playerObj.m_location;
         coreObj.m_orientation = playerObj.m_orientation;
 
+        // Only one pet follows its owner: a swap or a repeated attach replaces the previous summon.
+        DismissPetEntity();
+
         var spawnMsg = new ZONE_102_PROTOCOL.MSG_SPAWNENTITY {
             CoreObject = coreObj,
-            Template = CoreObjectFactory.GetCoreTemplate(2),
+            Template = CoreObjectFactory.GetCoreTemplate(PetFactory.GENERIC_PET_TEMPLATE_ID),
             Requester = SessionActor.ActorRef
         };
 
         zoneActor.Tell(spawnMsg, Self);
+        _summonedPetId = coreObj.m_globalID;
+    }
+
+    private void DismissPetEntity() {
+        if (_summonedPetId == 0) {
+            return;
+        }
+
+        // Sent straight to the zone, like the spawn, so a dismiss never overtakes the spawn it targets.
+        SessionActor.GetZoneActor()?.Tell(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+            Messages = [new ZONE_102_PROTOCOL.MSG_DISMISSPET { PetGlobalId = _summonedPetId }],
+            Targets = ZoneBroadcastTarget.Objects,
+        }, Self);
+
+        _summonedPetId = 0;
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ENFORCEINTERIORMOUNT))]

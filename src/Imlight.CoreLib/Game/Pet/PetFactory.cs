@@ -17,6 +17,7 @@
  */
 
 using Imcodec.ObjectProperty;
+using Imcodec.ObjectProperty.Bit;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.Types;
 using Imlight.Common;
@@ -30,8 +31,9 @@ namespace Imlight.CoreLib.Game.Pet;
 
 public class PetFactory : RootDirectoryResourceSingleton<PetFactory>, IMemoryStreamDisposable {
 
-    private const uint GENERIC_PET_TEMPLATE_ID = 2;
+    public const uint GENERIC_PET_TEMPLATE_ID = 2;
     private const float LeashRadius = 75f;
+    private const int MaxSkinColor = 15;
 
     protected override string DirectoryName => "ObjectData/Pets/";
 
@@ -110,7 +112,8 @@ public class PetFactory : RootDirectoryResourceSingleton<PetFactory>, IMemoryStr
         var genericPetObject = new WizClientPet();
         CoreObjectFactory.InitializeCoreObjectBehaviors(genericPetObject, GENERIC_PET_TEMPLATE_ID);
 
-        genericPetObject.m_globalID = pet.m_globalID;
+        // Live gives every summon its own world GID, never the pet item's.
+        genericPetObject.m_globalID = RandomGen.GenerateGUID();
         genericPetObject.m_templateID = GENERIC_PET_TEMPLATE_ID;
         genericPetObject.m_leashed = true;
 
@@ -159,25 +162,18 @@ public class PetFactory : RootDirectoryResourceSingleton<PetFactory>, IMemoryStr
 
         // Replace the generic pet's behaviors with the pet's behaviors.
         if (CoreObjectFactory.FindBehaviorInstance<ClientPetNameBehavior>(petGameObject, out var petNameBehaviorInstance)) {
-            // Now find the behavior instance on the pet and replace the generic pet's behavior with it.
             var idx = petGameObject.m_inactiveBehaviors.IndexOf(petNameBehaviorInstance);
-            // Flat replace with the pet's behavior instance.
-            petGameObject.m_inactiveBehaviors[idx] = petNameBehaviorInstanceOnPet;
+            petGameObject.m_inactiveBehaviors[idx] = CreatePetNameBehavior(pet, petNameBehaviorInstanceOnPet);
         }
         else {
             Logger.Error("Generic pet {0} should've contained behavior {1}, but it did not.",
                 Logger.Args(petGameObject.m_globalID.Full, nameof(ClientPetNameBehavior)));
         }
 
-        // Find the game object's WizardCharacterBehavior and create a new one that sets the race and gender.
+        // The race only picks the model; the texture and colors ride on this behavior.
         if (CoreObjectFactory.FindBehaviorInstance<WizardCharacterBehavior>(petGameObject, out var wizardCharacterBehaviorInstance)) {
-            // Now find the behavior instance on the pet and replace the generic pet's behavior with it.
             var idx = petGameObject.m_inactiveBehaviors.IndexOf(wizardCharacterBehaviorInstance);
-            // Flat replace with the pet's behavior instance.
-            petGameObject.m_inactiveBehaviors[idx] = new WizardCharacterBehavior() {
-                m_eRace = petNameBehaviorInstanceOnPet.m_eRace,
-                m_eGender = petNameBehaviorInstanceOnPet.m_eGender,
-            };
+            petGameObject.m_inactiveBehaviors[idx] = CreatePetAppearance(pet, petNameBehaviorInstanceOnPet);
         }
         else {
             Logger.Error("Generic pet {0} should've contained behavior {1}, but it did not.",
@@ -186,6 +182,61 @@ public class PetFactory : RootDirectoryResourceSingleton<PetFactory>, IMemoryStr
 
         return petGameObject;
     }
+
+    private static ClientPetNameBehavior CreatePetNameBehavior(WizClientObjectItem pet, ClientPetNameBehavior itemName) {
+        CoreObjectFactory.FindBehaviorInstance<ClientPetItemBehavior>(pet, out var petItemBehavior);
+
+        return new ClientPetNameBehavior {
+            m_nameKeys = itemName.m_nameKeys,
+            m_useRank = true,
+            m_eGender = itemName.m_eGender,
+            m_eRace = itemName.m_eRace,
+            m_overallRating = petItemBehavior?.m_overallRating ?? 0,
+            m_activeRating = petItemBehavior?.m_activeRating ?? 0,
+            m_petLevel = petItemBehavior?.m_level ?? 0,
+            m_templateID = (uint) pet.m_templateID,
+        };
+    }
+
+    private static WizardCharacterBehavior CreatePetAppearance(WizClientObjectItem pet, ClientPetNameBehavior itemName) {
+        var petItemTemplate = GetPetItemBehaviorTemplate((uint) pet.m_templateID);
+        if (petItemTemplate is null) {
+            Logger.Warning("Pet {0} has no pet item behavior on template {1}; it will show its race's default look.",
+                Logger.Args(pet.m_globalID.Full, pet.m_templateID.Full));
+        }
+
+        var primary = GetDyeTexture(petItemTemplate?.m_primaryDyeToTexture, pet.m_primaryColor);
+        var secondary = GetDyeTexture(petItemTemplate?.m_secondaryDyeToTexture, pet.m_secondaryColor);
+        var pattern = GetDyeTexture(petItemTemplate?.m_patternToTexture, pet.m_pattern);
+
+        // Live writes the primary texture into every color slot and the secondary into every decal
+        // slot; the 4-bit skin color saturates, the skin decal keeps its high bits in the extended field.
+        return new WizardCharacterBehavior {
+            m_eRace = itemName.m_eRace,
+            m_eGender = itemName.m_eGender,
+            m_nSkinColor = (Bui4) Math.Min(primary, MaxSkinColor),
+            m_nHairColor = (Bui7) primary,
+            m_nHatColor = (Bui5) primary,
+            m_nTorsoColor = (Bui5) primary,
+            m_nFeetColor = (Bui5) primary,
+            m_nSkinDecal = (Bui4) (secondary & 0xF),
+            m_extendedSkinDecal = (ushort) (secondary >> 4),
+            m_nHatDecal = (Bui5) secondary,
+            m_nTorsoDecal = (Bui5) secondary,
+            m_nFeetDecal = (Bui5) secondary,
+            m_nTorsoDecal2 = (Bui5) pattern,
+        };
+    }
+
+    private static PetItemBehaviorTemplate GetPetItemBehaviorTemplate(uint templateId) {
+        var template = s_petTemplates.GetValueOrDefault(templateId)
+            ?? CoreObjectFactory.GetCoreTemplate(templateId) as GameObjectTemplate;
+
+        return template?.m_behaviors?.OfType<PetItemBehaviorTemplate>().FirstOrDefault();
+    }
+
+    private static int GetDyeTexture(List<PetDyeToTexture> dyeToTexture, int dye)
+        => dyeToTexture?.FirstOrDefault(entry => entry?.m_dye == dye)?.m_texture ?? dye;
 
     private static long ParseHatchRate(string hatchRateString) {
         if (string.IsNullOrEmpty(hatchRateString)) {
