@@ -5,7 +5,11 @@ using Imlight.CoreLib.Shared.Packets;
 
 namespace Imlight.CoreLib.Shared.Networking;
 
-public class ZonePriorityMailbox : UnboundedPriorityMailbox {
+/// <summary>
+/// Zone mailbox that serves moves and broadcasts first. It is stable: messages of equal priority keep their
+/// send order, where the plain priority mailbox hands a backlog of them back almost in reverse.
+/// </summary>
+public class ZonePriorityMailbox : UnboundedStablePriorityMailbox {
 
     public ZonePriorityMailbox(Settings settings, Config config)
         : base(settings, config) { }

@@ -37,7 +37,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 09/26/2026
  */
 
 using System;
@@ -224,7 +224,7 @@ public class Logger {
         // Clean the log level string.
         logLevelString = logLevelString.Trim();
         logLevelString = logLevelString.Replace("\"", string.Empty);
-        return logLevelString.ToUpper() switch {
+        return logLevelString.ToUpperInvariant() switch {
             "TRACE" => LogEventLevel.Verbose,
             "DEBUG" => LogEventLevel.Debug,
             "INFO" => LogEventLevel.Information,

@@ -40,13 +40,12 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 09/26/2026
  */
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Nito.AsyncEx.Synchronous;
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.CoreLib.Shared.Networking;
@@ -54,6 +53,7 @@ using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.MessageLayer.Generated;
+using Imcodec.Types;
 
 namespace Imlight.CoreLib.Game.Zone.Core;
 
@@ -65,14 +65,12 @@ namespace Imlight.CoreLib.Game.Zone.Core;
 /// <param name="creatures">The creatures that follow the path.</param>
 /// <param name="zoneRef">The reference to the zone actor.</param>
 /// <param name="zone">The zone that the path is in.</param>
-public sealed class ZonePath : ZoneEntity, IWithTimers {
+public sealed class ZonePath : ZoneEntity {
 
     private const string CREATURE_SPAWN_INTERVAL_LOCK = "CREATURE_SPAWN_INTERVAL_LOCK";
     private const uint INITIAL_SPAWN_DELAY_IN_SECONDS = 5;
     private const uint MAX_SPAWNS_ALLOWED = 25;
     private const uint OBJECT_CREATION_TIMEOUT_IN_MS = 5000;
-
-    public ITimerScheduler Timers { get; set; }
 
     private readonly PathObjectTemplate _template;
     private readonly List<NodeObject> _nodes;
@@ -80,6 +78,7 @@ public sealed class ZonePath : ZoneEntity, IWithTimers {
     private readonly Dictionary<SpawnObject, byte> _creatureCount = [];
     private readonly List<IActorRef> _creatureActors = [];
     private readonly Dictionary<ulong, SpawnObject> _spawnObjectInfo = [];
+    private readonly Dictionary<IActorRef, (SpawnObject Spawner, GID ObjectId, string Name)> _loadingCreatures = [];
     private readonly bool _randomizeCreatures 
         = ConfigurationManager.Settings["April Fools.RandomizeCreatures"].AsBool();
 
@@ -93,27 +92,37 @@ public sealed class ZonePath : ZoneEntity, IWithTimers {
         base.Zone = zone;
 
         // Begin the creature spawn interval.
-        foreach (var spawnObject in creatures) {
+        for (var i = 0; i < creatures.Count; i++) {
+            var spawnObject = creatures[i];
             _creatureCount.Add(spawnObject, 0);
 
             if (!spawnObject.m_active) {
                 continue;
             }
 
+            var timerKey = SpawnTimerKey(spawnObject, i);
             var msg = new ZONE_102_PROTOCOL.MSG_PATHSPAWNINTERVAL { SpawnObject = spawnObject };
             var interval = TimeSpan.FromSeconds(spawnObject.m_spawnTime);
 
             // If the interval is 0 or below, this creature only spawns once.
             if (interval <= TimeSpan.Zero) {
-                Timers.StartSingleTimer(CREATURE_SPAWN_INTERVAL_LOCK, msg, TimeSpan.Zero);
+                Timers.StartSingleTimer(timerKey, msg, TimeSpan.Zero);
 
                 continue;
             }
 
             // Otherwise, start the interval.
             var delay = TimeSpan.FromSeconds(INITIAL_SPAWN_DELAY_IN_SECONDS);
-            Timers.StartPeriodicTimer(CREATURE_SPAWN_INTERVAL_LOCK, msg, delay, interval);
+            Timers.StartPeriodicTimer(timerKey, msg, delay, interval);
         }
+    }
+
+    private static string SpawnTimerKey(SpawnObject spawnObject, int index) {
+        // Spawners with a zone level range are alternatives (one boss per level band) and share one timer, so
+        // the last of them runs. todo: pick the band from the zone's level once zones carry one.
+        var isLevelVariant = spawnObject.m_zoneLevelMin != 0 || spawnObject.m_zoneLevelMax != 0;
+
+        return isLevelVariant ? CREATURE_SPAWN_INTERVAL_LOCK : $"{CREATURE_SPAWN_INTERVAL_LOCK}_{index}";
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN))]
@@ -122,11 +131,37 @@ public sealed class ZonePath : ZoneEntity, IWithTimers {
 
     [MessageHandler(typeof(IServerMessage))]
     protected override void ReceiveElse(IServerMessage message) {
+        if (message is ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADRESULTS or ZONE_102_PROTOCOL.MSG_ENTITYLOADTIMEOUT) {
+            return;
+        }
+
         // ZonePath does not have any components. Instead, it manages the creatures that follow the path.
         // Dispatch the message to all of the creatures that follow the path.
         foreach (var actor in _creatureActors) {
             actor.Forward(message);
         }
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADRESULTS))]
+    private void ReceiveCreatureLoaded() {
+        if (_loadingCreatures.Remove(Sender)) {
+            Timers.Cancel(Sender);
+        }
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ENTITYLOADTIMEOUT))]
+    private void ReceiveCreatureLoadTimeout(ZONE_102_PROTOCOL.MSG_ENTITYLOADTIMEOUT message) {
+        if (!_loadingCreatures.Remove(message.Entity, out var creature)) {
+            return;
+        }
+
+        Logger.Error("Failed to create entity actor for {Kind} {Name} (no load reply within {Timeout} ms).",
+            Logger.Args(nameof(CoreTemplate), creature.Name, OBJECT_CREATION_TIMEOUT_IN_MS));
+
+        _creatureActors.Remove(message.Entity);
+        _spawnObjectInfo.Remove(creature.ObjectId);
+        SetCreatureCount(creature.Spawner, CreatureCount(creature.Spawner) - 1);
+        Context.Stop(message.Entity);
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_DELETEOBJECT))]
@@ -137,6 +172,9 @@ public sealed class ZonePath : ZoneEntity, IWithTimers {
 
             _spawnObjectInfo.Remove(message.GameObjectID);
             _creatureActors.RemoveAll(x => x == Sender);
+            if (_loadingCreatures.Remove(Sender)) {
+                Timers.Cancel(Sender);
+            }
         }
     }
 
@@ -190,11 +228,15 @@ public sealed class ZonePath : ZoneEntity, IWithTimers {
             Z
         );
 
-        // Create the creature actor.
-        var creatureActor = CreateEntityActor(creatureObj, template);
-        if (creatureActor is null) {
-            return;
-        }
+        // Create the creature actor. It counts toward the spawner's limit while it loads; a load that never
+        // answers gives the slot back.
+        var actorName = CreateEntityActorName(creatureObj);
+        var creatureActor = Context.ActorOf(Props.Create(() => new ZoneEntity(creatureObj, template, null, ZoneRef, Zone)), actorName);
+        creatureActor.Tell(new ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN());
+        _loadingCreatures[creatureActor] = (spawnObject, creatureObj.m_globalID, (template as GameObjectTemplate)?.m_objectName);
+        Timers.StartSingleTimer(creatureActor, new ZONE_102_PROTOCOL.MSG_ENTITYLOADTIMEOUT { Entity = creatureActor },
+            TimeSpan.FromMilliseconds(OBJECT_CREATION_TIMEOUT_IN_MS));
+
         _creatureActors.Add(creatureActor);
         _spawnObjectInfo.Add(creatureObj.m_globalID, spawnObject);
 
@@ -283,30 +325,6 @@ public sealed class ZonePath : ZoneEntity, IWithTimers {
                     spawnInfo.m_kStartNodeType,
                     "Invalid StartNodeType value");
         }
-    }
-
-    private IActorRef CreateEntityActor(CoreObject coreObject, CoreTemplate template) {
-        var actorName = CreateEntityActorName(coreObject);
-        var objectActor = Context.ActorOf(Props.Create(() => new ZoneEntity(coreObject, template, null, ZoneRef, Zone)), actorName);
-
-        try {
-            // Send a message to the object and await a reply to ensure it has been created and initialized successfully.
-            var msg = new ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN();
-            var timeout = TimeSpan.FromMilliseconds(OBJECT_CREATION_TIMEOUT_IN_MS);
-            var result = objectActor.Ask<ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADRESULTS>(msg, timeout).WaitAndUnwrapException();
-        }
-        catch (Exception ex) {
-            var goTemplate = template as GameObjectTemplate;
-            Logger.Error("Failed to create entity actor for {0} {1} ({2}).",
-                Logger.Args(nameof(CoreTemplate), goTemplate.m_objectName, ex.Message));
-
-            // Kill the actor.
-            objectActor.Tell(PoisonPill.Instance);
-
-            return null;
-        }
-
-        return objectActor;
     }
 
     private static string CreateEntityActorName(CoreObject coreObject) {

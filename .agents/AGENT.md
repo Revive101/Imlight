@@ -213,6 +213,28 @@ truly needs it. No paragraphs on self-evident lines, ever.
   XComponent(ZoneEntity entity) : ZoneEntityComponent(entity)` plus
   `IComponentFactory` (and `IServiceComponent` when they expose an interaction),
   with `ServiceName` / `NpcIcon` properties.
+- **Zone entities and components** (`Game/Zone/Core/`): one actor per entity
+  (`ZoneEntity`, `ZonePath`, `ZoneTrigger`); components are plain objects the entity
+  hosts, not actors. Their `[MessageHandler]` methods run on the entity's thread;
+  `Self`/`ActorRef` is a `ComponentActorRef` that routes to that one component,
+  `Sender` is the entity's current sender, and `IWithTimers` components get a
+  per-component scheduler (`CancelAll` only touches their own timers). Never `Ask`
+  your own entity or a sibling component with `.Result` (the entity thread is the
+  one that would answer). An exception in a component handler is logged and the
+  entity keeps running. `DeleteObject` stops the whole entity.
+- **Zone loading:** supervisors start entity actors with `BeginEntityLoad` and report
+  to the zone with `ReportLoadedWhenEntitiesLoad`; nothing in the load path blocks on
+  an `Ask`. Mobile IDs come from `Zone.ReserveMobileId()`. `ZoneLoader` keeps each
+  zone's raw data files in `ZoneDataFileCache` and deserializes fresh objects per load.
+- **Zone objects to clients:** `ZoneEntity.GetClientObject()` builds the
+  `MSG_NEWOBJECT` object in the entity's own class (`WizClientObjectItem` for item
+  templates): the client builds the object from the template and reads that class.
+  An object that comes back into range is sent again as `MSG_NEWOBJECT` (this
+  client ignores `MSG_ADDOBJECT`). Dictionaries keyed by a player's `CoreObject`
+  need `ReferenceEqualityComparer`: generated types are records, hashed by value.
+- **Culture:** parse and format numbers with `CultureInfo.InvariantCulture`, compare
+  and case-fold identifiers with `Ordinal`/`OrdinalIgnoreCase`/`*Invariant`. The
+  server runs on machines of any locale (`ConfigValue.AsFloat` once threw on fr-FR).
 - **Akka:** actors created via `Props` factories; actor refs live in `s_` fields;
   inter-server messages are the protocol types (`SERVER_100_PROTOCOL.*`).
 - **Logging:** `Logger.Information("...{Placeholder}...", Logger.Args(...))` uses

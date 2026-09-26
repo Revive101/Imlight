@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 09/26/2026
  */
 
 using System;
@@ -46,6 +46,7 @@ using Imcodec.Types;
 using Imlight.CoreLib.Game.World;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Services;
@@ -248,7 +249,7 @@ internal class MoveService : MessageService {
             Teleport(
                 doTeleportEffects: false,
                 destinationZone: wizard.MarkedZone,
-                destinationLocation: $"{ml.X},{ml.Y},{ml.Z},{ml.Z}"
+                destinationLocation: Util.GetCompactStringFromVector(new Vector4(ml.X, ml.Y, ml.Z, ml.Z))
             );
 
             var recallRsp = new GAME_5_PROTOCOL.MSG_MARK_LOCATION_RESPONSE {
