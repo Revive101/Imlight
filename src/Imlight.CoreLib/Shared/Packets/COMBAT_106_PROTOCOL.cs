@@ -118,6 +118,9 @@ public sealed class COMBAT_106_PROTOCOL : IServerProtocol {
         public byte SpellSelection;
         public uint SpellTarget;
         public int TimeLeft;
+        public uint RawSpellTarget;
+        public int ShadowPactTarget;
+        public int SelectedTieredSpellID;
 
     }
 
