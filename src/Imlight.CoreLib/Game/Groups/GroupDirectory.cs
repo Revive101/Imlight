@@ -67,25 +67,21 @@ internal sealed class GroupDirectory : ReceiveProtocolDispatcher, IWithTimers {
 
     public const int MaxGroupSize = 4;
     public const uint MaxSigilSlot = 4;
-
-    // Error codes of MSG_PARTYREQUESTRESPONSE, as the client's message boxes read them.
     private const int InviteErrorGroupFull = 1;
     private const int InviteErrorAlreadyGrouped = 2;
     private const int InviteErrorAlreadyInvited = 4;
     private const int InviteErrorNotFound = 5;
     private const int InviteErrorDeclined = 6;
     private const int InviteErrorUnavailable = 7;
-
     private const int JoinFailedSilently = 0;
     private const int JoinFailedGroupFull = 1;
-
-    // The client displays its own /party lines with 0x52; everyone else's arrive without the "sent by me" bit.
     private const uint GroupChatFlags = 0x50;
-
     private const int MaxQueuedMessagesPerMember = 64;
 
     private static readonly TimeSpan s_inviteLifetime = TimeSpan.FromSeconds(60);
     private static readonly TimeSpan s_departureGrace = TimeSpan.FromSeconds(60);
+    private static string InviteTimerKey(ulong inviteeId) => $"invite-{inviteeId}";
+    private static string DepartureTimerKey(ulong charId) => $"departure-{charId}";
 
     public static IActorRef Instance { get; private set; }
 
@@ -98,9 +94,11 @@ internal sealed class GroupDirectory : ReceiveProtocolDispatcher, IWithTimers {
     private readonly Dictionary<ulong, PendingInvite> _invitesByInvitee = [];
     private readonly Dictionary<ulong, List<IMessage>> _queuedMessages = [];
 
-    public GroupDirectory() {
-        Instance = Self;
-    }
+    private sealed record PendingInvite(ulong GroupId, ulong InviterCharId);
+
+    // ctor
+    public GroupDirectory()
+        => Instance = Self;
 
     public static Props Props()
         => Akka.Actor.Props.Create(() => new GroupDirectory());
@@ -109,7 +107,8 @@ internal sealed class GroupDirectory : ReceiveProtocolDispatcher, IWithTimers {
         // A restart would rebuild the directory empty and silently dissolve every group on the server.
         try {
             return base.AroundReceive(receive, message);
-        } catch (Exception ex) {
+        }
+        catch (Exception ex) {
             Logger.Error("GroupDirectory failed to handle {MessageType}: {Exception}",
                 Logger.Args(message.GetType().Name, ex));
 
@@ -235,11 +234,14 @@ internal sealed class GroupDirectory : ReceiveProtocolDispatcher, IWithTimers {
         var errorCode = 0;
         if (message.CharIdsIgnoringInviter?.Contains(inviteeId) == true) {
             errorCode = InviteErrorUnavailable;
-        } else if (group is not null && group.Count + group.PendingInviteeIds.Count >= MaxGroupSize) {
+        }
+        else if (group is not null && group.Count + group.PendingInviteeIds.Count >= MaxGroupSize) {
             errorCode = InviteErrorGroupFull;
-        } else if (inviteeGroup is not null && inviteeGroup.IsAnnounced) {
+        }
+        else if (inviteeGroup is not null && inviteeGroup.IsAnnounced) {
             errorCode = InviteErrorAlreadyGrouped;
-        } else if (_invitesByInvitee.ContainsKey(inviteeId)) {
+        }
+        else if (_invitesByInvitee.ContainsKey(inviteeId)) {
             errorCode = InviteErrorAlreadyInvited;
         }
 
@@ -515,7 +517,8 @@ internal sealed class GroupDirectory : ReceiveProtocolDispatcher, IWithTimers {
         if (!group.IsAnnounced) {
             group.IsAnnounced = true;
             SendGroupState(group, group.LeaderCharId);
-        } else {
+        }
+        else {
             foreach (var memberId in group.MemberIds.Where(memberId => memberId != joinerId)) {
                 SendToMember(memberId, BuildMemberUpdate(group, joinerId, memberId));
             }
@@ -814,12 +817,6 @@ internal sealed class GroupDirectory : ReceiveProtocolDispatcher, IWithTimers {
         GroupRegistry.Publish(snapshot, formerMemberIds);
     }
 
-    private static string InviteTimerKey(ulong inviteeId) => $"invite-{inviteeId}";
-
-    private static string DepartureTimerKey(ulong charId) => $"departure-{charId}";
-
     #endregion
-
-    private sealed record PendingInvite(ulong GroupId, ulong InviterCharId);
 
 }
