@@ -28,7 +28,7 @@
  * the game server session.
  * 
  * NOTE:
- * - Supports wizard location and orientation caching
+ * - Updates wizard location and orientation
  * - Manages level-up mechanics and stat updates
  * - Provides internal wizard state management
  * 
@@ -50,6 +50,8 @@ using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.Math;
 using Microsoft.Extensions.ObjectPool;
+using System;
+using Imlight.Common;
 
 namespace Imlight.CoreLib.Game.Services;
 
@@ -63,9 +65,17 @@ internal class WizardService(SessionActor sessionActor) : MessageService(session
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new WizardService(parentActor));
 
-    protected override void OnDispose() {
-        ((System.IDisposable) _activeWizard)?.Dispose();
-        base.OnDispose();
+    protected override void OnPreDispose() {
+        try {
+            _activeWizard?.SaveLocation();
+        }
+        catch (Exception ex) {
+            Logger.Error("Failed to save wizard location during disconnect: {0}",
+                Logger.Args(ex));
+        }
+        finally {
+            base.OnPreDispose();
+        }
     }
 
     #region Internal Handlers
@@ -75,8 +85,10 @@ internal class WizardService(SessionActor sessionActor) : MessageService(session
         => _activeWizardGameObject = message.WizardGameObject;
 
     [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_SETACTIVEWIZARD))]
-    private void ReceiveSetActiveWizard(CHARACTER_103_PROTOCOL.MSG_SETACTIVEWIZARD message)
-        => _activeWizard = message.Wizard;
+    private void ReceiveSetActiveWizard(CHARACTER_103_PROTOCOL.MSG_SETACTIVEWIZARD message) {
+        _activeWizard = message.Wizard;
+        _activeWizard.UpdateLastLoginTime((uint) DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+    }
 
     [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD))]
     private void ReceiveQueryActiveWIzard(CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD message)
@@ -94,7 +106,7 @@ internal class WizardService(SessionActor sessionActor) : MessageService(session
         }
 
         var levelUpMessage = new WIZARD_12_PROTOCOL.MSG_LEVELUP {
-            GlobalID = _activeWizard.CharId,
+            GlobalID = _activeWizard.GameObjectID,
             NewLevel = _activeWizard.MagicSchoolBehavior.Level,
             Data = "0000000000"
         };
@@ -149,7 +161,7 @@ internal class WizardService(SessionActor sessionActor) : MessageService(session
             // The player leveled up. AddExperiencePoints already called SetLevel internally,
             // so we just need to broadcast the level-up and send stat updates to the client.
             var levelUpMessage = new WIZARD_12_PROTOCOL.MSG_LEVELUP {
-                GlobalID = _activeWizard.CharId,
+                GlobalID = _activeWizard.GameObjectID,
                 NewLevel = afterLevel,
                 Data = "0000000000"
             };
@@ -191,7 +203,7 @@ internal class WizardService(SessionActor sessionActor) : MessageService(session
 
         // Inform the client of the XP change.
         var addXpMsg = new WIZARD_12_PROTOCOL.MSG_UPDATEXP {
-            GlobalID = _activeWizard.CharId,
+            GlobalID = _activeWizard.GameObjectID,
             XP = xpGained,
             OldXP = beforeXP,
         };
@@ -211,13 +223,13 @@ internal class WizardService(SessionActor sessionActor) : MessageService(session
             unchecked((short) message.LocationX * 4),
             unchecked((short) message.LocationY * 4),
             unchecked((short) message.LocationZ * 4));
-        _activeWizard.SetCachedLocation(position);
+        _activeWizard.Location = position;
 
         // Direction is a byte and it's packed. Unpack it and convert it to radians.
         var initDir = message.Direction;
         var degrees = initDir * (360f / byte.MaxValue) * ORIENTATION_TOLERANCE;
-        var radians = degrees * (System.Math.PI / 180f);
-        _activeWizard.SetCachedOrientation((byte) radians);
+        var radians = degrees * (System.MathF.PI / 180f);
+        _activeWizard.Orientation = new Vector3(0, 0, radians);
     }
 
     #endregion

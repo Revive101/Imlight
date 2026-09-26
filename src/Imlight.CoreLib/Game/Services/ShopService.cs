@@ -193,7 +193,7 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
             }
 
             SendToSocket(new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_EQUIPITEM {
-                GlobalID = wizard.CharId,
+                GlobalID = wizard.GameObjectID,
                 SlotName = slotName,
                 IsValid = 1,
                 SerializedItem = localData
@@ -209,7 +209,7 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
             }
 
             ZoneBroadcast(new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICEQUIPITEM {
-                GlobalID = wizard.CharId,
+                GlobalID = wizard.GameObjectID,
                 SerializedInfo = pubData
             }, false);
         }
@@ -236,7 +236,7 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
 
         // Reenable player movement
         var enableMovementStateMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE() {
-            GameObjectID = wizard.CharId,
+            GameObjectID = wizard.GameObjectID,
             State = 1685237158,
             Data = "",
             IgnoreIfCurrentStateIsOff = 0
@@ -244,7 +244,7 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
         SendToSocket(enableMovementStateMsg);
 
         var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG() {
-            GameObjectID = wizard.CharId,
+            GameObjectID = wizard.GameObjectID,
             WizBangID = (uint) WizBangs.None
         };
         ZoneBroadcast(wizBangMsg, false);
@@ -262,7 +262,7 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
 
         // Inform the game client of the successful sale.
         var removeItemMsg = new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_REMOVEITEM {
-            GlobalID = wizard.CharId,
+            GlobalID = wizard.GameObjectID,
             ItemID = itemID
         };
         SendToSocket(removeItemMsg);
@@ -297,7 +297,7 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
 
         // Inform the game client that a new item has been added to the player's inventory.
         var addItemMsg = new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_ADDITEM {
-            GlobalID = playerWizard.CharId,
+            GlobalID = playerWizard.GameObjectID,
             SerializedItem = serializedItemWithoutBehaviors,
         };
         SendToSocket(addItemMsg);

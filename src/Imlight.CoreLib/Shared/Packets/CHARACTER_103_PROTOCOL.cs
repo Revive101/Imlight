@@ -115,8 +115,9 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
         public byte MessageOrder { get; } = 9;
         public byte ServiceID { get; } = 103;
 
-        public ulong ListOwnerGID;
-        public ulong EntryGID;
+        // Internal social routing always uses saved character IDs.
+        public ulong RequesterCharId;
+        public ulong RecipientCharId;
         public ByteString OwnerName;
         public byte OwnerLevel;
         public ByteString OwnerSchool;
@@ -129,8 +130,9 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
         public byte MessageOrder { get; } = 10;
         public byte ServiceID { get; } = 103;
 
-        public ulong ListOwnerGID;
-        public ulong EntryGID;
+        // Internal social routing always uses saved character IDs.
+        public ulong RequesterCharId;
+        public ulong RecipientCharId;
         public bool Accept;
         public Relationship NewRelationship;
 
@@ -141,8 +143,9 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
         public byte MessageOrder { get; } = 11;
         public byte ServiceID { get; } = 103;
 
-        public ulong ListOwnerGID;
-        public ulong EntryGID;
+        // Internal social routing always uses saved character IDs.
+        public ulong RequesterCharId;
+        public ulong RecipientCharId;
 
     }
 

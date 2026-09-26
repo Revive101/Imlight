@@ -34,7 +34,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 08/13/2026
  */
 
 using Imcodec.ObjectProperty.TypeCache;
@@ -109,6 +109,20 @@ internal static class CombatEffectApplicator {
                 break;
             case kSpellEffects.kStun:
                 cinematicTime += ApplyStunEffect(effect, targets);
+                break;
+            case kSpellEffects.kSummonCreature:
+            case kSpellEffects.kSpawnCreature:
+                ApplySummonCreature(effect, caster);
+                break;
+            case kSpellEffects.kInstantKill:
+            case kSpellEffects.kKillCreature:
+                cinematicTime += ApplyKillCreatureEffect(effect, targets);
+                break;
+            case kSpellEffects.kModifyPips:
+                ApplyModifyPipsEffect(effect, targets);
+                break;
+            case kSpellEffects.kMaxHealthDamage:
+                cinematicTime += ApplyMaxHealthDamageEffect(effect, targets);
                 break;
             case kSpellEffects.kPacify:
             case kSpellEffects.kTaunt:
@@ -405,6 +419,70 @@ internal static class CombatEffectApplicator {
 
             target._hangingEffects.Add(effect);
         }
+    }
+
+    // Deals a percentage of the target's maximum health; m_effectParam is the percent.
+    private static float ApplyMaxHealthDamageEffect(SpellEffect effect, CombatDuelSubCircle[] targets) {
+        var cinematicTime = 0.0f;
+        foreach (var target in targets) {
+            if (!target.IsAlive) {
+                continue;
+            }
+
+            var maxHealth = target.ParticipantGameStats.m_baseHitpoints;
+            var damage = (int) Math.Floor(maxHealth * (effect.m_effectParam / 100.0f));
+            target.DamageParticipant(damage);
+        }
+
+        return cinematicTime;
+    }
+
+    // Adds or removes generic pips (signed m_effectParam). Gains respect the 7-pip cap; steals
+    // only take generic pips, so a power-pip-only target keeps them.
+    private static void ApplyModifyPipsEffect(SpellEffect effect, CombatDuelSubCircle[] targets) {
+        foreach (var target in targets) {
+            if (!target.IsAlive) {
+                continue;
+            }
+
+            var pipCount = target.CombatParticipant.m_pipCount;
+            var genericPips = pipCount.m_genericPips;
+            if (effect.m_effectParam >= 0) {
+                pipCount.m_genericPips = (byte) Math.Min(genericPips + effect.m_effectParam,
+                                                        CombatDuelSubCircle.MAX_PIP_COUNT - pipCount.m_powerPips);
+            }
+            else {
+                pipCount.m_genericPips = (byte) Math.Max(genericPips + effect.m_effectParam, 0);
+            }
+        }
+    }
+
+    // Kills the effect's targets outright; the round cleanup sends MSG_COMBATDEATH for the corpse.
+    // kKillCreature only kills the named creature: m_effectParam is the template id to match.
+    private static float ApplyKillCreatureEffect(SpellEffect effect, CombatDuelSubCircle[] targets) {
+        foreach (var target in targets) {
+            if (target is null || target.ParticipantObject is null || !target.IsAlive) {
+                continue;
+            }
+
+            if (effect.m_effectType == kSpellEffects.kKillCreature
+                && target.ParticipantObject.m_templateID.Full != (ulong) effect.m_effectParam) {
+                continue;
+            }
+
+            target.DamageParticipant(target.ParticipantGameStats.m_currentHitpoints);
+        }
+
+        return 0.0f;
+    }
+
+    // m_effectParam is the creature template id to spawn.
+    private static void ApplySummonCreature(SpellEffect effect, CombatDuelSubCircle caster) {
+        if (effect.m_effectParam <= 0 || caster?._duelActor is null) {
+            return;
+        }
+
+        caster._duelActor.SummonMinion((uint) effect.m_effectParam, caster);
     }
 
     private static float ApplyStunEffect(SpellEffect effect, CombatDuelSubCircle[] targets) {

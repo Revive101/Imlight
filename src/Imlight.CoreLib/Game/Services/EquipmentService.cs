@@ -291,12 +291,13 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ENFORCEINTERIORMOUNT))]
     private void ReceiveEnforceInteriorMount(ZONE_102_PROTOCOL.MSG_ENFORCEINTERIORMOUNT message) {
         // Zone data flags disallow mounts (m_noMounts): really unequip on entry (model and speed effect) and
-        // re-equip on leaving. The stowed GID is persisted so it survives the zone transfer.
+        // re-equip on leaving. The stowed GID is persisted so it survives the zone transfer. Force (a
+        // dungeon-sigil pad on a street) stows the mount regardless of the zone's no-mounts flag.
         try {
             var wizard = GetActiveWizard();
             var equip = wizard.EquipmentBehavior;
 
-            if (ZoneDisallowsMounts()) {
+            if (message.Force || ZoneDisallowsMounts()) {
                 var mount = equip.GetItemInSlot(EquipmentSlotType.Mount);
                 if (mount is null) {
                     return; // not mounted, nothing to dismount
@@ -398,7 +399,7 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
         // hasn't had enough time to set its Wizard reference yet.
         var wizardObj = GetActiveGameObject();
         if (wizardObj is null) {
-            wizardObj = GetActiveWizard()?.GameObject;
+            wizardObj = GetActiveWizard()?.GetInitializedGameObject();
 
             if (wizardObj is null) {
                 throw new ServiceRetryException("Failed to get active game object for add effects broadcast.");

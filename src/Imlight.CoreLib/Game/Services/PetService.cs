@@ -79,7 +79,7 @@ internal class PetService(SessionActor sessionActor) : MessageService(sessionAct
         }
 
         var tickMsg = new PET_9_PROTOCOL.MSG_PETENERGYTICK() {
-            GlobalID = wizard.CharId,
+            GlobalID = wizard.GameObjectID,
             Energy = petOwnerBehavior.Energy,
             MaxEnergy = normMaxEnergy,
             TickTime = (int) tickTime
@@ -109,7 +109,7 @@ internal class PetService(SessionActor sessionActor) : MessageService(sessionAct
         if (petOwnerBehavior.Energy < normMaxEnergy) {
             wizard.UpdateEnergy(petOwnerBehavior.Energy + 1);
             var tickMsg = new PET_9_PROTOCOL.MSG_PETENERGYTICK() {
-                GlobalID = wizard.CharId,
+                GlobalID = wizard.GameObjectID,
                 Energy = petOwnerBehavior.Energy,
                 MaxEnergy = normMaxEnergy,
                 TickTime = tickTime

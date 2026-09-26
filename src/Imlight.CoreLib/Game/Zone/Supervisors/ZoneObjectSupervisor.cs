@@ -88,6 +88,11 @@ internal sealed class ZoneObjectSupervisor(Core.Zone zone) : ZoneEntitySuperviso
             return false;
         }
 
+        // Dungeon-entry sigil pads spawn within ZoneSigilSupervisor.
+        if (objectInfo is MinigameSigilInfo) {
+            return false;
+        }
+
         return true;
     }
 

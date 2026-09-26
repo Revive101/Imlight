@@ -22,6 +22,7 @@ using Akka.Actor;
 using Imcodec.Math;
 using Imcodec.IO;
 using Imcodec.ObjectProperty.TypeCache;
+using Imlight.CoreLib.Game.Combat;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Models.Player;
@@ -410,12 +411,16 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     /// <summary>
     /// Server-internal nudge telling EquipmentService to reconcile the equipped mount with the current
     /// zone: really unequip it on entering an interior and re-equip it on returning outdoors. Sent by
-    /// ZoneService on zone entry.
+    /// ZoneService on zone entry. When <see cref="Force"/> is set the mount is stowed regardless of the
+    /// zone's no-mounts flag (dungeon-sigil entry dismounts on a street pad); the plain reconcile still
+    /// remounts on the way back out.
     /// </summary>
     public sealed class MSG_ENFORCEINTERIORMOUNT : IServerMessage {
 
         public byte MessageOrder { get; } = 21;
         public byte ServiceID { get; } = 102;
+
+        public bool Force;
 
     }
 
@@ -524,6 +529,29 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public ByteString EventName;
         public IActorRef PlayerActor;
         public CoreObject? PlayerGameObject;
+        public bool SuppressTeleportResults;
+
+    }
+
+    /// <summary>
+    /// Sent by a <see cref="VolumeComponent"/> to a player's session when the player entered
+    /// a quest-proximity volume and has one of that volume's goals active. The volume already
+    /// matched the goal to itself; the session only needs to complete it.
+    /// </summary>
+    public sealed class MSG_COMPLETEPROXIMITYGOAL : IServerMessage {
+
+        public byte MessageOrder { get; } = 63;
+        public byte ServiceID { get; } = 102;
+
+        /// <summary>
+        /// The ID of the quest instance that owns the goal the player just completed.
+        /// </summary>
+        public ulong QuestID;
+
+        /// <summary>
+        /// The ID of the goal instance the player just completed by entering the volume.
+        /// </summary>
+        public ulong GoalID;
 
     }
 
@@ -540,6 +568,13 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public bool SendToClient = true;
         public bool IsPrivate = false;
         public ulong OwnerCharId;
+
+        /// <summary>
+        /// A fresh dungeon-sigil entry starts a NEW run: GameWorld drops the owner's stale copy of the
+        /// destination before routing the transfer, so a second entry rebuilds the instance instead of
+        /// rejoining the old one. Never set by re-attach or recall transfers.
+        /// </summary>
+        public bool ResetInstance;
 
     }
 
@@ -801,7 +836,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     /// </summary>
     public sealed class MSG_SPAWNENTITY : IServerMessage {
 
-        public byte MessageOrder { get; } = 57;
+        public byte MessageOrder { get; } = 64;
         public byte ServiceID { get; } = 102;
 
         public CoreObject CoreObject;
@@ -825,19 +860,6 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     }
 
     /// <summary>
-    /// Response to MSG_SPAWNENTITY with the created entity actor reference.
-    /// </summary>
-    public sealed class MSG_SPAWNENTITYRSP : IServerMessage {
-
-        public byte MessageOrder { get; } = 58;
-        public byte ServiceID { get; } = 102;
-
-        public IActorRef EntityActor;
-        public CoreObject SpawnedObject;
-
-    }
-
-    /// <summary>
     /// Sent by a session service to a <see cref="Zone"/> to fetch its loaded <see cref="WizZoneData"/>,
     /// e.g. to check zone flags like m_noMounts.
     /// </summary>
@@ -857,6 +879,115 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte ServiceID { get; } = 102;
 
         public WizZoneData ZoneData;
+
+    }
+
+    /// <summary>
+    /// Sent by a result handler to a <see cref="Zone"/> to find the dueling creature that has
+    /// the given player in its aggro radius, e.g. for <c>ResInitiateCombat</c>. Any number of
+    /// creatures may reply; the first reply wins.
+    /// </summary>
+    public sealed class MSG_QUERYNEARESTDUELTARGET : IServerMessage {
+
+        public byte MessageOrder { get; } = 57;
+        public byte ServiceID { get; } = 102;
+
+        public CoreObject PlayerGameObject;
+
+    }
+
+    /// <summary>
+    /// Sent by a dueling creature in response to <see cref="MSG_QUERYNEARESTDUELTARGET"/>.
+    /// </summary>
+    public sealed class MSG_QUERYNEARESTDUELTARGETRSP : IServerMessage {
+
+        public byte MessageOrder { get; } = 58;
+        public byte ServiceID { get; } = 102;
+
+        public IActorRef CreatureActor;
+        public CoreObject CreatureObject;
+
+    }
+
+    /// <summary>
+    /// Server-internal: tells a duel component to spawn a summoned minion once the summon cast
+    /// animation has played.
+    /// </summary>
+    public sealed class MSG_DEFERREDMINIONSUMMON : IServerMessage {
+
+        public byte MessageOrder { get; } = 59;
+        public byte ServiceID { get; } = 102;
+
+        public uint CreatureTid;
+        public CombatDuelSubCircle Caster;
+
+    }
+
+    /// <summary>
+    /// Sent by a <see cref="Components.InteractDungeonSigilComponent"/> (zone actor) to the pressing
+    /// player's <see cref="Services.ZoneService"/>: the player pressed X on a dungeon sigil and wants to
+    /// enter. Carries everything the session needs to run the countdown and transfer, resolved by the
+    /// pad entity from the zone's teleport data. Never sent over the wire.
+    /// </summary>
+    public sealed class MSG_STARTSIGILENTRY : IServerMessage {
+
+        public byte MessageOrder { get; } = 60;
+        public byte ServiceID { get; } = 102;
+
+        /// <summary>The pad position, "X,Y,Z,heading" (heading = the pad's Z-orientation).</summary>
+        public string SigilLoc;
+
+        /// <summary>The pad OBJECT's global id, used to trip the client's native on-face countdown.</summary>
+        public ulong SigilGID;
+
+        /// <summary>The sigil template name (m_sigilType), used to resolve the sub-circle face slots.</summary>
+        public string SigilType;
+
+        /// <summary>The pad's detection radius (m_radius); the player must stay within it to enter.</summary>
+        public float Radius;
+
+        /// <summary>The instance zone the sigil leads to.</summary>
+        public string DestinationZone;
+
+        /// <summary>The arrival position inside the instance, "X,Y,Z,heading".</summary>
+        public string DestinationLoc;
+
+    }
+
+    /// <summary>
+    /// Delayed self-message a <see cref="Services.ZoneService"/> fires once a dungeon-sigil countdown
+    /// completes: verifies the player is still on the pad, then transfers them into the instance.
+    /// </summary>
+    public sealed class MSG_SIGILENTER : IServerMessage {
+
+        public byte MessageOrder { get; } = 61;
+        public byte ServiceID { get; } = 102;
+
+    }
+
+    /// <summary>
+    /// Sent by <see cref="World.GameWorld"/> to an <see cref="World.InstanceContainer"/>: drop the loaded
+    /// copy of <see cref="ZoneName"/> (stop the zone actor) so the next transfer builds a fresh instance.
+    /// </summary>
+    public sealed class MSG_DROPINSTANCEZONE : IServerMessage {
+
+        public byte MessageOrder { get; } = 62;
+        public byte ServiceID { get; } = 102;
+
+        public string ZoneName;
+
+    }
+
+    /// <summary>
+    /// Response to MSG_SPAWNENTITY with the created entity actor reference.
+    /// </summary>
+    public sealed class MSG_SPAWNENTITYRSP : IServerMessage {
+
+        public byte MessageOrder { get; } = 65;
+        public byte ServiceID { get; } = 102;
+
+        public IActorRef EntityActor;
+        public CoreObject SpawnedObject;
 
     }
 

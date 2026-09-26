@@ -80,6 +80,19 @@ Your command context will not drop. If you select a player, that player will sti
 | cantriplevel | Quality Assurance | `mod cantriplevel $level` | Changes your cantrip level. |
 | badge | Quality Assurance | `mod badge $locale_id` | Changes your badge. This must be a locale id to function. |
 
+## DynaMod Commands
+
+| Command | Security | Syntax | Description |
+| ------- | -------- | ------ | ----------- |
+| list | Quality Assurance | `.dynamod list` | Lists the dynamods on your character. |
+| set | Quality Assurance | `.dynamod set $state $clientTag` | Sets a dynamod to `on` or `off`. Creates it if it does not exist. |
+| toggle | Quality Assurance | `.dynamod toggle $clientTag` | Toggles a dynamod between `on` and `off`. Creates it as `off` if it does not exist. |
+| remove | Quality Assurance | `.dynamod remove $clientTag` | Removes a dynamod from your character. |
+
+:::tip
+The `$clientTag` may contain spaces (e.g. `WC_Rattlebones_ButterFlyZone instance`), so it must always be the last argument. The tag must match the object's `m_zoneTag` exactly to affect it.
+:::
+
 
 ## Spellbook Commands
 | Command | Security | Syntax | Description |

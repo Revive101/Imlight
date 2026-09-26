@@ -86,6 +86,11 @@ internal sealed class PathMovementComponent(ZoneEntity entity) : ZoneEntityCompo
         && goTemplate.m_behaviors.Any(x => x is PathBehaviorTemplate);
 
     public override void OnStart() {
+        // A summoned combat minion stays in its duel slot and must not path around the world.
+        if (Entity.IsCombatOnlyMinion) {
+            return;
+        }
+
         var pathBehavior = Entity.Template.m_behaviors.OfType<PathBehaviorTemplate>().First();
         var pathMovementBehavior = Entity.Template.m_behaviors.OfType<PathMovementBehaviorTemplate>().First();
 

@@ -23,8 +23,11 @@ using System.Reflection;
 using Akka.Actor;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
+using Imlight.CoreLib.Game.Requirements;
+using Imlight.CoreLib.Game.Requirements.Contexts;
 using Imlight.CoreLib.Game.Results.Contexts;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.WizardData.Models.Player;
 using Type = System.Type;
 
 namespace Imlight.CoreLib.Game.Results;
@@ -35,6 +38,7 @@ namespace Imlight.CoreLib.Game.Results;
 public static class ResultDispatcher {
 
     private static readonly Dictionary<Type, MethodInfo> s_resultHandlers = [];
+    private const float QUERY_WIZARD_TIMEOUT_SECONDS = 5.0f;
 
     static ResultDispatcher()
         => RegisterResultHandlers();
@@ -60,10 +64,70 @@ public static class ResultDispatcher {
                                      string questName = null,
                                      string goalName = null,
                                      string triggerName = null) {
-        var context = new GenericResultContext(results, playerRef, playerObj, replyTo, zoneActor, questName, goalName, triggerName);
+        // Results carry their own requirements in the data; evaluate them here, before the executor
+        // is created, so an executor actor only ever handles results whose requirements were met.
+        var filteredResults = FilterResultsByRequirements(
+            results, playerRef, playerObj, zoneActor, questName, goalName, triggerName);
+        var context = new GenericResultContext(filteredResults, playerRef, playerObj, replyTo, zoneActor, questName, goalName, triggerName);
         var executor = CreateExecutorInstance(actorContext, context);
 
         executor.Tell(new CHARACTER_103_PROTOCOL.MSG_EXECUTERESULTS());
+    }
+
+    private static ResultList FilterResultsByRequirements(ResultList results,
+                                                           IActorRef playerRef,
+                                                           CoreObject playerObj,
+                                                           IActorRef zoneActor,
+                                                           string questName,
+                                                           string goalName,
+                                                           string triggerName) {
+        if (results?.m_results is null || results.m_results.Count == 0
+            || !results.m_results.Any(r => r?.m_requirements is not null)) {
+            return results;
+        }
+
+        // Query the wizard once; requirement handlers evaluate against it.
+        Wizard wizard = null;
+        if (playerRef is not null) {
+            try {
+                wizard = playerRef
+                    .Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(
+                        new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD(),
+                        TimeSpan.FromSeconds(QUERY_WIZARD_TIMEOUT_SECONDS)).Result?.Wizard;
+            }
+            catch (Exception ex) {
+                Logger.Error("Failed to query wizard for result requirements: {0}", Logger.Args(ex.Message));
+            }
+        }
+
+        var passingResults = new ResultList {
+            m_results = []
+        };
+        foreach (var result in results.m_results) {
+            if (result is null) {
+                continue;
+            }
+
+            if (result.m_requirements is not null) {
+                var requirementContext = new GenericRequirementContext(
+                    requirements: result.m_requirements,
+                    playerRef: playerRef,
+                    playerObj: playerObj,
+                    wizard: wizard,
+                    zoneRef: zoneActor,
+                    questName: questName,
+                    goalName: goalName,
+                    triggerName: triggerName
+                );
+                if (!RequirementDispatcher.EvaluateRequirements(result.m_requirements, requirementContext)) {
+                    continue;
+                }
+            }
+
+            passingResults.m_results.Add(result);
+        }
+
+        return passingResults;
     }
 
     /// <summary>

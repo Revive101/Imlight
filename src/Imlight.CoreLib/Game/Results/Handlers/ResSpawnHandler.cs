@@ -60,11 +60,12 @@ internal sealed class ResDespawnHandler : BaseResultHandler<ResDespawn> {
             return false;
         }
 
+        // Path-spawned creatures live under the path supervisor; include Paths so they see the removal.
         var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
             Messages = [new ZONE_102_PROTOCOL.MSG_REMOVEOBJECT {
                 TemplateID = Result.m_templateID,
             }],
-            Targets = ZoneBroadcastTarget.Objects,
+            Targets = ZoneBroadcastTarget.Objects | ZoneBroadcastTarget.Paths,
         };
 
         zoneActor.Tell(broadcastMsg);

@@ -33,12 +33,13 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 08/13/2026
  */
 
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.Shared.Resources;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -77,7 +78,7 @@ internal static class CombatActionResolver {
             // to the effect stack.
             chosenEffect = spellEffect switch {
                 RandomSpellEffect randomSpellEffect => ChooseRandomEffect(randomSpellEffect, effectStack),
-                VariableSpellEffect variableSpellEffect => ChooseEffectByPipCount(variableSpellEffect.m_effectList, combatAction.m_xPipCost, effectStack),
+                VariableSpellEffect variableSpellEffect => ChooseVariableEffect(variableSpellEffect, combatAction.m_xPipCost, effectStack),
                 EffectListSpellEffect effectListSpellEffect => ChooseFromEffectList(effectListSpellEffect, combatAction.m_xPipCost, effectStack),
                 _ => spellEffect,
             };
@@ -128,13 +129,31 @@ internal static class CombatActionResolver {
         return chosenEffect;
     }
 
-    private static SpellEffect ChooseEffectByPipCount(List<SpellEffect> effectList, int pipCost, CombatEffectStack effectStack) {
-        // Selects a nested effect from a VariableSpellEffect by pip count.
-        // VariableSpellEffect entries are 0-indexed: entry 0 = 0 pips, entry 5 = 5 pips.
-        var index = Math.Min(pipCost, effectList.Count - 1);
-        effectStack.PushRandomEffectChoice(index);
+    private static SpellEffect ChooseVariableEffect(VariableSpellEffect variableSpellEffect, int parameter, CombatEffectStack effectStack) {
+        // X-pip spells carry one nested effect per pip tier, tagged by m_pipNum (1-based); resolve
+        // the highest tier the pips paid can afford, for any list length.
+        var effects = variableSpellEffect.m_effectList;
+        if (effects is null || effects.Count == 0) {
+            Logger.Error("Variable spell effect has no nested effects; cannot resolve.");
 
-        return effectList[index];
+            return variableSpellEffect;
+        }
+
+        var pipsPaid = Math.Max(parameter, 0);
+        var chosenEffect = effects
+            .Where(e => e.m_pipNum > 0 && e.m_pipNum <= pipsPaid)
+            .OrderByDescending(e => e.m_pipNum)
+            .FirstOrDefault();
+        if (chosenEffect is null) {
+            // Defensive: no matching tier, clamp by index so a mistagged spell still resolves.
+            var idx = Math.Clamp(pipsPaid == 0 ? 0 : pipsPaid - 1, 0, effects.Count - 1);
+            chosenEffect = effects[idx];
+        }
+
+        // Tell the client which tier resolved; it re-simulates the spell.
+        effectStack.PushRandomEffectChoice(effects.IndexOf(chosenEffect));
+
+        return chosenEffect;
     }
 
     private static SpellEffect ChooseFromEffectList(EffectListSpellEffect effect, int pipCost, CombatEffectStack effectStack) {
@@ -150,20 +169,37 @@ internal static class CombatActionResolver {
         return effect.m_effectList[idx];
     }
 
-    private static byte GetXPipCost(Spell spell, CombatDuelSubCircle caster) {
-        if (!spell.m_pipCost.m_xPipSpell) {
+    // X-pip spells are detected structurally: the template carries a VariableSpellEffect.
+    internal static bool IsXPipSpell(Spell spell) {
+        var template = CoreObjectFactory.GetCoreTemplate(spell.m_templateID) as SpellTemplate;
+
+        return template?.m_effects?.Any(e => e is VariableSpellEffect) == true;
+    }
+
+    internal static byte GetXPipCost(Spell spell, CombatDuelSubCircle caster) {
+        if (!IsXPipSpell(spell)) {
             return 0;
         }
 
         var pipCount = caster.CombatParticipant.m_pipCount;
 
-        // x pip spells will consume all pips.
-        var totalCost = pipCount.m_genericPips; ;
-
+        // All pips, capped at the spell's top tier (a minion stops at 4).
+        var totalPips = (int) pipCount.m_genericPips;
         var isSpellMastered = caster.HasSchoolMastery(spell.m_magicSchoolID);
-        totalCost += isSpellMastered ? (byte) (pipCount.m_powerPips * 2) : pipCount.m_powerPips;
+        totalPips += isSpellMastered ? pipCount.m_powerPips * 2 : pipCount.m_powerPips;
 
-        return totalCost;
+        return (byte) Math.Min(totalPips, GetMaxXPipTier(spell));
+    }
+
+    // Highest pip tier (m_pipNum) an X-pip spell offers; int.MaxValue when there is none.
+    private static int GetMaxXPipTier(Spell spell) {
+        var template = CoreObjectFactory.GetCoreTemplate(spell.m_templateID) as SpellTemplate;
+        var variable = template?.m_effects?.OfType<VariableSpellEffect>().FirstOrDefault();
+        if (variable?.m_effectList is null || variable.m_effectList.Count == 0) {
+            return int.MaxValue;
+        }
+
+        return variable.m_effectList.Max(e => (int) e.m_pipNum);
     }
 
     private static void UpdateCombatActionTargets(ref CombatAction combatAction, IEnumerable<CombatDuelSubCircle> targets) {
@@ -205,6 +241,24 @@ internal static class CombatActionResolver {
             case kEffectTarget.kEnemySingle:
             case kEffectTarget.kFriendlySingle:
                 targets = [target];
+                break;
+            case kEffectTarget.kMinion:
+            case kEffectTarget.kFriendlyMinion:
+            case kEffectTarget.kCasterMinion:
+                // The client drives minion selection; validate the pick belongs to the caster's team.
+                targets = target is not null && target.IsSummonedMinion && target.OccupiedTeam == caster.OccupiedTeam
+                    ? [target]
+                    : [];
+                break;
+            case kEffectTarget.kEnemyMinion:
+                targets = target is not null && target.IsSummonedMinion && target.OccupiedTeam != caster.OccupiedTeam
+                    ? [target]
+                    : [];
+                break;
+            case kEffectTarget.kTargetMinion:
+                targets = target is not null && target.IsSummonedMinion
+                    ? [target]
+                    : [];
                 break;
             case kEffectTarget.kSelf:
             case kEffectTarget.kInvalidTarget:

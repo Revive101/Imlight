@@ -48,7 +48,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 08/19/2026
  */
 
 using System;
@@ -174,6 +174,11 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
         return enqueuedPlayers.Count() == _queuedCombatActions.Count;
     }
 
+    /// <summary>The move a given caster has queued this round, or null if none. Used to re-broadcast a
+    /// summoned minion's AI-chosen move at planning-phase start so the client telegraphs it.</summary>
+    public QueuedCombatAction GetQueuedAction(CombatDuelSubCircle caster)
+        => _queuedCombatActions.FirstOrDefault(a => a.SpellCaster == caster);
+
     private void AddCasterPassActionIfNeeded() {
         var castersWithoutActions = ActiveSubCircles
             .Where(subCircle => subCircle.AddedToDuel && subCircle.IsAlive)
@@ -218,6 +223,7 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
 
     private float ProcessQueuedActions(CombatActionListObj combatActionList) {
         var cinematicTime = 0.0f;
+        var instantCinematics = _subCircles[0]._duelActor.CheatInstantCinematics;
 
         foreach (var action in _queuedCombatActions) {
             // If the caster is dead, skip this action.
@@ -265,11 +271,13 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
                 action.SpellCaster._usedPipsForExperienceGain++;
             }
             else {
+                // Record when this caster's cinematic begins so a summoned minion appears with its cast.
+                action.SpellCaster._duelActor.CurrentActionCinematicOffsetSeconds = cinematicTime;
                 cinematicTime += HandleSuccessfulAction(action, combatActionList);
             }
         }
 
-        return cinematicTime;
+        return instantCinematics ? 0 : cinematicTime;
     }
 
     private float HandleFizzleAction(QueuedCombatAction action, CombatActionListObj combatActionList) {
@@ -430,6 +438,10 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
             return false;
         }
 
+        if (caster.CheatNoFizzle) {
+            return true;
+        }
+
         var spellAccuracy = (int) spell.m_accuracy;
         var stats = caster.CombatParticipant.m_pGameStats;
         var school = MagicSchools.GetMagicSchool(spell.m_magicSchoolID);
@@ -499,12 +511,12 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
         // Deduce the players mana by the rank of the spell.
         caster.DeductMana(action.m_spell.m_pipCost.m_spellRank);
 
-        // Reduce pips.
-        if (action.m_spell.m_pipCost.m_xPipSpell) {
-            var pipCount = caster.CombatParticipant.m_pipCount;
-            caster._usedPipsForExperienceGain += pipCount.m_genericPips;
+        // X-pip spells spend what they used (same GetXPipCost that chose the tier).
+        if (CombatActionResolver.IsXPipSpell(action.m_spell)) {
+            var xCost = CombatActionResolver.GetXPipCost(action.m_spell, caster);
+            caster._usedPipsForExperienceGain += xCost;
 
-            caster.DeductAllPips();
+            caster.DeductPips((MagicSchool) action.m_spell.m_magicSchoolID, xCost);
         }
         else {
             // Increase the used pips for experience gain by the rank of the spell.

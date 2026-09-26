@@ -37,7 +37,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 08/19/2026
  */
 
 using System;
@@ -49,9 +49,11 @@ using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
+using Imlight.CoreLib.Game.DropTables;
 using Imlight.CoreLib.Shared.Items;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Services;
@@ -69,6 +71,8 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
     );
 
     private IActorRef _currentDuelActor;
+    private bool _cheatInstantCinematics;
+    private bool _cheatNoFizzle;
     private ulong _cachedMountId;
 
     protected static Props Props(SessionActor parentActor)
@@ -83,7 +87,20 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
     private void RecieveDuelAdd(COMBAT_106_PROTOCOL.MSG_ACTORADDEDTODUEL message) {
         _currentDuelActor = message.DuelActor;
 
-        //Unequip mounts if the player has one equipped
+        if (_cheatInstantCinematics) {
+            _currentDuelActor.Tell(new COMBAT_106_PROTOCOL.MSG_CHEATINSTANTCINEMATICS {
+                Enabled = true
+            });
+        }
+
+        if (_cheatNoFizzle) {
+            _currentDuelActor.Tell(new COMBAT_106_PROTOCOL.MSG_CHEATNOFIZZLE {
+                Enabled = true,
+                Actor = SessionActor.ActorRef
+            });
+        }
+
+        // Unequip mounts if the player has one equipped
         UnEquipMount();
 
         // Set the persistent location and orientation of the wizard
@@ -129,6 +146,30 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
             XP = xpGained,
         };
         TellOtherServices(msg);
+
+        GrantMobLoot(message.MobTemplateIds);
+    }
+
+    private void GrantMobLoot(ulong[] defeatedMobTemplateIds) {
+        // Rolls and grants drop-table loot for the defeated mobs (raw template ids). Each mob's tables
+        // come from NpcDropTableCollection; a single roll across all of a mob's tables yields one combined
+        // loot popup for that mob.
+        if (defeatedMobTemplateIds is not { Length: > 0 }) {
+            return;
+        }
+
+        var wizard = GetActiveWizard();
+        var playerRef = SessionActor.ActorRef;
+        var playerObj = GetActiveGameObject();
+
+        foreach (var templateId in defeatedMobTemplateIds) {
+            if (!NpcDropTableCollection.TryGetDropTable(templateId, out var npcDropTable)) {
+                continue;
+            }
+
+            var loot = DropTableRoller.Roll(npcDropTable.DropTableNames.ToArray(), playerRef, playerObj, wizard);
+            LootGranter.GrantAndDisplay(playerRef, wizard, loot);
+        }
     }
 
     [MessageHandler(typeof(DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATDRAW))]
@@ -141,6 +182,44 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
             Actor = SessionActor.ActorRef
         };
         _currentDuelActor.Tell(msg);
+    }
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_CHEATINSTAWIN))]
+    private void ReceiveCheatInstaWin(COMBAT_106_PROTOCOL.MSG_CHEATINSTAWIN message) {
+        if (_currentDuelActor is null) {
+            InformGameClient("You are not in a duel.");
+
+            return;
+        }
+
+        _currentDuelActor.Tell(message);
+    }
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_CHEATTOGGLECINEMATICS))]
+    private void ReceiveCheatToggleCinematics(COMBAT_106_PROTOCOL.MSG_CHEATTOGGLECINEMATICS message) {
+        _cheatInstantCinematics = !_cheatInstantCinematics;
+
+        _currentDuelActor?.Tell(new COMBAT_106_PROTOCOL.MSG_CHEATINSTANTCINEMATICS {
+            Enabled = _cheatInstantCinematics
+        });
+
+        InformGameClient(_cheatInstantCinematics
+            ? "Instant spell cinematics enabled for your duels."
+            : "Instant spell cinematics disabled for your duels.");
+    }
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_CHEATTOGGLENOFIZZLE))]
+    private void ReceiveCheatToggleNoFizzle(COMBAT_106_PROTOCOL.MSG_CHEATTOGGLENOFIZZLE message) {
+        _cheatNoFizzle = !_cheatNoFizzle;
+
+        _currentDuelActor?.Tell(new COMBAT_106_PROTOCOL.MSG_CHEATNOFIZZLE {
+            Enabled = _cheatNoFizzle,
+            Actor = SessionActor.ActorRef
+        });
+
+        InformGameClient(_cheatNoFizzle
+            ? "Spell fizzling disabled for your duels."
+            : "Spell fizzling enabled for your duels.");
     }
 
     [MessageHandler(typeof(DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATMOVE))]
@@ -180,6 +259,18 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
         if (_currentDuelActor != null) {
             GetActiveWizard().IsInDuel = false;
         }
+        _currentDuelActor?.Tell(message, SessionActor.ActorRef);
+    }
+
+    [MessageHandler(typeof(TUTORIAL_108_PROTOCOL.MSG_TUTORIALREBUILDDUELHAND))]
+    private void ReceiveTutorialRebuildDuelHand(TUTORIAL_108_PROTOCOL.MSG_TUTORIALREBUILDDUELHAND message) {
+        // Sender is forced to SessionActor.ActorRef so the duel matches it to this player's sub-circle; null out
+        // of combat is a harmless no-op.
+        _currentDuelActor?.Tell(message, SessionActor.ActorRef);
+    }
+
+    [MessageHandler(typeof(TUTORIAL_108_PROTOCOL.MSG_TUTORIALGRANTPIPS))]
+    private void ReceiveTutorialGrantPips(TUTORIAL_108_PROTOCOL.MSG_TUTORIALGRANTPIPS message) {
         _currentDuelActor?.Tell(message, SessionActor.ActorRef);
     }
 
@@ -298,7 +389,7 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
         // hasn't had enough time to set its Wizard reference yet.
         var wizardObj = GetActiveGameObject();
         if (wizardObj is null) {
-            wizardObj = GetActiveWizard().GameObject;
+            wizardObj = GetActiveWizard()?.GetInitializedGameObject();
 
             if (wizardObj is null) {
                 Logger.Error("Failed to get wizard object for adding effects.");

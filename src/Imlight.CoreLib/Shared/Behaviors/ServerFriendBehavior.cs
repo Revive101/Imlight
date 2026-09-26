@@ -289,7 +289,7 @@ public class ServerFriendBehavior : IClientBehaviorProvider<BehaviorInstance> {
             var ignoreEntry = new IgnoreEntryData {
                 m_ignoreName = new ByteString(otherPlayerByteName),
                 m_characterID = otherPlayerID,
-                m_gameObjectID = otherPlayerID,
+                m_gameObjectID = otherPlayerWizardData.GameObjectID,
             };
 
             ignoreList.m_ignoreDataList.Add(ignoreEntry);

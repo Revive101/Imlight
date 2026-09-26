@@ -49,6 +49,7 @@ using Imlight.CoreLib.Game.DropTables;
 using Imlight.CoreLib.Game.Madlibs;
 using Imlight.CoreLib.Game.Requirements;
 using Imlight.CoreLib.Game.Requirements.Contexts;
+using Imlight.CoreLib.Game.Services;
 using Imlight.CoreLib.Game.WizBang;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Packets;
@@ -115,6 +116,10 @@ internal sealed class InteractQuestOfferComponent(ZoneEntity entity)
         }
 
         var state = GetOrUpdatePlayerState(wizard);
+
+        // The memento wizbang tick reads this property; refresh it from live state.
+        WizBang = state.HasAvailableQuest ? WizBangs.StartQuest : WizBangs.None;
+
         if (!state.HasAvailableQuest || state.AvailableQuest == null) {
             yield break;
         }
@@ -182,7 +187,7 @@ internal sealed class InteractQuestOfferComponent(ZoneEntity entity)
     public void OnServiceInteraction(IActorRef playerActor, Wizard playerCharacter, CoreObject playerObject, uint serviceOptionIndex) {
         var state = GetOrUpdatePlayerState(playerCharacter);
         if (state.HasAvailableQuest && state.AvailableQuest != null) {
-            HandleQuestOffer(playerActor, state.AvailableQuest);
+            HandleQuestOffer(playerActor, state.AvailableQuest, playerCharacter);
         }
     }
 
@@ -225,10 +230,10 @@ internal sealed class InteractQuestOfferComponent(ZoneEntity entity)
         return state;
     }
 
-    private void HandleQuestOffer(IActorRef playerActor, QuestTemplate quest) {
+    private void HandleQuestOffer(IActorRef playerActor, QuestTemplate quest, Wizard playerCharacter) {
         SendInteractAvailableQuest(playerActor, quest);
         ShowQuestInfoDialog(playerActor, quest);
-        SendQuestOfferDialog(playerActor, quest);
+        SendQuestOfferDialog(playerActor, quest, playerCharacter);
         SendQuestOfferCacheOption(playerActor, quest);
     }
 
@@ -269,7 +274,7 @@ internal sealed class InteractQuestOfferComponent(ZoneEntity entity)
         playerActor.Tell(dialogMsg);
     }
 
-    private void SendQuestOfferDialog(IActorRef playerActor, QuestTemplate quest) {
+    private void SendQuestOfferDialog(IActorRef playerActor, QuestTemplate quest, Wizard playerCharacter) {
         var startingGoals = quest.m_goals
             .Where(g => quest.m_startGoals.Contains(g.m_goalName))
             .ToList();
@@ -301,7 +306,7 @@ internal sealed class InteractQuestOfferComponent(ZoneEntity entity)
             return;
         }
 
-        var rewards = GetQuestRewardsFromTemplate(quest, null, playerActor, null);
+        var rewards = GetQuestRewardsFromTemplate(quest, null, playerActor, playerCharacter);
         if (!serializer.Serialize(rewards, 1, out var serializedRewards)) {
             Logger.Error("Failed to serialize rewards for quest {0}.",
                 Logger.Args(quest.m_questName));
@@ -351,6 +356,10 @@ internal sealed class InteractQuestOfferComponent(ZoneEntity entity)
 
         var rollResult = DropTableRoller.Roll(dropTableNames, playerActor, playerObj, playerWizard);
         var convertedResults = DropTableConverter.ToLootInfoList(rollResult);
+
+        // Spell rewards live in the results, not the drop tables; surface the wizard's own school spell.
+        convertedResults.m_loot ??= [];
+        QuestService.AppendSpellRewards(convertedResults.m_loot, qTemplate, playerWizard);
 
         return convertedResults;
     }

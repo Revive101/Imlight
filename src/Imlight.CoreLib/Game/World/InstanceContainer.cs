@@ -89,6 +89,18 @@ internal sealed class InstanceContainer(ulong instanceOwnerId) : ReceiveProtocol
             HasZone = _zones.ContainsKey(message.ZoneName)
         });
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_DROPINSTANCEZONE))]
+    public void ReceiveDropInstanceZone(ZONE_102_PROTOCOL.MSG_DROPINSTANCEZONE message) {
+        if (!_zones.Remove(message.ZoneName, out var zoneActor)) {
+            return;
+        }
+
+        Logger.Information("Dropping instance zone {ZoneName} (owner {OwnerId})",
+            Logger.Args(message.ZoneName, _instanceOwnerId));
+
+        Context.Stop(zoneActor);
+    }
+
     private IActorRef CreateZone(string zoneName) {
         var zoneActorName = SanitizeZoneName(zoneName);
         var zoneId = GetNextDynamicZoneId();

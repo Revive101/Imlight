@@ -174,6 +174,22 @@ internal class CombatDeck {
     }
 
     /// <summary>
+    /// Empties the current hand without touching the deck or the vault.
+    /// </summary>
+    internal void ClearHand() {
+        LastGivenHand.Clear();
+        _cardsDiscardedThisTurn.Clear();
+        TreasureCardsInHand = 0;
+    }
+
+    /// <summary>
+    /// Adds a spell directly to the current hand without drawing from the deck.
+    /// </summary>
+    internal void AddCardToHand(Spell spell) {
+        LastGivenHand.Add(spell);
+    }
+
+    /// <summary>
     /// Draws a random treasure card from the vault and adds it to the current hand.
     /// </summary>
     /// <returns>The drawn spell, or null if the vault is empty or hand is full.</returns>

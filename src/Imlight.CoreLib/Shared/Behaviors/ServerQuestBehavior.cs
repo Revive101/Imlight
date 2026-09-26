@@ -41,7 +41,8 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
             return false;
         }
 
-        if (CurrentQuestIDs.Contains(quest.ID)) {
+        if (CurrentQuestIDs.Contains(quest.ID)
+            || CurrentQuestInstances.Any(q => q is not null && q.QuestName == quest.QuestName)) {
             return false;
         }
 
@@ -77,7 +78,7 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
         CurrentQuestInstances.RemoveAll(q => q.QuestName == quest.QuestName);
 
         // Mark the quest as completed in the registry:
-        AddToQuestRegistry(quest.QuestName, "Completed", 1);
+        AddToQuestRegistry(quest.QuestName, "Complete", 1);
 
         return true;
     }
@@ -100,13 +101,24 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
             return false;
         }
 
-        if (!CurrentQuestIDs.Contains(quest.ID)) {
-            return false;
+        var idsToDrop = new HashSet<ulong>(
+            CurrentQuestInstances.Where(q => q.QuestName == quest.QuestName).Select(q => q.ID)) {
+            quest.ID
+        };
+
+        var removedInstances = CurrentQuestInstances.RemoveAll(q => q.QuestName == quest.QuestName);
+        var removedIds = CurrentQuestIDs.RemoveAll(idsToDrop.Contains);
+
+        return removedInstances > 0 || removedIds > 0;
+    }
+
+    public void PruneStaleQuestIds() {
+        if (CurrentQuestInstances.Count <= 0) {
+            return;
         }
 
-        CurrentQuestIDs.Remove(quest.ID);
-
-        return true;
+        var liveIds = new HashSet<ulong>(CurrentQuestInstances.Select(q => q.ID));
+        CurrentQuestIDs.RemoveAll(id => !liveIds.Contains(id));
     }
 
     public bool HasQuest(string questName) {
@@ -123,8 +135,8 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
         }
 
         // Check the registry to find the completed quest key:
-        // <quest_name>.completed
-        var completedKey = $"{questName}_Completed";
+        // <quest_name>_Complete
+        var completedKey = $"{questName}_Complete";
 
         return Registry.ContainsKey(completedKey) && Registry[completedKey] > 0;
     }

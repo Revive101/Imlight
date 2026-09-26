@@ -50,18 +50,14 @@ internal class ClientService(SessionActor sessionActor) : MessageService(session
         => Akka.Actor.Props.Create(() => new ClientService(parentActor));
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT))]
-    private void ReceiveClientDisconnect() 
-        => CloseSession();
+    private void ReceiveClientDisconnect() {
+        SendToSocket(new GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT());
+        CloseSession();
+    }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_QUERY_LOGOUT))]
     private void ReceiveQueryLogout(GAME_5_PROTOCOL.MSG_QUERY_LOGOUT message) =>
-        // Send the socket client disconnect, then wait about 1 second for the client to receive it before closing
-        // the session.
-        Task.Run(() => {
-            SendToSocket(new GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT());
-            Task.Delay(TimeSpan.FromSeconds(1)).Wait();
-            CloseSession();
-        });
+        SendToSocket(new GAME_5_PROTOCOL.MSG_QUERY_LOGOUT());
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_REQASKSERVER))]
     private void ReceiveReqServer(GAME_5_PROTOCOL.MSG_REQASKSERVER message) {

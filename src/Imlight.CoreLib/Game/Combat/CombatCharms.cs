@@ -83,7 +83,10 @@ internal static class CombatCharms {
             };
 
             if (isDamageEffect) {
-                appliedCharms = [.. beneficialCharms.Where(x => x.m_sDamageType == effect.m_sDamageType || x.m_sDamageType == "All").Reverse()];
+                appliedCharms = [.. beneficialCharms
+                    .Where(x => x.m_sDamageType == effect.m_sDamageType || x.m_sDamageType == "All")
+                    .Concat(harmfulCharms.Where(x => x.m_sDamageType == effect.m_sDamageType || x.m_sDamageType == "All"))
+                    .Reverse()];
             }
             else if (isHealEffect) {
                 appliedCharms = [.. beneficialCharms.Where(x => x.m_effectType is kSpellEffects.kModifyOutgoingHeal

@@ -32,6 +32,7 @@
  * This class is merely the director of the duel. The actual combat logic is
  * all handled within the `Imlight.CoreLib.Game.Combat` namespace.
  * Start at the `CombatResolver` class and work your way down.
+ * Tutorial duels are scripted by the `TutorialDuelDirector` in that namespace.
  * Combat positions are determined by sigil templates, with specific subcircle positions.
  * 
  * TODO:
@@ -41,7 +42,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 08/19/2026
  */
 
 using System;
@@ -90,6 +91,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     private const string PLANNING_TIME_KEY = "PlanningPhase";
     private const string PREPLANNING_TIME_KEY = "PrePlanningPhase";
     private const string RESOUTION_TIME_KEY = "ResolutionPhase";
+    private const double MINION_SUMMON_ANIMATION_DELAY = 5.5;
 
     public bool NoTransfer { get; set; } = false;
     public ITimerScheduler Timers { get; set; }
@@ -97,10 +99,14 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     public Combat.CombatResolver CombatResolver { get; private set; }
     public CombatDuelSubCircle[] SubCircles { get; private set; }
     public CombatDuelSubCircle[] ActiveSubCircles => [.. SubCircles.Where(x => x.Occupied)];
-    public byte PlayerCount => (byte) SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Player);
+    // Human players only; a minion must not let an extra enemy scale into the fight.
+    public byte PlayerCount => (byte) SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Player
+                                                            && !x.IsSummonedMinion);
     public byte CreatureCount => (byte) SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Monster);
+    // Exclude minions from the loss condition; they must not hold a fight open.
     public byte AlivePlayerCount
-        => (byte) SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Player && x.IsAlive);
+        => (byte) SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Player && x.IsAlive
+                                        && !x.IsSummonedMinion);
     public byte AliveCreatureCount
         => (byte) SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Monster && x.IsAlive);
     public byte PlayersInDuel
@@ -108,7 +114,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     public byte CreaturesInDuel
         => (byte) SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Monster && x.AddedToDuel);
     public byte AliveAndInDuelPlayerCount
-        => (byte) SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Player && x.IsAlive && x.AddedToDuel);
+        => (byte) SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Player && x.IsAlive && x.AddedToDuel
+                                        && !x.IsSummonedMinion);
     public byte AliveAndInDuelCreatureCount
         => (byte) SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Monster && x.IsAlive && x.AddedToDuel);
     public ulong SigilId => Entity.ActiveGameObject.m_globalID;
@@ -130,6 +137,9 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     private CombatSigilTemplate _sigilTemplate;
     private bool _isActive;
     private bool _awaitingCombatMoves;
+    private TutorialDuelDirector _tutorialDirector;
+    internal float CurrentActionCinematicOffsetSeconds;
+    internal bool CheatInstantCinematics { get; set; }
 
     public static bool ShouldAttachToEntity(CoreTemplate template)
         => template is GameObjectTemplate gameObjectTemplate
@@ -139,6 +149,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         // Disable the RenderComponent. We'll activate it when the sigil is activated.
         _renderComponent = Entity.GetComponentOfType<RenderComponent>();
         _renderComponent?.Disable();
+
+        _tutorialDirector = new TutorialDuelDirector(this, Entity.Zone?.ZonePath ?? "");
     }
 
     public WizardClientDuelBehavior GetClientBehaviorInstance() => new() {
@@ -274,6 +286,10 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_NEWROUND))]
     private void ReceiveNewRound(COMBAT_106_PROTOCOL.MSG_NEWROUND message) {
+        if (!_isActive) {
+            return;
+        }
+
         Logger.Debug("Duel {0} | New round {1} at {2}",
             Logger.Args(Duel.m_duelID.Full, Duel.m_roundNum, DateTime.Now.ToString("HH:mm:ss")));
 
@@ -294,6 +310,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         SendCombatPhase((byte) Duel.m_duelPhase);
         SendUpFirst(Duel.m_roundNum);
 
+        _tutorialDirector.OnNewRound(Duel.m_roundNum);
+
         var delay = TimeSpan.FromSeconds(DUEL_NEW_ROUND_DELAY);
         Timers.StartSingleTimer(PREPLANNING_TIME_KEY, new COMBAT_106_PROTOCOL.MSG_PLANNINGPHASEBEGIN(), delay);
     }
@@ -310,8 +328,18 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         SendCombatHealth();
         SendCombatUI(PLANNING_TIME);
 
-        var delay = TimeSpan.FromSeconds(PLANNING_TIME);
-        Timers.StartSingleTimer(PLANNING_TIME_KEY, new COMBAT_106_PROTOCOL.MSG_PLANNINGPHASEOVER(), delay);
+        // Re-telegraph minion AI moves now that the planning HUD exists.
+        ResendMinionMoveSelections();
+
+        // Tutorial duels flush queued card grants and re-script the golems before planning.
+        _tutorialDirector.OnPlanningPhaseBegin();
+
+        // Tutorial fights have no planning countdown (m_disableTimer): the client drives pacing. Planning still
+        // ends normally once every participant has enqueued a move (ReceiveCombatMove).
+        if (!_tutorialDirector.IsActive) {
+            var delay = TimeSpan.FromSeconds(PLANNING_TIME);
+            Timers.StartSingleTimer(PLANNING_TIME_KEY, new COMBAT_106_PROTOCOL.MSG_PLANNINGPHASEOVER(), delay);
+        }
     }
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ACTORCOMBATDRAW))]
@@ -336,11 +364,35 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         SendCurrentCombatHand(caster);
     }
 
+    [MessageHandler(typeof(TUTORIAL_108_PROTOCOL.MSG_TUTORIALREBUILDDUELHAND))]
+    private void ReceiveTutorialRebuildDuelHand(TUTORIAL_108_PROTOCOL.MSG_TUTORIALREBUILDDUELHAND message) {
+        if (!_isActive) {
+            return;
+        }
+
+        _tutorialDirector.ReceiveRebuildDuelHand(Sender, message);
+    }
+
+    [MessageHandler(typeof(TUTORIAL_108_PROTOCOL.MSG_TUTORIALGRANTPIPS))]
+    private void ReceiveTutorialGrantPips(TUTORIAL_108_PROTOCOL.MSG_TUTORIALGRANTPIPS message) {
+        if (!_isActive) {
+            return;
+        }
+
+        _tutorialDirector.ReceiveGrantPips(Sender, message);
+    }
+
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ACTORCOMBATMOVE))]
     private void ReceiveCombatMove(COMBAT_106_PROTOCOL.MSG_ACTORCOMBATMOVE message) {
         // Find which sub circle this is.
         var caster = SubCircles.FirstOrDefault(x => x.ParticipantActor == message.Actor)
             ?? throw new Exception("Combat move received from an actor that is not in the duel.");
+
+        // Tutorial duels script the golems' moves server-side; drop their own AI moves so a pass cannot
+        // overwrite the scripted attack. Player moves still flow through normally.
+        if (_tutorialDirector.IsActive && caster.OccupiedTeam == CombatTeam.Monster) {
+            return;
+        }
 
         if (!_awaitingCombatMoves) {
             Logger.Warning("Duel {0} | Slot {1} | Received combat move while not expecting it.",
@@ -372,6 +424,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
                     Logger.Args(Duel.m_duelID.Full, caster.SlotIndex, moveType));
                 break;
         }
+
+        _tutorialDirector.OnCombatMoveQueued();
 
         // If by this point all participants have inputted their moves, we can start the next phase.
         var participantCount = AlivePlayerCount + AliveCreatureCount;
@@ -421,10 +475,15 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ROUNDRESOLUTION))]
     private void ReceiveRoundResolution(COMBAT_106_PROTOCOL.MSG_ROUNDRESOLUTION message) {
+        if (!_isActive) {
+            return;
+        }
+
         // Iterate through dead creature participants and remove them from the duel.
         // Players can be healed and therefore don't need to be removed.
         EnactActionOnSubCircles(circle => {
-            if (circle.OccupiedTeam == CombatTeam.Monster && !circle.IsAlive) {
+            // A dead minion can't be revived; remove it like an enemy.
+            if ((circle.OccupiedTeam == CombatTeam.Monster || circle.IsSummonedMinion) && !circle.IsAlive) {
                 var removeMsg = new COMBAT_106_PROTOCOL.MSG_COMBATDEATH();
                 circle.ParticipantActor.Tell(removeMsg);
             }
@@ -449,6 +508,15 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     [MessageHandler(typeof(DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_ENDDUEL))]
     private void DespawnDuel() {
         _isActive = false;
+
+        // Minions are children of this sigil entity, which persists between fights; MSG_COMBATDEATH
+        // deletes them outright.
+        EnactActionOnSubCircles(circle => {
+            if (circle.IsSummonedMinion && circle.ParticipantActor is not null) {
+                circle.ParticipantActor.Tell(new COMBAT_106_PROTOCOL.MSG_COMBATDEATH());
+            }
+        });
+
         _renderComponent?.Disable();
         Entity.DespawnObject();
         _entitiesInRange.Clear();
@@ -478,13 +546,27 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         HandleFleeAction(subCircle);
     }
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_DEFERREDMINIONSUMMON))]
+    private void ReceiveDeferredMinionSummon(ZONE_102_PROTOCOL.MSG_DEFERREDMINIONSUMMON message) {
+        // Drop if the duel ended or restarted during the summon animation.
+        if (!_isActive || message.Caster is null || Array.IndexOf(SubCircles, message.Caster) < 0) {
+            Logger.Information("Duel {0} | deferred minion summon (tid {1}) dropped, duel no longer active.",
+                Logger.Args(Duel.m_duelID.Full, message.CreatureTid));
+
+            return;
+        }
+
+        SpawnAndAssignMinion(message.CreatureTid, message.Caster);
+    }
+
     private void InitializeDuel(Dictionary<IActorRef, CoreObject> startingParticipants) {
         Duel = CreateDuelWithDefaults();
         SubCircles = CreateDuelActorSubCircles(_sigilTemplate);
         CombatResolver = new Combat.CombatResolver(Duel, SubCircles);
 
-        // Determine which team goes up first.
+        // Determine which team goes up first. Tutorial duels override this with the golems first.
         Duel.m_firstTeamToAct = (int) DetermineFirstTeam();
+        _tutorialDirector.OnDuelCreated(Duel);
 
         // When the duel is created, it must be created by two suspects: the player and the creature.
         // The creatures will always be team A and the players will always be team B. Assign the first
@@ -515,6 +597,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     private Duel CreateDuelWithDefaults() => new() {
         m_duelID = SigilId,
         m_planningTimer = PLANNING_TIME,
+
         m_scalarDamage = _sigilTemplate.m_scalarDamagePvE,
         m_scalarResist = _sigilTemplate.m_scalarResistPvE,
         m_scalarPierce = _sigilTemplate.m_scalarPiercePvE,
@@ -607,14 +690,83 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         return null;
     }
 
-    private bool AssignParticipantToSubCircle(CombatDuelSubCircle subCircle, IActorRef actorRef, CoreObject coreObject) {
+    private bool AssignParticipantToSubCircle(CombatDuelSubCircle subCircle, IActorRef actorRef, CoreObject coreObject,
+                                              bool isSummonedMinion = false, int minionOwnerSubCircle = 0) {
         if (subCircle.ParticipantActor != null) {
             return false;
         }
 
-        subCircle.AssignParticipant(actorRef, coreObject);
+        subCircle.AssignParticipant(actorRef, coreObject, isSummonedMinion, minionOwnerSubCircle);
 
         return true;
+    }
+
+    internal void SummonMinion(uint creatureTid, CombatDuelSubCircle caster) {
+        if (CoreObjectFactory.GetCoreTemplate(creatureTid) is null) {
+            Logger.Warning("Duel {0} | minion summon: no template for creature tid {1}.",
+                Logger.Args(Duel.m_duelID.Full, creatureTid));
+
+            return;
+        }
+
+        // Cinematics before this cast plus the summon animation: the minion appears mid-cast.
+        var castOffset = CurrentActionCinematicOffsetSeconds;
+        var spawnDelay = castOffset + MINION_SUMMON_ANIMATION_DELAY;
+        Timers.StartSingleTimer(
+            $"minionSummon_{Guid.NewGuid():N}",
+            new ZONE_102_PROTOCOL.MSG_DEFERREDMINIONSUMMON { CreatureTid = creatureTid, Caster = caster },
+            TimeSpan.FromSeconds(spawnDelay));
+    }
+
+    internal static void OnMinionRemoved(CombatDuelSubCircle circle)
+        => circle.RemoveParticipant();
+
+    private void SpawnAndAssignMinion(uint creatureTid, CombatDuelSubCircle caster) {
+        var slot = GetAvailableSubCircleTeamPlayer();
+        if (slot is null) {
+            Logger.Information("Duel {0} | minion summon (tid {1}) skipped, no free player-team slot.",
+                Logger.Args(Duel.m_duelID.Full, creatureTid));
+
+            return;
+        }
+
+        var template = CoreObjectFactory.GetCoreTemplate(creatureTid);
+        if (template is null) {
+            Logger.Warning("Duel {0} | minion summon: no template for creature tid {1}.",
+                Logger.Args(Duel.m_duelID.Full, creatureTid));
+
+            return;
+        }
+
+        var centre = Entity.ActiveGameObject?.m_location ?? (caster?.ParticipantObject?.m_location ?? default);
+        var info = new CoreObjectInfo {
+            m_templateID = creatureTid,
+            m_location = centre,
+            m_fScale = 1.0f,
+        };
+        var minionObj = CoreObjectFactory.FinalizeCoreObject(info, template);
+        minionObj = CoreObjectFactory.InitializeCoreObjectBehaviors(minionObj, template);
+
+        var minionActor = Entity.SpawnCombatMinionActor(minionObj, template);
+        if (minionActor is null) {
+            return;
+        }
+
+        try {
+            AssignParticipantToSubCircle(slot, minionActor, minionObj, isSummonedMinion: true,
+                                         minionOwnerSubCircle: caster.SlotIndex);
+        }
+        catch (Exception ex) {
+            Logger.Error("Duel {0} | minion summon: failed to assign tid {1} to slot {2}: {3}",
+                Logger.Args(Duel.m_duelID.Full, creatureTid, slot.SlotIndex, ex));
+            slot.RemoveParticipant();
+            minionActor.Tell(PoisonPill.Instance);
+
+            return;
+        }
+
+        Logger.Information("Duel {0} | summoned minion tid {1} into player-team slot {2} (caught up next round).",
+            Logger.Args(Duel.m_duelID.Full, creatureTid, slot.SlotIndex));
     }
 
     private void AddParticipant(CoreObject participantObject, IActorRef participantActor) {
@@ -640,8 +792,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     }
 
     private void SendCombatPhase(byte phase) {
-        // Determine which participant the client should point its turn indicator at.
-        var upFirstListIndex = GetUpFirstListIndex();
+        // Determine which sigil slot the client should point its turn indicator at.
+        var upFirstSigilSlot = GetUpFirstSigilSlot();
 
         // Serialize the up first data and send it to all the combat participants.
         // This is the one instance where the client sends a versionable object to the client.
@@ -652,7 +804,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
         var upFirst = new UpFirstData {
             m_resultType = 122, // Always recorded as 122, per packet captures.
-            m_upFirst = upFirstListIndex,
+            m_upFirst = upFirstSigilSlot,
             m_roundNum = Duel.m_roundNum,
         };
         if (!versionableSerializer.Serialize(upFirst, _upFirstFlags, out var upFirstData)) {
@@ -673,13 +825,13 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     }
 
     private void SendUpFirst(int roundNum) {
-        var upFirstListIndex = GetUpFirstListIndex();
+        var upFirstSigilSlot = GetUpFirstSigilSlot();
 
         var upFirstMsg = new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATUPFIRST {
             DuelID = SigilId,
             RoundNum = (ushort) roundNum,
             FirstTeamToAct = (byte) Duel.m_firstTeamToAct,
-            UpFirst = upFirstListIndex,
+            UpFirst = upFirstSigilSlot,
         };
         ZoneBroadcast(upFirstMsg);
     }
@@ -754,7 +906,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         });
     }
 
-    private void SendCurrentCombatHand(CombatDuelSubCircle circle) {
+    internal void SendCurrentCombatHand(CombatDuelSubCircle circle) {
         // As-is, no draw or refill, so a discarded slot stays visibly open for the vault draw.
         if (circle is null || circle.OccupiedTeam == CombatTeam.Monster) {
             return;
@@ -778,7 +930,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         circle.ParticipantActor.Tell(msg);
     }
 
-    private void SendCombatPips() {
+    internal void SendCombatPips() {
         var pips = new CombatPipListObj {
             m_pipList = new List<ParticipantPipData>(),
             m_duelID = SigilId
@@ -919,25 +1071,15 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         // If the spell doesn't have a target like for AoE spells or self-heals,
         // the value will be the integer cap.
         var target = caster;
-        if (caster.OccupiedTeam == CombatTeam.Player) {
-            // The client's list is MSG_COMBATADD minus MSG_COMBATREMOVE: creature corpses drop off on
-            // death, dead players stay (they can be revived), so only creature corpses go uncounted.
-            var orderedParticipants = SubCircles
-                .Where(s => s is not null && s.AddedToDuel
-                    && (s.IsAlive || s.OccupiedTeam == CombatTeam.Player))
-                .OrderBy(s => s.SlotIndex)
-                .ToList();
-            if (spellTarget < orderedParticipants.Count) {
-                target = orderedParticipants[(int) spellTarget];
-            }
-        }
-        else if (spellTarget < SubCircles.Length) {
+        if (spellTarget < SubCircles.Length) {
+            // The client sends raw sigil slots for spell targets (see GetUpFirstSigilSlot).
             target = SubCircles[spellTarget];
         }
 
         CombatResolver.AddCombatMove(CombatMoveType.Attack, caster, target, spell);
 
-        if (caster.OccupiedTeam == CombatTeam.Player) {
+        // Minions are AI-driven; their telegraph comes from ResendMinionMoveSelections, not an echo.
+        if (!caster.IsSummonedMinion && caster.OccupiedTeam == CombatTeam.Player) {
             SendCombatMoveSelection(caster.ParticipantObject.m_globalID, (byte) CombatMoveType.Attack, spell, (byte) spellTarget);
         }
     }
@@ -955,6 +1097,16 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     private void HandleFleeAction(CombatDuelSubCircle caster) {
         var actor = caster.ParticipantActor;
         var participantObjId = caster.ParticipantObject.m_globalID;
+
+        // Fleeing drains the player's mana; creature participants have no wizard.
+        if (caster._wizard is not null) {
+            var clientMaxMana = caster._wizard.GameStats.GetClientTypeAlternative().m_baseMana;
+            caster._wizard.UpdateMana(0);
+            actor.Tell(new WIZARD_12_PROTOCOL.MSG_UPDATEMANA {
+                Mana = 0,
+                MaxMana = clientMaxMana,
+            });
+        }
 
         // Inform the client that they've been removed from this duel.
         var defeatMsg = new COMBAT_106_PROTOCOL.MSG_COMBATDEFEAT();
@@ -979,7 +1131,10 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     private static CombatTeam DetermineFirstTeam()
         => (CombatTeam) new Random().Next(0, 2);
 
-    private byte GetUpFirstListIndex() {
+    internal bool IsScriptedDuel()
+        => _tutorialDirector.IsActive;
+
+    private byte GetUpFirstSigilSlot() {
         // Prefer the acting team's first living participant, else any living participant.
         var upFirst = SubCircles.FirstOrDefault(s => s is not null && s.AddedToDuel && s.IsAlive
             && s.SlotType == (Duel.m_firstTeamToAct == (int) CombatTeam.Player
@@ -990,17 +1145,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
             return 0;
         }
 
-        // The client counts its own list (COMBATADD minus COMBATREMOVE): creature corpses dropped off,
-        // dead players still listed. Counting anything else shifts the indicator one slot.
-        byte listIndex = 0;
-        for (var i = 0; i < upFirst.SlotIndex; i++) {
-            if (SubCircles[i] is not null && SubCircles[i].AddedToDuel
-                && (SubCircles[i].IsAlive || SubCircles[i].OccupiedTeam == CombatTeam.Player)) {
-                listIndex++;
-            }
-        }
-
-        return listIndex;
+        // The modern client resolves the indicator against its sigil slots, not a list index.
+        return (byte) upFirst.SlotIndex;
     }
 
     private void AddWaitingCombatParticipants() => EnactActionOnSubCircles(circle => {
@@ -1038,10 +1184,44 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         circle.DoPipGain();
     });
 
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_CHEATINSTAWIN))]
+    private void ReceiveCheatInstaWin(COMBAT_106_PROTOCOL.MSG_CHEATINSTAWIN message) {
+        if (!_isActive) {
+            return;
+        }
+
+        // EndDuel derives the winner from the alive creature count, so zero them first.
+        Timers.CancelAll();
+        EnactActionOnSubCircles(circle => {
+            if (circle.OccupiedTeam == CombatTeam.Monster) {
+                circle.DamageParticipant(int.MaxValue);
+            }
+        });
+
+        EndDuel();
+    }
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_CHEATINSTANTCINEMATICS))]
+    private void ReceiveCheatInstantCinematics(COMBAT_106_PROTOCOL.MSG_CHEATINSTANTCINEMATICS message)
+        => CheatInstantCinematics = message.Enabled;
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_CHEATNOFIZZLE))]
+    private void ReceiveCheatNoFizzle(COMBAT_106_PROTOCOL.MSG_CHEATNOFIZZLE message) {
+        var subCircle = SubCircles.FirstOrDefault(x => x.ParticipantActor == message.Actor);
+        if (subCircle is null) {
+            return;
+        }
+
+        subCircle.CheatNoFizzle = message.Enabled;
+    }
+
     private void EndDuel() {
         // The duel has ended. Inform the clients of the result.
         var playersWin = AliveAndInDuelCreatureCount <= 0;
         var creaturesWin = AliveAndInDuelPlayerCount <= 0;
+
+        // A queued tutorial card grant must not leak into the next duel on this sigil.
+        _tutorialDirector.OnDuelEnded();
 
         RemovePlayersFromDuel();
 
@@ -1077,6 +1257,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         SendCombatPhase((byte) Duel.m_duelPhase);
 
         var adjectivesOfDefeatedMobs = new List<string>();
+        var templateIdsOfDefeatedMobs = new List<ulong>();
         EnactActionOnSubCircles(circle => {
             if (circle.OccupiedTeam == CombatTeam.Monster) {
                 var mobTemplateId = circle.ParticipantObject.m_templateID;
@@ -1091,6 +1272,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
                 var mobAdjectives = gameObjectTemplate.m_adjectiveList;
                 adjectivesOfDefeatedMobs.AddRange(mobAdjectives);
+                templateIdsOfDefeatedMobs.Add(gameObjectTemplate.m_templateID);
             }
         });
 
@@ -1106,6 +1288,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
             var victoryMsg = new COMBAT_106_PROTOCOL.MSG_COMBATWIN() {
                 UsedPips = circle._usedPipsForExperienceGain,
                 MobAdjectives = [.. adjectivesOfDefeatedMobs],
+                MobTemplateIds = [.. templateIdsOfDefeatedMobs],
             };
             circle.ParticipantActor.Tell(victoryMsg);
         });
@@ -1131,6 +1314,11 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
     private void RemovePlayersFromDuel() => EnactActionOnSubCircles(circle => {
         if (circle.OccupiedTeam != CombatTeam.Player) {
+            return;
+        }
+
+        // Minions have no hub to return to; DespawnDuel tears them down.
+        if (circle.IsSummonedMinion) {
             return;
         }
 
@@ -1165,6 +1353,25 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
             : CreatureCount < 4 && (CreatureCount < maxCreatures);
 
         return slotAvailable;
+    }
+
+    private void ResendMinionMoveSelections() {
+        EnactActionOnSubCircles(circle => {
+            if (!circle.IsSummonedMinion || !circle.IsAlive || circle.ParticipantObject is null) {
+                return;
+            }
+
+            var action = CombatResolver.GetQueuedAction(circle);
+            if (action is null || action.Spell is null || action.SelectedTarget is null) {
+                SendCombatMoveSelection(circle.ParticipantObject.m_globalID, (byte) CombatMoveType.Pass, null, 0);
+                return;
+            }
+
+            SendCombatMoveSelection(circle.ParticipantObject.m_globalID, (byte) CombatMoveType.Attack,
+                action.Spell, (byte) action.SelectedTarget.SlotIndex);
+        });
+        var delay = TimeSpan.FromSeconds(PLANNING_TIME);
+        Timers.StartSingleTimer(PLANNING_TIME_KEY, new COMBAT_106_PROTOCOL.MSG_PLANNINGPHASEOVER(), delay);
     }
 
 }

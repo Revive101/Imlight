@@ -374,6 +374,13 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         }
     }
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYNEARESTDUELTARGET))]
+    private void ReceiveQueryNearestDuelTarget(ZONE_102_PROTOCOL.MSG_QUERYNEARESTDUELTARGET message) {
+        foreach (var supervisor in _supervisors) {
+            supervisor.Forward(message);
+        }
+    }
+
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST))]
     private void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message) {
         DispatchBroadcast(message);

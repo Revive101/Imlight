@@ -25,8 +25,7 @@ namespace Imlight.CoreLib.Game.Results.Handlers;
 internal sealed class ResTeleportHandler : BaseResultHandler<ResTeleport> {
 
     public override bool Execute(IResultContext context) {
-        var playerObj = context.GetPlayerObj();
-        if (playerObj is null) {
+        if (context.GetPlayerObj() is not WizClientObject playerObj) {
             return false;
         }
 
@@ -34,7 +33,7 @@ internal sealed class ResTeleportHandler : BaseResultHandler<ResTeleport> {
             DestinationZone = Result.m_destinationZone,
             DestinationLocation = Result.m_destinationLoc,
             SendToClient = true,
-            OwnerCharId = playerObj.m_globalID
+            OwnerCharId = playerObj.m_characterId
         };
 
         context.GetPlayerRef().Tell(msg);

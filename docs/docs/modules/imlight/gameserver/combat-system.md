@@ -12,6 +12,10 @@ Combat is orchestrated through [zone components](./zone-components.md), with the
 - Handles messaging between all participants
 - Controls duel lifecycle from initiation to resolution
 
+**`TutorialDuelDirector`**
+- Scripts the tutorial golem duels (round-goal grants, queued hand reveals, scripted enemy moves)
+- Plain helper constructed by `CombatDuelComponent`, active only in zones whose path contains "Tutorial"
+
 **`CombatDuelSubCircle`**
 - Represents individual participant positions within the duel
 - Manages participant-specific state (health, mana, pips, effects)
@@ -291,3 +295,26 @@ HealingAggroIncrease = 5         # Hate increase toward enemy healers
 ProvokeAggroIncrease = 15        # Hate increase from taunt effects
 PacifyAggroDecrease = 8          # Hate decrease from pacify effects
 ```
+
+## Mob Defeat Loot
+
+When the players win a duel, each winner is sent `COMBAT_106_PROTOCOL.MSG_COMBATWIN` carrying the template ids of every defeated mob. `CombatService` rolls the drop tables wired to each mob and grants the results through `LootGranter`, which also shows the client's loot popup (`MSG_LOOT`). Each player rolls their own loot, so in multiplayer every winner rolls the defeated mobs' tables independently.
+
+### Data
+
+The mob to drop table wiring is a standard SpiralDB collection keyed by mob template id, e.g. `spiraldb-cache/NpcDropTable/NpcDropTables_35099-A.json`:
+
+```json
+{
+  "TemplateID": 35099,
+  "DropTableNames": ["NIGHTSHADE-MOB-001"]
+}
+```
+
+The table contents are ordinary drop tables in `spiraldb-cache/DropTables/`, loaded by `DropTableCollection` and rolled by `DropTableRoller`. A table grants at most one item, so give a mob one table per drop, with the drop's chance in that table's `RollChance`. Gold, XP, and training points are granted per table.
+
+Adding or retuning a mob's loot is a pure data edit plus a server restart: no rebuild. Mob template ids come from the client's creature templates; unlisted mobs drop nothing.
+
+### Granting
+
+`LootGranter.GrantAndDisplay` applies gold, XP, training points, items, and potion slots, then sends the loot popup. The quest reward path (`ResDropTableHandler`) shares the same granter.
