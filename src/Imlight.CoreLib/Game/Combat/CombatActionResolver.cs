@@ -33,11 +33,12 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 08/13/2026
+ * Last Updated: 09/26/2026
  */
 
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
+using Imlight.CoreLib.Game.Spells;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using System;
@@ -69,6 +70,29 @@ internal static class CombatActionResolver {
         var charmsAffectingThisSpell = new List<SpellEffect>();
         var allEffects = action.SpellTemplate.m_effects.ToList();
         combatAction.m_xPipCost = GetXPipCost(action.Spell, action.SpellCaster);
+
+        // One combined roll per cast: the target's block is part of the crit chance
+        // (crit vs crit + K * block), so there is no separate block roll. The landed
+        // multiplier varies by the crit/block ratio. Heals crit with no block side.
+        var critMultiplier = 1f;
+        var landedCrit = false;
+        var critPrimaryTarget = action.SelectedTarget;
+        if (critPrimaryTarget is not null) {
+            var spellSchool = MagicSchools.GetMagicSchool(action.Spell.m_magicSchoolID)?.m_schoolName;
+            if (spellSchool is not null) {
+                var isHealCast = action.SpellTemplate.m_effects
+                    .Any(x => x.m_effectType == kSpellEffects.kHeal);
+                var isOffensiveCast = critPrimaryTarget.OccupiedTeam != action.SpellCaster.OccupiedTeam;
+                if (isHealCast || isOffensiveCast) {
+                    landedCrit = CombatCriticals.RollsCritical(action.SpellCaster, critPrimaryTarget, spellSchool, isHealCast);
+                    if (landedCrit) {
+                        critMultiplier = CombatCriticals.GetCritMultiplier(action.SpellCaster, critPrimaryTarget, spellSchool, isHealCast);
+                    }
+                }
+            }
+        }
+
+        var critEligibleTargetSlots = new List<int>();
 
         foreach (var spellEffect in action.SpellTemplate.m_effects) {
             var chosenEffect = spellEffect;
@@ -104,15 +128,40 @@ internal static class CombatActionResolver {
             UpdateCombatActionTargets(ref combatAction, targets);
             InformDuelParticipantsOfEffect(action.SpellCaster, targets, chosenEffect);
 
+            // The effect types CombatEffectApplicator applies critMultiplier to.
+            if (chosenEffect.m_effectType is kSpellEffects.kDamage
+                                          or kSpellEffects.kDamagePerTotalPipPower
+                                          or kSpellEffects.kHeal) {
+                foreach (var target in targets) {
+                    if (!critEligibleTargetSlots.Contains(target.SlotIndex)) {
+                        critEligibleTargetSlots.Add(target.SlotIndex);
+                    }
+                }
+            }
+
             cinematicTime += CombatEffectApplicator.ApplyEffect(chosenEffect,
                                                                 [.. charmsAffectingThisSpell],
                                                                 action.SpellCaster,
-                                                                targets);
+                                                                targets,
+                                                                critMultiplier);
+        }
+
+        if (critEligibleTargetSlots.Count > 0) {
+            combatAction.m_CritHitList = [.. critEligibleTargetSlots.Select(slot => new TargetCritHit {
+                m_target = slot,
+                m_mult = landedCrit ? critMultiplier : 0f,
+                m_blocked = false,
+            })];
+
+            if (landedCrit) {
+                combatAction.m_spellHits = (char) 2;
+            }
         }
 
         // Remove all charms that were applied to this spell from the caster's hanging effects.
         action.SpellCaster._hangingEffects.RemoveAll(x => charmsAffectingThisSpell.Contains(x));
         combatAction.m_effectChosen = effectStack.GetStackAsUint();
+        combatAction.m_handledRandomSpellPerTarget = true;
 
         CheckForPolarCombatActionTargets(ref combatAction, action.SpellTemplate);
 

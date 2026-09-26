@@ -34,7 +34,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 08/13/2026
+ * Last Updated: 08/14/2026
  */
 
 using Imcodec.ObjectProperty.TypeCache;
@@ -67,7 +67,8 @@ internal static class CombatEffectApplicator {
     internal static float ApplyEffect(SpellEffect effect,
                                       SpellEffect[] charms,
                                       CombatDuelSubCircle caster,
-                                      CombatDuelSubCircle[] targets) {
+                                      CombatDuelSubCircle[] targets,
+                                      float critMultiplier = 1) {
         var cinematicTime = 0.0f;
 
         if (effect.m_effectTarget == kEffectTarget.kGlobal) {
@@ -78,16 +79,16 @@ internal static class CombatEffectApplicator {
 
         switch (effect.m_effectType) {
             case kSpellEffects.kDamage:
-                cinematicTime += ApplyFlatDamageEffect(effect, charms, caster, targets);
+                cinematicTime += ApplyFlatDamageEffect(effect, charms, caster, targets, critMultiplier);
                 break;
             case kSpellEffects.kDamagePerTotalPipPower:
-                cinematicTime += ApplyFlatDamageEffect(effect, charms, caster, targets);
+                cinematicTime += ApplyFlatDamageEffect(effect, charms, caster, targets, critMultiplier);
                 break;
             case kSpellEffects.kDamageOverTime:
                 cinematicTime += ApplyDamageOverTime(effect, charms, caster, targets);
                 break;
             case kSpellEffects.kHeal:
-                cinematicTime += ApplyFlatHealEffect(effect, charms, caster, targets);
+                cinematicTime += ApplyFlatHealEffect(effect, charms, caster, targets, critMultiplier);
                 break;
             case kSpellEffects.kHealOverTime:
                 cinematicTime += ApplyHealOverTime(effect, charms, caster, targets);
@@ -105,6 +106,8 @@ internal static class CombatEffectApplicator {
             case kSpellEffects.kModifyIncomingHealFlat:
             case kSpellEffects.kModifyIncomingDamageType:
             case kSpellEffects.kAbsorbDamage:
+            case kSpellEffects.kCritBoost:
+            case kSpellEffects.kCritBlock:
                 ApplyHangingEffect(effect, targets);
                 break;
             case kSpellEffects.kStun:
@@ -154,8 +157,9 @@ internal static class CombatEffectApplicator {
     private static float ApplyFlatDamageEffect(SpellEffect effect,
                                                SpellEffect[] charms,
                                                CombatDuelSubCircle caster,
-                                               CombatDuelSubCircle[] targets) {
-        var (cinematicTime, _) = ApplyDamageEffect(effect, charms, caster, targets);
+                                               CombatDuelSubCircle[] targets,
+                                               float critMultiplier = 1) {
+        var (cinematicTime, _) = ApplyDamageEffect(effect, charms, caster, targets, critMultiplier);
 
         return cinematicTime;
     }
@@ -260,7 +264,8 @@ internal static class CombatEffectApplicator {
     private static (float cinematicTime, int damageDealt) ApplyDamageEffect(SpellEffect effect,
                                                                             SpellEffect[] charms,
                                                                             CombatDuelSubCircle caster,
-                                                                            CombatDuelSubCircle[] targets) {
+                                                                            CombatDuelSubCircle[] targets,
+                                                                            float critMultiplier = 1) {
         int damageFromCaster = effect.m_effectParam;
         var cinematicTime = 0.0f;
 
@@ -276,6 +281,10 @@ internal static class CombatEffectApplicator {
         var duel = caster._duelActor.Duel;
         var bubbleDamageIncrease = GetGlobalEffectDamageModifier(duel, effect.m_sDamageType);
         damageFromCaster = (int) Math.Floor(damageFromCaster * (1 + bubbleDamageIncrease));
+
+        // A landed critical multiplies the fully-boosted outgoing damage by a variable factor;
+        // wards and resist still reduce it.
+        damageFromCaster = (int) Math.Floor(damageFromCaster * critMultiplier);
 
         // Apply damage to each target
         var damageDealt = 0;
@@ -300,7 +309,8 @@ internal static class CombatEffectApplicator {
     private static float ApplyFlatHealEffect(SpellEffect effect,
                                              SpellEffect[] charms,
                                              CombatDuelSubCircle caster,
-                                             CombatDuelSubCircle[] targets) {
+                                             CombatDuelSubCircle[] targets,
+                                             float critMultiplier = 1) {
         int healFromCaster = effect.m_effectParam;
         var cinematicTime = 0.0f;
 
@@ -316,6 +326,9 @@ internal static class CombatEffectApplicator {
         var duel = caster._duelActor.Duel;
         var bubbleHealIncrease = GetGlobalEffectHealingModifier(duel);
         healFromCaster = (int) Math.Ceiling(healFromCaster * (1 + bubbleHealIncrease));
+
+        // A landed critical doubles the fully-boosted outgoing heal; incoming heal boosts still apply.
+        healFromCaster = (int) Math.Ceiling(healFromCaster * critMultiplier);
 
         // Apply heal to each target
         foreach (var target in targets) {
