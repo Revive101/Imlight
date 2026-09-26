@@ -63,7 +63,7 @@ internal class InventoryService(SessionActor sessionActor) : MessageService(sess
         wizard.RemoveItemFromInventory(message.GlobalID);
 
         SendToSocket(new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_REMOVEITEM() {
-            GlobalID = wizard.CharId,
+            GlobalID = wizard.GameObjectID,
             ItemID = message.GlobalID
         });
     }
@@ -114,7 +114,7 @@ internal class InventoryService(SessionActor sessionActor) : MessageService(sess
             // Some items (snack, reagents) are stackable.
             for (int i = 0; i < quickSellItem.m_quantity; i++) {
                 SendToSocket(new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_REMOVEITEM() {
-                    GlobalID = wizard.CharId,
+                    GlobalID = wizard.GameObjectID,
                     ItemID = quickSellItem.m_sellItemGID
                 });
 
@@ -179,7 +179,7 @@ internal class InventoryService(SessionActor sessionActor) : MessageService(sess
 
         if (updatedSnack.m_quantity > 0) {
             SendToSocket(new PET_9_PROTOCOL.MSG_PETSNACKUPDATE() {
-                GlobalID = wizard.CharId,
+                GlobalID = wizard.GameObjectID,
                 ItemID = updatedSnack.m_globalID,
                 Quantity = updatedSnack.m_quantity
             });
@@ -188,7 +188,7 @@ internal class InventoryService(SessionActor sessionActor) : MessageService(sess
         }
 
         SendToSocket(new PET_9_PROTOCOL.MSG_PETSNACKREMOVE() {
-            GlobalID = wizard.CharId,
+            GlobalID = wizard.GameObjectID,
             ItemID = updatedSnack.m_globalID,
         });
     }
@@ -214,7 +214,7 @@ internal class InventoryService(SessionActor sessionActor) : MessageService(sess
 
         if (updatedReagent.m_quantity > 0) {
             SendToSocket(new WIZARD_12_PROTOCOL.MSG_REAGENTUPDATE() {
-                GlobalID = wizard.CharId,
+                GlobalID = wizard.GameObjectID,
                 ItemID = updatedReagent.m_globalID,
                 Quantity = updatedReagent.m_quantity
             });
@@ -223,7 +223,7 @@ internal class InventoryService(SessionActor sessionActor) : MessageService(sess
         }
 
         SendToSocket(new WIZARD_12_PROTOCOL.MSG_REAGENTREMOVE() {
-            GlobalID = wizard.CharId,
+            GlobalID = wizard.GameObjectID,
             ItemID = updatedReagent.m_globalID,
         });
     }
@@ -237,13 +237,13 @@ internal class InventoryService(SessionActor sessionActor) : MessageService(sess
         switch (message.StateName) {
             case "SpellbookWizbang":
                 ZoneBroadcast(new GAME_5_PROTOCOL.MSG_WIZBANG() {
-                    GameObjectID = wizard.CharId,
+                    GameObjectID = wizard.GameObjectID,
                     WizBangID = StringHash.Compute("Registrar")
                 }, false);
                 break;
             default:
                 ZoneBroadcast(new GAME_5_PROTOCOL.MSG_WIZBANG() {
-                    GameObjectID = wizard.CharId,
+                    GameObjectID = wizard.GameObjectID,
                     WizBangID = 0
                 }, false);
                 break;

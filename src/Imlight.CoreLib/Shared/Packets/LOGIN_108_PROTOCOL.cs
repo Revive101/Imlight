@@ -16,15 +16,19 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-using Imcodec.ObjectProperty.TypeCache;
-using Imlight.CoreLib.WizardData.Collections;
+using Imlight.CoreLib.Shared.Networking;
 
-namespace Imlight.CoreLib.Game.Requirements.Handlers;
+namespace Imlight.CoreLib.Shared.Packets;
 
-internal sealed class ReqGlobalRegistryHandler : BaseRequirementHandler<ReqGlobalRegistryValue> {
+public sealed class LOGIN_108_PROTOCOL : IServerProtocol {
+	public byte ServiceID { get; } = 108;
+    public string ProtocolType { get; } = "LOGIN";
+    public int ProtocolVersion { get; } = 1;
+    public string ProtocolDescription { get; } = "Internal Server Login Messages.";
 
-    public override bool Evaluate(IRequirementContext context) {
-        return GlobalRegistryCollection.GlobalRegistryValueMet(Requirement);
-    }
-
+	public sealed class MSG_REQUESTCHARACTERLIST : IServerMessage {
+	
+		public byte MessageOrder { get; } = 1;
+		public byte ServiceID { get; } = 108;
+	}
 }

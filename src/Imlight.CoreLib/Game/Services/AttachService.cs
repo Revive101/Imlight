@@ -36,7 +36,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/26/2025
+ * Last Updated: 08/22/2026
  */
 
 using System;
@@ -205,6 +205,11 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
         // don't accumulate on the GameServer.
         SessionActor.ServerRef.Tell(new SERVICE_101_PROTOCOL.MSG_REMOVE_FALLBACK {
             RemoteIp = SessionActor.RemoteIp
+        });
+
+        SendToSocket(new WIZARD_12_PROTOCOL.MSG_UPDATEMANA {
+            Mana = _wizard.GameStats.m_currentMana,
+            MaxMana = _wizard.GameStats.GetClientTypeAlternative().m_baseMana,
         });
     }
 

@@ -42,6 +42,7 @@ using Imlight.Common;
 using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Networking;
+using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Implementations;
 
@@ -151,8 +152,8 @@ internal class CharacterService(SessionActor parentActor) : MessageService(paren
         SendToSocket(new LOGIN_7_PROTOCOL.MSG_DELETECHARACTERRESPONSE { ErrorCode = errorCode });
     }
 
-    [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_REQUESTCHARACTERLIST))]
-    private void ReceiveRequestCharacterList(LOGIN_7_PROTOCOL.MSG_REQUESTCHARACTERLIST message) {
+    [MessageHandler(typeof(LOGIN_108_PROTOCOL.MSG_REQUESTCHARACTERLIST))]
+    private void ReceiveRequestCharacterList(LOGIN_108_PROTOCOL.MSG_REQUESTCHARACTERLIST message) {
         var account = GetSocketAccount();
         if (account is null) {
             SendToSocket(new LOGIN_7_PROTOCOL.MSG_CHARACTERLIST() { Error = 1 });
@@ -161,7 +162,10 @@ internal class CharacterService(SessionActor parentActor) : MessageService(paren
         }
 
         // Tell the client we're going to start sending the character list.
-        SendToSocket(new LOGIN_7_PROTOCOL.MSG_STARTCHARACTERLIST());
+        SendToSocket(new LOGIN_7_PROTOCOL.MSG_STARTCHARACTERLIST() {
+            LoginServer = "Imlight.Login", // TODO: This should be sourced from elsewhere.
+            PurchasedCharacterSlots = account.PurchasedCharacterSlots,
+        });
 
         // For every character, we're going to serialize the document and send to the client.
         if (account.Characters.Count > 0) {

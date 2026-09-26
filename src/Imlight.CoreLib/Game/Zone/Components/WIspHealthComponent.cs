@@ -92,7 +92,7 @@ internal sealed class WispHealthComponent : ZoneEntityComponent, IComponentFacto
 
             // Inform the player's game client that there health has been updated.
             var healthUpdateMsg = new WIZARD_12_PROTOCOL.MSG_UPDATEHEALTH {
-                CharacterID = playerWizard.CharId,
+                CharacterID = playerWizard.GameObjectID,
                 NewHealth = currentHealth + healthUpdate,
                 NewHealthMax = msgBaseHealth,
                 DisplayDiff = 1
@@ -100,7 +100,7 @@ internal sealed class WispHealthComponent : ZoneEntityComponent, IComponentFacto
             playerActor.Tell(healthUpdateMsg);
 
             SendStateChange();
-            SendDestroy(playerWizard.CharId);
+            SendDestroy(playerWizard.GameObjectID);
             playerWizard.UpdateHealth(healthUpdate + currentHealth);
         }
     }

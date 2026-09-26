@@ -27,6 +27,8 @@ namespace Imlight.CoreLib.Game.Requirements.Handlers;
 /// </summary>
 internal sealed class ReqHasQuestHandler : BaseRequirementHandler<ReqHasQuest> {
 
+    private const string QUEST_COMPLETED_ENTRY = "Complete";
+
     public override bool Evaluate(IRequirementContext context) {
         var wizard = context.GetWizard();
         if (wizard == null) {
@@ -38,12 +40,17 @@ internal sealed class ReqHasQuestHandler : BaseRequirementHandler<ReqHasQuest> {
             return false;
         }
 
-        return HasQuestActive(wizard, questName);
+        return HasQuestActiveOrCompleted(wizard, questName);
     }
 
-    private static bool HasQuestActive(Wizard wizard, string questName) {
+    private static bool HasQuestActiveOrCompleted(Wizard wizard, string questName) {
+        // Completion drops the instance from the journal, so a completed quest is only visible
+        // through the entry CompleteQuest stamps. Client data pairs this with a
+        // ReqHasEntry on that same entry, which no player could satisfy if this were
+        // limited to active quests.
         return wizard.QuestBehavior.CurrentQuestInstances
-            .Any(q => q.QuestName == questName);
+            .Any(q => q.QuestName == questName)
+            || wizard.HasQuestRegistryValue(questName, QUEST_COMPLETED_ENTRY);
     }
 
 

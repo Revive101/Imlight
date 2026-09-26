@@ -78,7 +78,7 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
         CurrentQuestInstances.RemoveAll(q => q.QuestName == quest.QuestName);
 
         // Mark the quest as completed in the registry:
-        AddToQuestRegistry(quest.QuestName, "Completed", 1);
+        AddToQuestRegistry(quest.QuestName, "Complete", 1);
 
         return true;
     }
@@ -112,6 +112,15 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
         return removedInstances > 0 || removedIds > 0;
     }
 
+    public void PruneStaleQuestIds() {
+        if (CurrentQuestInstances.Count <= 0) {
+            return;
+        }
+
+        var liveIds = new HashSet<ulong>(CurrentQuestInstances.Select(q => q.ID));
+        CurrentQuestIDs.RemoveAll(id => !liveIds.Contains(id));
+    }
+
     public bool HasQuest(string questName) {
         if (string.IsNullOrWhiteSpace(questName)) {
             return false;
@@ -126,8 +135,8 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
         }
 
         // Check the registry to find the completed quest key:
-        // <quest_name>.completed
-        var completedKey = $"{questName}_Completed";
+        // <quest_name>_Complete
+        var completedKey = $"{questName}_Complete";
 
         return Registry.ContainsKey(completedKey) && Registry[completedKey] > 0;
     }

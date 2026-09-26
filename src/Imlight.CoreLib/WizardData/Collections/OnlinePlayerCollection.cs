@@ -41,6 +41,7 @@
 using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models.Misc;
 using Raven.Client.Documents;
+using Raven.Client.Documents.Session;
 using System.Collections.Concurrent;
 using System.Linq;
 
@@ -55,6 +56,12 @@ public static class OnlinePlayerCollection {
 
     static OnlinePlayerCollection() 
         => s_store = PlayerDatabase.Instance.Store;
+
+    private static void DeleteOnlinePlayer(IDocumentSession session, OnlinePlayer onlinePlayer) {
+        var documentId = session.Advanced.GetDocumentId(onlinePlayer);
+        session.Advanced.Evict(onlinePlayer);
+        session.Delete(documentId);
+    }
 
     /// <summary>
     /// Adds an online player to the collection.
@@ -91,7 +98,7 @@ public static class OnlinePlayerCollection {
             .Query<OnlinePlayer>(collectionName: CollectionName)
             .FirstOrDefault(x => x.AccountId == accountId);
         if (onlinePlayer != null) {
-            session.Delete(onlinePlayer);
+            DeleteOnlinePlayer(session, onlinePlayer);
             session.SaveChanges();
         }
     }
@@ -114,7 +121,7 @@ public static class OnlinePlayerCollection {
             .Query<OnlinePlayer>(collectionName: CollectionName)
             .FirstOrDefault(x => x.SessionId == sessionId);
         if (onlinePlayer != null) {
-            session.Delete(onlinePlayer);
+            DeleteOnlinePlayer(session, onlinePlayer);
             session.SaveChanges();
         }
     }
@@ -212,7 +219,7 @@ public static class OnlinePlayerCollection {
             .Query<OnlinePlayer>(collectionName: CollectionName)
             .ToArray();
         foreach (var onlinePlayer in onlinePlayers) {
-            session.Delete(onlinePlayer);
+            DeleteOnlinePlayer(session, onlinePlayer);
         }
 
         session.SaveChanges();

@@ -183,7 +183,7 @@ internal class TreasureShopService(SessionActor sessionActor) : MessageService(s
 
         // Reenable player movement
         var enableMovementStateMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE() {
-            GameObjectID = wizard.CharId,
+            GameObjectID = wizard.GameObjectID,
             State = 1685237158,
             Data = "",
             IgnoreIfCurrentStateIsOff = 0
@@ -191,7 +191,7 @@ internal class TreasureShopService(SessionActor sessionActor) : MessageService(s
         SendToSocket(enableMovementStateMsg);
 
         var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG() {
-            GameObjectID = wizard.CharId,
+            GameObjectID = wizard.GameObjectID,
             WizBangID = (uint) WizBangs.None
         };
         ZoneBroadcast(wizBangMsg, false);

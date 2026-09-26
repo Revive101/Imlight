@@ -359,3 +359,5 @@ src/Imlight.Director/cache
 
 # SpiralDB local cache
 spiraldb-cache/
+/.scratch
+/scratch

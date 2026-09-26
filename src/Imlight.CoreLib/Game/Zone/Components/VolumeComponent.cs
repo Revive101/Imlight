@@ -41,14 +41,17 @@ using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 
 internal sealed class VolumeComponent(ZoneEntity entity) : ZoneEntityComponent(entity), IComponentFactory {
 
     private readonly Dictionary<CoreObject, IActorRef> _playersInRange = [];
+    private readonly List<(string QuestName, string GoalName)> _volumeGoals = [];
     private Volume _volume;
 
     public static bool ShouldAttachToEntity(CoreTemplate template) 
@@ -59,6 +62,9 @@ internal sealed class VolumeComponent(ZoneEntity entity) : ZoneEntityComponent(e
         // do not send any events.
         if (_volume != null && IsInRadius(playerObj, _volume.m_radius) && !_playersInRange.ContainsKey(playerObj)) {
             _playersInRange.Add(playerObj, playerActor);
+
+            // A player can log in standing inside a quest-proximity volume.
+            NotifyProximityGoals(playerObj, playerActor, playerWizard);
         }
     }
 
@@ -70,7 +76,7 @@ internal sealed class VolumeComponent(ZoneEntity entity) : ZoneEntityComponent(e
         // Check if the player is now in range of the object.
         if (IsInRadius(playerObj, _volume.m_radius) && !_playersInRange.ContainsKey(playerObj)) {
             // If the player is in range, trigger the enter events.
-            OnProximityEnter(playerObj, playerActor);
+            OnProximityEnter(playerObj, playerActor, playerWizard);
             _playersInRange.Add(playerObj, playerActor);
         } else if (!IsInRadius(playerObj, _volume.m_radius) && _playersInRange.ContainsKey(playerObj)) {
             // If the player is out of range, trigger the exit events.
@@ -80,10 +86,37 @@ internal sealed class VolumeComponent(ZoneEntity entity) : ZoneEntityComponent(e
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_VOLUMEDETAILS))]
-    private void ReceiveVolumeDetails(ZONE_102_PROTOCOL.MSG_VOLUMEDETAILS message) 
-        => _volume = message.Volume;
+    private void ReceiveVolumeDetails(ZONE_102_PROTOCOL.MSG_VOLUMEDETAILS message) {
+        _volume = message.Volume;
 
-    private void OnProximityEnter(CoreObject playerObj, IActorRef playerActor) {
+        // Track every quest goal that references this volume by its proximity tag, so we
+        // only ever bother a player's quest service for goals this volume actually activates.
+        string volumeName = _volume.m_volumeName;
+        if (string.IsNullOrEmpty(volumeName)) {
+            return;
+        }
+
+        var zonePath = Entity.Zone?.ZonePath;
+        foreach (var quest in QuestTemplateCollection.GetAllQuests()) {
+            foreach (var goal in quest.m_goals) {
+                if (goal is not WaypointGoalTemplate waypointGoal
+                    || string.IsNullOrEmpty(waypointGoal.m_proximityTag)
+                    || waypointGoal.m_proximityTag != volumeName) {
+                    continue;
+                }
+
+                // Only track goals that target this zone (when one is specified).
+                if (!string.IsNullOrEmpty(waypointGoal.m_zoneTag)
+                    && waypointGoal.m_zoneTag != zonePath) {
+                    continue;
+                }
+
+                _volumeGoals.Add((quest.m_questName, goal.m_goalName));
+            }
+        }
+    }
+
+    private void OnProximityEnter(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) {
         foreach (var enterEvent in _volume.m_enterEvents) {
             var postEventMsg = new ZONE_102_PROTOCOL.MSG_POSTEVENT {
                 EventName = enterEvent,
@@ -92,6 +125,34 @@ internal sealed class VolumeComponent(ZoneEntity entity) : ZoneEntityComponent(e
             };
 
             Entity.ZoneRef.Tell(postEventMsg);
+        }
+
+        // Quest proximity goals are tied to the volume by name; if the player has one of
+        // this volume's goals active, tell their quest service to complete it.
+        NotifyProximityGoals(playerObj, playerActor, playerWizard);
+    }
+
+    private void NotifyProximityGoals(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) {
+        if (_volumeGoals.Count == 0 || playerWizard is null) {
+            return;
+        }
+
+        foreach (var (questName, goalName) in _volumeGoals) {
+            var qInstance = playerWizard.QuestBehavior.CurrentQuestInstances
+                .FirstOrDefault(q => q.QuestName == questName);
+            if (qInstance is null || !qInstance.IsGoalActive(goalName)) {
+                continue;
+            }
+
+            var gInstance = qInstance.GoalProgress.FirstOrDefault(g => g.GoalName == goalName);
+            if (gInstance is null) {
+                continue;
+            }
+
+            playerActor.Tell(new ZONE_102_PROTOCOL.MSG_COMPLETEPROXIMITYGOAL {
+                QuestID = qInstance.ID,
+                GoalID = gInstance.ID,
+            });
         }
     }
 

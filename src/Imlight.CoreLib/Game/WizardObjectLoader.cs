@@ -34,7 +34,8 @@ public static class WizardObjectLoader {
         // Set the stats on the new object.
         clientObject.m_templateID = WIZARD_OBJECT_TEMPLATE_ID;
         clientObject.m_fScale = 1f;
-        clientObject.m_globalID = character.CharId;
+        clientObject.m_globalID = character.GameObjectID;
+        clientObject.m_permID = character.GameObjectID;
         clientObject.m_characterId = (GID) character.CharId;
 
         // If the mobile ID isn't null, this game object currently exists in a wizard zone.
@@ -114,6 +115,10 @@ public static class WizardObjectLoader {
 
     public static void SetPlayerNameBehavior(WizClientObject clientObject, ref Wizard character) {
         if (CoreObjectFactory.FindBehaviorInstance<ClientWizPlayerNameBehavior>(clientObject, out var nameBehavior)) {
+            if (character.Account is not null) {
+                character.PlayerNameBehavior.ChatPermissions = character.Account.GetChatPermissions();
+            }
+
             var idx = clientObject.m_inactiveBehaviors.IndexOf(nameBehavior);
             clientObject.m_inactiveBehaviors[idx] = character.PlayerNameBehavior.GetClientBehaviorInstance();
         }

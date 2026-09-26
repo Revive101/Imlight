@@ -54,6 +54,7 @@ using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Collections;
+using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Services;
 
@@ -92,6 +93,7 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
     protected override void OnPreDispose() {
         var gameObj = GetActiveGameObject();
         if (gameObj is null) {
+            base.OnPreDispose();
             return;
         }
 
@@ -339,7 +341,7 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
     private void ReceiveWorldTeleportRequest(WIZARD_12_PROTOCOL.MSG_WORLDTELEPORTREQUEST message) {
         if (message.World.Length == 0) { // user clicked "exit", remove the wizbang
             var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG() {
-                GameObjectID = GetActiveWizard().CharId,
+                GameObjectID = GetActiveWizard().GameObjectID,
                 WizBangID = (uint) WizBangs.None
             };
 
@@ -427,7 +429,7 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         var randomPlayerIndex = rand.Next(0, players.Length - 1);
         var randomPlayer = players[randomPlayerIndex];
         var castEffect = new CANTRIPSMESSAGES_57_PROTOCOL.MSG_CASTEFFECT {
-            GameObjectID = randomPlayer.CharacterId,
+            GameObjectID = Wizard.GetGameObjectId(randomPlayer.CharacterId),
             SpellTemplateID = 1521398842,
             AnimationName = "P_B_Cantrip_Emote_Backflip"
         };

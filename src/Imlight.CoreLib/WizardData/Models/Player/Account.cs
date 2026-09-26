@@ -68,6 +68,15 @@ public enum ChatMode {
 
 }
 
+[Flags]
+public enum ChatPermissions {
+
+    None = 0,
+    ChatEnabled = 1 << 0,
+    OpenChatLegacy = 1 << 4
+
+}
+
 [Serializable]
 public class Account {
 
@@ -86,6 +95,7 @@ public class Account {
     public ulong LastLoginMachineId { get; set; }
     public string LastLoginIp { get; set; }
     public bool IsLocked { get; set; }
+    public int PurchasedCharacterSlots { get; set; }
 
     [JsonIgnore] public List<Wizard> Characters = new();
     [JsonIgnore] public InfractionHistory InfractionHistory { get; set; }
@@ -305,6 +315,15 @@ public class Account {
 
         return flags;
     }
+
+    private const AccountFlags NonChatFlags =
+        AccountFlags.CanHaveCustomNames | AccountFlags.CanReportBugs;
+
+    public uint GetChatPermissions()
+        => ChatMode == ChatMode.Closed && AuthLevel < AuthLevel.HallMonitor
+            ? (uint) ChatPermissions.None
+            : (uint) (GetAccountFlags() & ~NonChatFlags)
+              | (uint) (ChatPermissions.ChatEnabled | ChatPermissions.OpenChatLegacy);
 
     /// <summary>
     /// Retrieves the highest level wizard on the account.

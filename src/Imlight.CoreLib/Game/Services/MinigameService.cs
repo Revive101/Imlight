@@ -85,7 +85,7 @@ internal class MinigameService(SessionActor sessionActor) : MessageService(sessi
         _minigameProcessId = reply.ProcessId;
 
         var minigameStartProcess = new GAME_5_PROTOCOL.MSG_START_CLIENT_PROCESS {
-            OwnerGID = wizard.CharId,
+            OwnerGID = wizard.GameObjectID,
             JobID = reply.ProcessId,
             ScriptName = minigameScript
         };

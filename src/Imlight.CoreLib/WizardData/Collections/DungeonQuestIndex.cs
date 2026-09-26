@@ -107,7 +107,7 @@ internal static class DungeonQuestIndex {
             }
 
             // Order each zone's quests so chain prereqs come first: a quest requiring another indexed
-            // quest's "Completed" registry entry sorts after it. Stable, so template order breaks ties.
+            // quest's "Complete" registry entry sorts after it. Stable, so template order breaks ties.
             foreach (var zone in s_questsByZone.Keys.ToList()) {
                 var quests = s_questsByZone[zone];
                 s_questsByZone[zone] = quests
@@ -152,7 +152,7 @@ internal static class DungeonQuestIndex {
 
         return requirements.Any(r => r is ReqHasEntry entry
             && entry.m_isQuestRegistry
-            && string.Equals(entry.m_entryName, "Completed", StringComparison.OrdinalIgnoreCase)
+            && string.Equals(entry.m_entryName, "Complete", StringComparison.OrdinalIgnoreCase)
             && string.Equals(entry.m_questName, prereq.m_questName, StringComparison.OrdinalIgnoreCase));
     }
 

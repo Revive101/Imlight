@@ -195,4 +195,17 @@ internal sealed class NpcComponent : ZoneEntityComponent, IComponentFactory, ICl
         Sender.Tell(rsp);
     }
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYNEARESTDUELTARGET))]
+    private void ReceiveQueryNearestDuelTarget(ZONE_102_PROTOCOL.MSG_QUERYNEARESTDUELTARGET message) {
+        // Only dueling creatures whose aggro radius covers the player answer this query.
+        if (!IsMonster || message.PlayerGameObject is null || !IsInRadius(message.PlayerGameObject, Proximity)) {
+            return;
+        }
+
+        Sender.Tell(new ZONE_102_PROTOCOL.MSG_QUERYNEARESTDUELTARGETRSP {
+            CreatureActor = Entity.SelfRef,
+            CreatureObject = Entity.ActiveGameObject,
+        });
+    }
+
 }

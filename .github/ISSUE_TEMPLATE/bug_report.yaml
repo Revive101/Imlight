@@ -1,7 +1,6 @@
 name: Bug report
 description: Report a bug which occured using Imlight
 labels: ['Class: bug']
-
 body:
   - type: textarea
     id: description
@@ -25,6 +24,18 @@ body:
       label: Expected behaviour
       description: Describe the expected behaviour
       placeholder: A clear and concise description of what you expected to happen.
+    validations:
+      required: true
+  - type: dropdown
+    id: ai-used
+    attributes:
+      label: Was AI used to prepare this report?
+      description: Disclose any use of AI tools (e.g. ChatGPT, Claude, Copilot) in diagnosing or writing up this issue. See CONTRIBUTING.md.
+      options:
+        - "No"
+        - "Yes, to help diagnose the issue"
+        - "Yes, to help write the report"
+        - "Yes, for both diagnosis and writing"
     validations:
       required: true
   - type: textarea

@@ -121,6 +121,10 @@ internal sealed class InteractQuestUnderwayComponent(ZoneEntity entity)
         }
 
         var state = GetOrUpdatePlayerState(wizard);
+
+        // The memento wizbang tick reads this property; refresh it from live state.
+        WizBang = state.HasUnderwayQuest ? WizBangs.UnfinishedQuest : WizBangs.None;
+
         if (!state.HasUnderwayQuest || state.UnderwayQuest == null) {
             yield break;
         }

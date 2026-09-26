@@ -70,7 +70,7 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
                                                   | PropertyFlags.Prop_AuthorityTransmit;
     private readonly Dictionary<CoreObject, IActorRef> _playersInRange = [];
     private readonly Dictionary<Wizard, IActorRef> _playersWithRequirementsMet = [];
-    private readonly List<IActorRef> _playerIgnoreBecauseDynamod = [];
+    private readonly Dictionary<IActorRef, Wizard> _playerIgnoreBecauseDynamod = [];
     private float _renderDistance;
     private bool _doesDistanceCheck = false;
 
@@ -108,12 +108,17 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
             .Where(d => string.IsNullOrEmpty(d.ZoneName) 
                      || d.ZoneName.Equals(Entity.Zone.ZoneData.m_zoneName, System.StringComparison.OrdinalIgnoreCase))
             .ToList() ?? [];
+        string persistedState = null;
         foreach (var mod in relevantDynaMods) {
             // If the player has a dynamod that disables this object, do not spawn it for them.
             if (mod.ModState.Equals(DESPAWN_STATE_NAME, System.StringComparison.OrdinalIgnoreCase)) {
-                _playerIgnoreBecauseDynamod.Add(suspect);
+                _playerIgnoreBecauseDynamod[suspect] = wizard;
 
                 return;
+            }
+
+            if (!mod.ModState.Equals(SPAWN_STATE_NAME, System.StringComparison.OrdinalIgnoreCase)) {
+                persistedState = mod.ModState;
             }
         }
 
@@ -136,6 +141,12 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
             // See: "You cannot send MSG_ADDOBJECT in regards to an object if
             // the client has not been told about it with MSG_NEWOBJECT."
             CreateObjectForPlayer(suspect);
+
+            // A dynamod state such as "IdleOpen" is only ever sent as a state change, so a player
+            // arriving in the zone has to be told again or the object reverts to its default.
+            if (persistedState is not null) {
+                Entity.ChangeStateExclusiveSender(persistedState, suspect);
+            }
 
             // Always add the player to the in-range list so the next
             // OnPlayerMove tick can correctly evaluate distance and send
@@ -173,9 +184,7 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
             _playersInRange.Remove(player);
         }
 
-        if (_playerIgnoreBecauseDynamod.Contains(suspect)) {
-            _playerIgnoreBecauseDynamod.Remove(suspect);
-
+        if (_playerIgnoreBecauseDynamod.Remove(suspect)) {
             return;
         }
 
@@ -188,7 +197,7 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
         }
 
         // If this player is ignoring the object due to a dynamod, do nothing.
-        if (_playerIgnoreBecauseDynamod.Contains(playerActor)) {
+        if (_playerIgnoreBecauseDynamod.ContainsKey(playerActor)) {
             return;
         }
 
@@ -210,14 +219,10 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ENTERSTATE))]
     public void ReceiveEnterState(ZONE_102_PROTOCOL.MSG_ENTERSTATE msg) {
-        // In the context of the RenderComponent, we only care if "On" or "Off" is the state.
         var isDespawn = msg.StateName.Equals(DESPAWN_STATE_NAME, System.StringComparison.OrdinalIgnoreCase);
         var isSpawn = msg.StateName.Equals(SPAWN_STATE_NAME, System.StringComparison.OrdinalIgnoreCase);
-        if (!isDespawn && !isSpawn) {
-            return;
-        }
 
-        // If so, despawn the object for the sender if the tag matches.
+        // If the tag matches, spawn or despawn the object for the sender.
         var zoneTag = msg.ObjectName;
         if (Entity.Info is not null && Entity.Info.m_zoneTag.Equals(zoneTag, System.StringComparison.OrdinalIgnoreCase)) {
             var player = msg.Sender;
@@ -225,16 +230,58 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
                 return;
             }
 
+            // Any other state names an object state such as "IdleOpen". Only the client can act
+            // on it, and it never affects whether the object is spawned.
+            if (!isDespawn && !isSpawn) {
+                Entity.ChangeStateExclusiveSender(msg.StateName, player);
+
+                return;
+            }
+
             if (isDespawn) {
+                var wizard = _playersWithRequirementsMet.FirstOrDefault(x => x.Value == player).Key;
                 DespawnObjectForPlayer(player);
-                _playerIgnoreBecauseDynamod.Add(player);
+                _playerIgnoreBecauseDynamod[player] = wizard;
             }
             else if (isSpawn) {
-                // Only respawn the object if the player meets the requirements.
+                // Respawn the object for the sender. This must also work for
+                // players who joined while a dynamod hid the object: they
+                // never received MSG_NEWOBJECT and are not in
+                // _playersWithRequirementsMet, only in the ignore list.
                 var wizard = _playersWithRequirementsMet.FirstOrDefault(x => x.Value == player).Key;
+                var wasHiddenAtJoin = false;
+                if (wizard is null && _playerIgnoreBecauseDynamod.TryGetValue(player, out var hiddenWizard)) {
+                    wizard = hiddenWizard;
+                    wasHiddenAtJoin = true;
+                }
+
+                _playerIgnoreBecauseDynamod.Remove(player);
+
+                // Mirror the join-time spawn requirements check.
+                var requirementsMet = true;
+                if (wizard is not null && Entity.Info is not null && Entity.Info.m_spawnRequirements is not null) {
+                    requirementsMet = RequirementDispatcher.EvaluateRequirements(
+                        Entity.Info.m_spawnRequirements,
+                        new ZoneRequirementContext(Entity.Info.m_spawnRequirements, player, null, wizard, Entity.ZoneRef)
+                    );
+                }
+
+                if (!requirementsMet) {
+                    return;
+                }
+
                 if (wizard is not null) {
+                    _playersWithRequirementsMet[wizard] = player;
+                }
+
+                // Players who were hidden at join have never registered the
+                // object; send both the registration and the add so it appears.
+                if (wasHiddenAtJoin) {
                     CreateObjectForPlayer(player);
-                    _playerIgnoreBecauseDynamod.Remove(player);
+                    RespawnObjectForPlayer(player);
+                }
+                else {
+                    CreateObjectForPlayer(player);
                 }
             }
         }

@@ -21,15 +21,12 @@ using Akka.Actor;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
+using Imlight.CoreLib.Game.Spells;
 using Imlight.CoreLib.Shared.Packets;
-using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Results.Handlers;
 
-/// <summary>
-/// Restores the wizard's health to full (the result type carries no amount).
-/// </summary>
-internal sealed class ResAddHealthHandler : BaseResultHandler<ResAddHealth> {
+internal sealed class ResLearnSpellHandler : BaseResultHandler<ResLearnSpell> {
 
     private const float QUERY_WIZARD_TIMEOUT_SECONDS = 5.0f;
 
@@ -40,20 +37,31 @@ internal sealed class ResAddHealthHandler : BaseResultHandler<ResAddHealth> {
         var queryResponse = context
             .GetPlayerRef()
             .Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(queryWizardMsg, queryTimeout).Result;
-        if (queryResponse?.Wizard is not Wizard wizard) {
-            Logger.Error("Handler failed to retrieve character data within {0} seconds.",
+        if (queryResponse == null) {
+            Logger.Error("ResLearnSpell handler failed to retrieve character data within {0} seconds.",
                 Logger.Args(QUERY_WIZARD_TIMEOUT_SECONDS));
 
             return false;
         }
 
-        var full = wizard.GameStats.m_baseHitpoints;
-        var clientMax = wizard.GameStats.GetClientTypeAlternative().m_baseHitpoints;
-        wizard.UpdateHealth(full);
-        context.GetPlayerRef().Tell(new WIZARD_12_PROTOCOL.MSG_UPDATEHEALTH {
-            CharacterID = wizard.GameObjectID,
-            NewHealth = full,
-            NewHealthMax = clientMax,
+        var wizard = queryResponse.Wizard;
+
+        var spell = SpellFactory.GetSpell(Result.m_templateID);
+        if (spell is null) {
+            Logger.Error("ResLearnSpell handler could not resolve a spell for template ID {0}.",
+                Logger.Args(Result.m_templateID));
+
+            return false;
+        }
+
+        if (!wizard.LearnSpell(spell)) {
+            // Already known; the learn is idempotent.
+            return true;
+        }
+
+        // The attach payload with the spellbook was already sent, so push the new spell to the client.
+        context.GetPlayerRef().Tell(new WIZARD_12_PROTOCOL.MSG_ADDSPELLTOBOOK {
+            SpellID = (int) Result.m_templateID,
         });
 
         return true;

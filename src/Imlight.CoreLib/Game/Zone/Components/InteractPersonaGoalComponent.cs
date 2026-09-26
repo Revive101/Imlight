@@ -116,6 +116,10 @@ internal sealed class InteractPersonaGoalComponent(ZoneEntity entity)
         }
 
         var state = GetOrUpdatePlayerState(wizard);
+
+        // The memento wizbang tick reads this property; refresh it from live state.
+        WizBang = state.HasActiveGoal ? WizBangs.CompleteQuestGoal : WizBangs.None;
+
         if (!state.HasActiveGoal || state.ActiveGoal == null) {
             yield break;
         }

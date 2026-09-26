@@ -36,10 +36,30 @@ using Imcodec.Types;
 namespace Imlight.CoreLib.WizardData.Models.Player;
 
 [Serializable]
-public class Wizard : IDisposable {
+public class Wizard {
 
     public ulong AccountId { get; set; }
-    public ulong CharId { get; set; }
+    public ulong CharId {
+        get;
+        set {
+            var gameObjectId = GetGameObjectId(value);
+            field = value;
+            GameObject.m_characterId = (GID) value;
+            GameObject.m_globalID = gameObjectId;
+            GameObject.m_permID = gameObjectId;
+        }
+    }
+    [JsonIgnore] public ulong GameObjectID => GetGameObjectId(CharId);
+
+    // Player objects use a separate ID from saved characters. Zero means no player.
+    // Keep this mapping here so offline callers do not need an attached Wizard.
+    public static ulong GetGameObjectId(ulong charId) => charId == 0 ? 0 : checked(charId + 2);
+
+    // Only for player object IDs; item, NPC and zone IDs use their own identities.
+    public static bool TryGetCharacterId(ulong gameObjectId, out ulong charId) {
+        charId = gameObjectId > 2 ? gameObjectId - 2 : 0;
+        return charId != 0;
+    }
     public string Zone { get; set; }
     public string ZoneDisplayName { get; set; }
     public string PreviousZone { get; set; }
@@ -47,28 +67,21 @@ public class Wizard : IDisposable {
     public ulong InteriorStowedMountId { get; set; }
     public string MarkedZone { get; set; }
     public string MarkedZoneDisplayName { get; set; }
+    public uint LastLoginTime { get; set; }
     public long TimeHomeLastClicked { get; set; }
     public byte World { get; set; }
     public Vector3 Location {
-        get => GameObject?.m_location ?? _location;
+        get => GameObject.m_location;
         set {
-            if (GameObject is not null) {
-                GameObject.m_location = value;
-            }
-            else {
-                _location = value;
-            }
+            GameObject.m_location = value;
+            _hasLocation = true;
         }
     }
     public Vector3 Orientation {
-        get => GameObject?.m_orientation ?? _orientation;
+        get => GameObject.m_orientation;
         set {
-            if (GameObject is not null) {
-                GameObject.m_orientation = value;
-            }
-            else {
-                _orientation = value;
-            }
+            GameObject.m_orientation = value;
+            _hasOrientation = true;
         }
     }
 
@@ -91,7 +104,26 @@ public class Wizard : IDisposable {
     public ServerQuestBehavior QuestBehavior { get; set; }
 
     [JsonIgnore] public Account Account;
-    [JsonIgnore] public WizClientObject GameObject;
+    // Holds character data before attachment and is replaced by the initialized player object.
+    [JsonIgnore] public WizClientObject GameObject {
+        get;
+        set {
+            ArgumentNullException.ThrowIfNull(value);
+            value.m_characterId = (GID) CharId;
+            value.m_globalID = GameObjectID;
+            value.m_permID = GameObjectID;
+            if (_hasLocation) {
+                value.m_location = field.m_location;
+            }
+            if (_hasOrientation) {
+                value.m_orientation = field.m_orientation;
+            }
+            field = value;
+            HasInitializedGameObject = true;
+        }
+    } = new();
+    // Set when attachment replaces the offline data object; does not imply zone entry.
+    [JsonIgnore] public bool HasInitializedGameObject { get; private set; }
     [JsonIgnore] public List<GameEffectBase> GameEffects = [];
     [JsonIgnore] public string GameServerIp;
     [JsonIgnore] public ushort GameServerPort;
@@ -107,8 +139,8 @@ public class Wizard : IDisposable {
     /// </summary>
     [JsonIgnore] public readonly Dictionary<ulong, uint> OwnedPets = [];
 
-    [JsonIgnore] private Vector3 _location;
-    [JsonIgnore] private Vector3 _orientation;
+    [JsonIgnore] private bool _hasLocation;
+    [JsonIgnore] private bool _hasOrientation;
     private const string TutorialStartingZone = "WizardCity/Tutorial_Exterior";
 
     // Constructor: Used for deserialization. If this is not present, the default constructor will be used.
@@ -122,6 +154,7 @@ public class Wizard : IDisposable {
             ? ConfigurationManager.Settings["Character.StartingZone"]
             : TutorialStartingZone;
         World = ConfigurationManager.Settings["Character.StartingWorld"].AsByte();
+        LastLoginTime = (uint) DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
         // Do behaviors.
         WizardAvatar = avatar;
@@ -143,11 +176,11 @@ public class Wizard : IDisposable {
         DynamodCollection.AddDynamodSet(DynamodSet);
     }
 
-    public void SetCachedLocation(Vector3 loc)
-        => Location = loc;
+    public WizClientObject GetInitializedGameObject()
+        => HasInitializedGameObject ? GameObject : null;
 
-    public void SetCachedOrientation(float direction)
-        => Orientation = new Vector3(0, 0, direction);
+    public void SaveLocation()
+        => WizardCollection.UpdateCharacterLocation(this, Location, Orientation.Z);
 
     public void SetPersistentLocation(Vector3 loc) {
         Location = loc;
@@ -325,6 +358,13 @@ public class Wizard : IDisposable {
 
         // Persistent save.
         WizardCollection.UpdateCharacterGameStats(this);
+    }
+
+    public void UpdateLastLoginTime(uint time) {
+        LastLoginTime = time;
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterLastLoginTime(this);
     }
 
     public void UpdateTrainingPoints(int newTrainingPoints) {
@@ -1503,11 +1543,11 @@ public class Wizard : IDisposable {
         }
 
         QuestBehavior.CurrentQuestInstances = uniqueQuests;
-    }
 
-    public void Dispose() =>
-        // If this object is being disposed, the player probably left the server.
-        // Save the character's location to the database.
-        WizardCollection.UpdateCharacterLocation(this, Location, Orientation.Z);
+        // Prune stale quest IDs whose instance docs were removed above, and persist.
+        QuestBehavior.CurrentQuestIDs.Clear();
+        QuestBehavior.CurrentQuestIDs.AddRange(uniqueQuests.Select(q => q.ID));
+        WizardCollection.UpdateCharacterQuestBehavior(this);
+    }
 
 }
