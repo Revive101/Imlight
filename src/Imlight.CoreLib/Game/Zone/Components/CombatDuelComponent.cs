@@ -42,7 +42,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 08/19/2026
+ * Last Updated: 09/26/2026
  */
 
 using System;
@@ -465,11 +465,6 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
             return;
         }
-
-        // [CRITDBG] temporary: full wire bytes of the action list for diffing against the retail
-        // capture; remove once critical strikes are confirmed.
-        Logger.Information("[CRITDBG] duel={0} round={1} actionData={2}",
-            Logger.Args(SigilId, Duel.m_roundNum, Convert.ToHexString(buffer)));
 
         var msg = new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATACTIONS {
             DuelID = SigilId,

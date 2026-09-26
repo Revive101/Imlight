@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 08/14/2026
+ * Last Updated: 09/26/2026
  */
 
 using Imcodec.ObjectProperty.TypeCache;
@@ -75,6 +75,7 @@ internal static class CombatActionResolver {
         // (crit vs crit + K * block), so there is no separate block roll. The landed
         // multiplier varies by the crit/block ratio. Heals crit with no block side.
         var critMultiplier = 1f;
+        var landedCrit = false;
         var critPrimaryTarget = action.SelectedTarget;
         if (critPrimaryTarget is not null) {
             var spellSchool = MagicSchools.GetMagicSchool(action.Spell.m_magicSchoolID)?.m_schoolName;
@@ -83,37 +84,15 @@ internal static class CombatActionResolver {
                     .Any(x => x.m_effectType == kSpellEffects.kHeal);
                 var isOffensiveCast = critPrimaryTarget.OccupiedTeam != action.SpellCaster.OccupiedTeam;
                 if (isHealCast || isOffensiveCast) {
-                    var landedCrit = CombatCriticals.RollsCritical(action.SpellCaster, critPrimaryTarget, spellSchool, isHealCast);
+                    landedCrit = CombatCriticals.RollsCritical(action.SpellCaster, critPrimaryTarget, spellSchool, isHealCast);
                     if (landedCrit) {
                         critMultiplier = CombatCriticals.GetCritMultiplier(action.SpellCaster, critPrimaryTarget, spellSchool, isHealCast);
                     }
-
-                    // The client's sim resolves crit by comparing the roll byte against its own
-                    // chance (roll < chance -> crit); blocksCalculated gates the check. The 2024
-                    // capture's constant 255 misled us (that client compares the other way);
-                    // in-game evidence shows 0 is the crit end for r801440.
-                    combatAction.m_blocksCalculated = true;
-                    combatAction.m_stunResistRoll = 255;
-                    combatAction.m_criticalHitRoll = landedCrit ? (byte) 0 : (byte) 255;
-                    combatAction.m_serializedBlocks = "\u0000\u0000\u0002\u0000";
-                    // Retail's resolved casts carry these exact values (capture-verified).
-                    combatAction.m_shadowPactTarget = action.SpellCaster.SlotIndex;
-                    combatAction.m_pipConversionRoll = -1;
-                    combatAction.m_petCastTarget = -1;
-                    combatAction.m_CritHitList = [new TargetCritHit {
-                        m_target = critPrimaryTarget.SlotIndex,
-                        m_mult = landedCrit ? critMultiplier : 0f,
-                        m_blocked = false,
-                    }];
-
-                    // [CRITDBG] temporary: the wire fields placed on this cast; remove once crits are confirmed.
-                    Logger.Information("[CRITDBG] caster={0} target={1} school={2} heal={3} landed={4} roll={5} mult={6} blocksCalc={7}",
-                        Logger.Args(action.SpellCaster.SlotIndex, critPrimaryTarget.SlotIndex, spellSchool,
-                                    isHealCast, landedCrit, combatAction.m_criticalHitRoll,
-                                    combatAction.m_CritHitList[0].m_mult, combatAction.m_blocksCalculated));
                 }
             }
         }
+
+        var critEligibleTargetSlots = new List<int>();
 
         foreach (var spellEffect in action.SpellTemplate.m_effects) {
             var chosenEffect = spellEffect;
@@ -149,6 +128,17 @@ internal static class CombatActionResolver {
             UpdateCombatActionTargets(ref combatAction, targets);
             InformDuelParticipantsOfEffect(action.SpellCaster, targets, chosenEffect);
 
+            // The effect types CombatEffectApplicator applies critMultiplier to.
+            if (chosenEffect.m_effectType is kSpellEffects.kDamage
+                                          or kSpellEffects.kDamagePerTotalPipPower
+                                          or kSpellEffects.kHeal) {
+                foreach (var target in targets) {
+                    if (!critEligibleTargetSlots.Contains(target.SlotIndex)) {
+                        critEligibleTargetSlots.Add(target.SlotIndex);
+                    }
+                }
+            }
+
             cinematicTime += CombatEffectApplicator.ApplyEffect(chosenEffect,
                                                                 [.. charmsAffectingThisSpell],
                                                                 action.SpellCaster,
@@ -156,9 +146,22 @@ internal static class CombatActionResolver {
                                                                 critMultiplier);
         }
 
+        if (critEligibleTargetSlots.Count > 0) {
+            combatAction.m_CritHitList = [.. critEligibleTargetSlots.Select(slot => new TargetCritHit {
+                m_target = slot,
+                m_mult = landedCrit ? critMultiplier : 0f,
+                m_blocked = false,
+            })];
+
+            if (landedCrit) {
+                combatAction.m_spellHits = (char) 2;
+            }
+        }
+
         // Remove all charms that were applied to this spell from the caster's hanging effects.
         action.SpellCaster._hangingEffects.RemoveAll(x => charmsAffectingThisSpell.Contains(x));
         combatAction.m_effectChosen = effectStack.GetStackAsUint();
+        combatAction.m_handledRandomSpellPerTarget = true;
 
         CheckForPolarCombatActionTargets(ref combatAction, action.SpellTemplate);
 

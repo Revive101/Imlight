@@ -188,12 +188,6 @@ public class ServerWizGameStats : IClientTypeProvider<WizGameStats> {
     /// </summary>
     /// <returns></returns>
     public WizGameStats GetCombatGameStats() {
-        // [CRITDBG] temporary: seed the by-school buckets from the universal rating so the
-        // client's sim (which may read the spell's school bucket, not the All rating) sees a
-        // nonzero chance. Remove once critical strikes are confirmed.
-        m_criticalHitRatingBySchool ??= [.. Enumerable.Repeat(m_criticalHitRatingAll, (int) MagicSchools.GetMaxMagicSchoolIndex())];
-        m_blockRatingBySchool ??= [.. Enumerable.Repeat(m_blockRatingAll, (int) MagicSchools.GetMaxMagicSchoolIndex())];
-
         return new WizGameStats() {
             m_baseHitpoints = m_baseHitpoints,
             m_currentHitpoints = m_currentHitpoints,

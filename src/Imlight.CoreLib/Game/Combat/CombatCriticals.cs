@@ -44,13 +44,12 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 08/14/2026
+ * Last Updated: 09/26/2026
  */
 
 using System;
 using System.Linq;
 using Imcodec.ObjectProperty.TypeCache;
-using Imlight.Common;
 using Imlight.CoreLib.Game.Effects;
 
 namespace Imlight.CoreLib.Game.Combat;
@@ -96,10 +95,6 @@ internal static class CombatCriticals {
         }
 
         chance = Math.Clamp(chance, 0f, MAX_CHANCE);
-
-        // [CRITDBG] temporary: roll inputs for correlation with the client log; remove once crits are confirmed.
-        Logger.Information("[CRITDBG] school={0} crit={1} block={2} level={3} k={4} chance={5:F4}",
-            Logger.Args(school, crit, block, level, GetRatingK(level), chance));
 
         return Rolls(chance);
     }
