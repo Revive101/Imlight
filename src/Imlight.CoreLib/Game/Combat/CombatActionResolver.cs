@@ -83,6 +83,49 @@ internal static class CombatActionResolver {
                 _ => spellEffect,
             };
 
+            // If the spell is enchanted with a flat adjustment (+X amount), apply it to damage/heal effects
+            if (action.Spell is { m_regularAdjust: not 0 }) {
+                // todo: find out when those enchants are applied.
+
+                var isDamageOrHeal = chosenEffect.m_effectType is kSpellEffects.kDamage 
+                    or kSpellEffects.kDamageOverTime 
+                    or kSpellEffects.kDamageNoCrit
+                    or kSpellEffects.kDamagePerTotalPipPower
+                    or kSpellEffects.kHeal 
+                    or kSpellEffects.kHealOverTime 
+                    or kSpellEffects.kStealHealth
+                    or kSpellEffects.kModifyOutgoingDamage
+                    or kSpellEffects.kModifyIncomingDamage;
+
+                if (isDamageOrHeal) {
+                    var damageEffectsCount = action.SpellTemplate.m_effects.Count(e => e.m_effectType is kSpellEffects.kDamage 
+                        or kSpellEffects.kDamageOverTime 
+                        or kSpellEffects.kDamageNoCrit
+                        or kSpellEffects.kDamagePerTotalPipPower
+                        or kSpellEffects.kHeal 
+                        or kSpellEffects.kHealOverTime 
+                        or kSpellEffects.kStealHealth);
+
+                    int adjust;
+                    if (damageEffectsCount > 1) {
+                        if (chosenEffect.m_effectType is kSpellEffects.kDamage or kSpellEffects.kDamageNoCrit or kSpellEffects.kHeal) {
+                            adjust = (int) Math.Round(action.Spell.m_regularAdjust / 3.0);
+                        }
+                        else {
+                            var initialPart = (int) Math.Round(action.Spell.m_regularAdjust / 3.0);
+                            adjust = action.Spell.m_regularAdjust - initialPart;
+                        }
+                    }
+                    else {
+                        adjust = action.Spell.m_regularAdjust;
+                    }
+
+                    chosenEffect = chosenEffect with {
+                        m_effectParam = chosenEffect.m_effectParam + adjust
+                    };
+                }
+            }
+
             allEffects.Add(chosenEffect);
 
             charmsAffectingThisSpell = CombatCharms.FindAppliedCharms(action.SpellCaster, [.. allEffects]);
