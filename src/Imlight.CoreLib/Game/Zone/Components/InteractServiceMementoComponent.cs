@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 09/26/2026
  */
 
 using System;
@@ -103,6 +103,11 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity)
         _renderDistance = Entity.Zone?.ZoneData?.m_farClip ?? DEFAULT_RENDER_DISTANCE;
         
         RefreshServiceMomento(null);
+
+        // The component set is fixed once loaded, so an entity without services never has a wizbang.
+        if (_serviceComponents.Count <= 0) {
+            return;
+        }
 
         var updateInterval = TimeSpan.FromSeconds(WIZBANG_UPDATE_INTERVAL_SECONDS);
         var updateMsg = new ZONE_102_PROTOCOL.MSG_WIZBANGUPDATEINTERVAL();
