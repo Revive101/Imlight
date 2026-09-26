@@ -174,6 +174,19 @@ internal class CombatDeck {
     }
 
     /// <summary>
+    /// Consumes a card from hand without returning it to the vault
+    /// </summary>
+    internal void ConsumeCard(Spell spell) {
+        if (spell.m_treasureCard) {
+            ConsumeFromVault(spell);
+            return;
+        }
+
+        _cardsDiscardedThisTurn.Add(spell);
+        LastGivenHand.Remove(spell);
+    }
+
+    /// <summary>
     /// Empties the current hand without touching the deck or the vault.
     /// </summary>
     internal void ClearHand() {

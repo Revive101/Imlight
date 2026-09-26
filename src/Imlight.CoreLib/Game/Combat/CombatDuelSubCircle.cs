@@ -248,6 +248,10 @@ public class CombatDuelSubCircle {
         _combatDeck.Discard(spell);
     }
 
+    internal void ConsumeCard(Spell spell) {
+        _combatDeck.ConsumeCard(spell);
+    }
+
     internal Spell GetSpellFromLastHand(byte index) {
         if (_combatDeck.LastGivenHand is null || index >= _combatDeck.LastGivenHand.Count) {
             return null;
