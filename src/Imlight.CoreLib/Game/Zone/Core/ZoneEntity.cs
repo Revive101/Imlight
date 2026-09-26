@@ -37,7 +37,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 09/26/2026
  */
 
 using System;
@@ -411,6 +411,14 @@ public class ZoneEntity(
         gameObj.m_characterId = ActiveGameObject.m_globalID;
 
         gameObj.m_inactiveBehaviors = ActiveGameObject.m_inactiveBehaviors ?? [];
+
+        // Parity with live (m_leashed true, m_characterId 0 for a pet). The leash behavior
+        // element drives following, not these fields.
+        if (ActiveGameObject is WizClientPet pet) {
+            var petCopy = (WizClientPet) gameObj;
+            petCopy.m_leashed = pet.m_leashed;
+            petCopy.m_characterId = pet.m_characterId;
+        }
 
         // Let each component contribute its behaviors.
         foreach (var (component, _) in Components) {

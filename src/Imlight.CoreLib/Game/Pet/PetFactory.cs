@@ -31,6 +31,7 @@ namespace Imlight.CoreLib.Game.Pet;
 public class PetFactory : RootDirectoryResourceSingleton<PetFactory>, IMemoryStreamDisposable {
 
     private const uint GENERIC_PET_TEMPLATE_ID = 2;
+    private const float LeashRadius = 75f;
 
     protected override string DirectoryName => "ObjectData/Pets/";
 
@@ -56,6 +57,8 @@ public class PetFactory : RootDirectoryResourceSingleton<PetFactory>, IMemoryStr
         Logger.Information("Loaded {0} pet templates.",
             Logger.Args(count));
     }
+
+    public static bool IsPetTemplate(uint templateId) => s_petTemplates.ContainsKey(templateId);
 
     public static WizClientObjectItem CreateHatchedPet(ulong ownerId, uint templateId)
         => CreatePet(ownerId, templateId, preHatch: true);
@@ -103,7 +106,7 @@ public class PetFactory : RootDirectoryResourceSingleton<PetFactory>, IMemoryStr
         return pet;
     }
 
-    public static WizClientPet CreatePetGameObject(WizClientObjectItem pet) {
+    public static WizClientPet CreatePetGameObject(WizClientObjectItem pet, GID ownerId) {
         var genericPetObject = new WizClientPet();
         CoreObjectFactory.InitializeCoreObjectBehaviors(genericPetObject, GENERIC_PET_TEMPLATE_ID);
 
@@ -122,13 +125,31 @@ public class PetFactory : RootDirectoryResourceSingleton<PetFactory>, IMemoryStr
 
         // Replace the generic pet's behaviors with the pet's behaviors.
         genericPetObject = SetPetGameObjectBehaviors(genericPetObject, pet);
+        if (genericPetObject is null) {
+            return null;
+        }
+
+        // The client pairs behaviors with template slots by index, so the leash has to go
+        // after all of the template's slots, null ones included.
+        genericPetObject.m_inactiveBehaviors.Add(CreateLeash(ownerId));
 
         return genericPetObject;
     }
 
+    private static LeashBehavior CreateLeash(GID ownerId) => new() {
+        m_ownerGid = ownerId,
+        m_radius = LeashRadius,
+        m_angle = PickLeashAngle(),
+        m_leashType = LeashType.LLT_Elastic,
+        m_alwaysDisplay = false,
+    };
+
+    private static float PickLeashAngle()
+        => Random.Shared.Next(2) == 0
+            ? 90f + Random.Shared.NextSingle() * 30f
+            : 210f + Random.Shared.NextSingle() * 60f;
+
     private static WizClientPet SetPetGameObjectBehaviors(WizClientPet petGameObject, WizClientObjectItem pet) {
-        // This single behavior on the pet can help us build both of the behaviors
-        // on the game object.
         if (!CoreObjectFactory.FindBehaviorInstance<ClientPetNameBehavior>(pet, out var petNameBehaviorInstanceOnPet)) {
             Logger.Error("Pet {0} should've contained behavior {1}, but it did not.",
                 Logger.Args(pet.m_globalID.Full, nameof(ClientPetNameBehavior)));

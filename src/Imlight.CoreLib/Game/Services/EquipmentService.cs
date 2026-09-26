@@ -39,7 +39,7 @@
  * 
  * Created by: Joji
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 09/26/2026
  */
 
 using System;
@@ -110,34 +110,6 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
 
             throw new ServiceRetryException("Error while attaching effects.", ex);
         }
-    }
-
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_SPAWNENTITYRSP))]
-    private void ReceiveSpawnEntityResponse(ZONE_102_PROTOCOL.MSG_SPAWNENTITYRSP message) {
-        if (message.SpawnedObject is null) {
-            return;
-        }
-
-        // The zone has created the ZoneEntity for the pet, so now we need to leash it to the player and position it correctly.
-
-        var playerObj = GetActiveGameObject();
-        if (playerObj is null) {
-            return;
-        }
-
-        // MSG_LEASH: tell the client this zone entity is leashed to the player.
-        SendToSocket(new WIZARD_12_PROTOCOL.MSG_LEASH {
-            GlobalID = message.SpawnedObject.m_globalID,
-            OwnerID = playerObj.m_globalID,
-            Leashed = 1
-        });
-
-        // MSG_LEASHOFFSET: position the pet behind the player.
-        SendToSocket(new WIZARD_12_PROTOCOL.MSG_LEASHOFFSET {
-            GlobalID = message.SpawnedObject.m_globalID,
-            Radius = 75f,
-            Angle = 180f
-        });
     }
 
     private void EquipItem(GAME_5_PROTOCOL.MSG_EQUIPITEM message) {
@@ -269,15 +241,21 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
             petItem = wizEquipmentBehavior.GetItem(equippedPetId);
         }
 
+        var playerObj = GetActiveGameObject();
+        if (playerObj is null) {
+            return;
+        }
+
         // The generic "PetObject" template (ID 2) is used for all pet zone entities.
         // The specific breed appearance comes from behaviors on the template.
-        var coreObj = PetFactory.CreatePetGameObject(petItem);
+        var coreObj = PetFactory.CreatePetGameObject(petItem, playerObj.m_globalID);
+        if (coreObj is null) {
+            return;
+        }
 
         // Place the pet at the player's location.
-        var playerObj = GetActiveGameObject();
-        if (playerObj is not null) {
-            coreObj.m_location = playerObj.m_location;
-        }
+        coreObj.m_location = playerObj.m_location;
+        coreObj.m_orientation = playerObj.m_orientation;
 
         var spawnMsg = new ZONE_102_PROTOCOL.MSG_SPAWNENTITY {
             CoreObject = coreObj,

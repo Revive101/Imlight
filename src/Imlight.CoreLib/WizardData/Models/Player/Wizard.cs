@@ -410,6 +410,27 @@ public class Wizard {
         return true;
     }
 
+    public bool AddHatchedPetToInventory(uint templateId, out WizClientObjectItem pet) {
+        // The pet factory owns the pet's behavior state, so this skips the template
+        // re-initialization that AddItemToInventory does.
+        pet = PetFactory.CreateHatchedPet(CharId, templateId);
+        if (pet is null) {
+            return false;
+        }
+
+        if (!InventoryBehavior.AddItem(pet)) {
+            Logger.Warning("Could not add pet {0} to player {1}'s inventory.",
+                Logger.Args(pet.m_globalID, PlayerNameBehavior.GetWizardName()));
+
+            return false;
+        }
+
+        WizardItemCollection.AddItem(pet);
+        WizardCollection.UpdateCharacterItems(this);
+
+        return true;
+    }
+
     public bool RemoveItemFromInventory(ulong itemId) {
         var success = InventoryBehavior.RemoveItem(itemId, out var item);
         if (!success) {
