@@ -39,7 +39,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 07/26/2025
+ * Last Updated: 09/26/2026
  */
 
 using System;
@@ -72,7 +72,7 @@ internal class Locale : RootDirectoryResourceSingleton<Locale>, IMemoryStreamDis
             var stream = file.Value;
             var record = file.Key;
 
-            if (record.FileName.StartsWith(s_qustFilePrefix)) {
+            if (record.FileName.StartsWith(s_qustFilePrefix, StringComparison.Ordinal)) {
                 continue;
             }
 
@@ -171,11 +171,11 @@ internal class Locale : RootDirectoryResourceSingleton<Locale>, IMemoryStreamDis
             var key = strings[i];
             var value = strings[i + 2];
 
-            if (key.EndsWith("\r")) {
+            if (key.EndsWith('\r')) {
                 key = key[..^1];
             }
 
-            if (value.EndsWith("\r")) {
+            if (value.EndsWith('\r')) {
                 value = value[..^1];
             }
 

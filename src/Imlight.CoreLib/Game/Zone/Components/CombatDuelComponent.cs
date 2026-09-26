@@ -140,6 +140,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     private bool _isActive;
     private bool _awaitingCombatMoves;
     private TutorialDuelDirector _tutorialDirector;
+    // Seconds of cinematics before a caster's cast; SummonMinion adds the animation delay to it.
     internal float CurrentActionCinematicOffsetSeconds;
     internal bool CheatInstantCinematics { get; set; }
 
@@ -466,6 +467,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
             return;
         }
+
         var msg = new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATACTIONS {
             DuelID = SigilId,
             ActionData = buffer,

@@ -27,16 +27,15 @@
  * 
  * NOTE:
  * Supports dynamic object rendering based on player proximity.
- * There are two distinct messages to send to the client in regards to objects in the game.
- * The first is MSG_NEWOBJECT, which is used to create a new object in the client's world.
- * The second is MSG_ADDOBJECT, which respawns an object that was previously removed.
- * You cannot send MSG_ADDOBJECT in regards to an object if the client has not been told about it with MSG_NEWOBJECT.
+ * MSG_NEWOBJECT creates an object in the client's world and MSG_REMOVEOBJECT removes it. An object that
+ * comes back into range is sent again with MSG_NEWOBJECT, as live servers do: this client ignores
+ * MSG_ADDOBJECT.
  * 
  * TODO:
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 07/02/2026
+ * Last Updated: 09/26/2026
  */
 
 using System.Collections.Generic;
@@ -68,7 +67,8 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
     private readonly PropertyFlags _propertyFlags = PropertyFlags.Prop_Public
                                                   | PropertyFlags.Prop_Transmit
                                                   | PropertyFlags.Prop_AuthorityTransmit;
-    private readonly Dictionary<CoreObject, IActorRef> _playersInRange = [];
+    // Keyed by the player's object instance: CoreObject is a record, so its hash follows its location.
+    private readonly Dictionary<CoreObject, IActorRef> _playersInRange = new(ReferenceEqualityComparer.Instance);
     private readonly Dictionary<Wizard, IActorRef> _playersWithRequirementsMet = [];
     private readonly Dictionary<IActorRef, Wizard> _playerIgnoreBecauseDynamod = [];
     private float _renderDistance;
@@ -80,8 +80,10 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
         || template is CombatSigilTemplate; // bug fix: combat sigil templtaes don't have any behaviors
 
     public override void OnStart() {
-        // A combat minion never distance-culls; it lives only for the duel.
+        // A combat minion never distance-culls; it lives only for the duel. A summoned pet
+        // follows its owner, so the spawn location it would be culled by goes stale.
         _doesDistanceCheck = !Entity.IsCombatOnlyMinion
+            && Entity.ActiveGameObject is not WizClientPet
             && Entity.Template.m_behaviors
                 .OfType<AnimationBehaviorTemplate>()
                 .Any(anim => anim.m_bFadesIn || anim.m_bFadesOut);
@@ -205,7 +207,7 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
         if (IsInRadius(playerObj, _renderDistance) && !_playersInRange.ContainsKey(playerObj)) {
             // Respawn the object if the player is in range and we've determined they meet the requirements.
             if (playerWizard is not null && _playersWithRequirementsMet.ContainsKey(playerWizard)) {
-                RespawnObjectForPlayer(playerActor);
+                CreateObjectForPlayer(playerActor);
             }
 
             _playersInRange.Add(playerObj, playerActor);
@@ -249,10 +251,8 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
                 // never received MSG_NEWOBJECT and are not in
                 // _playersWithRequirementsMet, only in the ignore list.
                 var wizard = _playersWithRequirementsMet.FirstOrDefault(x => x.Value == player).Key;
-                var wasHiddenAtJoin = false;
                 if (wizard is null && _playerIgnoreBecauseDynamod.TryGetValue(player, out var hiddenWizard)) {
                     wizard = hiddenWizard;
-                    wasHiddenAtJoin = true;
                 }
 
                 _playerIgnoreBecauseDynamod.Remove(player);
@@ -274,22 +274,14 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
                     _playersWithRequirementsMet[wizard] = player;
                 }
 
-                // Players who were hidden at join have never registered the
-                // object; send both the registration and the add so it appears.
-                if (wasHiddenAtJoin) {
-                    CreateObjectForPlayer(player);
-                    RespawnObjectForPlayer(player);
-                }
-                else {
-                    CreateObjectForPlayer(player);
-                }
+                CreateObjectForPlayer(player);
             }
         }
     }
 
     private void CreateObjectForPlayer(IActorRef player) {
         // Serialize the client object.
-        var clientObj = Entity.GetClientBehaviorInstance();
+        var clientObj = Entity.GetClientObject();
         if (!_serializer.Serialize(clientObj, _propertyFlags, out var serializedData)) {
             Logger.Error("Failed to serialize object data.");
 
@@ -305,7 +297,7 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
 
     private void CreateObjectForAllPlayers() {
         // Serialize the client object.
-        var clientObj = Entity.GetClientBehaviorInstance();
+        var clientObj = Entity.GetClientObject();
         if (!_serializer.Serialize(clientObj, _propertyFlags, out var serializedData)) {
             Logger.Error("Failed to serialize object data.");
 
@@ -316,18 +308,6 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
         PlayerBroadcast(new GAME_5_PROTOCOL.MSG_NEWOBJECT {
             Data = serializedData
         });
-    }
-
-    private void RespawnObjectForPlayer(IActorRef player) {
-        // Send object data to the player.
-        var newObjectMsg = new GAME_5_PROTOCOL.MSG_ADDOBJECT {
-            GameObjectID = Entity.ActiveGameObject.m_globalID,
-            LocationX = Entity.ActiveGameObject.m_location.X,
-            LocationY = Entity.ActiveGameObject.m_location.Y,
-            LocationZ = Entity.ActiveGameObject.m_location.Z,
-            Direction = Entity.ActiveGameObject.m_orientation.Z
-        };
-        player.Tell(newObjectMsg);
     }
 
     private void DespawnObjectForPlayer(IActorRef player) {

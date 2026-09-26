@@ -36,7 +36,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 08/22/2026
+ * Last Updated: 09/26/2026
  */
 
 using System;
@@ -178,6 +178,10 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
     private void ReceivePreLogin(ZONE_102_PROTOCOL.MSG_PRELOGIN message) {
         var charGameObject = _wizard.GameObject as WizClientObject;
 
+        // The client only counts critical objects whose MSG_NEWOBJECT arrives after MSG_LOGINCOMPLETE; one
+        // that arrives earlier holds its loading screen until a 30 second timeout. Joining the zone sends them.
+        SendToSocket(_loginCompleteMessage);
+
         // Wait for the zone to confirm the player was added
         var addPlayerResponse = AddPlayerToZone(charGameObject, _wizard);
         if (addPlayerResponse.WizardGameObject == null) {
@@ -197,8 +201,6 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
                                                    "Centaur",
                                                    SessionActor.ActorRef));
 
-        // Now that the zone is ready and other services have been notified, send the final login complete message.
-        SendToSocket(_loginCompleteMessage);
         TellOtherServices(new SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE());
 
         // Attach succeeded — remove the fallback registration so stale entries

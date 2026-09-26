@@ -32,6 +32,7 @@ using Imcodec.Math;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
 using Imcodec.Types;
+using Imlight.CoreLib.Game.Pet;
 
 namespace Imlight.CoreLib.WizardData.Models.Player;
 
@@ -141,6 +142,7 @@ public class Wizard {
 
     [JsonIgnore] private bool _hasLocation;
     [JsonIgnore] private bool _hasOrientation;
+    [JsonIgnore] private readonly uint _defaultPetTemplateId = 126412; // Black Cat Pet;
     private const string TutorialStartingZone = "WizardCity/Tutorial_Exterior";
 
     // Constructor: Used for deserialization. If this is not present, the default constructor will be used.
@@ -408,6 +410,27 @@ public class Wizard {
         return true;
     }
 
+    public bool AddHatchedPetToInventory(uint templateId, out WizClientObjectItem pet) {
+        // The pet factory owns the pet's behavior state, so this skips the template
+        // re-initialization that AddItemToInventory does.
+        pet = PetFactory.CreateHatchedPet(CharId, templateId);
+        if (pet is null) {
+            return false;
+        }
+
+        if (!InventoryBehavior.AddItem(pet)) {
+            Logger.Warning("Could not add pet {0} to player {1}'s inventory.",
+                Logger.Args(pet.m_globalID, PlayerNameBehavior.GetWizardName()));
+
+            return false;
+        }
+
+        WizardItemCollection.AddItem(pet);
+        WizardCollection.UpdateCharacterItems(this);
+
+        return true;
+    }
+
     public bool RemoveItemFromInventory(ulong itemId) {
         var success = InventoryBehavior.RemoveItem(itemId, out var item);
         if (!success) {
@@ -464,6 +487,9 @@ public class Wizard {
         if (slot.SlotType == EquipmentSlotType.Deck) {
             InformSpellbookOfNewDeck(template, inventoryItem.m_globalID);
         }
+        if (slot.SlotType == EquipmentSlotType.Pet) {
+            EquipPet(template, inventoryItem);
+        }
 
         // Persistent save.
         WizardCollection.UpdateCharacterItems(this);
@@ -505,6 +531,9 @@ public class Wizard {
         // If this object is a mount, we'll also want to update the mount owner behavior.
         if (slot.SlotType == EquipmentSlotType.Mount) {
             UnequipMount();
+        }
+        if (slot.SlotType == EquipmentSlotType.Pet) {
+            UnequipPet();
         }
 
         // Persistent save.
@@ -1233,6 +1262,20 @@ public class Wizard {
         WizardCollection.UpdateCharacterMount(this);
     }
 
+    private void EquipPet(WizItemTemplate template, WizClientObjectItem item) {
+        PetOwnerBehavior.EquipPet(template, item);
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterPetOwnerBehavior(this);
+    }
+
+    private void UnequipPet() {
+        PetOwnerBehavior.UnequipPet();
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterPetOwnerBehavior(this);
+    }
+
     private void InformSpellbookOfNewDeck(WizItemTemplate template, ulong deckGlobalId) {
         // The caller of this method has already equipped the deck to the player.
         // This method just updates the spellbook behavior to reflect the new deck.
@@ -1280,27 +1323,22 @@ public class Wizard {
             CoreObjectFactory.InitializeCoreObjectBehaviors(cObj, templateId);
             cObj.m_characterId = (GID) CharId;
 
-            // If this is a pet item, set the hatch timer so the client shows
-            // the correct countdown instead of "29091 days" (epoch 0).
-            // Also register a matching server-side egg so MSG_HATCHEGGNOW can
-            // find it by the same GlobalID the client uses.
-            if (CoreObjectFactory.FindBehaviorInstance<ClientPetItemBehavior>(cObj, out var petItemBehavior)) {
-                var idx = cObj.m_inactiveBehaviors.IndexOf(petItemBehavior);
-                petItemBehavior = (ClientPetItemBehavior) cObj.m_inactiveBehaviors[idx];
-                petItemBehavior.m_hatchedTimeSecs = (uint)(DateTimeOffset.UtcNow.ToUnixTimeSeconds() + 600);
-                cObj.m_inactiveBehaviors[idx] = petItemBehavior;
-
-                // Create the server-side egg with the SAME GlobalID the client
-                // uses (the item's m_globalID), so MSG_HATCHEGGNOW can find it.
-                PetOwnerBehavior.CreatePetEgg(templateId, 600, cObj.m_globalID);
-
-                Logger.Debug("Set hatch timer for pet item template {0} (egg GID {1})",
-                    Logger.Args(templateId, cObj.m_globalID));
-            }
-
             itemsToAdd.Add(cObj);
             InventoryBehavior.InventoryItemIds.Add(cObj.m_globalID);
             InventoryBehavior.Items.Add(cObj);
+        }
+
+        // The default pet must be created through the pet factory. 
+        var defaultPet = PetFactory.CreateHatchedPet(CharId, _defaultPetTemplateId);
+        if (defaultPet is null) {
+            Logger.Error("Could not create default pet (template {0}) for Wizard {1}.",
+                Logger.Args(_defaultPetTemplateId, CharId));
+        }
+        else {
+            // Add pet to inventory.
+            itemsToAdd.Add(defaultPet);
+            InventoryBehavior.InventoryItemIds.Add(defaultPet.m_globalID);
+            InventoryBehavior.Items.Add(defaultPet);
         }
 
         // This is a different method that bulk uploads items to the database.

@@ -18,9 +18,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Newtonsoft.Json;
 using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.Shared.Character;
+using Imlight.CoreLib.Game.Combat;
+using Imlight.CoreLib.Game.Spells;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.IO;
 using Imlight.Common;
@@ -213,11 +216,29 @@ public class ServerWizGameStats : IClientTypeProvider<WizGameStats> {
             m_powerPipBase = m_powerPipBase,
             m_powerPipBonusPercentAll = m_powerPipBonusPercentAll,
             m_xpPercentIncrease = m_xpPercentIncrease,
-            m_criticalHitPercentBySchool = m_criticalHitPercentBySchool,
-            m_blockPercentBySchool = m_blockPercentBySchool,
+            // The client's cinematic re-simulates the crit from the rating and percent we send here.
+            m_criticalHitPercentBySchool = ToChanceList(m_criticalHitRatingBySchool, Level),
+            m_blockPercentBySchool = ToChanceList(m_blockRatingBySchool, Level),
             m_criticalHitRatingBySchool = m_criticalHitRatingBySchool,
             m_blockRatingBySchool = m_blockRatingBySchool,
+            m_criticalHitRatingAll = m_criticalHitRatingAll,
+            m_blockRatingAll = m_blockRatingAll,
+            m_criticalHitPercentAll = CombatCriticals.RatingToChance(m_criticalHitRatingAll, Level),
+            m_blockPercentAll = CombatCriticals.RatingToChance(m_blockRatingAll, Level),
         };
+    }
+
+    private static List<float> ToChanceList(List<float> ratings, int level) {
+        if (ratings is null) {
+            return null;
+        }
+
+        var chances = new List<float>(ratings.Count);
+        foreach (var rating in ratings) {
+            chances.Add(CombatCriticals.RatingToChance(rating, level));
+        }
+
+        return chances;
     }
 
     /// <summary>

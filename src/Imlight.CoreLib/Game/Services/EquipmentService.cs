@@ -39,7 +39,7 @@
  * 
  * Created by: Joji
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 09/26/2026
  */
 
 using System;
@@ -53,9 +53,11 @@ using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
 using Imlight.CoreLib.Shared.Items;
 using Imlight.CoreLib.Shared.Networking;
+using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Misc;
+using Imlight.CoreLib.Game.Pet;
 using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Services;
@@ -70,6 +72,7 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
         versionable: false,
         behaviors: SerializerFlags.None
     );
+    private ulong _summonedPetId;
 
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new InventoryService(parentActor));
@@ -96,9 +99,14 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
             var effects = playerCharacter.GameEffects;
 
             SendAddEffects([.. effects]);
+
+            // Spawn the equipped pet as a zone entity if one is equipped.
+            if (playerCharacter.PetOwnerBehavior.EquippedPetTemplateId != 0) {
+                SpawnPetEntity();
+            }
         }
         catch (Exception ex) {
-            Logger.Error("Error while attaching effects: {0} {1}", 
+            Logger.Error("Error while attaching effects: {0} {1}",
                 Logger.Args(ex.Message, ex.StackTrace));
 
             throw new ServiceRetryException("Error while attaching effects.", ex);
@@ -135,7 +143,7 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
         }
 
         if (!wizard.InventoryToEquipmentTransfer(itemId, out var effects, out var removedEffects)) {
-            Logger.Warning("Equip failed on item {0}", 
+            Logger.Warning("Equip failed on item {0}",
                 Logger.Args(itemId));
 
             return;
@@ -154,6 +162,11 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
         // We need to remove the old effects from the client.
         if (removedEffects is not null) {
             SendRemoveEffects(removedEffects);
+        }
+
+        // If this is a pet, spawn it as a zone entity so it appears in the world.
+        if (message.SlotName == "Pet") {
+            SpawnPetEntity(item);
         }
     }
 
@@ -178,12 +191,15 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
         // This needs to be done before we unequip the item, because we need to know what slot it was in.
         var slot = wizEquipmentBehavior.GetSlotOfItem(itemId);
 
+        // The client's unequip request carries no slot name, so the pet is recognized by its slot.
+        var isPet = wizEquipmentBehavior.GetEquippedPetId() == itemId;
+
         if (!wizard.EquipmentToInventoryTransfer(itemId, out var removedEffects)) {
             // If this fails, there is perhaps desync between the server and the client.
             // Send a message to the client to assure them that the server does not have the item equipped.
             SendUnequipItem(message.SlotName, slot, itemId);
 
-            Logger.Warning("Unequip failed on item {0}", 
+            Logger.Warning("Unequip failed on item {0}",
                 Logger.Args(itemId));
 
             return;
@@ -199,6 +215,94 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
             wizard.InteriorStowedMountId = 0;
             WizardCollection.UpdateCharacterInteriorStowedMount(wizard);
         }
+
+        if (isPet) {
+            DismissPetEntity();
+        }
+    }
+
+    private void SpawnPetEntity(WizClientObjectItem petItem = null) {
+        var zoneActor = SessionActor.GetZoneActor();
+        if (zoneActor is null) {
+            return;
+        }
+
+        // If petItem is null, we will use the equipped pet from the player's character.
+        if (petItem is null) {
+            var wizard = GetActiveWizard();
+            if (wizard is null) {
+                return;
+            }
+
+            var wizEquipmentBehavior = wizard.EquipmentBehavior;
+            if (wizEquipmentBehavior is null) {
+                return;
+            }
+
+            var equippedPetId = wizEquipmentBehavior.GetEquippedPetId();
+            if (equippedPetId == 0) {
+                return;
+            }
+
+            petItem = wizEquipmentBehavior.GetItem(equippedPetId);
+        }
+
+        var playerObj = GetActiveGameObject();
+        if (playerObj is null) {
+            return;
+        }
+
+        // The generic "PetObject" template (ID 2) is used for all pet zone entities.
+        // The specific breed appearance comes from behaviors on the template.
+        var coreObj = PetFactory.CreatePetGameObject(petItem, playerObj.m_globalID);
+        if (coreObj is null) {
+            return;
+        }
+
+        // Place the pet at the player's location.
+        coreObj.m_location = playerObj.m_location;
+        coreObj.m_orientation = playerObj.m_orientation;
+
+        // Only one pet follows its owner: a swap or a repeated attach replaces the previous summon.
+        DismissPetEntity();
+
+        var spawnMsg = new ZONE_102_PROTOCOL.MSG_SPAWNENTITY {
+            CoreObject = coreObj,
+            Template = CoreObjectFactory.GetCoreTemplate(PetFactory.GENERIC_PET_TEMPLATE_ID),
+            Requester = SessionActor.ActorRef
+        };
+
+        zoneActor.Tell(spawnMsg, Self);
+        _summonedPetId = coreObj.m_globalID;
+    }
+
+    [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_RESUMMONPET))]
+    private void ReceiveResummonPet(CHARACTER_103_PROTOCOL.MSG_RESUMMONPET message) {
+        // A pet that is not out picks the change up on its next summon.
+        if (_summonedPetId == 0) {
+            return;
+        }
+
+        var equipment = GetActiveWizard()?.EquipmentBehavior;
+        if (equipment is null || equipment.GetEquippedPetId() != message.PetItemId) {
+            return;
+        }
+
+        SpawnPetEntity(equipment.GetItem(message.PetItemId));
+    }
+
+    private void DismissPetEntity() {
+        if (_summonedPetId == 0) {
+            return;
+        }
+
+        // Sent straight to the zone, like the spawn, so a dismiss never overtakes the spawn it targets.
+        SessionActor.GetZoneActor()?.Tell(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+            Messages = [new ZONE_102_PROTOCOL.MSG_DISMISSPET { PetGlobalId = _summonedPetId }],
+            Targets = ZoneBroadcastTarget.Objects,
+        }, Self);
+
+        _summonedPetId = 0;
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ENFORCEINTERIORMOUNT))]

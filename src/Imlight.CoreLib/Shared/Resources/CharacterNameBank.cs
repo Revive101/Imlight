@@ -30,12 +30,14 @@
  * string characterName = WizardNameBank.GetEnglishName(nameIndices, eGender.Male);
  * 
  * NOTE:
+ * Pet names use the plain "FirstName" and "LastName" tables (locale section PetNames); pets have
+ * no middle name table.
  * 
  * TODO:
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 09/26/2026
  */
 
 using System.Collections.Generic;
@@ -54,6 +56,9 @@ public class WizardNameBank : RootSingleResourceSingleton<WizardNameBank>, IMemo
     private const string FirstNameHumanFemaleTableName = "FirstName_HumanFemale";
     private const string MiddleNameHumanTableName = "MiddleName_Human";
     private const string LastNameHumanTableName = "LastName_Human";
+    private const string PetLocaleTable = "PetNames";
+    private const string PetFirstNameTableName = "FirstName";
+    private const string PetLastNameTableName = "LastName";
 
     private static Dictionary<string, List<string>> s_characterNameTable;
 
@@ -95,7 +100,44 @@ public class WizardNameBank : RootSingleResourceSingleton<WizardNameBank>, IMemo
         return $"{firstName} {middleName}{lastName}";
     }
 
-    private static string GetEnglishNamePart(string tableName, int index) {
+    /// <summary>
+    /// Splits packed name keys into their first, middle and last name table indices.
+    /// </summary>
+    /// <param name="nameKeys">The packed name keys, as in m_nameKeys.</param>
+    /// <returns>The three table indices. The top byte is not a name part and is left out.</returns>
+    public static (int first, int middle, int last) GetNameParts(uint nameKeys)
+        => ((int) (nameKeys >> 16) & 0xFF, (int) (nameKeys >> 8) & 0xFF, (int) nameKeys & 0xFF);
+
+    /// <summary>
+    /// Checks that packed pet name keys point into the pet name tables.
+    /// </summary>
+    /// <param name="nameKeys">The packed name keys a client picked for a pet.</param>
+    /// <returns>True if the first and last parts are in their tables and there is no middle part.</returns>
+    public static bool IsValidPetName(uint nameKeys) {
+        var (first, middle, last) = GetNameParts(nameKeys);
+
+        return middle == 0
+            && first < GetTableSize(PetFirstNameTableName)
+            && last < GetTableSize(PetLastNameTableName);
+    }
+
+    /// <summary>
+    /// Retrieves the English name of a pet from its packed name keys.
+    /// </summary>
+    /// <param name="nameKeys">The packed name keys of the pet.</param>
+    /// <returns>The first and last name joined by a space; some first names are empty.</returns>
+    public static string GetPetEnglishName(uint nameKeys) {
+        var (first, _, last) = GetNameParts(nameKeys);
+        var firstName = GetEnglishNamePart(PetFirstNameTableName, first, PetLocaleTable);
+        var lastName = GetEnglishNamePart(PetLastNameTableName, last, PetLocaleTable);
+
+        return string.IsNullOrEmpty(firstName) ? lastName : $"{firstName} {lastName}";
+    }
+
+    private static int GetTableSize(string tableName)
+        => s_characterNameTable.TryGetValue(tableName, out var names) ? names.Count : 0;
+
+    private static string GetEnglishNamePart(string tableName, int index, string localeTable = CharacterLocaleTable) {
         if (!s_characterNameTable.TryGetValue(tableName, out var characterNames)) {
             return "[TABLE_NOT_FOUND]";
         }
@@ -106,7 +148,7 @@ public class WizardNameBank : RootSingleResourceSingleton<WizardNameBank>, IMemo
 
         // The character name table is just a list of locale IDs.
         var localeNameid = characterNames[index];
-        var englishName = Locale.GetEnglishName(CharacterLocaleTable, localeNameid) ?? $"[NAME_NOT_FOUND]";
+        var englishName = Locale.GetEnglishName(localeTable, localeNameid) ?? $"[NAME_NOT_FOUND]";
 
         return englishName;
     }

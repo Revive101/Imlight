@@ -21,6 +21,7 @@ using System.Linq;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Operations;
 using Imlight.Common;
+using Imlight.CoreLib.Game.Pet;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models.Player;
@@ -244,6 +245,26 @@ public static class WizardItemCollection {
         associatedItem.m_pattern = decal2;
 
         // Save the changes.
+        session.SaveChanges();
+
+        return true;
+    }
+
+    /// <summary>
+    /// Saves new packed name keys onto a stored pet item.
+    /// </summary>
+    /// <param name="item">The pet item to rename.</param>
+    /// <param name="nameKeys">The packed name keys.</param>
+    /// <returns>True if the pet was found and saved, false otherwise.</returns>
+    public static bool ApplyPetName(WizClientObjectItem item, uint nameKeys) {
+        using var session = s_store.OpenSession();
+
+        var associatedItem = session.Query<WizClientObjectItem>(collectionName: CollectionName)
+            .FirstOrDefault(x => x.m_globalID == item.m_globalID && x.m_characterId == item.m_characterId);
+        if (associatedItem is null || !PetFactory.TrySetPetName(associatedItem, nameKeys)) {
+            return false;
+        }
+
         session.SaveChanges();
 
         return true;

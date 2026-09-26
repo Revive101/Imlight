@@ -48,7 +48,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 08/19/2026
+ * Last Updated: 09/26/2026
  */
 
 using System;
@@ -313,6 +313,7 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
     private float HandlePassAction(QueuedCombatAction action, CombatActionListObj combatActionList) {
         var passCombatAction = InitializeCombatAction(action);
         passCombatAction.m_spell = null;
+        passCombatAction.m_spellHits = (char) 0;
         combatActionList.m_actionList.Add(passCombatAction);
 
         return SPELL_PASS_TIME;
@@ -384,8 +385,9 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
     private void LogCombatAction(QueuedCombatAction action, CombatAction combatAction, bool spellWorthCasting) {
         if (spellWorthCasting) {
             var targetsStringForLog = string.Join(", ", combatAction.m_targetSubcircleList);
-            Logger.Debug("Duel {0} | Slot {1} | Spell {2} hits targets [{3}]",
-                Logger.Args(_duel.m_duelID.Full, action.SpellCaster.SlotIndex, action.Spell.m_templateID, targetsStringForLog));
+            var critSuffix = combatAction.m_CritHitList?.Any(x => x.m_mult > 0f) == true ? " (Crits!)" : "";
+            Logger.Debug("Duel {0} | Slot {1} | Spell {2} hits targets [{3}]{4}",
+                Logger.Args(_duel.m_duelID.Full, action.SpellCaster.SlotIndex, action.Spell.m_templateID, targetsStringForLog, critSuffix));
         }
         else {
             Logger.Debug("Duel {0} | Slot {1} | Spell {3} not worth casting. Passing turn.",
@@ -400,6 +402,10 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
         m_showCast = true,
         m_spellHits = (char) 1,
         m_spell = action.Spell,
+        m_serializedBlocks = "\u0000\u0000",
+        m_shadowPactTarget = -1,
+        m_petCastTarget = -1,
+        m_CritHitList = [],
     };
 
     private static float GetActionCinematicTime(QueuedCombatAction action) {

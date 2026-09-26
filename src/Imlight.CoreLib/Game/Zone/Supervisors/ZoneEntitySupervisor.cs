@@ -18,8 +18,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
-using Nito.AsyncEx.Synchronous;
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.CoreLib.Game.Zone.Core;
@@ -34,13 +34,22 @@ namespace Imlight.CoreLib.Game.Zone.Supervisors;
 /// for any entities that are created within the zone.
 /// </summary>
 /// <param name="zone">The zone that this supervisor is responsible for.</param>
-internal abstract class ZoneEntitySupervisor(Core.Zone zone) : ReceiveProtocolDispatcher {
+internal abstract class ZoneEntitySupervisor(Core.Zone zone) : ReceiveProtocolDispatcher, IWithTimers {
 
     protected const uint OBJECT_CREATION_TIMEOUT_IN_MS = 5000;
+    private const string EntityLoadTimeoutKey = "entity-load-timeout";
+
+    public ITimerScheduler Timers { get; set; }
 
     protected readonly IActorRef ZoneRef = Context.Parent;
     protected readonly Core.Zone Zone = zone;
     protected readonly List<IActorRef> EntityActors = [];
+
+    private readonly Dictionary<IActorRef, string> _loadingEntities = [];
+    private readonly Stopwatch _loadTimer = new();
+    private bool _awaitingLoadedEntities;
+    private int _startedEntityCount;
+    private long _creationMs;
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS))]
     public abstract void ReceiveZoneLoadResults(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS message);
@@ -104,6 +113,30 @@ internal abstract class ZoneEntitySupervisor(Core.Zone zone) : ReceiveProtocolDi
         }
     }
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADRESULTS))]
+    protected void ReceiveEntityLoaded() {
+        if (_loadingEntities.Remove(Sender) && _awaitingLoadedEntities && _loadingEntities.Count == 0) {
+            ReportLoaded();
+        }
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ENTITYLOADTIMEOUT))]
+    protected void ReceiveEntityLoadTimeout() {
+        foreach (var (entityActor, description) in _loadingEntities) {
+            Logger.Error("Failed to create entity actor for {Kind} {Name} (no load reply within {Timeout} ms).",
+                Logger.Args(nameof(CoreTemplate), description, OBJECT_CREATION_TIMEOUT_IN_MS));
+
+            EntityActors.Remove(entityActor);
+            OnEntityLoadFailed(entityActor);
+            Context.Stop(entityActor);
+        }
+
+        _loadingEntities.Clear();
+        if (_awaitingLoadedEntities) {
+            ReportLoaded();
+        }
+    }
+
     /// <summary>
     /// Creates a new entity actor for the given core object and template.
     /// </summary>
@@ -113,28 +146,36 @@ internal abstract class ZoneEntitySupervisor(Core.Zone zone) : ReceiveProtocolDi
     protected IActorRef CreateEntityActor(CoreObject coreObject, CoreTemplate template, CoreObjectInfo info) {
         var actorName = CreateEntityActorName(coreObject);
         var objectActor = Context.ActorOf(Props.Create(() => new ZoneEntity(coreObject, template, info, ZoneRef, Zone)), actorName);
-
-        try {
-            // Send a message to the object and await a reply to ensure it has been created and initialized successfully.
-            var msg = new ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN();
-            var timeout = TimeSpan.FromMilliseconds(OBJECT_CREATION_TIMEOUT_IN_MS);
-            var result = objectActor.Ask<ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADRESULTS>(msg, timeout).WaitAndUnwrapException();
-            
-            EntityActors.Add(objectActor);
-        }
-        catch (Exception ex) {
-            var goTemplate = template as GameObjectTemplate;
-            Logger.Error("Failed to create entity actor for {0} {1} ({2}).",
-                Logger.Args(nameof(CoreTemplate), goTemplate.m_objectName, ex.Message));
-
-            // Kill the actor.
-            objectActor.Tell(PoisonPill.Instance);
-
-            return null;
-        }
+        BeginEntityLoad(objectActor, (template as GameObjectTemplate)?.m_objectName);
 
         return objectActor;
     }
+
+    protected void BeginEntityLoad(IActorRef entityActor, string description) {
+        if (!_loadTimer.IsRunning) {
+            _loadTimer.Start();
+        }
+
+        _startedEntityCount++;
+        _loadingEntities[entityActor] = description;
+        EntityActors.Add(entityActor);
+        entityActor.Tell(new ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN());
+    }
+
+    protected void ReportLoadedWhenEntitiesLoad() {
+        _creationMs = _loadTimer.ElapsedMilliseconds;
+        _awaitingLoadedEntities = true;
+        if (_loadingEntities.Count == 0) {
+            ReportLoaded();
+
+            return;
+        }
+
+        Timers.StartSingleTimer(EntityLoadTimeoutKey, new ZONE_102_PROTOCOL.MSG_ENTITYLOADTIMEOUT(),
+            TimeSpan.FromMilliseconds(OBJECT_CREATION_TIMEOUT_IN_MS));
+    }
+
+    protected virtual void OnEntityLoadFailed(IActorRef entityActor) { }
 
     protected static string CreateEntityActorName(CoreObject coreObject) {
         var actorName = $"{coreObject.m_debugName}_{coreObject.m_globalID.Full}";
@@ -143,6 +184,15 @@ internal abstract class ZoneEntitySupervisor(Core.Zone zone) : ReceiveProtocolDi
         actorName = new string([.. actorName.Where(c => char.IsLetterOrDigit(c) || c == '_')]);
 
         return actorName;
+    }
+
+    private void ReportLoaded() {
+        _awaitingLoadedEntities = false;
+        Timers.Cancel(EntityLoadTimeoutKey);
+        Logger.Debug("Zone {ZoneName} supervisor {SupervisorName} created {Count} entities in {CreationMs} ms, all loaded after {LoadMs} ms.",
+            Logger.Args(Zone.ZoneName, GetType().Name, _startedEntityCount, _creationMs, _loadTimer.ElapsedMilliseconds));
+        _loadTimer.Reset();
+        ZoneRef.Tell(new ZONE_102_PROTOCOL.MSG_ZONESUPERVISORLOADRESULTS { SupervisorName = GetType().Name });
     }
 
 }
