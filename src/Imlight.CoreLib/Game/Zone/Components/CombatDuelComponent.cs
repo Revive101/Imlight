@@ -63,8 +63,10 @@ using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.CoreLib.WizardData.Models.World;
+using Imcodec.Cryptography;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 
@@ -405,13 +407,31 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
         switch (moveType) {
             case CombatMoveType.Discard:
-                HandleDiscardMove(caster, message.SpellSelection);
+                var discardCandidate = caster.GetSpellFromLastHand(message.SpellSelection);
+                if (IsEnchantment(discardCandidate) && TryFindEnchantTarget(caster, discardCandidate, message.SpellSelection, message.SpellTarget, message.RawSpellTarget, out var enchantTarget1)) {
+                    HandleEnchantMove(caster, discardCandidate, enchantTarget1);
+                }
+                else {
+                    HandleDiscardMove(caster, message.SpellSelection);
+                }
                 break;
             case CombatMoveType.Pass:
                 HandlePassMove(caster);
                 break;
             case CombatMoveType.Attack:
-                HandleAttackMove(caster, message.SpellSelection, message.SpellTarget);
+                var attackCandidate = caster.GetSpellFromLastHand(message.SpellSelection);
+                if (IsEnchantment(attackCandidate)) {
+                    if (TryFindEnchantTarget(caster, attackCandidate, message.SpellSelection, message.SpellTarget, message.RawSpellTarget, out var enchantTarget2)) {
+                        HandleEnchantMove(caster, attackCandidate, enchantTarget2);
+                    }
+                    else {
+                        Logger.Warning("Duel {0} | Slot {1} | Enchantment move received for slot {2} but no valid target spell could be found.",
+                            Logger.Args(Duel.m_duelID.Full, caster.SlotIndex, message.SpellSelection));
+                    }
+                }
+                else {
+                    HandleAttackMove(caster, message.SpellSelection, message.SpellTarget);
+                }
                 break;
             case CombatMoveType.Flee:
                 HandleFleeAction(caster);
@@ -1015,11 +1035,266 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
             MoveType = moveType,
             SpellID = (int) (spell?.m_templateID ?? 0),
             SpellTargetIndex = actualIndex,
+            EnchantmentID = (int) (spell?.m_enchantment ?? 0),
             IsItemCard = isItemCard,
             IsTreasureCard = isTreasureCard,
             IsBattleCard = isBattleCard,
+            //ShadowPactTarget = -1,
         };
         PlayerBroadcast(msg);
+    }
+
+    // Determines if a card is an enchantment instead of a playable combat cast.
+    private static bool IsEnchantment(Spell spell) {
+        if (spell is null) {
+            return false;
+        }
+
+        var template = CoreObjectFactory.GetCoreTemplate(spell.m_templateID) as SpellTemplate;
+        if (template is null) {
+            return false;
+        }
+
+        if (string.Equals(template.m_sTypeName, "Enchantment", StringComparison.OrdinalIgnoreCase)) {
+            return true;
+        }
+
+        if (template.m_effects != null) {
+            foreach (var effect in template.m_effects) {
+                if (effect.m_effectTarget is kEffectTarget.kSpell or kEffectTarget.kSpecificSpells) {
+                    return true;
+                }
+
+                if (effect.m_effectType is kSpellEffects.kModifyCardDamage 
+                    or kSpellEffects.kModifyCardHeal 
+                    or kSpellEffects.kModifyCardAccuracy 
+                    or kSpellEffects.kModifyCardMutation 
+                    or kSpellEffects.kModifyCardArmorPiercing 
+                    or kSpellEffects.kModifyCardCloak
+                    or kSpellEffects.kModifyCardOutgoingDamage
+                    or kSpellEffects.kModifyCardIncomingDamage
+                    or kSpellEffects.kProtectCardBeneficial
+                    or kSpellEffects.kProtectCardHarmful) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static bool IsValidEnchantTarget(Spell enchantSpell, Spell targetSpell) {
+        if (targetSpell is null || enchantSpell is null) {
+            return false;
+        }
+
+        // Cannot enchant an already enchanted card
+        if (targetSpell.m_enchantment != 0) {
+            return false;
+        }
+
+        // Cannot enchant an enchantment card
+        if (IsEnchantment(targetSpell)) {
+            return false;
+        }
+
+        var targetTemplate = CoreObjectFactory.GetCoreTemplate(targetSpell.m_templateID) as SpellTemplate;
+        if (targetTemplate is null) {
+            return false;
+        }
+
+        // Enchantments cannot be applied to Treasure Cards
+        if (targetSpell.m_treasureCard || targetTemplate.m_Treasure) {
+            return false;
+        }
+
+        var enchantTemplate = CoreObjectFactory.GetCoreTemplate(enchantSpell.m_templateID) as SpellTemplate;
+        if (enchantTemplate?.m_effects is null) {
+            return true;
+        }
+
+        foreach (var effect in enchantTemplate.m_effects) {
+            // Damage enchants  can only be applied to spells that deal damage (including drains like Vampire)
+            if (effect.m_effectType is kSpellEffects.kModifyCardDamage or kSpellEffects.kModifyCardArmorPiercing) {
+                if (!HasDamageEffect(targetTemplate)) {
+                    return false;
+                }
+            }
+
+            // Healing enchants can only be applied to healing spells
+            if (effect.m_effectType is kSpellEffects.kModifyCardHeal) {
+                if (!HasHealingEffect(targetTemplate)) {
+                    return false;
+                }
+            }
+
+            // Accuracy enchants can only be applied to spells that are not 100% accuracy by default
+            if (effect.m_effectType is kSpellEffects.kModifyCardAccuracy) {
+                if (targetTemplate.m_accuracy >= 100) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private static bool HasDamageEffect(SpellTemplate template) =>
+        template.m_effects != null && template.m_effects.Any(IsDamageEffect);
+
+    private static bool IsDamageEffect(SpellEffect effect) {
+        if (effect is null) {
+            return false;
+        }
+
+        if (effect is RandomSpellEffect rse && rse.m_effectList != null) {
+            return rse.m_effectList.Any(IsDamageEffect);
+        }
+
+        if (effect is VariableSpellEffect vse && vse.m_effectList != null) {
+            return vse.m_effectList.Any(IsDamageEffect);
+        }
+
+        if (effect is EffectListSpellEffect elsee && elsee.m_effectList != null) {
+            return elsee.m_effectList.Any(IsDamageEffect);
+        }
+
+        return effect.m_effectType is kSpellEffects.kDamage
+            or kSpellEffects.kDamageOverTime
+            or kSpellEffects.kDamageNoCrit
+            or kSpellEffects.kDamagePerTotalPipPower
+            or kSpellEffects.kStealHealth;
+    }
+
+    private static bool HasHealingEffect(SpellTemplate template) =>
+        template.m_effects != null && template.m_effects.Any(IsHealingEffect);
+
+    private static bool IsHealingEffect(SpellEffect effect) {
+        if (effect is null) {
+            return false;
+        }
+
+        if (effect is RandomSpellEffect rse && rse.m_effectList != null) {
+            return rse.m_effectList.Any(IsHealingEffect);
+        }
+
+        if (effect is VariableSpellEffect vse && vse.m_effectList != null) {
+            return vse.m_effectList.Any(IsHealingEffect);
+        }
+
+        if (effect is EffectListSpellEffect elsee && elsee.m_effectList != null) {
+            return elsee.m_effectList.Any(IsHealingEffect);
+        }
+
+        return effect.m_effectType is kSpellEffects.kHeal
+            or kSpellEffects.kHealOverTime
+            or kSpellEffects.kHealByWard
+            or kSpellEffects.kHealPercent
+            or kSpellEffects.kMaxHealthHeal
+            or kSpellEffects.kSetHealPercent;
+    }
+
+    private static bool TryFindEnchantTarget(CombatDuelSubCircle caster, Spell enchantSpell, int enchantSlot, uint spellTarget, uint rawTarget, out Spell targetSpell) {
+        targetSpell = null;
+        var hand = caster.GetCurrentHand()?.m_spellList;
+        if (hand is null || hand.Count == 0) {
+            return false;
+        }
+
+        int bitmaskSlot = (rawTarget > 0 && (rawTarget & (rawTarget - 1)) == 0) ? (int) Math.Log2(rawTarget) : -1;
+        int[] candidateSlots = [(int) rawTarget, (int) spellTarget, bitmaskSlot];
+
+        foreach (var slot in candidateSlots) {
+            if (slot < 0 || slot >= hand.Count || slot == enchantSlot) {
+                continue;
+            }
+
+            var card = hand[slot];
+            if (card != null && IsValidEnchantTarget(enchantSpell, card)) {
+                targetSpell = card;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void HandleEnchantMove(CombatDuelSubCircle caster, Spell enchantSpell, Spell targetSpell) {
+        if (caster is null || enchantSpell is null || targetSpell is null) {
+            return;
+        }
+
+        Logger.Debug("Duel {0} | Slot {1} | Enchanting spell {2} with enchantment {3}",
+            Logger.Args(Duel.m_duelID.Full, caster.SlotIndex, targetSpell.m_templateID, enchantSpell.m_templateID));
+
+        // Mark enchantment properties on targetSpell
+        targetSpell.m_enchantment = enchantSpell.m_templateID;
+        targetSpell.m_enchantedThisCombat = true;
+        targetSpell.m_enchantmentSpellIsItemCard = enchantSpell.m_itemCard;
+
+        var enchantTemplate = CoreObjectFactory.GetCoreTemplate(enchantSpell.m_templateID) as SpellTemplate;
+        if (enchantTemplate?.m_effects != null) {
+            foreach (var effect in enchantTemplate.m_effects) {
+                switch (effect.m_effectType) {
+                    case kSpellEffects.kModifyCardDamage:
+                    case kSpellEffects.kModifyCardHeal:
+                    case kSpellEffects.kModifyCardOutgoingDamage:
+                    case kSpellEffects.kModifyCardIncomingDamage:
+                        targetSpell.m_regularAdjust += effect.m_effectParam;
+                        break;
+                    case kSpellEffects.kModifyCardAccuracy:
+                        targetSpell.m_accuracy = (byte) Math.Max(0, targetSpell.m_accuracy + effect.m_effectParam);
+                        break;
+                    case kSpellEffects.kModifyCardCloak:
+                        targetSpell.m_cloaked = true;
+                        break;
+                    case kSpellEffects.kModifyCardMutation:
+                        targetSpell.m_premutationSpellID = targetSpell.m_templateID;
+                        targetSpell.m_templateID = (uint) effect.m_effectParam;
+                        break;
+                    case kSpellEffects.kProtectCardBeneficial:
+                    case kSpellEffects.kProtectCardHarmful:
+                        targetSpell.m_delayEnchantment = true;
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+
+        // Consume enchantment card from hand and vault or deck
+        if (enchantSpell.m_treasureCard) {
+            var consumedId = caster.ConsumeFromVault(enchantSpell);
+            if (consumedId != 0 && caster._wizard != null) {
+                caster._wizard.SpellbookBehavior?.RemoveTreasureCard(consumedId);
+                WizardCollection.RemoveTreasureCard(caster._wizard, consumedId);
+
+                var deckSlot = caster._wizard.EquipmentBehavior?.SlotList?
+                    .FirstOrDefault(s => s.SlotType == EquipmentSlotType.Deck);
+                if (deckSlot?.ItemId != null) {
+                    caster._wizard.RemoveSpellFromDeck(consumedId, deckSlot.ItemId.Value);
+                    if (enchantTemplate != null) {
+                        var spellHash = StringHash.Compute(enchantTemplate.m_name);
+                        caster.ParticipantActor?.Tell(
+                            new WIZARD_12_PROTOCOL.MSG_REMOVETREASURESPELLFROMDECK {
+                                SpellID = (int) spellHash,
+                                EnchantmentID = 0,
+                                DeckID = deckSlot.ItemId.Value,
+                                Success = 1,
+                                Destroy = 0
+                            }, ActorRefs.NoSender);
+                    }
+                }
+            }
+        }
+        else {
+            caster.ConsumeCard(enchantSpell);
+        }
+
+        SendCurrentCombatHand(caster);
+
+        Logger.Debug("Duel {0} | Slot {1} | Enchantment applied successfully. Target spell {2} now has regularAdjust {3}, accuracy {4}.",
+            Logger.Args(Duel.m_duelID.Full, caster.SlotIndex, targetSpell.m_templateID, targetSpell.m_regularAdjust, targetSpell.m_accuracy));
     }
 
     private void HandleDiscardMove(CombatDuelSubCircle caster, int spellSelection) {
@@ -1056,6 +1331,13 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
                 Logger.Args(Duel.m_duelID.Full, caster.SlotIndex, spellSelection));
 
             CombatResolver.AddCombatMove(CombatMoveType.Pass, caster, null, null);
+
+            return;
+        }
+
+        if (IsEnchantment(spell)) {
+            Logger.Warning("Duel {0} | Slot {1} | HandleAttackMove called with an enchantment spell {2}; ignoring attack queue.",
+                Logger.Args(Duel.m_duelID.Full, caster.SlotIndex, spell.m_templateID));
 
             return;
         }
