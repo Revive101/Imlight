@@ -32,13 +32,13 @@
  * NOTE:
  * Requirements are evaluated using individual handlers that inherit from BaseRequirementHandler<T>.
  * Handlers are automatically discovered and registered at startup using reflection.
- * The system supports AND/OR logic and NOT inversion through the base Requirement properties.
+ * AND/OR and NOT follow the client's RequirementList rule; see .agents/requirements.md.
  * 
  * TODO:
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/16/2025
+ * Last Updated: 09/27/2026
  */
 
 using System;
@@ -63,7 +63,9 @@ public static class RequirementDispatcher {
         => RegisterRequirementHandlers();
 
     /// <summary>
-    /// Evaluates a RequirementList against the provided context.
+    /// Evaluates a RequirementList against the provided context. Items fold left to right with no
+    /// precedence: [A (OR), B (AND), C] is (A or B) and C. Each item's NOT applies to its own result,
+    /// a nested list is evaluated the same way, and the list's own NOT and operator are not used.
     /// </summary>
     /// <param name="requirements">The requirement list to evaluate</param>
     /// <param name="context">The context providing player and game state information</param>
@@ -73,43 +75,28 @@ public static class RequirementDispatcher {
             return true;
         }
 
-        var andResults = new List<bool>();
-        var orResults = new List<bool>();
-
+        // Strictly left to right, as the client does: an item joins the running result with the
+        // operator of the item before it, so the last item's operator is never used.
+        var result = true;
+        var joinOperator = Operator.ROP_AND;
         foreach (var requirement in requirements.m_requirements) {
             if (requirement == null) {
                 continue;
             }
 
-            var requirementMet = EvaluateIndividualRequirement(requirement, context);
+            var canChangeResult = joinOperator == Operator.ROP_OR ? !result : result;
+            if (canChangeResult) {
+                var requirementMet = requirement is RequirementList nestedList
+                    ? EvaluateRequirements(nestedList, context)
+                    : EvaluateIndividualRequirement(requirement, context);
 
-            // Apply NOT operator if specified
-            if (requirement.m_applyNOT) {
-                requirementMet = !requirementMet;
+                result = requirementMet != requirement.m_applyNOT;
             }
 
-            switch (requirement.m_operator) {
-                case Operator.ROP_AND:
-                    andResults.Add(requirementMet);
-                    continue;
-                case Operator.ROP_OR:
-                    orResults.Add(requirementMet);
-                    continue;
-                default:
-                    // Default to AND for unknown operators
-                    andResults.Add(requirementMet);
-                    continue;
-            }
+            joinOperator = requirement.m_operator;
         }
 
-        // Evaluate AND requirements: all must be true.
-        var andResult = andResults.Count == 0 || andResults.All(result => result);
-
-        // Evaluate OR requirements: at least one must be true.
-        var orResult = orResults.Count == 0 || orResults.Any(result => result);
-
-        // Both AND and OR groups must pass for the overall result to be true.
-        return andResult && orResult;
+        return result;
     }
 
     /// <summary>
