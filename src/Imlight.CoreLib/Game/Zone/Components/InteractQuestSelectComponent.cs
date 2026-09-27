@@ -28,12 +28,14 @@
  * NOTE:
  * Collection goals (tally count > 1) consume the object on use; single-use goals
  * leave the object in place and drive post-use state via completeResults.
+ * A usage goal's client tags name the object, or a goal tag of one of its interact
+ * options (Ddl_WC_DarkCave_Bubble1 on WC_DarkCave_Bubble1).
  *
  * TODO:
  *
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/26/2026
+ * Last Updated: 09/27/2026
  */
 
 using System.Collections.Generic;
@@ -64,8 +66,6 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
 
     private readonly Dictionary<string, List<GoalTemplate>> _usageGoalsByQuest = [];
 
-    // An InteractableBehavior template is not in the type registry and deserializes as null, so
-    // interactable-only objects (the alchemy table) are found by the usage goals that name them.
     public static bool ShouldAttachToEntity(CoreTemplate template)
         => template is GameObjectTemplate gameObjectTemplate
         && (HasBehavior(template, "WizardSelectBehavior") || IsNamedByAnyUsageGoal(gameObjectTemplate));
@@ -207,7 +207,9 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
             .Any(g => g is not null && g.m_goalType == GOAL_TYPE.GOAL_TYPE_USAGE && DoesGoalMatchObject(gameObjectTemplate, g));
 
     private static bool DoesGoalMatchObject(GameObjectTemplate gameObjectTemplate, GoalTemplate goal) {
-        if (goal.m_clientTags?.Contains(gameObjectTemplate.m_objectName) == true) {
+        var clientTags = goal.m_clientTags;
+        if (clientTags is not null
+            && (clientTags.Contains(gameObjectTemplate.m_objectName) || InteractOptionGoalTags(gameObjectTemplate).Any(clientTags.Contains))) {
             return true;
         }
 
@@ -215,5 +217,12 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
             && gameObjectTemplate.m_adjectiveList is not null
             && scavengeGoal.m_itemAdjectives?.Any(gameObjectTemplate.m_adjectiveList.Contains) == true;
     }
+
+    private static IEnumerable<string> InteractOptionGoalTags(GameObjectTemplate gameObjectTemplate)
+        => gameObjectTemplate.m_behaviors
+            .OfType<InteractableBehaviorTemplate>()
+            .SelectMany(behavior => behavior.m_interactOptions)
+            .Where(option => option?.m_goalTags is not null)
+            .SelectMany(option => option.m_goalTags);
 
 }
