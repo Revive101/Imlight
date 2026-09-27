@@ -76,28 +76,21 @@
     - GlobalID should therefore be treated as a context-dependent protocol field, not as a synonym for GameObjectID.
         For example, CharacterInfo.GlobalID contains the Character ID despite its name.
 
-    - The game client will not request buddy stats (`MSG_BUDDYSTATS`) if the friend is offline
+    ============ BUDDY STATS ============
 
-    ============ BUDDY STATS ============ 
-
-    !!! IN PROGRESS !!!
-
-    StatBlock    : 
-        - ObjectSerializer (StatefulFlags)
-        - Type: WizGameStats
-    EquipBlock   : 
-        - ObjectSerializer (StatefulFlags)
-        - Type: ClientWizEquipmentBehavior
+    - The character window asks with `MSG_BUDDYSTATS`, sending the checksum of every block it cached on
+        disk. Blocks whose checksum still matches are left out of the reply (see BuddyStatsBuilder).
+    - The client only asks about friends who are online and players it can see. Online players answer
+        from their own session (`MSG_BUDDYSTATSFWD`); other characters are rebuilt from the database.
 
     =====================================
  * 
  * TODO:
- * - For `MSG_BUDDYSTATS`, we need to implement the CRC32 hash check. Currently, we just send the stats regardless.
  * - Implement the `PreviousName` field in `MSG_BUDDYENTRY`.
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 04/27/2025
+ * Last Updated: 09/26/2026
  */
 
 using System;
@@ -110,6 +103,7 @@ using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
+using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
@@ -180,60 +174,48 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_BUDDYSTATS))]
     private void ReceiveBuddyStats(GAME_5_PROTOCOL.MSG_BUDDYSTATS message) {
-        // When the player clicks on a friend in their buddy list, they will request the friend's stats (`MSG_BUDDYSTATS`).
-        // The client caches each friends stats and sends the server the CRC32 hash of their cached stats.
-        // We will hash the respective fields on the server side and compare them with the client's hash.
-        // If the hashes do not match, we will send a new byte blob containing the serialized data to update the client's cache.
         if (!Wizard.TryGetCharacterId(message.BuddyID, out var buddyCharID)) {
             return;
         }
 
-        // TODO: Imlight currently doesn't care about the CRC. It will send the stats regardless.
-        var buddyFromDatabase = WizardCollection.GetCharacter(buddyCharID);
-        if (buddyFromDatabase is null) {
-            Logger.Error("Player {0} requested stats for character ID {1}, but the character was not found.",
-                Logger.Args(GetActiveWizard().PlayerNameBehavior.GetWizardName(), buddyCharID));
+        var wizard = GetActiveWizard();
+        if (wizard is null) {
+            return;
+        }
+
+        if (buddyCharID == wizard.CharId) {
+            SendBuddyStats(wizard, message, SessionActor.ActorRef, targetCharacterGid: 0);
 
             return;
         }
 
-        var returnMessage = new GAME_5_PROTOCOL.MSG_BUDDYSTATS {
-            BuddyID = message.BuddyID,
-            Level = (uint) buddyFromDatabase.MagicSchoolBehavior.Level,
-            School = (uint) buddyFromDatabase.MagicSchoolBehavior.MagicSchool,
-            Gender = 0, // TODO: ?? Is 0 female? Male?
-
-            // Set each CRC as '1' to inform the client we're giving it new data.
-            StatBlockCRC = 1,
-        };
-
-        var statBlock = GetBuddyGameStats(buddyFromDatabase);
-
-        // Serialize each of the blocks.
-        var serializer = new ObjectSerializer(
-            Versionable: false,
-            Behaviors: SerializerFlags.SerializeFlags
-        );
-
-        // Check if the serialization was successful.
-        if (!serializer.Serialize(statBlock, 1, out var statBlockBytes)) {
-            Logger.Error("Player {0} requested stats for character ID {1}, but the serialization failed.",
-                Logger.Args(GetActiveWizard().PlayerNameBehavior.GetWizardName(), buddyCharID));
+        // An online player's own session holds their current health, gear and effects.
+        if (TryGetOnlinePlayer(buddyCharID, out var onlinePlayer)) {
+            var fwdMsg = new CHARACTER_103_PROTOCOL.MSG_BUDDYSTATSFWD {
+                Request = message,
+                BuddyCharId = buddyCharID,
+                Requester = SessionActor.ActorRef,
+                RequesterGameObjectId = wizard.GameObjectID
+            };
+            Context.ActorSelection(onlinePlayer.ActorPath).Tell(fwdMsg);
 
             return;
         }
-        else {
-            // Set the serialized data in the return message.
-            returnMessage.StatBlock = statBlockBytes;
 
-            // Log.
-            var wizardName = GetActiveWizard().PlayerNameBehavior.GetWizardName();
-            Logger.Debug("{0} has requested stats for character ID {1}.",
-                Logger.Args(wizardName, buddyCharID));
+        SendStoredBuddyStats(message, buddyCharID, SessionActor.ActorRef, targetCharacterGid: 0);
+    }
+
+    [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_BUDDYSTATSFWD))]
+    private void ReceiveBuddyStatsFwd(CHARACTER_103_PROTOCOL.MSG_BUDDYSTATSFWD message) {
+        var wizard = GetActiveWizard();
+        if (wizard is null || wizard.CharId != message.BuddyCharId) {
+            SendStoredBuddyStats(message.Request, message.BuddyCharId,
+                message.Requester, message.RequesterGameObjectId);
+
+            return;
         }
 
-
-        SendToSocket(returnMessage);
+        SendBuddyStats(wizard, message.Request, message.Requester, message.RequesterGameObjectId);
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_BUDDYREQUESTADD))]
@@ -481,7 +463,7 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
                 Error = 0,
                 Permissions = (uint) entryWizard.Account.GetAccountFlags(),
                 EntryLocale = _englishLocaleHash,
-                FriendInfo = 197120,           // TODO: What is this?
+                FriendInfo = BuildFriendInfo(entryWizard, friendSymbol: 0),
                 FriendDate = epochInSeconds,
                 FriendStatusDate = epochInSeconds,
             };
@@ -557,6 +539,28 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
             EntryGID = buddyCharID
         };
         SendToSocket(clientMsg);
+    }
+
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_BESTFRIEND))]
+    private void ReceiveBestFriend(GAME_5_PROTOCOL.MSG_BESTFRIEND message) {
+        // The client already shows the new symbol; the server only has to remember it for the next buddy list.
+        var wizard = GetActiveWizard();
+        var buddyCharID = message.BuddyID;
+
+        if (!wizard.FriendsBehavior.TryGetRelationship(buddyCharID, out var relationship)
+            || relationship.IsBrokenUp
+            || relationship.Blocked) {
+            Logger.Warning("{Name} tried to set a friend symbol on character ID {BuddyId}, who is not a friend.",
+                Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), buddyCharID));
+
+            return;
+        }
+
+        relationship.SetFriendSymbol(wizard.CharId, message.FriendSymbol);
+        BuddyRelationshipCollection.UpdateFriendSymbol(wizard.CharId, buddyCharID, message.FriendSymbol);
+
+        Logger.Debug("{Name} set friend symbol {Symbol} on character ID {BuddyId}.",
+            Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), message.FriendSymbol, buddyCharID));
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_GOTOPLAYER))]
@@ -696,7 +700,7 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
             GameObjectID = buddy.GameObjectID,
             Name = buddyByteName,
             Status = isOnline ? ONLINE_STATUS_CODE : OFFLINE_STATUS_CODE,
-            FriendInfo = 5702144,                                     // TODO: What is this?
+            FriendInfo = BuildFriendInfo(buddy, relationship.GetFriendSymbol(owner.CharId)),
             PasswordChat = 0,                                         // TODO: What is this?
             Permissions = (uint) buddy.Account.GetAccountFlags(),
             ZoneName = onlinePlayer?.CurrentZoneDisplayName ?? string.Empty,
@@ -737,16 +741,42 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
         }
     }
 
-    private WizGameStats GetBuddyGameStats(Wizard databaseBuddy) {
-        // Dragon database doesn't store any game stats because they follow a consistent
-        // pattern that allows us to recreate them when they log in. Since "database buddy"
-        // doesn't have any stats applied, this function must recreate them as if they were
-        // logging in themselves.
-        CharacterHelper.RecalculateGameStats(databaseBuddy);
+    private static uint BuildFriendInfo(Wizard buddy, byte friendSymbol) {
+        // The client unpacks this as level (high 16 bits), school (next byte) and best friend symbol (low byte).
+        var level = (uint) Math.Clamp(buddy.MagicSchoolBehavior.Level, 0, ushort.MaxValue);
+        var school = MagicSchoolIndex.ToSocialIndex(buddy.MagicSchoolBehavior.MagicSchool);
 
-        // The client type alternative 'GetClientTypeAlternative' doesn't return applied
-        // stats, only base stats. Use 'GetCombatGameStats' to get the base stats + applied.
-        return databaseBuddy.GameStats.GetCombatGameStats();
+        return (level << 16) | (school << 8) | friendSymbol;
+    }
+
+    private static void SendStoredBuddyStats(GAME_5_PROTOCOL.MSG_BUDDYSTATS request,
+                                             ulong buddyCharID,
+                                             IActorRef requester,
+                                             ulong targetCharacterGid) {
+        var storedBuddy = WizardCollection.GetCharacter(buddyCharID);
+        if (storedBuddy is null) {
+            Logger.Warning("Stats were requested for character ID {CharId}, but the character was not found.",
+                Logger.Args(buddyCharID));
+
+            return;
+        }
+
+        // The database keeps no stats or effects, so rebuild them the way a login does.
+        CharacterHelper.RecalculateGameStats(storedBuddy);
+        SendBuddyStats(storedBuddy, request, requester, targetCharacterGid);
+    }
+
+    private static void SendBuddyStats(Wizard buddy,
+                                       GAME_5_PROTOCOL.MSG_BUDDYSTATS request,
+                                       IActorRef requester,
+                                       ulong targetCharacterGid) {
+        var reply = BuddyStatsBuilder.Build(buddy, request, targetCharacterGid);
+        requester.Tell(reply);
+
+        Logger.Debug("Sent stats for {Name} (ID {CharId}). Block flags: stats {Stat}, avatar {Char}, "
+            + "equipment {Equip}, effects {Effect}, pet {Pet}, wishlist {Wishlist}.",
+            Logger.Args(buddy.PlayerNameBehavior.GetWizardName(), buddy.CharId, reply.StatBlockCRC, reply.CharBlockCRC,
+                reply.EquipBlockCRC, reply.EffectBlockCRC, reply.PetStatBlockCRC, reply.WishlistBlockCRC));
     }
 
 }

@@ -37,7 +37,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 09/27/2026
  */
 
 using System;
@@ -68,11 +68,19 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
 
     public static IActorRef Instance { get; private set; }
 
-    private static Dictionary<string, CommandProtocol> s_protocols;
+    private static readonly Lazy<Dictionary<string, CommandProtocol>> s_protocolsLazy = new(BuildProtocolTable);
+
+    private static Dictionary<string, CommandProtocol> s_protocols => s_protocolsLazy.Value;
 
     public CommandDispatcher() {
         Instance = Self;
-        s_protocols = [];
+    }
+
+    public static Props Props()
+        => Akka.Actor.Props.Create(() => new CommandDispatcher());
+
+    private static Dictionary<string, CommandProtocol> BuildProtocolTable() {
+        var protocols = new Dictionary<string, CommandProtocol>();
 
         // Get all types.
         var types = Assembly.GetExecutingAssembly().GetTypes();
@@ -89,14 +97,13 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
                         keyIncrememnt++;
                     }
 
-                    s_protocols[groupName] = protocol;
+                    protocols[groupName] = protocol;
                 }
             }
         }
-    }
 
-    public static Props Props() 
-        => Akka.Actor.Props.Create(() => new CommandDispatcher());
+        return protocols;
+    }
 
     private void ExecuteCommand(string commandName, CommandContext context) {
         commandName = commandName.Trim();
@@ -122,7 +129,7 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
         }
         else {
             // If we couldn't find it, try searching for protocols with no group name.
-            var protocols = s_protocols.Values.Where(x => string.IsNullOrEmpty(x.Group));
+            var protocols = s_protocols.Values.Where(x => x is not null && string.IsNullOrEmpty(x.Group));
             var commandFound = false;
 
             foreach (var p in protocols) {

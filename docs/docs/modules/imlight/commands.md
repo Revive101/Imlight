@@ -104,6 +104,21 @@ The `$clientTag` may contain spaces (e.g. `WC_Rattlebones_ButterFlyZone instance
 | unlearnall | Quality Assurance | `.sb unlearnall` | Unlearns all spells. |
 
 
+## Group Commands
+These act on your own group, with your own rights: `kick`, `leader` and `disband` only work if you are the group leader. The client has no kick button for regular groups, so `.group kick` fills that gap.
+
+| Command | Security | Syntax | Description |
+| ------- | -------- | ------ | ----------- |
+| info | Quality Assurance | `.group info` | Lists your group's members with their leader flag, zone and sigil slot. |
+| kick | Quality Assurance | `.group kick $name` | Removes a member from your group. Alias: `.group remove`. |
+| leader | Quality Assurance | `.group leader $name` | Makes another member the group leader. |
+| disband | Quality Assurance | `.group disband` | Disbands your group. |
+
+:::tip
+`$name` is the member's full wizard name and may contain spaces, so it is always the last argument. It is not case-sensitive.
+:::
+
+
 ## Debug Commands
 
 | Command | Security | Syntax | Description |

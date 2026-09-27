@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 08/22/2026
+ * Last Updated: 09/26/2026
  */
 
 using Akka.Actor;
@@ -43,6 +43,7 @@ using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
 using Imlight.CoreLib.Game.DropTables;
+using Imlight.CoreLib.Game.Groups;
 using Imlight.CoreLib.Game.Madlibs;
 using Imlight.CoreLib.Game.Requirements;
 using Imlight.CoreLib.Game.Requirements.Contexts;
@@ -328,6 +329,8 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_COMBATWIN))]
     private void ReceiveCombatVictory(COMBAT_106_PROTOCOL.MSG_COMBATWIN message) {
         var wizard = GetActiveWizard();
+        var foughtWithGroupMate = message.AllyCharIds?.Any(allyCharId => allyCharId != wizard.CharId
+            && GroupRegistry.AreGrouped(wizard.CharId, allyCharId)) == true;
 
         foreach (var qInstance in wizard.QuestBehavior.CurrentQuestInstances) {
             var qTemplate = _cachedQuestTemplates.FirstOrDefault(q => q.m_questName == qInstance.QuestName);
@@ -358,7 +361,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
                     continue;
                 }
 
-                ProcessCombatGoal(wizard, qInstance, bountyGoal, message.MobAdjectives);
+                ProcessCombatGoal(wizard, qInstance, bountyGoal, message.MobAdjectives, foughtWithGroupMate);
             }
         }
     }
@@ -810,7 +813,8 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
     private void ProcessCombatGoal(Wizard wizard,
                                    QuestInstance qInstance,
                                    BountyGoalTemplate goalTemplate,
-                                   string[] defeatedMobAdjectives) {
+                                   string[] defeatedMobAdjectives,
+                                   bool foughtWithGroupMate) {
         var shouldIncrement = goalTemplate.m_goalType == GOAL_TYPE.GOAL_TYPE_BOUNTY;
         var goalMobAdjectives = goalTemplate.m_npcAdjectives ?? [];
 
@@ -826,6 +830,12 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         if (goalTemplate.m_goalType == GOAL_TYPE.GOAL_TYPE_BOUNTYCOLLECT) {
             var chance = goalTemplate.m_tallyCounter?.m_percentChance ?? DEFAULT_KILL_COLLECT_CHANCE;
             shouldIncrement = new Random().NextDouble() <= chance;
+
+            // todo: live's bonus size is unknown; a group win gets one more roll at the same chance.
+            if (!shouldIncrement && foughtWithGroupMate && new Random().NextDouble() <= chance) {
+                shouldIncrement = true;
+                SendToSocket(new WIZARD_12_PROTOCOL.MSG_GROUPQUESTCREDIT());
+            }
         }
 
         if (shouldIncrement) {

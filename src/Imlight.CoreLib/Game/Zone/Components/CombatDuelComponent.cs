@@ -92,6 +92,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     private const string PREPLANNING_TIME_KEY = "PrePlanningPhase";
     private const string RESOUTION_TIME_KEY = "ResolutionPhase";
     private const double MINION_SUMMON_ANIMATION_DELAY = 5.5;
+    private const string GroupJoinPromptKey = "GUI_GotoFriendQuestion";
 
     public bool NoTransfer { get; set; } = false;
     public ITimerScheduler Timers { get; set; }
@@ -121,6 +122,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     public ulong SigilId => Entity.ActiveGameObject.m_globalID;
 
     private readonly Dictionary<CoreObject, IActorRef> _entitiesInRange = [];
+    private readonly CombatGroupReservations _groupReservations = new();
     private readonly ObjectSerializer _serializer = new(
         Versionable: false,
         Behaviors: SerializerFlags.None
@@ -273,12 +275,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
         // Broadcast MSG_DUEL to inform all clients a duel is now active.
         // The live server sends this to enable 3D combat targeting.
-        var duelBehavior = GetClientBehaviorInstance();
-        if (_serializer.Serialize(duelBehavior, _combatParticipantFlags, out var duelData)) {
-            ZoneBroadcast(new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_DUEL {
-                Data = duelData,
-            });
-        }
+        BroadcastDuel();
 
         // Fire a message to self to start the duel after the grace period has ended.
         var delay = TimeSpan.FromSeconds(DUEL_GRACE_PERIOD_IN_SECONDS);
@@ -293,6 +290,11 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
         Logger.Debug("Duel {0} | New round {1} at {2}",
             Logger.Args(Duel.m_duelID.Full, Duel.m_roundNum, DateTime.Now.ToString("HH:mm:ss")));
+
+        _groupReservations.DropStale(ZoneActor, SubCircles);
+        if (Duel.m_roundNum == 0) {
+            ApplyFullGroupInitiative();
+        }
 
         // Add the circles to combat if they are not already.
         AddWaitingCombatParticipants();
@@ -522,6 +524,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         _renderComponent?.Disable();
         Entity.DespawnObject();
         _entitiesInRange.Clear();
+        _groupReservations.Clear();
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT))]
@@ -579,7 +582,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         var startingPlayerObject = startingPlayerActor.Value;
 
         var availableCreatureSubCircle = GetAvailableSubCircleTeamCreature();
-        var availablePlayerSubCircle = GetAvailableSubCircleTeamPlayer();
+        var availablePlayerSubCircle = ChoosePlayerSubCircle(startingPlayerObject);
 
         if (availableCreatureSubCircle == null || availablePlayerSubCircle == null) {
             Logger.Error("Failed to find available sub circles for duel {0}", Logger.Args(SigilId));
@@ -591,6 +594,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         AssignParticipantToSubCircle(availablePlayerSubCircle, startingPlayerActor.Key, startingPlayerObject);
 
         _isActive = true;
+        ReserveCirclesForGroupOf(startingPlayerObject);
 
         Logger.Debug("Duel {0} | Created. Grace period over in {1}",
             Logger.Args(Duel.m_duelID.Full, DUEL_GRACE_PERIOD_IN_SECONDS));
@@ -774,13 +778,20 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     private void AddParticipant(CoreObject participantObject, IActorRef participantActor) {
         var isPlayer = participantObject.m_templateID == 1;
 
-        var alreadyInDuel = SubCircles.Any(x => x.ParticipantObject == participantObject);
+        var alreadyInDuel = SubCircles.Any(x => x?.ParticipantObject?.m_globalID == participantObject.m_globalID);
         if (alreadyInDuel) {
             return;
         }
 
-        var subCircle = isPlayer ? GetAvailableSubCircleTeamPlayer() : GetAvailableSubCircleTeamCreature();
+        var subCircle = isPlayer ? ChoosePlayerSubCircle(participantObject) : GetAvailableSubCircleTeamCreature();
         if (subCircle is null) {
+            if (isPlayer && _groupReservations.Count > 0) {
+                Logger.Debug("Duel {DuelId} | Every free circle is held for a group; {Participant} cannot join.",
+                    Logger.Args(Duel.m_duelID.Full, participantObject.m_debugName));
+
+                return;
+            }
+
             Logger.Warning("Duel {0} | No available sub circles for participant {1}",
                 Logger.Args(Duel.m_duelID.Full, participantObject.m_globalID));
 
@@ -791,7 +802,92 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
         Logger.Debug("Duel {0} | Slot {1} | Participant {2} joined",
             Logger.Args(Duel.m_duelID.Full, subCircle.SlotIndex, participantObject.m_debugName));
+
+        if (isPlayer) {
+            ReserveCirclesForGroupOf(participantObject);
+        }
     }
+
+    [MessageHandler(typeof(GROUP_109_PROTOCOL.MSG_JOINRESERVEDDUEL))]
+    private void ReceiveJoinReservedDuel(GROUP_109_PROTOCOL.MSG_JOINRESERVEDDUEL message) {
+        if (!_isActive || !_groupReservations.IsReservedFor(message.CharId)) {
+            return;
+        }
+
+        var subCircle = _groupReservations.ChoosePlayerCircle(message.CharId, SubCircles);
+        if (subCircle is null) {
+            return;
+        }
+
+        // The group mate may be anywhere in the zone; put them on their circle before they join.
+        ZoneBroadcast(new GAME_5_PROTOCOL.MSG_SERVERTELEPORT {
+            LocationX = CompressTeleportCoordinate(subCircle.WorldPosition.X),
+            LocationY = CompressTeleportCoordinate(subCircle.WorldPosition.Y),
+            LocationZ = CompressTeleportCoordinate(subCircle.WorldPosition.Z),
+            Direction = (byte) Math.Round(subCircle.WorldRotation / (2 * Math.PI) * 250),
+            MobileID = message.PlayerObject.m_nMobileID,
+        });
+
+        AddParticipant(message.PlayerObject, message.PlayerActor);
+    }
+
+    private CombatDuelSubCircle ChoosePlayerSubCircle(CoreObject playerObject) {
+        if (!Wizard.TryGetCharacterId(playerObject.m_globalID, out var charId)) {
+            return GetAvailableSubCircleTeamPlayer();
+        }
+
+        var subCircle = _groupReservations.ChoosePlayerCircle(charId, SubCircles);
+        if (subCircle is not null) {
+            _groupReservations.Release(charId);
+        }
+
+        return subCircle;
+    }
+
+    private void ReserveCirclesForGroupOf(CoreObject playerObject) {
+        if (IsScriptedDuel() || !Wizard.TryGetCharacterId(playerObject.m_globalID, out var charId)) {
+            return;
+        }
+
+        foreach (var groupMate in _groupReservations.ReserveForGroupOf(charId, ZoneActor, SubCircles)) {
+            Logger.Debug("Duel {DuelId} | Holding a circle for group mate {GroupMate} of {CharId}.",
+                Logger.Args(Duel.m_duelID.Full, groupMate.CharId, charId));
+
+            // Accepting sends MSG_GotoPlayerConfirm back, which GroupService turns into MSG_JOINRESERVEDDUEL.
+            groupMate.Session?.Tell(new WIZARD2_53_PROTOCOL.MSG_GotoPlayerConfirm {
+                PromptKey = GroupJoinPromptKey,
+                TargetCharacterID = charId,
+                DisableCrossPlay = 0,
+                ClientPlatform = 0
+            });
+        }
+    }
+
+    private void ApplyFullGroupInitiative() {
+        if (IsScriptedDuel() || !CombatGroupReservations.IsFullGroup(SubCircles)) {
+            return;
+        }
+
+        Duel.m_fullPartyGroup = true;
+        Duel.m_firstTeamToAct = (int) CombatTeam.Player;
+
+        // The client reads the full group flag from the duel object when its combat intro starts.
+        BroadcastDuel();
+
+        Logger.Debug("Duel {DuelId} | A full group takes the first turn.", Logger.Args(Duel.m_duelID.Full));
+    }
+
+    private void BroadcastDuel() {
+        var duelBehavior = GetClientBehaviorInstance();
+        if (_serializer.Serialize(duelBehavior, _combatParticipantFlags, out var duelData)) {
+            ZoneBroadcast(new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_DUEL {
+                Data = duelData,
+            });
+        }
+    }
+
+    private static ushort CompressTeleportCoordinate(float coordinate)
+        => unchecked((ushort) (short) MathF.Round(coordinate / 4));
 
     private void SendCombatPhase(byte phase) {
         // Determine which sigil slot the client should point its turn indicator at.
@@ -1278,6 +1374,13 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
             }
         });
 
+        var allyCharIds = new List<ulong>();
+        EnactActionOnSubCircles(circle => {
+            if (CombatGroupReservations.TryGetCharId(circle, out var charId)) {
+                allyCharIds.Add(charId);
+            }
+        });
+
         // Send the final messages to the participants.
         var combatVictoryMsg = new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATVICTORY();
         EnactActionOnSubCircles(circle => {
@@ -1291,6 +1394,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
                 UsedPips = circle._usedPipsForExperienceGain,
                 MobAdjectives = [.. adjectivesOfDefeatedMobs],
                 MobTemplateIds = [.. templateIdsOfDefeatedMobs],
+                AllyCharIds = [.. allyCharIds],
             };
             circle.ParticipantActor.Tell(victoryMsg);
         });

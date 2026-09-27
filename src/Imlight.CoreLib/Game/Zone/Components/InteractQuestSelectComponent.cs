@@ -33,7 +33,7 @@
  *
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 08/22/2026
+ * Last Updated: 09/26/2026
  */
 
 using System.Collections.Generic;
@@ -64,9 +64,11 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
 
     private readonly Dictionary<string, List<GoalTemplate>> _usageGoalsByQuest = [];
 
+    // An InteractableBehavior template is not in the type registry and deserializes as null, so
+    // interactable-only objects (the alchemy table) are found by the usage goals that name them.
     public static bool ShouldAttachToEntity(CoreTemplate template)
-        => template is GameObjectTemplate
-        && template.m_behaviors.Any(x => x is not null && x.m_behaviorName == "WizardSelectBehavior");
+        => template is GameObjectTemplate gameObjectTemplate
+        && (HasBehavior(template, "WizardSelectBehavior") || IsNamedByAnyUsageGoal(gameObjectTemplate));
 
     public IEnumerable<ServiceOptionBase> GetServiceOptions(Wizard playerCharacter) {
         if (playerCharacter?.QuestBehavior?.CurrentQuestInstances == null) {
@@ -194,6 +196,15 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
                && goalProgress.CurrentProgress > -1
                && goalProgress.CurrentProgress != int.MaxValue
                && (goalName == null || goalProgress.GoalName == goalName);
+
+    private static bool HasBehavior(CoreTemplate template, string behaviorName)
+        => template.m_behaviors.Any(x => x is not null && x.m_behaviorName == behaviorName);
+
+    private static bool IsNamedByAnyUsageGoal(GameObjectTemplate gameObjectTemplate)
+        => QuestTemplateCollection.GetAllQuests()
+            .Where(q => q is not null)
+            .SelectMany(q => q.m_goals)
+            .Any(g => g is not null && g.m_goalType == GOAL_TYPE.GOAL_TYPE_USAGE && DoesGoalMatchObject(gameObjectTemplate, g));
 
     private static bool DoesGoalMatchObject(GameObjectTemplate gameObjectTemplate, GoalTemplate goal) {
         if (goal.m_clientTags?.Contains(gameObjectTemplate.m_objectName) == true) {

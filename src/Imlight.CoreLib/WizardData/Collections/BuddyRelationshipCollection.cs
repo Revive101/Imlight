@@ -48,7 +48,7 @@
  * 
  * Created by: JOOTY
  * Version: KALI 1.0
- * Last Updated: 04/27/2025
+ * Last Updated: 09/26/2026
  */
 
 using System.Collections.Generic;
@@ -141,6 +141,26 @@ public static class BuddyRelationshipCollection {
         metadata[Raven.Client.Constants.Documents.Metadata.Expires] = KeyExpireTimeInHours;
 
         session.SaveChanges();
+    }
+
+    /// <summary>
+    /// Stores the best friend symbol <paramref name="ownerId"/> shows beside <paramref name="buddyId"/>.
+    /// </summary>
+    /// <returns>True if the relationship exists and was updated.</returns>
+    public static bool UpdateFriendSymbol(ulong ownerId, ulong buddyId, byte symbol) {
+        using var session = s_store.OpenSession();
+
+        var relationship = session.Query<Relationship>(collectionName: CollectionName)
+            .FirstOrDefault(r => (r.FirstPlayerId == ownerId && r.SecondPlayerId == buddyId)
+                              || (r.FirstPlayerId == buddyId && r.SecondPlayerId == ownerId));
+        if (relationship is null) {
+            return false;
+        }
+
+        relationship.SetFriendSymbol(ownerId, symbol);
+        session.SaveChanges();
+
+        return true;
     }
 
     /// <summary>

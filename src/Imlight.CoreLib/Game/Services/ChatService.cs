@@ -36,7 +36,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 09/26/2026
  */
 
 using System;
@@ -49,6 +49,7 @@ using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
 using Imlight.CoreLib.Game.Commands;
+using Imlight.CoreLib.Game.Groups;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Utilities;
@@ -228,8 +229,15 @@ internal class ChatService(SessionActor sessionActor) : MessageService(sessionAc
             return;
         }
 
-        // Check if the target has ignored the sender.
+        // The client's /party line is a directed chat aimed at the group's channel ID.
         var myWizard = GetActiveWizard();
+        if (GroupRegistry.IsGroupChannel(targetID)) {
+            SendGroupChat(message, myWizard);
+
+            return;
+        }
+
+        // Check if the target has ignored the sender.
         if (BuddyRelationshipCollection.HasBlocked(targetID, myWizard.CharId)) {
             return;
         }
@@ -307,7 +315,24 @@ internal class ChatService(SessionActor sessionActor) : MessageService(sessionAc
         return cleanedMessage;
     }
 
-    private static void LogChatMessage(string name, string message, string zoneName) 
+    private void SendGroupChat(GAME_5_PROTOCOL.MSG_REQUESTDIRECTEDCHAT message, Wizard wizard) {
+        var hexName = wizard.PlayerNameBehavior.GetWizardNameAsByteHexString();
+        var text = message.Message.ToString() ?? string.Empty;
+
+        GroupDirectory.Instance?.Tell(new GROUP_109_PROTOCOL.MSG_GROUPCHAT {
+            SenderCharId = wizard.CharId,
+            ChannelId = message.TargetID,
+            SourceName = DataManipulation.SpacedHexStringToBytes(hexName),
+            Message = message.Message,
+            CharIdsIgnoringSender = BuddyRelationshipCollection.GetCharactersWhoBlocked(wizard.CharId)
+        });
+
+        Logger.Information("[Group {Channel}] {Name}: {Message}",
+            Logger.Args(message.TargetID, wizard.PlayerNameBehavior.GetWizardName(), text));
+        SaveChatLog(text, GetActiveGameObject(), wizard);
+    }
+
+    private static void LogChatMessage(string name, string message, string zoneName)
         => Logger.Information("[{0}] {1}: {2}", Logger.Args(zoneName, name, message));
 
     private static void SaveChatLog(string message, CoreObject charObj, Wizard character) 

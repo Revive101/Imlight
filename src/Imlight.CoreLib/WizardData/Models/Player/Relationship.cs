@@ -33,6 +33,16 @@ public class Relationship {
     public uint RelationshipEpochInSeconds { get; set; }
     public bool IsBrokenUp { get; set; }
 
+    /// <summary>
+    /// The best friend symbol the first player shows beside the second; 0 is none.
+    /// </summary>
+    public byte FirstPlayerFriendSymbol { get; set; }
+
+    /// <summary>
+    /// The best friend symbol the second player shows beside the first; 0 is none.
+    /// </summary>
+    public byte SecondPlayerFriendSymbol { get; set; }
+
     // ctor
     public Relationship(ulong firstPlayerId,
                         ulong secondPlayerId,
@@ -54,5 +64,22 @@ public class Relationship {
     // after deserialization.
     [JsonConstructor]
     public Relationship() { }
-    
+
+    /// <summary>
+    /// The symbol <paramref name="ownerId"/> has chosen for the other player in this relationship.
+    /// </summary>
+    public byte GetFriendSymbol(ulong ownerId)
+        => ownerId == FirstPlayerId ? FirstPlayerFriendSymbol : SecondPlayerFriendSymbol;
+
+    /// <summary>
+    /// Records the symbol <paramref name="ownerId"/> shows beside the other player.
+    /// </summary>
+    public void SetFriendSymbol(ulong ownerId, byte symbol) {
+        if (ownerId == FirstPlayerId) {
+            FirstPlayerFriendSymbol = symbol;
+        } else {
+            SecondPlayerFriendSymbol = symbol;
+        }
+    }
+
 }

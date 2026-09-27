@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 09/26/2026
  */
 
 using Akka.Actor;
@@ -43,6 +43,7 @@ using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -60,7 +61,8 @@ internal sealed class VolumeComponent(ZoneEntity entity) : ZoneEntityComponent(e
     public override void OnPlayerJoin(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) {
         // If the player spawned within the volume, add them to the list of players in range but
         // do not send any events.
-        if (_volume != null && IsInRadius(playerObj, _volume.m_radius) && !_playersInRange.ContainsKey(playerObj)) {
+        var isInside = _volume != null && (IsBox ? IsInsideBox(playerObj) : IsInRadius(playerObj, _volume.m_radius));
+        if (isInside && !_playersInRange.ContainsKey(playerObj)) {
             _playersInRange.Add(playerObj, playerActor);
 
             // A player can log in standing inside a quest-proximity volume.
@@ -70,6 +72,13 @@ internal sealed class VolumeComponent(ZoneEntity entity) : ZoneEntityComponent(e
 
     public override void OnPlayerMove(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) {
         if (_volume == null) {
+            return;
+        }
+
+        // todo: a box volume only drives quest proximity goals here; should it post its enter/exit events too?
+        if (IsBox) {
+            UpdateBoxProximityGoals(playerObj, playerActor, playerWizard);
+
             return;
         }
 
@@ -113,6 +122,33 @@ internal sealed class VolumeComponent(ZoneEntity entity) : ZoneEntityComponent(e
 
                 _volumeGoals.Add((quest.m_questName, goal.m_goalName));
             }
+        }
+    }
+
+    private bool IsBox
+        => _volume.m_radius <= 0 && _volume.m_length > 0 && _volume.m_width > 0;
+
+    private bool IsInsideBox(CoreObject obj) {
+        // Length runs along the volume's local X and width along its local Y, both centered on it.
+        var center = Entity.ActiveGameObject.m_location;
+        var dx = obj.m_location.X - center.X;
+        var dy = obj.m_location.Y - center.Y;
+        var yaw = _volume.m_orientation.Z;
+        var localX = (dx * MathF.Cos(yaw)) + (dy * MathF.Sin(yaw));
+        var localY = (dy * MathF.Cos(yaw)) - (dx * MathF.Sin(yaw));
+
+        return MathF.Abs(localX) <= _volume.m_length / 2 && MathF.Abs(localY) <= _volume.m_width / 2;
+    }
+
+    private void UpdateBoxProximityGoals(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) {
+        if (!IsInsideBox(playerObj)) {
+            _playersInRange.Remove(playerObj);
+
+            return;
+        }
+
+        if (_playersInRange.TryAdd(playerObj, playerActor)) {
+            NotifyProximityGoals(playerObj, playerActor, playerWizard);
         }
     }
 
