@@ -28,26 +28,12 @@
  * 
  * NOTE:
  * 
- * There are following (possible) itemFlags:
- *  0x0001 (Bit 0)	FLAG_NoTrade	The purchased item cannot be placed in the Shared Bank or traded to other characters on the account.
- *  0x0002 (Bit 1)	FLAG_NoAuction	The purchased item cannot be auctioned at the Bazaar.
- *  0x0004 (Bit 2)	FLAG_NoSell	The item cannot be sold to regular vendors for gold.
- *  0x0008 (Bit 3)	FLAG_NoDrop	Item cannot be deleted / dropped from inventory without extra confirmation.
- *  0x0010 (Bit 4)	FLAG_No_PvP	Item cannot be used in PvP (Ranked or Practice).
- *  0x0020 (Bit 5)	FLAG_CrownsOnly	Flags the item as a Crowns-exclusive item in the UI (shows Crowns badge).
- *  0x0040 (Bit 6)	FLAG_NoGift	Disallows gifting this specific item to friends (similar to m_noGift).
- *  0x0080 (Bit 7)	FLAG_Retired	Marks the item as retired / legacy (often hidden or archived).
- *  0x0100 (Bit 8)	FLAG_NoDye	Item cannot be dyed in the Dye Shop.
- *  0x0200 (Bit 9)	FLAG_PvPCurrencyOnly	Item can only be purchased with PvP Arena Tickets / currency.
- *  0x0400 (Bit 10)	FLAG_ArenaPointsOnly	Item is restricted to Arena point purchases.
- *  0x0800 (Bit 11)	FLAG_DoubleConfirmDrop	Requires double confirmation when trashing/deleting the item.
- *  0x1000 (Bit 12)	FLAG_NoBargain	Prevents discount / bargain calculations on the item.
  * 
  * TODO:
  * - Populating with correct data
  * - Item purchasing
  * - Removing from wishlist (& Wishlist privacy)
- * - Daily Spiral
+ * - Daily Spiral quests
  * 
  * Created by: Phill030
  * Version: KALI 1.0
@@ -76,38 +62,6 @@ namespace Imlight.CoreLib.Game.Services;
 
 
 internal class CrownShopService(SessionActor sessionActor) : MessageService(sessionActor) {
-
-    [Flags]
-    public enum ItemFlags {
-        None = 0x0000,
-        NoTrade = 0x0001,
-        NoAuction = 0x0002,
-        NoSell = 0x0004,
-        NoDrop = 0x0008,
-        NoPvP = 0x0010,
-        CrownsOnly = 0x0020,
-        NoGift = 0x0040,
-        Retired = 0x0080,
-        NoDye = 0x0100,
-        PvPCurrencyOnly = 0x0200,
-        ArenaPointsOnly = 0x0400,
-        DoubleConfirmDrop = 0x0800,
-        NoBargain = 0x1000,
-
-        All = NoTrade
-            | NoAuction
-            | NoSell
-            | NoDrop
-            | NoPvP
-            | CrownsOnly
-            | NoGift
-            | Retired
-            | NoDye
-            | PvPCurrencyOnly
-            | ArenaPointsOnly
-            | DoubleConfirmDrop
-            | NoBargain
-    }
 
     private static readonly ConcurrentDictionary<ulong, Dictionary<RarityType, List<(BoosterDropItem Item, RarityType Rarity)>>> s_packDropPools = new();
 
@@ -447,6 +401,7 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
         if (slotName.Contains("Uncommon", StringComparison.OrdinalIgnoreCase)) {
             return RarityType.RT_UNCOMMON;
         }
+
         return RarityType.RT_COMMON;
     }
 
