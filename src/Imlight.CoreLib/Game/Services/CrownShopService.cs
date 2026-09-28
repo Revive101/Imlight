@@ -25,7 +25,6 @@
  * 
  * USAGE EXAMPLE:
  *
- *
  * 
  * NOTE:
  * 
@@ -45,15 +44,14 @@
  *  0x1000 (Bit 12)	FLAG_NoBargain	Prevents discount / bargain calculations on the item.
  * 
  * TODO:
+ * - Populating with correct data
  * - Item purchasing
  * - Removing from wishlist (& Wishlist privacy)
  * - Daily Spiral
- * - Populate store
- * - find out what flags do
  * 
  * Created by: Phill030
  * Version: KALI 1.0
- * Last Updated: 14.09.2026
+ * Last Updated: 28.09.2026
  */
 
 using Akka.Actor;
@@ -63,6 +61,7 @@ using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.Types;
 using Imlight.Common;
+using Imlight.CoreLib.Game.CrownShop;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Collections;
@@ -78,686 +77,100 @@ namespace Imlight.CoreLib.Game.Services;
 
 internal class CrownShopService(SessionActor sessionActor) : MessageService(sessionActor) {
 
-    // One tab can have multiple categories (Gear -> Hat, Robe, Shoes, etc.)
-    private static readonly IReadOnlyList<CrownShopCategoryMenu> _tabs = new[] {
-        new CrownShopCategoryMenu() {
-            m_name = "CrownShopSWF_DailySpiral",
-            m_ID = 36,
-            m_description = "0",
-            m_iconResource = "GUI/CrownShopIcons/Categories/DailySpiral.dds",
-            m_categoryIDs = new List<int>() { 0,25,2,4,16,8,15,13,5,7 },
-            m_tags = "Splash"
-        },
-        new CrownShopCategoryMenu() {
-            m_name = "CrownShopSWF_MenuFeatured",
-            m_ID = 37,
-            m_description = "Featured",
-            m_iconResource = "GUI/CrownShopIcons/Categories/Sale_Items.dds",
-            m_categoryIDs = new List<int>() { 0 },
-            m_tags = "Seperate"
-        },
-        new CrownShopCategoryMenu() {
-            m_name = "CrownShopSWF_MenuCards",
-            m_ID = 38,
-            m_description = "0",
-            m_iconResource = "GUI/CrownShopIcons/Categories/Cards.dds",
-            m_categoryIDs = new List<int>() { 25,26,20 },
-            m_tags = "Seperate"
-        },
-        new CrownShopCategoryMenu() {
-            m_name = "CrownShopSWF_MenuMounts",
-            m_ID = 39,
-            m_description = "0",
-            m_iconResource = "GUI/CrownShopIcons/Categories/Mounts_Permanent.dds",
-            m_categoryIDs = new List<int>() { 2,3 },
-            m_tags = "Seperate"
-        },
-        new CrownShopCategoryMenu() {
-            m_name = "CrownShopSWF_MenuPets",
-            m_ID = 40,
-            m_description = "0",
-            m_iconResource = "GUI/CrownShopIcons/Categories/Pets.dds",
-            m_categoryIDs = new List<int>() { 4, 26 },
-            m_tags = "Seperate"
-        },
-        new CrownShopCategoryMenu() {
-            m_name = "CrownShopSWF_MenuGold",
-            m_ID = 41,
-            m_description = "0",
-            m_iconResource = "GUI/CrownShopIcons/Categories/Gold.dds",
-            m_categoryIDs = new List<int>() { 1, 47 },
-            m_tags = "Seperate"
-        },
-        new CrownShopCategoryMenu() {
-            m_name = "CrownShopSWF_MenuElixirs",
-            m_ID = 42,
-            m_description = "0",
-            m_iconResource = "GUI/CrownShopIcons/Categories/Elixirs.dds",
-            m_categoryIDs = new List<int>() { 16,34,35 },
-            m_tags = "Seperate"
-        },
-        new CrownShopCategoryMenu() {
-            m_name = "CrownShopSWF_MenuGear",
-            m_ID = 43,
-            m_description = "0",
-            m_iconResource = "GUI/CrownShopIcons/Categories/Clothing.dds",
-            m_categoryIDs = new List<int>() { 8, 15, 13, 10, 9, 11, 17, 23, 12, 14 },
-            m_tags = "Seperate"
-        },
-        new CrownShopCategoryMenu() {
-            m_name = "CrownShopSWF_MenuHousing",
-            m_ID = 44,
-            m_description = "0",
-            m_iconResource = "GUI/CrownShopIcons/Categories/Housing.dds",
-            m_categoryIDs = new List<int>() { 5,7,30,27,6,24,21,22 },
-            m_tags = "Seperate"
-        },
-        new CrownShopCategoryMenu() {
-            m_name = "CrownShopSWF_MenuGameplay",
-            m_ID = 45,
-            m_description = "0",
-            m_iconResource = "GUI/CrownShopIcons/Categories/Everything.dds",
-            m_categoryIDs = new List<int>() { 18,33,28,29,31,32,48,19 },
-            m_tags = "Seperate"
-        },
-        new CrownShopCategoryMenu() {
-            m_name = "CrownShopSWF_Wishlist",
-            m_ID = 46,
-            m_description = "0",
-            m_iconResource = "GUI/CrownShopIcons/Categories/Wishlist.dds",
-            m_categoryIDs = [],
-            m_tags = "Wishlist"
-        }
-    };
-    private static readonly IReadOnlyList<CrownShopCategory> _categories = new[] {
-    new CrownShopCategory() {
-        m_name = "CrownShopSWF_CategoryFeatured",
-        m_ID = 0,
-        m_parentTabID = 37,
-        m_description = "0",
-        m_iconResource = "GUI/CrownShopIcons/Categories/Sale_Items.dds",
-        m_tags = "Featured",
-        m_dontFilterOwnedRecoItems = false,
-        m_allowMultipleBuy = false,
-        m_forceDisallowMultipleBuy = false,
-        m_isHousesCategory = false,
-        m_isEverythingCategory = false,
-        m_isGroupElixirsCategory = false
-    },
-
-    new CrownShopCategory
-    {
-        m_name = "CrownShopSWF_CategoryGold",
-        m_ID = 1,
-        m_parentTabID = 41,
-        m_description = "0",
-        m_iconResource = "GUI/CrownShopIcons/Categories/Gold.dds",
-        m_tags = "None",
-        m_dontFilterOwnedRecoItems = true,
-        m_allowMultipleBuy = false,
-        m_forceDisallowMultipleBuy = true,
-        m_isHousesCategory = false,
-        m_isEverythingCategory = false,
-        m_isGroupElixirsCategory = false
-    },
-    new CrownShopCategory
-    {
-        m_name = "CrownShopSWF_CategoryPermanentMounts",
-        m_ID = 2,
-        m_parentTabID = 39,
-        m_description = "0",
-        m_iconResource = "GUI/CrownShopIcons/Categories/Mounts_Permanent.dds",
-        m_tags = "None",
-        m_dontFilterOwnedRecoItems = false,
-        m_allowMultipleBuy = true,
-        m_forceDisallowMultipleBuy = false,
-        m_isHousesCategory = false,
-        m_isEverythingCategory = false,
-        m_isGroupElixirsCategory = false
-    },
-    new CrownShopCategory
-    {
-        m_name = "CrownShopSWF_CategoryRentalMounts",
-        m_ID = 3,
-        m_parentTabID = 39,
-        m_description = "0",
-        m_iconResource = "GUI/CrownShopIcons/Categories/Mounts_Rental.dds",
-        m_tags = "None",
-        m_dontFilterOwnedRecoItems = false,
-        m_allowMultipleBuy = false,
-        m_forceDisallowMultipleBuy = true,
-        m_isHousesCategory = false,
-        m_isEverythingCategory = false,
-        m_isGroupElixirsCategory = false
-    },
-    new CrownShopCategory
-    {
-        m_name = "CrownShopSWF_CategoryPets",
-        m_ID = 4,
-        m_parentTabID = 40,
-        m_description = "0",
-        m_iconResource = "GUI/CrownShopIcons/Categories/Pets.dds",
-        m_tags = "None",
-        m_dontFilterOwnedRecoItems = false,
-        m_allowMultipleBuy = true,
-        m_forceDisallowMultipleBuy = false,
-        m_isHousesCategory = false,
-        m_isEverythingCategory = false,
-        m_isGroupElixirsCategory = false
-    },
-    new CrownShopCategory
-    {
-        m_name = "CrownShopSWF_CategoryHouses",
-        m_ID = 5,
-        m_parentTabID = 44,
-        m_description = "0",
-        m_iconResource = "GUI/CrownShopIcons/Categories/Housing.dds",
-        m_tags = "None",
-        m_dontFilterOwnedRecoItems = false,
-        m_allowMultipleBuy = false,
-        m_forceDisallowMultipleBuy = true,
-        m_isHousesCategory = true,
-        m_isEverythingCategory = false,
-        m_isGroupElixirsCategory = false
-    },
-    new CrownShopCategory
-    {
-        m_name = "CrownShopSWF_CategoryFurniture",
-        m_ID = 6,
-        m_parentTabID = 44,
-        m_description = "0",
-        m_iconResource = "GUI/CrownShopIcons/Categories/Furniture.dds",
-        m_tags = "None",
-        m_dontFilterOwnedRecoItems = true,
-        m_allowMultipleBuy = true,
-        m_forceDisallowMultipleBuy = false,
-        m_isHousesCategory = false,
-        m_isEverythingCategory = false,
-        m_isGroupElixirsCategory = false
-    },
-    new CrownShopCategory
-    {
-        m_name = "CrownShopSWF_CategoryGardening",
-        m_ID = 7,
-        m_parentTabID = 44,
-        m_description = "0",
-        m_iconResource = "GUI/CrownShopIcons/Categories/Seeds.dds",
-        m_tags = "None",
-        m_dontFilterOwnedRecoItems = true,
-        m_allowMultipleBuy = true,
-        m_forceDisallowMultipleBuy = false,
-        m_isHousesCategory = false,
-        m_isEverythingCategory = false,
-        m_isGroupElixirsCategory = false
-    },
-    new CrownShopCategory
-    {
-        m_name = "CrownShopSWF_CategoryClothingBundle",
-        m_ID = 8,
-        m_parentTabID = 43,
-        m_description = "0",
-        m_iconResource = "GUI/CrownShopIcons/Categories/Clothing_Sets.dds",
-        m_tags = "None",
-        m_dontFilterOwnedRecoItems = false,
-        m_allowMultipleBuy = true,
-        m_forceDisallowMultipleBuy = false,
-        m_isHousesCategory = false,
-        m_isEverythingCategory = false,
-        m_isGroupElixirsCategory = false
-    },
-    new CrownShopCategory
-    {
-        m_name = "CrownShopSWF_CategoryRobes",
-        m_ID = 9,
-        m_parentTabID = 43,
-        m_description = "0",
-        m_iconResource = "GUI/CrownShopIcons/Categories/Robes.dds",
-        m_tags = "None",
-        m_dontFilterOwnedRecoItems = false,
-        m_allowMultipleBuy = true,
-        m_forceDisallowMultipleBuy = false,
-        m_isHousesCategory = false,
-        m_isEverythingCategory = false,
-        m_isGroupElixirsCategory = false
-    },
-    new CrownShopCategory
-    {
-        m_name = "CrownShopSWF_CategoryShoes",
-        m_ID = 10,
-        m_parentTabID = 43,
-        m_description = "0",
-        m_iconResource = "GUI/CrownShopIcons/Categories/Shoes.dds",
-        m_tags = "None",
-        m_dontFilterOwnedRecoItems = false,
-        m_allowMultipleBuy = true,
-        m_forceDisallowMultipleBuy = false,
-        m_isHousesCategory = false,
-        m_isEverythingCategory = false,
-        m_isGroupElixirsCategory = false
-    },
-    new CrownShopCategory
-    {
-        m_name = "CrownShopSWF_CategoryHats",
-        m_ID = 11,
-        m_parentTabID = 43,
-        m_description = "0",
-        m_iconResource = "GUI/CrownShopIcons/Categories/Clothing.dds",
-        m_tags = "None",
-        m_dontFilterOwnedRecoItems = false,
-        m_allowMultipleBuy = true,
-        m_forceDisallowMultipleBuy = false,
-        m_isHousesCategory = false,
-        m_isEverythingCategory = false,
-        m_isGroupElixirsCategory = false
-    },
-    new CrownShopCategory
-    {
-        m_name = "CrownShopSWF_CategoryRings",
-        m_ID = 12,
-        m_parentTabID = 43,
-        m_description = "0",
-        m_iconResource = "GUI/CrownShopIcons/Categories/Rings.dds",
-        m_tags = "None",
-        m_dontFilterOwnedRecoItems = false,
-        m_allowMultipleBuy = true,
-        m_forceDisallowMultipleBuy = false,
-        m_isHousesCategory = false,
-        m_isEverythingCategory = false,
-        m_isGroupElixirsCategory = false
-    },
-    new CrownShopCategory
-    {
-        m_name = "CrownShopSWF_CategoryAmulets",
-        m_ID = 13,
-        m_parentTabID = 43,
-        m_description = "0",
-        m_iconResource = "GUI/CrownShopIcons/Categories/Amulets.dds",
-        m_tags = "None",
-        m_dontFilterOwnedRecoItems = false,
-        m_allowMultipleBuy = true,
-        m_forceDisallowMultipleBuy = false,
-        m_isHousesCategory = false,
-        m_isEverythingCategory = false,
-        m_isGroupElixirsCategory = false
-    },
-    new CrownShopCategory
-    {
-        m_name = "CrownShopSWF_CategoryAthames",
-        m_ID = 14,
-        m_parentTabID = 43,
-        m_description = "0",
-        m_iconResource = "GUI/CrownShopIcons/Categories/Athames.dds",
-        m_tags = "None",
-        m_dontFilterOwnedRecoItems = false,
-        m_allowMultipleBuy = true,
-        m_forceDisallowMultipleBuy = false,
-        m_isHousesCategory = false,
-        m_isEverythingCategory = false,
-        m_isGroupElixirsCategory = false
-    },
-    new CrownShopCategory
-    {
-        m_name = "CrownShopSWF_CategoryWeapons",
-        m_ID = 15,
-        m_parentTabID = 43,
-        m_description = "0",
-        m_iconResource = "GUI/CrownShopIcons/Categories/Weapons.dds",
-        m_tags = "None",
-        m_dontFilterOwnedRecoItems = false,
-        m_allowMultipleBuy = true,
-        m_forceDisallowMultipleBuy = false,
-        m_isHousesCategory = false,
-        m_isEverythingCategory = false,
-        m_isGroupElixirsCategory = false
-    },
-    new CrownShopCategory
-    {
-        m_name = "CrownShopSWF_CategoryElixirs",
-        m_ID = 16,
-        m_parentTabID = 42,
-        m_description = "0",
-        m_iconResource = "GUI/CrownShopIcons/Categories/Elixirs.dds",
-        m_tags = "None",
-        m_dontFilterOwnedRecoItems = true,
-        m_allowMultipleBuy = true,
-        m_forceDisallowMultipleBuy = false,
-        m_isHousesCategory = false,
-        m_isEverythingCategory = false,
-        m_isGroupElixirsCategory = false
-    },
-    new CrownShopCategory
-    {
-        m_name = "CrownShopSWF_CategoryTransformations",
-        m_ID = 17,
-        m_parentTabID = 43,
-        m_description = "0",
-        m_iconResource = "GUI/CrownShopIcons/Categories/Transformations.dds",
-        m_tags = "None",
-        m_dontFilterOwnedRecoItems = false,
-        m_allowMultipleBuy = true,
-        m_forceDisallowMultipleBuy = false,
-        m_isHousesCategory = false,
-        m_isEverythingCategory = false,
-        m_isGroupElixirsCategory = false
-    },
-    new CrownShopCategory
-    {
-        m_name = "CrownShopSWF_CategoryHenchmen",
-        m_ID = 18,
-        m_parentTabID = 45,
-        m_description = "0",
-        m_iconResource = "GUI/CrownShopIcons/Categories/Henchmen.dds",
-        m_tags = "OpenToDuringCombat",
-        m_dontFilterOwnedRecoItems = false,
-        m_allowMultipleBuy = false,
-        m_forceDisallowMultipleBuy = true,
-        m_isHousesCategory = false,
-        m_isEverythingCategory = false,
-        m_isGroupElixirsCategory = false
-    },
-    new CrownShopCategory
-    {
-        m_name = "CrownShopSWF_CategoryEverything",
-        m_ID = 19,
-        m_parentTabID = 45,
-        m_description = "0",
-        m_iconResource = "GUI/CrownShopIcons/Categories/Everything.dds",
-        m_tags = "None",
-        m_dontFilterOwnedRecoItems = false,
-        m_allowMultipleBuy = false,
-        m_forceDisallowMultipleBuy = false,
-        m_isHousesCategory = false,
-        m_isEverythingCategory = true,
-        m_isGroupElixirsCategory = false
-    },
-    new CrownShopCategory
-    {
-        m_name = "CrownShopSWF_CategoryBoosters",
-        m_ID = 20,
-        m_parentTabID = 38,
-        m_description = "0",
-        m_iconResource = "GUI/CrownShopIcons/Categories/CCG.dds",
-        m_tags = "None",
-        m_dontFilterOwnedRecoItems = true,
-        m_allowMultipleBuy = true,
-        m_forceDisallowMultipleBuy = false,
-        m_isHousesCategory = false,
-        m_isEverythingCategory = false,
-        m_isGroupElixirsCategory = false
-    },
-    new CrownShopCategory
-    {
-        m_name = "CrownShopSWF_CategoryTeleporters",
-        m_ID = 21,
-        m_parentTabID = 44,
-        m_description = "0",
-        m_iconResource = "GUI/CrownShopIcons/Categories/Teleporter.dds",
-        m_tags = "None",
-        m_dontFilterOwnedRecoItems = true,
-        m_allowMultipleBuy = true,
-        m_forceDisallowMultipleBuy = false,
-        m_isHousesCategory = false,
-        m_isEverythingCategory = false,
-        m_isGroupElixirsCategory = false
-    },
-    new CrownShopCategory
-    {
-        m_name = "CrownShopSWF_CategoryInstruments",
-        m_ID = 22,
-        m_parentTabID = 44,
-        m_description = "0",
-        m_iconResource = "GUI/CrownShopIcons/Categories/Instruments.dds",
-        m_tags = "None",
-        m_dontFilterOwnedRecoItems = true,
-        m_allowMultipleBuy = true,
-        m_forceDisallowMultipleBuy = false,
-        m_isHousesCategory = false,
-        m_isEverythingCategory = false,
-        m_isGroupElixirsCategory = false
-    },
-    new CrownShopCategory
-    {
-        m_name = "CrownShopSWF_CategoryWigs",
-        m_ID = 23,
-        m_parentTabID = 43,
-        m_description = "0",
-        m_iconResource = "GUI/CrownShopIcons/Categories/Hairstyles.dds",
-        m_tags = "None",
-        m_dontFilterOwnedRecoItems = false,
-        m_allowMultipleBuy = true,
-        m_forceDisallowMultipleBuy = false,
-        m_isHousesCategory = false,
-        m_isEverythingCategory = false,
-        m_isGroupElixirsCategory = false
-    },
-    new CrownShopCategory
-    {
-        m_name = "CrownShopSWF_CategoryMinigames",
-        m_ID = 24,
-        m_parentTabID = 44,
-        m_description = "0",
-        m_iconResource = "GUI/CrownShopIcons/Categories/Games.dds",
-        m_tags = "None",
-        m_dontFilterOwnedRecoItems = true,
-        m_allowMultipleBuy = true,
-        m_forceDisallowMultipleBuy = false,
-        m_isHousesCategory = false,
-        m_isEverythingCategory = false,
-        m_isGroupElixirsCategory = false
-    },
-    new CrownShopCategory
-    {
-        m_name = "CrownShopSWF_CategoryCCG",
-        m_ID = 25,
-        m_parentTabID = 38,
-        m_description = "0",
-        m_iconResource = "GUI/CrownShopIcons/Categories/Booster.dds",
-        m_tags = "None",
-        m_dontFilterOwnedRecoItems = false,
-        m_allowMultipleBuy = true,
-        m_forceDisallowMultipleBuy = false,
-        m_isHousesCategory = false,
-        m_isEverythingCategory = false,
-        m_isGroupElixirsCategory = false
-    },
-    new CrownShopCategory
-    {
-        m_name = "CrownShopSWF_CategoryCCGPetSnacks",
-        m_ID = 26,
-        m_parentTabID = 40,
-        m_description = "0",
-        m_iconResource = "GUI/CrownShopIcons/Categories/Pet_Snack.dds",
-        m_tags = "None",
-        m_dontFilterOwnedRecoItems = true,
-        m_allowMultipleBuy = true,
-        m_forceDisallowMultipleBuy = false,
-        m_isHousesCategory = false,
-        m_isEverythingCategory = false,
-        m_isGroupElixirsCategory = false
-    },
-    new CrownShopCategory
-    {
-        m_name = "CrownShopSWF_CategoryCCGHousing",
-        m_ID = 27,
-        m_parentTabID = 44,
-        m_description = "0",
-        m_iconResource = "GUI/CrownShopIcons/Categories/Furniture_Sets.dds",
-        m_tags = "None",
-        m_dontFilterOwnedRecoItems = false,
-        m_allowMultipleBuy = true,
-        m_forceDisallowMultipleBuy = false,
-        m_isHousesCategory = false,
-        m_isEverythingCategory = false,
-        m_isGroupElixirsCategory = false
-    },
-    new CrownShopCategory
-    {
-        m_name = "CrownShopSWF_CategoryCCGReagent",
-        m_ID = 28,
-        m_parentTabID = 45,
-        m_description = "0",
-        m_iconResource = "GUI/CrownShopIcons/Categories/Reagents.dds",
-        m_tags = "None",
-        m_dontFilterOwnedRecoItems = false,
-        m_allowMultipleBuy = true,
-        m_forceDisallowMultipleBuy = false,
-        m_isHousesCategory = false,
-        m_isEverythingCategory = false,
-        m_isGroupElixirsCategory = false
-    },
-    new CrownShopCategory
-    {
-        m_name = "CrownShopSWF_CategoryFishing",
-        m_ID = 29,
-        m_parentTabID = 45,
-        m_description = "0",
-        m_iconResource = "GUI/CrownShopIcons/Categories/Fishing.dds",
-        m_tags = "None",
-        m_dontFilterOwnedRecoItems = true,
-        m_allowMultipleBuy = true,
-        m_forceDisallowMultipleBuy = false,
-        m_isHousesCategory = false,
-        m_isEverythingCategory = false,
-        m_isGroupElixirsCategory = false
-    },
-    new CrownShopCategory
-    {
-        m_name = "CrownShopSWF_CategoryCastleBlocks",
-        m_ID = 30,
-        m_parentTabID = 44,
-        m_description = "0",
-        m_iconResource = "GUI/CrownShopIcons/Categories/Building_Blocks.dds",
-        m_tags = "None",
-        m_dontFilterOwnedRecoItems = true,
-        m_allowMultipleBuy = true,
-        m_forceDisallowMultipleBuy = false,
-        m_isHousesCategory = false,
-        m_isEverythingCategory = false,
-        m_isGroupElixirsCategory = false
-    },
-    new CrownShopCategory
-    {
-        m_name = "CrownShopSWF_CategoryEmotes",
-        m_ID = 31,
-        m_parentTabID = 45,
-        m_description = "0",
-        m_iconResource = "GUI/CrownShopIcons/Categories/Emotes.dds",
-        m_tags = "None",
-        m_dontFilterOwnedRecoItems = false,
-        m_allowMultipleBuy = false,
-        m_forceDisallowMultipleBuy = true,
-        m_isHousesCategory = false,
-        m_isEverythingCategory = false,
-        m_isGroupElixirsCategory = false
-    },
-    new CrownShopCategory
-    {
-        m_name = "CrownShopSWF_CategoryTeleportEffects",
-        m_ID = 32,
-        m_parentTabID = 45,
-        m_description = "0",
-        m_iconResource = "GUI/CrownShopIcons/Categories/Teleport_Effects.dds",
-        m_tags = "None",
-        m_dontFilterOwnedRecoItems = false,
-        m_allowMultipleBuy = false,
-        m_forceDisallowMultipleBuy = true,
-        m_isHousesCategory = false,
-        m_isEverythingCategory = false,
-        m_isGroupElixirsCategory = false
-    },
-    new CrownShopCategory
-    {
-        m_name = "CrownShopSWF_CategoryBundles",
-        m_ID = 33,
-        m_parentTabID = 45,
-        m_description = "0",
-        m_iconResource = "GUI/CrownShopIcons/Categories/Bundles.dds",
-        m_tags = "None",
-        m_dontFilterOwnedRecoItems = false,
-        m_allowMultipleBuy = true,
-        m_forceDisallowMultipleBuy = false,
-        m_isHousesCategory = false,
-        m_isEverythingCategory = false,
-        m_isGroupElixirsCategory = false
-    },
-    new CrownShopCategory
-    {
-        m_name = "CrownShopSWF_CategoryGroupElixirs",
-        m_ID = 34,
-        m_parentTabID = 42,
-        m_description = "0",
-        m_iconResource = "GUI/CrownShopIcons/Categories/Elixirs_Group.dds",
-        m_tags = "None",
-        m_dontFilterOwnedRecoItems = true,
-        m_allowMultipleBuy = false,
-        m_forceDisallowMultipleBuy = false,
-        m_isHousesCategory = false,
-        m_isEverythingCategory = false,
-        m_isGroupElixirsCategory = true
-    },
-    new CrownShopCategory
-    {
-        m_name = "CrownShopSWF_CategoryWorldElixirs",
-        m_ID = 35,
-        m_parentTabID = 42,
-        m_description = "0",
-        m_iconResource = "GUI/CrownShopIcons/Categories/Elixirs_World.dds",
-        m_tags = "None",
-        m_dontFilterOwnedRecoItems = true,
-        m_allowMultipleBuy = false,
-        m_forceDisallowMultipleBuy = true,
-        m_isHousesCategory = false,
-        m_isEverythingCategory = false,
-        m_isGroupElixirsCategory = false
-    },
-    new CrownShopCategory
-    {
-        m_name = "CrownShopSWF_Lunari",
-        m_ID = 47,
-        m_parentTabID = 41,
-        m_description = "0",
-        m_iconResource = "GUI/CrownShopIcons/Categories/Lunari.dds",
-        m_tags = "None",
-        m_dontFilterOwnedRecoItems = true,
-        m_allowMultipleBuy = false,
-        m_forceDisallowMultipleBuy = false,
-        m_isHousesCategory = false,
-        m_isEverythingCategory = false,
-        m_isGroupElixirsCategory = false
-    },
-    new CrownShopCategory
-    {
-        m_name = "CrownShopSWF_Raid",
-        m_ID = 48,
-        m_parentTabID = 45,
-        m_description = "0",
-        m_iconResource = "GUI/CrownShopIcons/Categories/Bundles.dds",
-        m_tags = "None",
-        m_dontFilterOwnedRecoItems = true,
-        m_allowMultipleBuy = false,
-        m_forceDisallowMultipleBuy = false,
-        m_isHousesCategory = false,
-        m_isEverythingCategory = false,
-        m_isGroupElixirsCategory = false
-    }
-};
-
-    private static readonly CrownShopLayout s_layout = new() {
-        m_categories = _categories.ToList(),
-        m_tabs = _tabs.ToList()
-    };
-
     private static List<CrownShopItem> s_catalogCache;
     private static Dictionary<ulong, CrownShopItem> s_catalogById;
     private static readonly object s_catalogLock = new();
     private static readonly ConcurrentDictionary<ulong, Dictionary<RarityType, List<(BoosterDropItem Item, RarityType Rarity)>>> s_packDropPools = new();
 
+    private static readonly Lazy<Dictionary<ulong, string>> s_packDisplayPriorities = new(() => {
+        if (!RootArchiveLoader.IsLoaded) {
+            RootArchiveLoader.ReloadRootWad();
+        }
+
+        var wad = RootArchiveLoader.GetRootWad();
+        var priorities = new Dictionary<ulong, string>();
+        if (wad == null) {
+            return priorities;
+        }
+
+        ReadOnlySpan<byte> snackToken = "Snacks"u8;
+        ReadOnlySpan<byte> purreauToken = "PurreauPack"u8;
+        ReadOnlySpan<byte> tcToken = "TreasureCards"u8;
+        ReadOnlySpan<byte> gardenTcToken = "GardenTreasureCards"u8;
+        ReadOnlySpan<byte> reagentToken = "Reagents"u8;
+
+        foreach (var t in CoreObjectFactory.TemplateManifest.m_serializedTemplates) {
+            string fn = t.m_filename;
+            if (!fn.StartsWith("ObjectData/BoosterPack-")
+                && !fn.StartsWith("ObjectData/SpecialSets/CrownShopBundles/BoosterPack")
+                && !fn.Contains("MegaSnackPack")) {
+                continue;
+            }
+
+            // Default: Hoard & Lore Packs
+            string priority = "25:1,19:1,0:1"; 
+
+            var data = wad.OpenFile(fn);
+            if (data.HasValue) {
+                var span = data.Value.Span;
+                // Cat 26: Pet Snack Packs (shared in Packs Tab 38 and Pets Tab 40)
+                if (span.IndexOf(snackToken) >= 0 || span.IndexOf(purreauToken) >= 0 || fn.Contains("Snack")) {
+                    priority = "26:1,19:1,0:1"; 
+                }
+                // Cat 20: Booster Packs (TC)
+                else if (span.IndexOf(tcToken) >= 0 || span.IndexOf(gardenTcToken) >= 0) {
+                    priority = "20:1,19:1,0:1";
+                }
+                // Cat 28: Reagents
+                else if (span.IndexOf(reagentToken) >= 0) {
+                    priority = "28:1,19:1,0:1";
+                }
+            }
+            else if (fn.Contains("Snack")) {
+                priority = "26:1,19:1,0:1";
+            }
+
+            priorities[t.m_id] = priority;
+        }
+
+        Logger.Information("CrownShop: Indexed {0} pack priorities from archive.", Logger.Args(priorities.Count));
+        return priorities;
+    });
+
     private static readonly Lazy<HashSet<ulong>> s_boosterPackIds = new(() =>
-        CoreObjectFactory.TemplateManifest.m_serializedTemplates
-            .Where(t => t.m_filename.Contains("BoosterPack", StringComparison.OrdinalIgnoreCase))
-            .Select(t => (ulong) t.m_id)
-            .ToHashSet()
+        s_packDisplayPriorities.Value.Keys.ToHashSet()
     );
+
+    private static readonly Lazy<HashSet<ulong>> s_rentalMountTemplateIds = new(() => {
+        if (!RootArchiveLoader.IsLoaded) {
+            RootArchiveLoader.ReloadRootWad();
+        }
+
+        var wad = RootArchiveLoader.GetRootWad();
+        var rentalIds = new HashSet<ulong>();
+
+        if (wad == null) {
+            return rentalIds;
+        }
+
+        foreach (var t in CoreObjectFactory.TemplateManifest.m_serializedTemplates) {
+            if (!t.m_filename.StartsWith("ObjectData/Mounts/")
+                && !t.m_filename.StartsWith("ObjectData/SpecialSets/Mounts/")) {
+                continue;
+            }
+
+            var data = wad.OpenFile(t.m_filename);
+            if (data.HasValue) {
+                var span = data.Value.Span;
+                if (span.IndexOf("RentalBehavior"u8) >= 0 || span.IndexOf("TimedItemBehavior"u8) >= 0) {
+                    rentalIds.Add(t.m_id);
+                }
+            }
+        }
+
+        Logger.Information("CrownShop: Identified {0} rental mounts from archive behaviors.", Logger.Args(rentalIds.Count));
+        return rentalIds;
+    });
 
     private static bool IsBoosterPack(ulong templateId) {
         if (s_boosterPackIds.Value.Contains(templateId)) {
@@ -822,40 +235,9 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
 
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_PCS_LIST_REQUEST))]
     private void ReceiveCrownShopListRequest(WIZARD_12_PROTOCOL.MSG_PCS_LIST_REQUEST message) {
-        var wizard = GetActiveWizard();
-
-        var crownShopData = new CrownShopData {
-            m_items = GetOrCreateCatalog(),
-            m_crownShopLayout = s_layout,
-            m_recomendedItems = new LevelData() {
-                m_level = wizard.MagicSchoolBehavior.Level,
-                m_categoryData = []
-            },
-            m_crownShopSegReqsSummary = new CrownShopSegReqsSummary() {
-                m_anySegReqsRelyOnWebData = false,
-                m_csvNItemsList = "",
-                m_csvNItemsCategoryList = "",
-                m_csvNDaysSinceItemPurchasedList = "",
-                m_csvHasBadgeList = ""
-            },
-            m_wishlistMaxSize = 30,
-            m_wishlistSBExpansionSize = 10
-        };
-
-        var serializer = new ObjectSerializer(
-            Versionable: false,
-            Behaviors: SerializerFlags.SerializeFlags | SerializerFlags.Compress
-        );
-
-        var propertyFlags = PropertyFlags.Prop_Save | PropertyFlags.Prop_Public;
-        if (!serializer.Serialize(crownShopData, propertyFlags, out var serializedData)) {
-            Logger.Error("Failed to serialize CrownShopData");
-            return;
-        }
-
         uint nextUpdateId = message.UpdateID == 0 ? 1 : message.UpdateID + 1;
         SendToSocket(new WIZARD_12_PROTOCOL.MSG_PCS_LIST_RESPONSE {
-            Data = serializedData,
+            Data = CrownShopHandler.GetCrownShopData(),
             Updates = "",
             UpdateID = nextUpdateId,
             Error = 0,
@@ -895,7 +277,20 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_PCS_PURCHASE_REQUEST))]
     private void ReceivePurchaseRequest(WIZARD_12_PROTOCOL.MSG_PCS_PURCHASE_REQUEST message) {
         var wizard = GetActiveWizard();
-        Logger.Information("Received MSG_PCS_PURCHASE_REQUEST for item {0} (count {1})", Logger.Args(message.Item, message.Count));
+
+        if (message.Count < 1 || message.Count > CrownShop.CrownShopHandler.s_maxBuyCount) {
+            Logger.Warning("Rejected purchase request for item {0}: invalid count {1}.", Logger.Args(message.Item, message.Count));
+
+            SendToSocket(new WIZARD_12_PROTOCOL.MSG_PCS_PURCHASE_RESPONSE {
+                Item = message.Item,
+                Error = 1,
+                Cost = 0,
+                Count = message.Count,
+                Gifted = 0,
+                Type = message.Type
+            });
+            return;
+        }
 
         // Authoritative cost lookup from catalog
         GetOrCreateCatalog();
@@ -911,7 +306,7 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
                 Error = 1,
                 Cost = amountToPay,
                 Count = message.Count,
-                Gifted = (byte) (message.Recipient == 0 ? 0 : 1),
+                Gifted = 0,
                 Type = message.Type
             };
             SendToSocket(msg);
@@ -919,7 +314,6 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
         }
 
         var isBooster = IsBoosterPack(message.Item);
-
         if (!isBooster) {
             // Add item to inventory
 
@@ -948,7 +342,7 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
                         Error = 1,
                         Cost = amountToPay,
                         Count = message.Count,
-                        Gifted = (byte) (message.Recipient == 0 ? 0 : 1),
+                        Gifted = 0,
                         Type = message.Type
                     };
                     SendToSocket(msg);
@@ -1048,16 +442,8 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
                     AddTier("Epic", RarityType.RT_EPIC);
                 }
 
-                // Fallback
                 if (list.Count == 0 && packModel.Drops != null) {
-                    foreach (var (key, dropList) in packModel.Drops) {
-                        var tierRarity = DetermineSlotRarity(key);
-                        if (dropList != null) {
-                            foreach (var item in dropList) {
-                                list.Add((item, tierRarity));
-                            }
-                        }
-                    }
+                    throw new InvalidOperationException($"Booster pack {packModel.TemplateID} has no eligible drops for rarity {r}. Check the Drops configuration.");
                 }
 
                 dict[r] = list;
@@ -1196,43 +582,116 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
             foreach (var entry in templates) {
                 string path = entry.m_filename;
                 ulong id = entry.m_id;
+
+                if (path.Contains("Dummy", StringComparison.OrdinalIgnoreCase)
+                    || path.Contains("DONOTUSE", StringComparison.OrdinalIgnoreCase)
+                    || path.Contains("Test", StringComparison.OrdinalIgnoreCase)
+                    || path.Contains("MOB-ONLY", StringComparison.OrdinalIgnoreCase)) {
+                    continue;
+                }
+
                 string displayPriority = null;
 
-                // Permanent Mounts
+                // 1. Mounts (Permanent & Rental)
                 if (path.StartsWith("ObjectData/Mounts/", StringComparison.OrdinalIgnoreCase)
-                    && !path.Contains("1Day", StringComparison.OrdinalIgnoreCase)
-                    && !path.Contains("7Day", StringComparison.OrdinalIgnoreCase)) {
-                    displayPriority = "2:1,19:1,0:1"; // Cat 2: Permanent Mounts, 19: Everything
+                    || path.StartsWith("ObjectData/SpecialSets/Mounts/", StringComparison.OrdinalIgnoreCase)) {
+                    bool isRental = s_rentalMountTemplateIds.Value.Contains(id);
+                    displayPriority = isRental ? "3:1,19:1,0:1" : "2:1,19:1,0:1"; // Cat 3: Rental Mounts, Cat 2: Permanent Mounts
                 }
 
-                // Card Packs
-                else if (path.StartsWith("ObjectData/BoosterPack-Set-", StringComparison.OrdinalIgnoreCase)
-                         && !path.Contains("Dummy", StringComparison.OrdinalIgnoreCase)) {
-                    displayPriority = "20:1,19:1,0:1"; // Cat 20: Boosters / Packs
+                // 2. Packs (Hoard & Lore, Booster, Pet Snack Packs)
+                else if (s_packDisplayPriorities.Value.TryGetValue(id, out var packPriority)) {
+                    displayPriority = packPriority;
                 }
 
-                // Pets
-                else if (path.StartsWith("ObjectData/Pets/", StringComparison.OrdinalIgnoreCase)) {
+                // 3. Pets
+                else if (path.StartsWith("ObjectData/Pets/", StringComparison.OrdinalIgnoreCase)
+                         || path.StartsWith("ObjectData/SpecialSets/Pets/", StringComparison.OrdinalIgnoreCase)) {
                     displayPriority = "4:1,19:1,0:1"; // Cat 4: Pets
                 }
 
-                // Elixirs
+                // 4. Elixirs
                 else if (path.Contains("Elixir", StringComparison.OrdinalIgnoreCase)
                          && path.StartsWith("ObjectData/", StringComparison.OrdinalIgnoreCase)) {
                     displayPriority = "16:1,19:1,0:1"; // Cat 16: Elixirs
                 }
 
-                // Special Sets / Bundles
-                else if (path.StartsWith("ObjectData/SpecialSets/", StringComparison.OrdinalIgnoreCase)) {
-                    displayPriority = "8:1,19:1,0:1"; // Cat 8: Clothing Bundles
+                // 5. Transformations (Gear Subcategory 17)
+                else if (path.StartsWith("ObjectData/Transformations/", StringComparison.OrdinalIgnoreCase)
+                         || path.StartsWith("ObjectData/Transformation-", StringComparison.OrdinalIgnoreCase)) {
+                    displayPriority = "17:1,19:1,0:1"; // Cat 17: Transformations
                 }
 
+                // 6. Hairstyles / Wigs (Gear Subcategory 23)
+                else if (path.StartsWith("ObjectData/Wigs/", StringComparison.OrdinalIgnoreCase)) {
+                    displayPriority = "23:1,19:1,0:1"; // Cat 23: Hairstyles (Wigs)
+                }
+
+                // 7. Gear pieces & bundles (SpecialSets, Purchased Character Gear, and Crown accessories)
+                else if (path.StartsWith("ObjectData/SpecialSets/", StringComparison.OrdinalIgnoreCase)
+                         || path.StartsWith("ObjectData/Purchased Character Gear/", StringComparison.OrdinalIgnoreCase)
+                         || path.StartsWith("ObjectData/CrownItems/", StringComparison.OrdinalIgnoreCase)
+                         || path.StartsWith("ObjectData/Athames/", StringComparison.OrdinalIgnoreCase)) {
+
+                    bool isCrownAccessorySeries = path.StartsWith("ObjectData/CrownItems/Series2/", StringComparison.OrdinalIgnoreCase)
+                        || path.StartsWith("ObjectData/CrownItems/Series3/", StringComparison.OrdinalIgnoreCase)
+                        || path.StartsWith("ObjectData/CrownItems/Series4/", StringComparison.OrdinalIgnoreCase)
+                        || path.StartsWith("ObjectData/CrownItems/Series5/", StringComparison.OrdinalIgnoreCase)
+                        || path.StartsWith("ObjectData/CrownItems/Series41/", StringComparison.OrdinalIgnoreCase)
+                        || path.StartsWith("ObjectData/CrownItems/Series50/", StringComparison.OrdinalIgnoreCase);
+
+                    if (path.Contains("/Hats/", StringComparison.OrdinalIgnoreCase) || path.Contains("/Hat/", StringComparison.OrdinalIgnoreCase)) {
+                        if (!path.StartsWith("ObjectData/CrownItems/", StringComparison.OrdinalIgnoreCase)) {
+                            displayPriority = "11:1,19:1,0:1"; // Cat 11: Hats
+                        }
+                    }
+                    else if (path.Contains("/Robes/", StringComparison.OrdinalIgnoreCase) || path.Contains("/Robe/", StringComparison.OrdinalIgnoreCase)) {
+                        if (!path.StartsWith("ObjectData/CrownItems/", StringComparison.OrdinalIgnoreCase)) {
+                            displayPriority = "9:1,19:1,0:1"; // Cat 9: Robes
+                        }
+                    }
+                    else if (path.Contains("/Shoes/", StringComparison.OrdinalIgnoreCase) || path.Contains("/Boots/", StringComparison.OrdinalIgnoreCase)) {
+                        if (!path.StartsWith("ObjectData/CrownItems/", StringComparison.OrdinalIgnoreCase)) {
+                            displayPriority = "10:1,19:1,0:1"; // Cat 10: Shoes
+                        }
+                    }
+                    else if (path.Contains("/Wands/", StringComparison.OrdinalIgnoreCase) || path.Contains("/Weapons/", StringComparison.OrdinalIgnoreCase)) {
+                        if (!path.StartsWith("ObjectData/CrownItems/", StringComparison.OrdinalIgnoreCase)) {
+                            displayPriority = "15:1,19:1,0:1"; // Cat 15: Weapons
+                        }
+                    }
+                    else if (path.Contains("/Athames/", StringComparison.OrdinalIgnoreCase)
+                             || path.StartsWith("ObjectData/Athames/", StringComparison.OrdinalIgnoreCase)) {
+                        if (!path.StartsWith("ObjectData/CrownItems/", StringComparison.OrdinalIgnoreCase) || isCrownAccessorySeries) {
+                            displayPriority = "14:1,19:1,0:1"; // Cat 14: Athames
+                        }
+                    }
+                    else if (path.Contains("/Amulet/", StringComparison.OrdinalIgnoreCase) || path.Contains("/Amulets/", StringComparison.OrdinalIgnoreCase)) {
+                        if (!path.StartsWith("ObjectData/CrownItems/", StringComparison.OrdinalIgnoreCase) || isCrownAccessorySeries) {
+                            displayPriority = "13:1,19:1,0:1"; // Cat 13: Amulets
+                        }
+                    }
+                    else if (path.Contains("/Rings/", StringComparison.OrdinalIgnoreCase) || path.Contains("/Ring/", StringComparison.OrdinalIgnoreCase)) {
+                        if (!path.StartsWith("ObjectData/CrownItems/", StringComparison.OrdinalIgnoreCase) || isCrownAccessorySeries) {
+                            displayPriority = "12:1,19:1,0:1"; // Cat 12: Rings
+                        }
+                    }
+                    else if (path.Contains("/CrownShopBundles/", StringComparison.OrdinalIgnoreCase)) {
+                        // Handled above if booster/snack pack
+                    }
+                    else if (path.StartsWith("ObjectData/SpecialSets/", StringComparison.OrdinalIgnoreCase)) {
+                        displayPriority = "8:1,19:1,0:1"; // Cat 8: Clothing Bundles
+                    }
+                }
+
+                // 8. Houses
                 else if (path.StartsWith("ObjectData/Housing/Deeds/", StringComparison.OrdinalIgnoreCase)
                          || path.EndsWith("PropertyDeed.xml", StringComparison.OrdinalIgnoreCase)) {
                     displayPriority = "5:1,19:1,0:1"; // Cat 5: Houses (Tab 44)
                 }
 
-                else if (path.StartsWith("ObjectData/Emotes/")) {
+                // 9. Emotes & Teleport Effects
+                else if (path.StartsWith("ObjectData/Emotes/", StringComparison.OrdinalIgnoreCase)) {
                     if (path.Contains("Teleport", StringComparison.OrdinalIgnoreCase)) {
                         displayPriority = "32:1,19:1,0:1"; // Cat 32: Teleport Effects (Tab 45)
                     }
@@ -1271,4 +730,5 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
             return s_catalogCache;
         }
     }
+
 }
