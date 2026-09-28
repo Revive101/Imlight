@@ -40,12 +40,13 @@ using Imlight.Common;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
 
 namespace Imlight.CoreLib.Game.CrownShop;
 
-public static class CrownShopFactory {
+public static class CrownShopHandler {
     private static readonly bool s_enabled
         = ConfigurationManager.Settings["CrownShop.Enabled"].AsBool();
     private static readonly string s_crownShopConfigPath
@@ -67,13 +68,15 @@ public static class CrownShopFactory {
     };
 
     private static FileSystemWatcher _watcher;
-    private static DateTime _lastReloadTime = DateTime.Now;
+    private static DateTime _lastReloadTime = DateTime.MinValue;
     private static readonly object _reloadLock = new();
 
 
 
     private static List<CrownShopTabConfig> s_crownShopTabs = new();
     private static List<CrownShopCategoryConfig> s_crownShopCategories = new();
+
+    private static Dictionary<ulong, CrownShopItem> s_items = new();
 
 
     private static ByteString s_serializedCrownShopData = new();
@@ -131,7 +134,7 @@ public static class CrownShopFactory {
 
             var layoutTabs = new List<CrownShopCategoryMenu>();
             var layoutCategories = new List<CrownShopCategory>();
-            var crownShopItems = new List<CrownShopItem>();
+            var crownShopItems = new Dictionary<ulong, CrownShopItem>();
 
             foreach (var tab in s_crownShopTabs) {
                 var layoutTab = new CrownShopCategoryMenu() {
@@ -188,19 +191,19 @@ public static class CrownShopFactory {
                         m_segReqsStatement = "",
                     };
 
-                    crownShopItems.Add(crownShopItem);
+                    crownShopItems.Add(item.TemplateId, crownShopItem);
                 }
             }
+
+            s_items = crownShopItems;
 
             var crownShopLayout = new CrownShopLayout() {
                 m_tabs = layoutTabs,
                 m_categories = layoutCategories
             };
 
-
-
             var crownShopData = new CrownShopData() {
-                m_items = crownShopItems,
+                m_items = crownShopItems.Values.ToList(),
                 m_crownShopLayout = crownShopLayout,
                 m_wishlistMaxSize = s_wishlishMaxSize,
                 m_wishlistSBExpansionSize = s_wishlistSBExpansionSize,
@@ -236,12 +239,14 @@ public static class CrownShopFactory {
     private static void SetupAutoReloadWatcher(string basePath) {
         try {
             _watcher = new FileSystemWatcher(basePath, "*.json") {
-                NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size,
+                NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.Size,
                 EnableRaisingEvents = true
             };
 
             _watcher.Changed += OnConfigFileChanged;
             _watcher.Created += OnConfigFileChanged;
+            _watcher.Renamed += (s, e) => OnConfigFileChanged(s, e);
+
             Logger.Information("CrownShop: Live hot-reload watcher enabled for {0}.", Logger.Args(s_crownShopConfigPath));
         } catch(Exception e) {
             Logger.Warning("Could not enable CrownShop auto-reload watcher: {0}", Logger.Args(e.Message));
@@ -259,4 +264,10 @@ public static class CrownShopFactory {
     }
 
     public static ByteString GetCrownShopData() => s_serializedCrownShopData;
+
+    public static List<CrownShopItem> GetCrownShopItems() => s_items.Values.ToList();
+    public static bool TryGetCrownShopItem(ulong id, out CrownShopItem item) {
+        return s_items.TryGetValue(id, out item);
+    }
+
 }
