@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/22/2025
+ * Last Updated: 09/27/2026
  */
 
 using System;
@@ -262,6 +262,19 @@ internal sealed class InteractPersonaGoalComponent(ZoneEntity entity)
             QuestID = state.ActiveQuestId,
             GoalID = state.ActiveGoalId,
         };
+
+        // Only trigger seamless transition if this persona goal completion will complete the quest.
+        // The QuestService starts it once the goal has really completed: with a completion dialog that
+        // is only after the player closes it, so a timer started here could re-offer mid-dialog.
+        if (WillPersonaGoalCompletionCompleteQuest(playerCharacter, state)) {
+            goalCompleteMsg.TransitionTarget = ActorRef;
+            goalCompleteMsg.TransitionMessage = new ZONE_102_PROTOCOL.MSG_STARTSEAMLESSTRANSITION {
+                PlayerActor = playerActor,
+                PlayerCharacter = playerCharacter,
+                PlayerObject = playerObject
+            };
+        }
+
         playerActor.Tell(goalCompleteMsg);
 
         // Invalidate cached state since quest status has changed after goal completion.
@@ -270,20 +283,6 @@ internal sealed class InteractPersonaGoalComponent(ZoneEntity entity)
         // Recalculate wizbang immediately to check for new available goals.
         var newState = GetOrUpdatePlayerState(playerCharacter, forceUpdate: true);
         WizBang = newState.HasActiveGoal ? WizBangs.CompleteQuestGoal : WizBangs.None;
-
-        // Only trigger seamless transition if this persona goal completion will complete the quest
-        if (WillPersonaGoalCompletionCompleteQuest(playerCharacter, state)) {
-            // Schedule the seamless transition after quest completion processing.
-            var startTransitionMsg = new ZONE_102_PROTOCOL.MSG_STARTSEAMLESSTRANSITION {
-                PlayerActor = playerActor,
-                PlayerCharacter = playerCharacter,
-                PlayerObject = playerObject
-            };
-            Timers.StartSingleTimer(
-                "start_transition",
-                startTransitionMsg,
-                TimeSpan.FromMilliseconds(QUEST_COMPLETION_TRANSITION_DELAY_MS));
-        }
     }
 
     private static bool WillPersonaGoalCompletionCompleteQuest(Wizard playerCharacter, PlayerPersonaGoalState state) {

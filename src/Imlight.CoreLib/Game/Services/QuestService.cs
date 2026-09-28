@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/26/2026
+ * Last Updated: 09/27/2026
  */
 
 using Akka.Actor;
@@ -63,16 +63,38 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
 
     private const float DEFAULT_KILL_COLLECT_CHANCE = 0.5f;
     private const string QUEST_COMPLETED_ENTRY = "Complete";
+    private const string GOAL_COMPLETION_DIALOG_TAG = "Completion";
+    private const string DIALOG_ENTRY_EVENT_COMPLETION = "ENTRY";
+
+    private static readonly TimeSpan PENDING_GOAL_DIALOG_TIMEOUT = TimeSpan.FromMinutes(2);
+    private static readonly TimeSpan PERSONA_TRANSITION_DELAY = TimeSpan.FromMilliseconds(1500);
 
     private readonly List<QuestTemplate> _cachedQuestOffers = [];
     private readonly List<QuestTemplate> _cachedQuestTemplates = [];
     private readonly ObjectSerializer _goalSerializer = new(false);
+
+    /// <summary>
+    /// A persona goal whose completion dialog is on the player's screen. Live completes a persona goal only
+    /// when the client reports that dialog finished (MSG_COMPLETEPERSONA, or MSG_COMPLETEDIALOG), so the goal,
+    /// its results (e.g. a teleport) and the next goals wait here. Nothing is written to the character before
+    /// then: if the session ends or the player changes zone first, the goal is still active and talking to
+    /// the NPC replays it.
+    /// </summary>
+    private sealed record PendingGoalCompletion(ulong QuestId, ulong GoalId,
+        IActorRef TransitionTarget, IServerMessage TransitionMessage);
+
+    private readonly List<PendingGoalCompletion> _pendingGoalCompletions = [];
+    private bool _clientReportsPersonaCompletion;
 
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new QuestService(parentActor));
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PRELOGIN))]
     private void ReceiveSendQuests(ZONE_102_PROTOCOL.MSG_PRELOGIN message) {
+        // A completion dialog does not survive a zone change. Its goal was never completed, so it is
+        // resent below as active and the player can talk to the NPC again.
+        DropPendingGoalCompletions("zone change");
+
         var wizard = GetActiveWizard();
         foreach (var qInstance in wizard.QuestBehavior.CurrentQuestInstances) {
             var qTemplate = QuestTemplateCollection.GetQuestByName(qInstance.QuestName);
@@ -171,8 +193,134 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             return;
         }
 
+        // Live sends a persona goal's completion dialog first and completes the goal only when the client
+        // reports the dialog closed (MSG_COMPLETEDIALOG). Show it now and finish the goal from there.
+        if (FindDialogue(gTemplate.m_dialogList, GOAL_COMPLETION_DIALOG_TAG) is not null) {
+            if (_pendingGoalCompletions.Any(p => p.QuestId == questId && p.GoalId == goalId)) {
+                Logger.Debug("Player '{0}' asked again to complete goal ID '{1}' for quest ID '{2}' while its completion dialog is open; ignoring.",
+                    Logger.Args(wizard.CharId, goalId, questId));
+
+                return;
+            }
+
+            ShowGoalCompletionDialogue(gTemplate, questId, goalId);
+
+            _pendingGoalCompletions.Add(new PendingGoalCompletion(questId, goalId,
+                message.TransitionTarget, message.TransitionMessage));
+            Timers.StartSingleTimer(
+                PendingGoalTimerKey(questId, goalId),
+                new CHARACTER_103_PROTOCOL.MSG_GOALDIALOGTIMEOUT { QuestID = questId, GoalID = goalId },
+                PENDING_GOAL_DIALOG_TIMEOUT);
+
+            return;
+        }
+
         CompleteGoal(qInstance, gTemplate);
+        StartPersonaTransition(message.TransitionTarget, message.TransitionMessage);
     }
+
+    [MessageHandler(typeof(QUEST_MESSAGES_52_PROTOCOL.MSG_COMPLETEPERSONA))]
+    private void ReceiveCompletePersona(QUEST_MESSAGES_52_PROTOCOL.MSG_COMPLETEPERSONA message) {
+        // Live's client sends this when a persona goal's completion dialog ends, naming the quest and goal.
+        _clientReportsPersonaCompletion = true;
+
+        var pending = _pendingGoalCompletions
+            .FirstOrDefault(p => p.QuestId == message.QuestID && p.GoalId == message.GoalID);
+        if (pending is null) {
+            return;
+        }
+
+        FinishPendingGoalCompletion(pending);
+    }
+
+    [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_COMPLETEDIALOG))]
+    private void ReceiveCompleteDialog(WIZARD_12_PROTOCOL.MSG_COMPLETEDIALOG message) {
+        // The client sends CompletionType "ENTRY" when it reaches an entry with a dialog event, and an
+        // empty CompletionType once the dialog window closes. Only the close finishes a goal, and only
+        // for a client that has not shown it reports persona completions itself.
+        string completionType = message.CompletionType;
+        if (string.Equals(completionType, DIALOG_ENTRY_EVENT_COMPLETION, StringComparison.OrdinalIgnoreCase)) {
+            return;
+        }
+
+        if (_clientReportsPersonaCompletion || _pendingGoalCompletions.Count == 0) {
+            return;
+        }
+
+        // Every dialog we send carries MobileID 0, so the close can't be matched by NPC. Dialogs close in
+        // the order they were shown: the oldest pending goal is the one whose dialog just closed.
+        FinishPendingGoalCompletion(_pendingGoalCompletions[0]);
+    }
+
+    [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_GOALDIALOGTIMEOUT))]
+    private void ReceiveGoalDialogTimeout(CHARACTER_103_PROTOCOL.MSG_GOALDIALOGTIMEOUT message) {
+        var pending = _pendingGoalCompletions
+            .FirstOrDefault(p => p.QuestId == message.QuestID && p.GoalId == message.GoalID);
+        if (pending is null) {
+            return;
+        }
+
+        // A safety net only: a long voiced dialog can legitimately stay open for a minute.
+        Logger.Warning("No dialog close reported for goal ID '{0}' of quest ID '{1}' after {2}; completing the goal anyway.",
+            Logger.Args(message.GoalID, message.QuestID, PENDING_GOAL_DIALOG_TIMEOUT));
+
+        FinishPendingGoalCompletion(pending);
+    }
+
+    private void FinishPendingGoalCompletion(PendingGoalCompletion pending) {
+        _pendingGoalCompletions.Remove(pending);
+        Timers.Cancel(PendingGoalTimerKey(pending.QuestId, pending.GoalId));
+
+        // Re-check: the quest may have been dropped or the goal completed elsewhere while the dialog was up.
+        var wizard = GetActiveWizard();
+        var qInstance = wizard.QuestBehavior.CurrentQuestInstances
+            .FirstOrDefault(q => q.ID == pending.QuestId);
+        var gInstance = qInstance?.GoalProgress
+            .FirstOrDefault(g => g.ID == pending.GoalId);
+        if (gInstance == null || !qInstance.IsGoalActive(gInstance.GoalName)) {
+            Logger.Warning("Goal ID '{0}' of quest ID '{1}' is no longer active when its completion dialog closed; nothing to complete.",
+                Logger.Args(pending.GoalId, pending.QuestId));
+
+            return;
+        }
+
+        var gTemplate = _cachedQuestTemplates
+            .FirstOrDefault(q => q.m_questName == qInstance.QuestName)?.m_goals
+            .FirstOrDefault(g => g.m_goalName == gInstance.GoalName);
+        if (gTemplate == null) {
+            Logger.Error("Failed to find goal template for goal '{0}' in quest '{1}' when its completion dialog closed.",
+                Logger.Args(gInstance.GoalName, qInstance.QuestName));
+
+            return;
+        }
+
+        // The dialog was already shown when the player talked to the NPC.
+        CompleteGoal(qInstance, gTemplate, showCompletionDialogue: false);
+        StartPersonaTransition(pending.TransitionTarget, pending.TransitionMessage);
+    }
+
+    private void DropPendingGoalCompletions(string reason) {
+        foreach (var pending in _pendingGoalCompletions) {
+            Timers.Cancel(PendingGoalTimerKey(pending.QuestId, pending.GoalId));
+
+            Logger.Debug("Goal ID '{0}' of quest ID '{1}' left active: its completion dialog was interrupted by {2}.",
+                Logger.Args(pending.GoalId, pending.QuestId, reason));
+        }
+
+        _pendingGoalCompletions.Clear();
+    }
+
+    private void StartPersonaTransition(IActorRef target, IServerMessage transitionMessage) {
+        if (target is null || transitionMessage is null) {
+            return;
+        }
+
+        // The NPC re-offers after the quest completion's results have had a moment to land.
+        Context.System.Scheduler.ScheduleTellOnce(PERSONA_TRANSITION_DELAY, target, transitionMessage, Self);
+    }
+
+    private static string PendingGoalTimerKey(ulong questId, ulong goalId)
+        => $"goal-dialog-{questId}-{goalId}";
 
     [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_COMPLETEUSAGEGOAL))]
     private void ReceiveCompleteScavengeGoal(CHARACTER_103_PROTOCOL.MSG_COMPLETEUSAGEGOAL message) {
@@ -623,7 +771,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         ShowGoalStartDialogue(goalTemplate, questInstance.ID, goalId);
     }
 
-    private void CompleteGoal(QuestInstance questInstance, GoalTemplate goalTemplate) {
+    private void CompleteGoal(QuestInstance questInstance, GoalTemplate goalTemplate, bool showCompletionDialogue = true) {
         var wizard = GetActiveWizard();
 
         if (!wizard.CompleteQuestGoal(questInstance.QuestName, goalTemplate.m_goalName)) {
@@ -640,7 +788,9 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         }
 
         SendCompleteGoal(questInstance.ID, gInstance.ID);
-        ShowGoalCompletionDialogue(goalTemplate, questInstance.ID, gInstance.ID);
+        if (showCompletionDialogue) {
+            ShowGoalCompletionDialogue(goalTemplate, questInstance.ID, gInstance.ID);
+        }
 
         ResultDispatcher.ExecuteResults(
             actorContext: Context,
@@ -1106,21 +1256,22 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         => ShowDialogue(goalTemplate.m_dialogList, "Prep", "QuestStart", questId, goalId);
 
     private void ShowGoalCompletionDialogue(GoalTemplate goalTemplate, ulong questId, ulong goalId)
-        => ShowDialogue(goalTemplate.m_dialogList, "Completion", "Completion", questId, goalId);
+        => ShowDialogue(goalTemplate.m_dialogList, GOAL_COMPLETION_DIALOG_TAG, "Completion", questId, goalId);
 
     private void ShowQuestCompletionDialogue(QuestTemplate questTemplate)
         => ShowDialogue(questTemplate.m_dialogList, "Complete", "QuestComplete");
 
     private void ShowDialogue(ActorDialogListBase dialogListBase, string dialogTag, string completionType, ulong questId = 0, ulong goalId = 0) {
-        if (dialogListBase is not ActorDialogList dialogList) {
-            return;
-        }
-
-        var dialog = dialogList.m_dialogs.FirstOrDefault(de => de.m_dialogTag == dialogTag);
+        var dialog = FindDialogue(dialogListBase, dialogTag);
         if (dialog != null) {
             SendActorDialog(dialog, completionType, questId, goalId);
         }
     }
+
+    private static ActorDialog FindDialogue(ActorDialogListBase dialogListBase, string dialogTag)
+        => dialogListBase is ActorDialogList dialogList
+            ? dialogList.m_dialogs?.FirstOrDefault(de => de.m_dialogTag == dialogTag)
+            : null;
 
     private void SendActorDialog(ActorDialog dialogEntry, string completionType, ulong questId = 0, ulong goalId = 0) {
         var serializer = new ObjectSerializer(Versionable: false);
