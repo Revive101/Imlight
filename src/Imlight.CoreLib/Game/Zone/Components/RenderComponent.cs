@@ -35,7 +35,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/26/2026
+ * Last Updated: 09/27/2026
  */
 
 using System.Collections.Generic;
@@ -113,7 +113,7 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
         string persistedState = null;
         foreach (var mod in relevantDynaMods) {
             // If the player has a dynamod that disables this object, do not spawn it for them.
-            if (mod.ModState.Equals(DESPAWN_STATE_NAME, System.StringComparison.OrdinalIgnoreCase)) {
+            if (IsDespawnState(mod.ModState)) {
                 _playerIgnoreBecauseDynamod[suspect] = wizard;
 
                 return;
@@ -221,8 +221,8 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ENTERSTATE))]
     public void ReceiveEnterState(ZONE_102_PROTOCOL.MSG_ENTERSTATE msg) {
-        var isDespawn = msg.StateName.Equals(DESPAWN_STATE_NAME, System.StringComparison.OrdinalIgnoreCase);
-        var isSpawn = msg.StateName.Equals(SPAWN_STATE_NAME, System.StringComparison.OrdinalIgnoreCase);
+        var isDespawn = IsDespawnState(msg.StateName);
+        var isSpawn = string.Equals(msg.StateName, SPAWN_STATE_NAME, System.StringComparison.OrdinalIgnoreCase);
 
         // If the tag matches, spawn or despawn the object for the sender.
         var zoneTag = msg.ObjectName;
@@ -277,6 +277,12 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
                 CreateObjectForPlayer(player);
             }
         }
+    }
+
+    private static bool IsDespawnState(string stateName) {
+        // A dynamod with no state hides its object for the player, as "Off" does (client triggers use both).
+        return string.IsNullOrEmpty(stateName)
+            || stateName.Equals(DESPAWN_STATE_NAME, System.StringComparison.OrdinalIgnoreCase);
     }
 
     private void CreateObjectForPlayer(IActorRef player) {
