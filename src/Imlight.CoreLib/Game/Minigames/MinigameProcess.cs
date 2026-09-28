@@ -36,7 +36,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 09/27/2026
  */
 
 using System;
@@ -84,6 +84,7 @@ internal sealed class MinigameProcess : Process {
     private readonly byte _minigameIndex;
     private readonly MinigameInfo _minigameInfo;
     private readonly ObjectSerializer _serializer = new(
+        Versionable: false,
         Behaviors: SerializerFlags.None
     );
     private readonly byte[] _allowedProtocolIds = [25, 40, 41, 42, 43, 44, 45, 46, 47, 54];
@@ -156,7 +157,6 @@ internal sealed class MinigameProcess : Process {
 
     private void SendLeaderboardResponse(byte[] leaderboardData) {
         var reply = new WIZARD_12_PROTOCOL.MSG_MINIGAMEREWARDS {
-            GlobalID = 0,
             Data = "",
             Scores = new ByteString(leaderboardData),
             MinigameIndex = _minigameIndex,
@@ -209,7 +209,6 @@ internal sealed class MinigameProcess : Process {
         var success = loot.m_loot.Count > 0 || loot.m_goldInfo.m_goldAmount > 0 ? 1 : 0;
 
         var replyEnd = new WIZARD_12_PROTOCOL.MSG_MINIGAMEREWARDS {
-            GlobalID = 0,
             Data = lootData,
             Scores = leaderboardData,
             MinigameIndex = _minigameIndex,
