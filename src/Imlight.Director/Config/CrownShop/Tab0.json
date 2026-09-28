@@ -6,28 +6,5 @@
     "tags": "Splash",
     "description": "0",
     "categories": [],
-    "items": [
-        {
-            "templateId": 123,
-            "itemFlags": 0,
-            "goldCost": 0,
-            "strikethruGold": 0,
-            "crownsCost": 1,
-            "strikethruCrowns": 0,
-            "ticketCost": 0,
-            "displayPriority": [
-                {
-                    "categoryId": 25,
-                    "position": 1
-                }
-            ],
-            "flags": [
-                {
-                    "combatOnly": false,
-                    "recommendIfOwned": false,
-                    "noGift": false
-                }
-            ]
-        }
-    ]
+    "items": []
 }

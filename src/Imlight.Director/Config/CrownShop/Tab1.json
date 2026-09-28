@@ -22,5 +22,17 @@
                 "isGroupElixirsCategory": false
             }
         }
+    ],
+    "items": [
+        {
+            "templateId": 1363076,
+            "crownsCost": 1,
+            "itemFlags": 8191,
+            "displayPriority": [
+                {
+                    "categoryId": 0
+                }
+            ]
+        }
     ]
 }
