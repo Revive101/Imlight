@@ -34,13 +34,15 @@
  * NOTE:
  * Handles timed creature spawning based on configuration in SpawnObjects.
  * Enforces spawn limits and ensures proper creature distribution.
- * Uses timer-based respawn intervals for continuous population management.
+ * Uses timer-based respawn intervals for continuous population management,
+ * except in an instanced Zone, where a spawn point that has lost a creature
+ * is never repopulated.
  *
  * TODO:
- * 
+ *
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/26/2026
+ * Last Updated: 09/27/2026
  */
 
 using System;
@@ -79,7 +81,8 @@ public sealed class ZonePath : ZoneEntity {
     private readonly List<IActorRef> _creatureActors = [];
     private readonly Dictionary<ulong, SpawnObject> _spawnObjectInfo = [];
     private readonly Dictionary<IActorRef, (SpawnObject Spawner, GID ObjectId, string Name)> _loadingCreatures = [];
-    private readonly bool _randomizeCreatures 
+    private readonly HashSet<SpawnObject> _defeatedInInstance = [];
+    private readonly bool _randomizeCreatures
         = ConfigurationManager.Settings["April Fools.RandomizeCreatures"].AsBool();
 
     // ctor
@@ -111,7 +114,9 @@ public sealed class ZonePath : ZoneEntity {
                 continue;
             }
 
-            // Otherwise, start the interval.
+            // Otherwise, start the interval. This still ticks in an instanced zone so a multi-creature
+            // spawn point can populate up to its max on load; CanSpawn is what stops a defeated spawn
+            // point from ever refilling there (see _defeatedInInstance).
             var delay = TimeSpan.FromSeconds(INITIAL_SPAWN_DELAY_IN_SECONDS);
             Timers.StartPeriodicTimer(timerKey, msg, delay, interval);
         }
@@ -169,6 +174,12 @@ public sealed class ZonePath : ZoneEntity {
         if (_spawnObjectInfo.TryGetValue(message.GameObjectID, out var spawnObject)) {
             var count = CreatureCount(spawnObject);
             SetCreatureCount(spawnObject, count - 1);
+
+            // Live does not respawn a defeated mob inside an instance: once a spawn point has lost a
+            // creature here, CanSpawn refuses it for the rest of this instance's lifetime.
+            if (Zone.IsInstance) {
+                _defeatedInInstance.Add(spawnObject);
+            }
 
             _spawnObjectInfo.Remove(message.GameObjectID);
             _creatureActors.RemoveAll(x => x == Sender);
@@ -252,6 +263,12 @@ public sealed class ZonePath : ZoneEntity {
     private bool CanSpawn(SpawnObject spawnObject) {
         if (!_creatureCount.TryGetValue(spawnObject, out var count)) {
             throw new Exception("Somehow, this SpawnObject was not found in the creature count dictionary?");
+        }
+
+        // Instanced zones never repopulate a spawn point once something from it has died, even the
+        // "at least one" guarantee below.
+        if (Zone.IsInstance && _defeatedInInstance.Contains(spawnObject)) {
+            return false;
         }
 
         if (count >= MAX_SPAWNS_ALLOWED) {

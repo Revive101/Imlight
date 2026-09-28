@@ -24,7 +24,7 @@
  * and communication between zone supervisors.
  * 
  * USAGE EXAMPLE:
- * var zoneActor = Context.ActorOf(Zone.Props("MyWorld/Hub", 12345));
+ * var zoneActor = Context.ActorOf(Zone.Props("MyWorld/Hub", 12345, false));
  * 
  * NOTE:
  * Uses Akka actor model for asynchronous communication and supervisor pattern.
@@ -35,7 +35,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/26/2026
+ * Last Updated: 09/27/2026
  */
 
 using System;
@@ -69,6 +69,12 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     /// The zone data as loaded from game client data.
     /// </summary>
     public WizZoneData ZoneData { get; private set; }
+
+    /// <summary>
+    /// Whether this zone is a private, per-owner instance (a dungeon/raid loaded under an
+    /// <see cref="World.InstanceContainer"/>) rather than a shared public zone.
+    /// </summary>
+    public bool IsInstance { get; }
 
     /// <summary>
     /// The zone path, formatted as it would be in the access pass.
@@ -115,9 +121,11 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     /// </summary>
     /// <param name="zonePath">The path of the zone, formatted as it would be in the access pass.</param>
     /// <param name="dynamicZoneId">The dynamic zone ID of the zone.</param>
-    public Zone(string zonePath, uint dynamicZoneId) {
+    /// <param name="isInstance">Whether this zone is a private, per-owner instance.</param>
+    public Zone(string zonePath, uint dynamicZoneId, bool isInstance) {
         this.ZonePath = zonePath;
         this._dynamicZoneId = dynamicZoneId;
+        this.IsInstance = isInstance;
         this._isLoading = true;
         this._zoneLoadTimer = new Stopwatch();
 
@@ -144,8 +152,8 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     // Props
-    public static Props Props(string zonePath, uint dynamicZoneId)
-        => Akka.Actor.Props.Create(() => new Zone(zonePath, dynamicZoneId))
+    public static Props Props(string zonePath, uint dynamicZoneId, bool isInstance)
+        => Akka.Actor.Props.Create(() => new Zone(zonePath, dynamicZoneId, isInstance))
             .WithMailbox("akka.actor.mailbox.zone-priority");
 
     protected override void PreRestart(Exception reason, object message) {

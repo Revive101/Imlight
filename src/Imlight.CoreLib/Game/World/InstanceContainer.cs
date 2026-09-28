@@ -34,7 +34,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 09/27/2026
  */
 
 using Akka.Actor;
@@ -104,7 +104,9 @@ internal sealed class InstanceContainer(ulong instanceOwnerId) : ReceiveProtocol
     private IActorRef CreateZone(string zoneName) {
         var zoneActorName = SanitizeZoneName(zoneName);
         var zoneId = GetNextDynamicZoneId();
-        var zone = Context.ActorOf(Zone.Core.Zone.Props(zoneName, zoneId), zoneActorName);
+
+        // Every zone created under an instance container is, by definition, instanced.
+        var zone = Context.ActorOf(Zone.Core.Zone.Props(zoneName, zoneId, true), zoneActorName);
 
         // Log the new zone creation.
         Logger.Information("Game world created new zone: {ZoneName}",
