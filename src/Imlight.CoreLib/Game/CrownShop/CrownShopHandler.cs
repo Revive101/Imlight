@@ -59,7 +59,7 @@ public static class CrownShopHandler {
     private static readonly bool s_autoReloadOnChanges
         = ConfigurationManager.Settings["CrownShop.AutoReloadOnChanges"].AsBool();
     public static readonly int s_maxBuyCount
-        = ConfigurationManager.Settings["CrownShop.s_maxBuyCount"].AsInt();
+        = ConfigurationManager.Settings["CrownShop.MaxBuyCount"].AsInt();
 
 
     private static readonly JsonSerializerOptions _jsonSerializerOptions = new() {
