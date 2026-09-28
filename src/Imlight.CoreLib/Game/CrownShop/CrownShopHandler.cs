@@ -20,8 +20,9 @@
  * ========================================================================
  * 
  * PURPOSE:
- * Manages the drawing, discarding, and tracking of spell cards during combat,
- * providing randomized card selection from available spells.
+ * Manages the Crown Shop configuration and runtime data. Loads Crown Shop tabs,
+ * categories, and items from JSON configuration files, converts them into the
+ * corresponding game objects, and serializes the complete Crown Shop data structure for client consumption.
  * 
  * USAGE EXAMPLE:
  * 
