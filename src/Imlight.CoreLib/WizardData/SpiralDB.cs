@@ -64,7 +64,6 @@ public static class SpiralDB {
     private static ConcurrentDictionary<string, WizardZoneData> s_zoneData
         = new(StringComparer.OrdinalIgnoreCase);
     private static ConcurrentDictionary<ulong, NpcTreasureCardInventory> s_treasureCardInventories = new();
-    private static ConcurrentDictionary<ulong, BoosterPackModel> s_boosterPacks = new();
 
 
     public static IReadOnlyDictionary<string, CreatureSpellbook> CreatureSpellbooks => s_creatureSpellbooks;
@@ -76,7 +75,6 @@ public static class SpiralDB {
     public static IReadOnlyList<QuestTemplate> QuestTemplates => s_questTemplates;
     public static IReadOnlyDictionary<string, WizardZoneData> ZoneData => s_zoneData;
     public static IReadOnlyDictionary<ulong, NpcTreasureCardInventory> TreasureCardInventories => s_treasureCardInventories;
-    public static IReadOnlyDictionary<ulong, BoosterPackModel> BoosterPacks => s_boosterPacks;
 
 
     /// <summary>
@@ -125,7 +123,6 @@ public static class SpiralDB {
             var questTemplatesByName = new ConcurrentDictionary<string, QuestTemplate>(StringComparer.OrdinalIgnoreCase);
             var zoneData = new ConcurrentDictionary<string, WizardZoneData>(StringComparer.OrdinalIgnoreCase);
             var treasureCardInventories = new ConcurrentDictionary<ulong, NpcTreasureCardInventory>();
-            var boosterPacks = new ConcurrentDictionary<ulong, BoosterPackModel>();
 
             var filesLoaded = 0;
 
@@ -138,7 +135,6 @@ public static class SpiralDB {
             filesLoaded += LoadTreasureCardInventories(basePath, treasureCardInventories);
             filesLoaded += LoadQuestTemplates(basePath, questTemplates, questTemplatesByName);
             filesLoaded += LoadZoneData(basePath, zoneData);
-            filesLoaded += LoadBoosterPacks(basePath, boosterPacks);
 
 
             // Atomically swap.
@@ -152,12 +148,11 @@ public static class SpiralDB {
             s_questTemplatesByName = questTemplatesByName;
             s_zoneData = zoneData;
             s_treasureCardInventories = treasureCardInventories;
-            s_boosterPacks = boosterPacks;
 
             Logger.Information(
                 "SpiralDB loaded {0} files: {1} spellbooks, {2} drop tables, {3} NPC inventories, " +
                 "{4} NPC spell inventories, {5} NPC drop tables, {6} treasure card inventories, " +
-                "{7} quest templates, {8} zone data entries, {9} booster packs.",
+                "{7} quest templates, {8} zone data entries.",
                 Logger.Args(
                     filesLoaded,
                     s_creatureSpellbooks.Count,
@@ -167,8 +162,7 @@ public static class SpiralDB {
                     s_npcDropTables.Count,
                     s_treasureCardInventories.Count,
                     s_questTemplates.Count,
-                    s_zoneData.Count,
-                    s_boosterPacks.Count));
+                    s_zoneData.Count));
         }
         catch (Exception ex) {
             Logger.Error("Failed to load SpiralDB: {0}", Logger.Args(ex.Message));
@@ -184,7 +178,6 @@ public static class SpiralDB {
                 s_questTemplates.Clear();
                 s_questTemplatesByName.Clear();
                 s_zoneData.Clear();
-                s_boosterPacks.Clear();
             }
             // On rollback, the old references are still live — nothing to do.
         }
@@ -232,9 +225,6 @@ public static class SpiralDB {
 
         return zone;
     }
-
-    public static bool TryGetBoosterPack(ulong templateID, out BoosterPackModel pack)
-        => s_boosterPacks.TryGetValue(templateID, out pack);
 
     public static IReadOnlyCollection<WizardZoneData> GetAllZoneData()
         => (IReadOnlyCollection<WizardZoneData>) s_zoneData.Values;
@@ -527,26 +517,6 @@ public static class SpiralDB {
             }
         }
 
-        return count;
-    }
-
-    private static int LoadBoosterPacks(string basePath, ConcurrentDictionary<ulong, BoosterPackModel> target) {
-        var dir = Path.Combine(basePath, "BoosterPacks");
-        if (!Directory.Exists(dir)) return 0;
-        var count = 0;
-        foreach (var file in Directory.EnumerateFiles(dir, "*.json")) {
-            try {
-                var json = File.ReadAllText(file);
-                var pack = JsonConvert.DeserializeObject<BoosterPackModel>(json, s_jsonSettings);
-                if (pack != null) {
-                    target[pack.TemplateID] = pack;
-                    count++;
-                }
-            }
-            catch (Exception ex) {
-                Logger.Warning("Failed to load booster pack {0}: {1}", Logger.Args(Path.GetFileName(file), ex.Message));
-            }
-        }
         return count;
     }
 }
