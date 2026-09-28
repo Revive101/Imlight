@@ -236,17 +236,11 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
     private void ReceivePriceLockReq(WIZARD_12_PROTOCOL.MSG_PCS_PRICE_LOCK_REQUEST message) {
         Logger.Information("Received MSG_PCS_PRICE_LOCK_REQUEST for item {0}", Logger.Args(message.Item));
 
-        int crownsCost = 1;
-        int goldCost = 0;
-
-        if (CrownShopHandler.TryGetCrownShopItem(message.Item, out var item)) {
-            crownsCost = (int) item.m_crownsCost;
-            goldCost = (int) item.m_goldCost;
-        }else {
+        if (!CrownShopHandler.TryGetCrownShopItem(message.Item, out var item)) {
             Logger.Warning("Item {0} not found in CrownShop.", Logger.Args(message.Item));
             SendToSocket(new WIZARD_12_PROTOCOL.MSG_PCS_PRICE_LOCK_RESPONSE {
-                CostCrowns = crownsCost,
-                CostGold = goldCost,
+                CostCrowns = 0,
+                CostGold = 0,
                 CostTickets = 0,
                 Error = 1,
                 Item = message.Item
@@ -255,8 +249,8 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
         }
 
         SendToSocket(new WIZARD_12_PROTOCOL.MSG_PCS_PRICE_LOCK_RESPONSE {
-            CostCrowns = crownsCost,
-            CostGold = goldCost,
+            CostCrowns = item.m_crownsCost,
+            CostGold = item.m_goldCost,
             CostTickets = 0,
             Error = 0,
             Item = message.Item
