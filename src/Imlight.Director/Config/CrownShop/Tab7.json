@@ -1,0 +1,160 @@
+{
+    "tabId": 43,
+    "name": "CrownShopSWF_MenuGear",
+    "icon": "GUI/CrownShopIcons/Categories/Clothing.dds",
+    "categoryIds": [ 8, 15, 13, 10, 9, 11, 17, 23, 12, 14 ],
+    "tags": "",
+    "description": "0",
+    "categories": [
+        {
+            "categoryId": 8,
+            "parentTabId": 43,
+            "name": "CrownShopSWF_CategoryClothingBundle",
+            "icon": "GUI/CrownShopIcons/Categories/Clothing_Sets.dds",
+            "tags": "None",
+            "flags": {
+                "allowMultipleBuy": true,
+                "forceDisallowMultipleBuy": false,
+                "dontFilterOwnedRecoItems": false,
+                "isHousesCategory": false,
+                "isEverythingCategory": false,
+                "isGroupElixirsCategory": false
+            }
+        },
+        {
+            "categoryId": 15,
+            "parentTabId": 43,
+            "name": "CrownShopSWF_CategoryWeapons",
+            "icon": "GUI/CrownShopIcons/Categories/Weapons.dds",
+            "tags": "None",
+            "flags": {
+                "allowMultipleBuy": true,
+                "forceDisallowMultipleBuy": false,
+                "dontFilterOwnedRecoItems": false,
+                "isHousesCategory": false,
+                "isEverythingCategory": false,
+                "isGroupElixirsCategory": false
+            }
+        },
+        {
+            "categoryId": 13,
+            "parentTabId": 43,
+            "name": "CrownShopSWF_CategoryAmulets",
+            "icon": "GUI/CrownShopIcons/Categories/Amulets.dds",
+            "tags": "None",
+            "flags": {
+                "allowMultipleBuy": true,
+                "forceDisallowMultipleBuy": false,
+                "dontFilterOwnedRecoItems": false,
+                "isHousesCategory": false,
+                "isEverythingCategory": false,
+                "isGroupElixirsCategory": false
+            }
+        },
+        {
+            "categoryId": 10,
+            "parentTabId": 43,
+            "name": "CrownShopSWF_CategoryShoes",
+            "icon": "GUI/CrownShopIcons/Categories/Shoes.dds",
+            "tags": "None",
+            "flags": {
+                "allowMultipleBuy": true,
+                "forceDisallowMultipleBuy": false,
+                "dontFilterOwnedRecoItems": false,
+                "isHousesCategory": false,
+                "isEverythingCategory": false,
+                "isGroupElixirsCategory": false
+            }
+        },
+        {
+            "categoryId": 9,
+            "parentTabId": 43,
+            "name": "CrownShopSWF_CategoryRobes",
+            "icon": "GUI/CrownShopIcons/Categories/Robes.dds",
+            "tags": "None",
+            "flags": {
+                "allowMultipleBuy": true,
+                "forceDisallowMultipleBuy": false,
+                "dontFilterOwnedRecoItems": false,
+                "isHousesCategory": false,
+                "isEverythingCategory": false,
+                "isGroupElixirsCategory": false
+            }
+        },
+        {
+            "categoryId": 11,
+            "parentTabId": 43,
+            "name": "CrownShopSWF_CategoryHats",
+            "icon": "GUI/CrownShopIcons/Categories/Clothing.dds",
+            "tags": "None",
+            "flags": {
+                "allowMultipleBuy": true,
+                "forceDisallowMultipleBuy": false,
+                "dontFilterOwnedRecoItems": false,
+                "isHousesCategory": false,
+                "isEverythingCategory": false,
+                "isGroupElixirsCategory": false
+            }
+        },
+        {
+            "categoryId": 17,
+            "parentTabId": 43,
+            "name": "CrownShopSWF_CategoryTransformations",
+            "icon": "GUI/CrownShopIcons/Categories/Transformations.dds",
+            "tags": "None",
+            "flags": {
+                "allowMultipleBuy": true,
+                "forceDisallowMultipleBuy": false,
+                "dontFilterOwnedRecoItems": false,
+                "isHousesCategory": false,
+                "isEverythingCategory": false,
+                "isGroupElixirsCategory": false
+            }
+        },
+        {
+            "categoryId": 23,
+            "parentTabId": 43,
+            "name": "CrownShopSWF_CategoryWigs",
+            "icon": "GUI/CrownShopIcons/Categories/Hairstyles.dds",
+            "tags": "None",
+            "flags": {
+                "allowMultipleBuy": true,
+                "forceDisallowMultipleBuy": false,
+                "dontFilterOwnedRecoItems": false,
+                "isHousesCategory": false,
+                "isEverythingCategory": false,
+                "isGroupElixirsCategory": false
+            }
+        },
+        {
+            "categoryId": 12,
+            "parentTabId": 43,
+            "name": "CrownShopSWF_CategoryRings",
+            "icon": "GUI/CrownShopIcons/Categories/Rings.dds",
+            "tags": "None",
+            "flags": {
+                "allowMultipleBuy": true,
+                "forceDisallowMultipleBuy": false,
+                "dontFilterOwnedRecoItems": false,
+                "isHousesCategory": false,
+                "isEverythingCategory": false,
+                "isGroupElixirsCategory": false
+            }
+        },
+        {
+            "categoryId": 14,
+            "parentTabId": 43,
+            "name": "CrownShopSWF_CategoryAthames",
+            "icon": "GUI/CrownShopIcons/Categories/Athames.dds",
+            "tags": "None",
+            "flags": {
+                "allowMultipleBuy": true,
+                "forceDisallowMultipleBuy": false,
+                "dontFilterOwnedRecoItems": false,
+                "isHousesCategory": false,
+                "isEverythingCategory": false,
+                "isGroupElixirsCategory": false
+            }
+        }
+    ]
+}

@@ -1,0 +1,40 @@
+{
+    "tabId": 40,
+    "name": "CrownShopSWF_MenuPets",
+    "icon": "GUI/CrownShopIcons/Categories/Pets.dds",
+    "categoryIds": [ 4, 26 ],
+    "tags": "",
+    "description": "0",
+    "categories": [
+        {
+            "categoryId": 4,
+            "parentTabId": 40,
+            "name": "CrownShopSWF_CategoryPets",
+            "icon": "GUI/CrownShopIcons/Categories/Pets.dds",
+            "tags": "None",
+            "flags": {
+                "allowMultipleBuy": true,
+                "forceDisallowMultipleBuy": false,
+                "dontFilterOwnedRecoItems": false,
+                "isHousesCategory": false,
+                "isEverythingCategory": false,
+                "isGroupElixirsCategory": false
+            }
+        },
+        {
+            "categoryId": 26,
+            "parentTabId": 40,
+            "name": "CrownShopSWF_CategoryCCGPetSnacks",
+            "icon": "GUI/CrownShopIcons/Categories/Pet_Snack.dds",
+            "tags": "None",
+            "flags": {
+                "allowMultipleBuy": true,
+                "forceDisallowMultipleBuy": false,
+                "dontFilterOwnedRecoItems": true,
+                "isHousesCategory": false,
+                "isEverythingCategory": false,
+                "isGroupElixirsCategory": false
+            }
+        }
+    ]
+}
