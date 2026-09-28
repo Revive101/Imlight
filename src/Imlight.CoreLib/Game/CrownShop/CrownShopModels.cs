@@ -1,7 +1,5 @@
-using Imcodec.Types;
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace Imlight.CoreLib.Game.CrownShop;
 
@@ -55,4 +53,13 @@ public class CrownShopItemFlags {
     public bool CombatOnly { get; set; } = false;
     public bool RecommendIfOwned { get; set; } = false;
     public bool NoGift { get; set; } = false;
+}
+
+[Flags]
+public enum CrownShopItemFlagsBits {
+    None = 0,
+    Hot = 1 << 0, // 0x0001: Displays "HOT!" banner
+    Featured = 1 << 1, // 0x0002: Displays "HOT!" banner / featured
+    Sale = 1 << 3, // 0x0008: Displays "SALE!" sticker badge
+    New = 1 << 4, // 0x0010: Displays "NEW!" banner (takes priority over "HOT!")
 }
