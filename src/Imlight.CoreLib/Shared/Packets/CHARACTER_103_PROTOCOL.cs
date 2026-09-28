@@ -213,6 +213,13 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
         public ulong QuestID;
         public ulong GoalID;
 
+        /// <summary>
+        /// Optional: told <see cref="TransitionMessage"/> once the goal has actually completed (after its
+        /// completion dialog closes), so the NPC can re-offer only after the quest is done.
+        /// </summary>
+        public IActorRef TransitionTarget;
+        public IServerMessage TransitionMessage;
+
     }
 
     public sealed class MSG_COMPLETEUSAGEGOAL : IServerMessage {
@@ -273,6 +280,71 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
         public ulong BuddyCharId;
         public IActorRef Requester;
         public ulong RequesterGameObjectId;
+
+    }
+
+    /// <summary>
+    /// Internal timer message: a persona goal's completion dialog was never reported closed
+    /// (MSG_COMPLETEDIALOG), so the QuestService completes the goal anyway.
+    /// </summary>
+    public sealed class MSG_GOALDIALOGTIMEOUT : IServerMessage {
+
+        public byte MessageOrder { get; } = 24;
+        public byte ServiceID { get; } = 103;
+
+        public ulong QuestID;
+        public ulong GoalID;
+
+    }
+
+    /// <summary>
+    /// Sent by the ResCinematicActor handler to the player's session: the CinematicService plays it.
+    /// </summary>
+    public sealed class MSG_PLAYCINEMATICACTOR : IServerMessage {
+
+        public byte MessageOrder { get; } = 25;
+        public byte ServiceID { get; } = 103;
+
+        public ResCinematicActor Cinematic;
+        public IActorRef ZoneActor;
+
+    }
+
+    /// <summary>
+    /// Internal timer message: a cinematic actor's state has run its auto transition time.
+    /// </summary>
+    public sealed class MSG_CINEMATICAUTOSTATE : IServerMessage {
+
+        public byte MessageOrder { get; } = 26;
+        public byte ServiceID { get; } = 103;
+
+        public int RunId;
+        public string StateName;
+
+    }
+
+    /// <summary>
+    /// Internal timer message: a cinematic dialog was never reported closed.
+    /// </summary>
+    public sealed class MSG_CINEMATICDIALOGTIMEOUT : IServerMessage {
+
+        public byte MessageOrder { get; } = 27;
+        public byte ServiceID { get; } = 103;
+
+        public int RunId;
+        public string StateName;
+
+    }
+
+    /// <summary>
+    /// Internal timer message: a finished cinematic's actor is removed from the client.
+    /// </summary>
+    public sealed class MSG_CINEMATICREMOVEACTOR : IServerMessage {
+
+        public byte MessageOrder { get; } = 28;
+        public byte ServiceID { get; } = 103;
+
+        public int RunId;
 
     }
 
