@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 09/27/2026
  */
 
 using Akka.Actor;
@@ -50,6 +50,8 @@ using Imlight.CoreLib.WizardData.Models.Player;
 namespace Imlight.CoreLib.Login.Services;
 
 internal class GameTransitionService(SessionActor sessionActor) : MessageService(sessionActor) {
+
+    private const string MinigameWorldPrefix = "ThePhantomZoneWorld/";
 
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new GameTransitionService(parentActor));
@@ -151,14 +153,18 @@ internal class GameTransitionService(SessionActor sessionActor) : MessageService
 
     private string DetermineZone(Wizard wizard) {
         // The player may have logged out in a zone we can't put them back into.
-
-        // Minigames:
-        if (wizard.Zone.Contains("Phantom")) {
-            return wizard.PreviousZone;
+        if (!IsMinigameZone(wizard.Zone)) {
+            return wizard.Zone;
         }
 
-        return wizard.Zone;
+        // A transfer started inside a minigame zone also saves that zone as the previous one.
+        return string.IsNullOrEmpty(wizard.PreviousZone) || IsMinigameZone(wizard.PreviousZone)
+            ? ConfigurationManager.Settings["Character.StartingZone"]
+            : wizard.PreviousZone;
     }
+
+    private static bool IsMinigameZone(string zone)
+        => zone?.StartsWith(MinigameWorldPrefix) == true;
 
     private string DetermineLocation(Wizard wizard) {
         if (wizard.Location == Vector3.Zero) {
@@ -166,9 +172,7 @@ internal class GameTransitionService(SessionActor sessionActor) : MessageService
         }
 
         // The player may have logged out in a zone we can't put them back into.
-
-        // Minigames:
-        if (wizard.Zone.Contains("Phantom")) {
+        if (IsMinigameZone(wizard.Zone)) {
             return "Start";
         }
 
