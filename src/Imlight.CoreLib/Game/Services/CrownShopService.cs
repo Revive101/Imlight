@@ -48,6 +48,7 @@ using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.Types;
 using Imlight.Common;
 using Imlight.CoreLib.Game.CrownShop;
+using Imlight.CoreLib.Game.Packs;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Collections;
@@ -63,7 +64,6 @@ namespace Imlight.CoreLib.Game.Services;
 
 internal class CrownShopService(SessionActor sessionActor) : MessageService(sessionActor) {
 
-    private static readonly ConcurrentDictionary<ulong, Dictionary<RarityType, List<(BoosterDropItem Item, RarityType Rarity)>>> s_packDropPools = new();
 
     private static readonly Lazy<Dictionary<ulong, string>> s_packDisplayPriorities = new(() => {
         if (!RootArchiveLoader.IsLoaded) {
@@ -120,10 +120,6 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
         return priorities;
     });
 
-    private static readonly Lazy<HashSet<ulong>> s_boosterPackIds = new(() =>
-        s_packDisplayPriorities.Value.Keys.ToHashSet()
-    );
-
     private static readonly Lazy<HashSet<ulong>> s_rentalMountTemplateIds = new(() => {
         if (!RootArchiveLoader.IsLoaded) {
             RootArchiveLoader.ReloadRootWad();
@@ -155,14 +151,7 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
         return rentalIds;
     });
 
-    private static bool IsBoosterPack(ulong templateId) {
-        if (s_boosterPackIds.Value.Contains(templateId)) {
-            return true;
-        }
 
-        var template = CoreObjectFactory.GetCoreTemplate(templateId);
-        return template is BoosterPackTemplate;
-    }
 
     protected static Props Props(SessionActor parentActor)
             => Akka.Actor.Props.Create(() => new CrownShopService(parentActor));
@@ -305,7 +294,7 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
             return;
         }
 
-        var isBooster = IsBoosterPack(message.Item);
+        var isBooster = PackManager.IsBoosterPack(message.Item);
         if (!isBooster) {
             // Add item to inventory
 
@@ -373,190 +362,8 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
 
         if (isBooster) {
             for (uint i = 0; i < message.Count; i++) {
-                OpenBoosterPack(wizard, message.Item);
+                PackManager.OpenPack(SessionActor.ActorRef, wizard, message.Item);
             }
-        }
-    }
-
-    private static RarityType DetermineSlotRarity(string slotName) {
-        if (string.IsNullOrEmpty(slotName)) {
-            return RarityType.RT_COMMON;
-        }
-        if (slotName.Contains("Epic", StringComparison.OrdinalIgnoreCase)) {
-            return RarityType.RT_EPIC;
-        }
-        if (slotName.Contains("UltraRare", StringComparison.OrdinalIgnoreCase) ||
-            slotName.Contains("Ultra-Rare", StringComparison.OrdinalIgnoreCase)) {
-            return RarityType.RT_ULTRARARE;
-        }
-        if (slotName.Contains("Rare", StringComparison.OrdinalIgnoreCase)) {
-            return RarityType.RT_RARE;
-        }
-        if (slotName.Contains("Uncommon", StringComparison.OrdinalIgnoreCase)) {
-            return RarityType.RT_UNCOMMON;
-        }
-
-        return RarityType.RT_COMMON;
-    }
-
-    private static List<(BoosterDropItem Item, RarityType Rarity)> GetEligibleDrops(BoosterPackModel packModel, RarityType slotRarity) {
-        var pools = s_packDropPools.GetOrAdd(packModel.TemplateID, _ => {
-            var dict = new Dictionary<RarityType, List<(BoosterDropItem Item, RarityType Rarity)>>();
-            var rarities = new[] {
-                RarityType.RT_COMMON,
-                RarityType.RT_UNCOMMON,
-                RarityType.RT_RARE,
-                RarityType.RT_ULTRARARE,
-                RarityType.RT_EPIC
-            };
-
-            foreach (var r in rarities) {
-                var list = new List<(BoosterDropItem Item, RarityType Rarity)>();
-
-                void AddTier(string tierKey, RarityType rarity) {
-                    if (packModel.Drops != null && packModel.Drops.TryGetValue(tierKey, out var tierList) && tierList != null) {
-                        foreach (var item in tierList) {
-                            list.Add((item, rarity));
-                        }
-                    }
-                }
-
-                AddTier("Common", RarityType.RT_COMMON);
-                if (r >= RarityType.RT_UNCOMMON) {
-                    AddTier("Uncommon", RarityType.RT_UNCOMMON);
-                }
-                if (r >= RarityType.RT_RARE) {
-                    AddTier("Rare", RarityType.RT_RARE);
-                }
-                if (r >= RarityType.RT_ULTRARARE) {
-                    AddTier("UltraRare", RarityType.RT_ULTRARARE);
-                }
-                if (r >= RarityType.RT_EPIC) {
-                    AddTier("Epic", RarityType.RT_EPIC);
-                }
-
-                if (list.Count == 0 && packModel.Drops != null) {
-                    throw new InvalidOperationException($"Booster pack {packModel.TemplateID} has no eligible drops for rarity {r}. Check the Drops configuration.");
-                }
-
-                dict[r] = list;
-            }
-
-            return dict;
-        });
-
-        if (pools.TryGetValue(slotRarity, out var eligible) && eligible.Count > 0) {
-            return eligible;
-        }
-
-        return pools.TryGetValue(RarityType.RT_COMMON, out var commonList) ? commonList : [];
-    }
-
-    private void OpenBoosterPack(Wizard wizard, ulong packTemplateId) {
-        var template = CoreObjectFactory.GetCoreTemplate(packTemplateId);
-        var boosterTemplate = template as BoosterPackTemplate;
-        if (boosterTemplate == null) {
-            Logger.Warning("Template {0} is not a BoosterPackTemplate.", Logger.Args(packTemplateId));
-            return;
-        }
-
-        var lootItems = new List<LootInfo>();
-        var lootRarities = new List<LootRarity>();
-        var rng = Random.Shared;
-        var coSerializer = new CoreObjectSerializer(
-            behaviors: Imcodec.ObjectProperty.SerializerFlags.None
-        );
-
-        if (BoosterPackCollection.TryGetBoosterPack(packTemplateId, out var packModel) && packModel != null) {
-            var slots = packModel.Slots != null && packModel.Slots.Count > 0
-                ? packModel.Slots
-                : boosterTemplate.m_lootTables;
-
-            if (slots == null || slots.Count == 0) {
-                throw new InvalidOperationException($"Booster pack {packTemplateId} has no defined slots or loot tables.");
-            }
-
-            foreach (var slotName in slots) {
-                var slotRarity = DetermineSlotRarity(slotName);
-                var eligibleItems = GetEligibleDrops(packModel, slotRarity);
-
-                if (eligibleItems.Count == 0) {
-                    Logger.Warning("Booster pack {0} has no eligible drops in SpiralDB for slot {1}.", Logger.Args(packTemplateId, slotName));
-                    continue;
-                }
-
-                var (pickedItem, pickedRarity) = eligibleItems[rng.Next(eligibleItems.Count)];
-
-                bool isTreasureCard = string.Equals(pickedItem.Type, "TreasureCard", StringComparison.OrdinalIgnoreCase)
-                    || (string.IsNullOrEmpty(pickedItem.Type) && packModel.PackType == PackType.TreasureCards);
-
-                if (isTreasureCard) {
-                    lootItems.Add(new TreasureCardLootInfo {
-                        m_lootType = LOOT_TYPE.LOOT_TYPE_TREASURE_CARD,
-                        m_spellID = (uint) pickedItem.Id,
-                        m_numItems = 1
-                    });
-
-                    lootRarities.Add(new LootRarity {
-                        m_rarity = pickedRarity,
-                        m_lootGid = (GID) pickedItem.Id,
-                        m_odds = 0
-                    });
-
-                    wizard.SpellbookBehavior.AddTreasureCard((uint) pickedItem.Id);
-                    WizardCollection.AddTreasureCard(wizard, (uint) pickedItem.Id);
-                }
-                else {
-                    lootItems.Add(new ItemLootInfo {
-                        m_lootType = LOOT_TYPE.LOOT_TYPE_ITEM,
-                        m_itemID = (GID) pickedItem.Id,
-                        m_numItems = 1
-                    });
-
-                    lootRarities.Add(new LootRarity {
-                        m_rarity = pickedRarity,
-                        m_lootGid = (GID) pickedItem.Id,
-                        m_odds = 0
-                    });
-
-                    if (wizard.AddItemToInventory(pickedItem.Id, out WizClientObjectItem itemCoreObject)) {
-                        if (coSerializer.Serialize(itemCoreObject, 24, out var serializedItem)) {
-                            SendToSocket(new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_ADDITEM {
-                                GlobalID = wizard.GameObjectID,
-                                SerializedItem = serializedItem
-                            });
-                        }
-                    }
-                    else {
-                        Logger.Warning("Could not add booster pack item {0} to inventory.", Logger.Args(pickedItem.Id));
-                    }
-                }
-            }
-        }
-        else {
-            throw new InvalidOperationException($"Booster pack {packTemplateId} not found in SpiralDB!");
-        }
-
-        var lootInfoList = new LootInfoList {
-            m_loot = lootItems,
-            m_goldInfo = null,
-            m_lootRarityList = new LootRarityList {
-                m_loot = lootRarities
-            }
-        };
-
-        var serializer = new ObjectSerializer(Versionable: false);
-        if (serializer.Serialize(lootInfoList, 4, out var serializedLoot)) {
-            SendToSocket(new WIZARD_12_PROTOCOL.MSG_CROWNSBUYCONFIRM {
-                Failure = 0,
-                WebFailure = 0,
-                Credits = wizard.Account.Crowns,
-                Data = serializedLoot,
-                TemplateID = packTemplateId
-            });
-        }
-        else {
-            Logger.Error("Failed to serialize LootInfoList for booster pack.");
         }
     }
 
