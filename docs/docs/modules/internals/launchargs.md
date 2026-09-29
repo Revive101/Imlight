@@ -31,4 +31,4 @@ Below is a table of the possible launch arguments.
 | `-UN [0 \| 1]` | Force unique character names. |
 | `-ST` | Steam required. |
 | `-PT` | Patch client patch time. |
-| `-CS`| Dumps client signature. |
+| `-CS <signature>`| Dumps client signature (ClientSig.dec.bin) using the private key (<signature>). |
