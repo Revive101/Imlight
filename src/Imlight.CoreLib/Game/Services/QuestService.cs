@@ -96,6 +96,8 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         DropPendingGoalCompletions("zone change");
 
         var wizard = GetActiveWizard();
+        RemoveDungeonQuestsOutsideZone(wizard);
+
         foreach (var qInstance in wizard.QuestBehavior.CurrentQuestInstances) {
             var qTemplate = QuestTemplateCollection.GetQuestByName(qInstance.QuestName);
 
@@ -1339,6 +1341,39 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         };
 
         SendToSocket(dialogMsg);
+    }
+
+    /// <summary>
+    /// Drops dungeon quests (a top-level ReqInZone) whose dungeon is not the player's current zone. Live
+    /// removes them when the player leaves, and a leave is a zone change: a relog into the same zone
+    /// never gets here with a different zone, so its quests stay.
+    /// </summary>
+    private void RemoveDungeonQuestsOutsideZone(Wizard wizard) {
+        if (wizard?.QuestBehavior is null) {
+            return;
+        }
+
+        var keep = DungeonQuestIndex.GetQuestsForZone(wizard.Zone)
+            .Select(t => t.m_questName)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var stale = wizard.QuestBehavior.CurrentQuestInstances
+            .Where(q => DungeonQuestIndex.IsDungeonQuest(q.QuestName) && !keep.Contains(q.QuestName))
+            .ToList();
+
+        foreach (var qInstance in stale) {
+            var questId = qInstance.ID;
+            if (!wizard.RemoveQuest(qInstance.QuestName)) {
+                continue;
+            }
+
+            SendToSocket(new QUEST_MESSAGES_52_PROTOCOL.MSG_REMOVEQUEST {
+                QuestID = questId,
+            });
+
+            Logger.Information("Removed dungeon quest '{0}' from {1}: left its zone (now in '{2}').",
+                Logger.Args(qInstance.QuestName, wizard.CharId, wizard.Zone));
+        }
     }
 
     private void TryGrantDungeonQuests(Wizard wizard) {
