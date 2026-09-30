@@ -18,6 +18,7 @@
 
 using System;
 using Raven.Client.Documents;
+using Raven.Client.Documents.Conventions;
 using Raven.Client.ServerWide;
 using Raven.Embedded;
 using Imlight.Common;
@@ -93,7 +94,9 @@ public static class EmbeddedDatabaseManager {
             return null;
         }
 
-        var databaseOptions = new DatabaseOptions(new DatabaseRecord { DatabaseName = databaseName });
+        var databaseOptions = new DatabaseOptions(new DatabaseRecord { DatabaseName = databaseName }) {
+            Conventions = RavenSystemTextJsonBridge.Apply(new DocumentConventions())
+        };
         var docStore = EmbeddedServer.Instance.GetDocumentStore(databaseOptions);
         
         return docStore;

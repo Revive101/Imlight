@@ -92,8 +92,6 @@ public class GameServer : Server {
         Logger.Verbose("New actor created under {Path}: {Name}",
             Logger.Args(Context.Self.Path, processSupervisorActorName));
 
-        LoadResources();
-
         // Log
         Logger.Information("Game server created with name {Name} under port {Port}.",
             Logger.Args(serverName, serverPort));
@@ -285,11 +283,6 @@ public class GameServer : Server {
         }
 
         return newId;
-    }
-
-    private void LoadResources() {
-        // Load SpiralDB — the in-memory world database from JSON files.
-        SpiralDB.Load();
     }
 
     private void ActiveSessionsChangedEvent(object obj, NotifyCollectionChangedEventArgs args) {
