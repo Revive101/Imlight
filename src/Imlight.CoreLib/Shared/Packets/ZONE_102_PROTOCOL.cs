@@ -738,6 +738,15 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte ServiceID { get; } = 102;
 
         public uint SpawnObjectID;
+
+        // ResSpawn.m_activate: true switches the spawner on and spawns; false switches it off (no spawn).
+        public bool Activate = true;
+
+        // The player whose quest or trigger caused the spawn, if any. The spawned creature checks its
+        // aggro radius against this player at once instead of waiting for the player's next step.
+        public CoreObject PlayerObject;
+        public IActorRef PlayerActor;
+        public Wizard PlayerWizard;
     }
 
     public sealed class MSG_ENTERSTATE : IServerMessage {
