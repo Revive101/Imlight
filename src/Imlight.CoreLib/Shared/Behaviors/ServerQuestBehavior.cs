@@ -20,7 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Imlight.CoreLib.WizardData.Models.Player;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace Imlight.CoreLib.Shared.Behaviors;
 

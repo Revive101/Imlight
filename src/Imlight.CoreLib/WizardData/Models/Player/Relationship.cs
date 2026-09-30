@@ -18,7 +18,7 @@
 
 using System;
 using Imlight.CoreLib.Shared.Utilities;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace Imlight.CoreLib.WizardData.Models.Player;
 

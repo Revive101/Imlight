@@ -21,7 +21,7 @@ using System.Text;
 using Imcodec.IO;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Shared.Resources;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace Imlight.CoreLib.Shared.Behaviors;
 

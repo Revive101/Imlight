@@ -19,14 +19,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 using Imlight.CoreLib.Game.Effects;
 using Imlight.CoreLib.Shared.Items;
 using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Collections;
-using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.Shared.Utilities;
 using Imcodec.Math;
 using Imcodec.ObjectProperty.TypeCache;

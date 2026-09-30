@@ -19,7 +19,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Imcodec.ObjectProperty.TypeCache;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace Imlight.CoreLib.Shared.Behaviors;
 
