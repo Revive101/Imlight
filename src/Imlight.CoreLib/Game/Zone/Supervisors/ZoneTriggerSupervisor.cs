@@ -28,6 +28,7 @@ using Imlight.CoreLib.Game.Requirements.Contexts;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Collections;
 
 namespace Imlight.CoreLib.Game.Zone.Supervisors;
@@ -52,6 +53,9 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
     private readonly HashSet<string> _chainedEvents = [];
     private readonly HashSet<string> _cinematicEndsPosted = [];
     private readonly HashSet<string> _unenforceableTriggers = [];
+
+    // The objects that enabled triggers own (walls, gates, collision), by trigger name.
+    private readonly Dictionary<string, (IActorRef Actor, CoreObject Object)> _triggerObjects = new(StringComparer.OrdinalIgnoreCase);
 
     // The activate event a trigger lists to start the zone with it enabled.
     private const string START_ZONE_EVENT = "StartZone";
@@ -82,11 +86,24 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
             _orderedTriggers.Add((trigger, triggerActor));
         }
 
+        // Triggers that start enabled bring their own objects with them.
+        _triggerObjects.Clear();
+        foreach (var (trigger, _) in _orderedTriggers) {
+            if (trigger is not null && Zone.ScriptState.IsTriggerEnabled(trigger.m_triggerName)) {
+                SpawnTriggerObject(trigger);
+            }
+        }
+
         ReportLoadedWhenEntitiesLoad();
     }
 
-    protected override void OnEntityLoadFailed(IActorRef entityActor)
-        => _orderedTriggers.RemoveAll(x => x.Actor.Equals(entityActor));
+    protected override void OnEntityLoadFailed(IActorRef entityActor) {
+        _orderedTriggers.RemoveAll(x => x.Actor.Equals(entityActor));
+
+        foreach (var name in _triggerObjects.Where(x => x.Value.Actor.Equals(entityActor)).Select(x => x.Key).ToList()) {
+            _triggerObjects.Remove(name);
+        }
+    }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_POSTEVENT))]
     private void ReceivePostEvent(ZONE_102_PROTOCOL.MSG_POSTEVENT message) {
@@ -112,6 +129,11 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
                 continue;
             }
 
+            // A trigger with a fire limit (m_triggerMax) that used them all in this zone instance stays quiet.
+            if (!Zone.ScriptState.HasTriggerFiresLeft(trigger.m_triggerName, trigger.m_triggerMax)) {
+                continue;
+            }
+
             if (!EvaluateRequirements(trigger, message)) {
                 continue;
             }
@@ -121,6 +143,12 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
 
         var teleportWinner = PickTeleportTrigger(passing, message);
         foreach (var (trigger, triggerActor) in passing) {
+            // Two passing events in one message cannot both take the last fire.
+            if (!Zone.ScriptState.HasTriggerFiresLeft(trigger.m_triggerName, trigger.m_triggerMax)) {
+                continue;
+            }
+
+            Zone.ScriptState.RecordTriggerFire(trigger.m_triggerName);
             var hasTeleportResult = HasTeleportResult(trigger);
             triggerActor.Forward(new ZONE_102_PROTOCOL.MSG_POSTEVENT {
                 EventName = message.EventName,
@@ -174,6 +202,7 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
 
             if (trigger.m_activateEvents?.Any(e => e.ToString() == eventName) == true) {
                 Zone.ScriptState.SetTriggerEnabled(name, true);
+                SpawnTriggerObject(trigger);
             }
 
             if (trigger.m_deactivateEvents?.Any(e => e.ToString() == eventName) == true) {
@@ -185,8 +214,65 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
                 if (!string.IsNullOrEmpty(objectTag)) {
                     ApplyObjectState(objectTag, DEACTIVATED_OBJECT_STATE, playerActor, playerObject);
                 }
+
+                DespawnTriggerObject(trigger);
             }
         }
+    }
+
+    /// <summary>
+    /// Creates the object a trigger owns (m_triggerObjInfo, loaded DYNAMIC_SERVER, so the client only has it once the
+    /// server sends MSG_NEWOBJECT) as a zone entity. Its render component sends MSG_NEWOBJECT to the players in the
+    /// zone now and to every player who joins later. A trigger that already has its object, or has none, does nothing.
+    /// </summary>
+    private void SpawnTriggerObject(Trigger trigger) {
+        var info = trigger.m_triggerObjInfo;
+        string name = trigger.m_triggerName;
+        if (info is null || info.m_templateID == 0 || string.IsNullOrEmpty(name) || _triggerObjects.ContainsKey(name)) {
+            return;
+        }
+
+        var template = CoreObjectFactory.GetCoreTemplate(info.m_templateID);
+        if (template is null) {
+            Logger.Warning("Trigger {0} in {1} owns object {2} with template ID {3}, which was not found; it is not spawned.",
+                Logger.Args(name, Zone.ZonePath, info.m_zoneTag, info.m_templateID));
+
+            return;
+        }
+
+        var coreObject = CoreObjectFactory.FinalizeCoreObject(info, template);
+        if (coreObject is null) {
+            return;
+        }
+
+        // The trigger's own object comes back in its start state, not the "Off" it was hidden with.
+        var objectTag = info.m_zoneTag;
+        if (Zone.ObjectStates.IsIn(objectTag, DEACTIVATED_OBJECT_STATE) && !string.IsNullOrEmpty(info.m_startState)) {
+            Zone.ObjectStates.Set(objectTag, info.m_startState);
+        }
+
+        var actor = CreateEntityActor(coreObject, template, info);
+        _triggerObjects[name] = (actor, coreObject);
+    }
+
+    /// <summary>
+    /// Removes the object a trigger owns: the client is told with MSG_REMOVEOBJECT and the entity stops, so a player
+    /// who joins afterwards never sees it. The trigger's object comes back when the trigger is enabled again.
+    /// </summary>
+    private void DespawnTriggerObject(Trigger trigger) {
+        string name = trigger.m_triggerName;
+        if (string.IsNullOrEmpty(name) || !_triggerObjects.Remove(name, out var owned)) {
+            return;
+        }
+
+        ZoneRef.Tell(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+            Message = new GAME_5_PROTOCOL.MSG_REMOVEOBJECT { GameObjectID = owned.Object.m_globalID },
+            Targets = ZoneBroadcastTarget.Players,
+        });
+        ZoneRef.Tell(new ZONE_102_PROTOCOL.MSG_RELEASEMOBILEID { MobileId = owned.Object.m_nMobileID });
+
+        EntityActors.Remove(owned.Actor);
+        Context.Stop(owned.Actor);
     }
 
     private static bool HasTeleportResult(Trigger trigger)
