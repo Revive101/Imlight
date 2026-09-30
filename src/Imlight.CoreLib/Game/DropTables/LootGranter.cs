@@ -41,14 +41,19 @@
  */
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Akka.Actor;
 using Imcodec.CoreObject;
+using Imcodec.Cryptography;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
+using Imlight.CoreLib.Game.Spells;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.CoreLib.WizardData.Models.World;
 
@@ -62,6 +67,7 @@ public static class LootGranter {
     private const uint LOOT_LIST_SERIALIZATION_FLAGS = 4;
     private const uint INVENTORY_ADD_SERIALIZATION_FLAGS =
         (uint) (PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit);
+    private static readonly ConcurrentDictionary<ulong, byte> s_warnedTemplateIds = new();
     private static readonly CoreObjectSerializer s_itemSerializer = new(behaviors: SerializerFlags.None);
 
     /// <summary>
@@ -74,7 +80,9 @@ public static class LootGranter {
         UpdateWizardGold(playerActor, wizard, results.GoldAmount);
         UpdateWizardXP(playerActor, results.ExperienceAmount);
         UpdateWizardTP(playerActor, wizard, results.TrainingPoints);
-        UpdateCharacterItems(playerActor, wizard, results.Items);
+
+        // Only what was actually granted is shown in the loot popup.
+        UpdateCharacterItems(playerActor, wizard, results);
         SendLootInfoToClient(playerActor, results, wizard);
 
         if (results.GrantsPotionSlot) {
@@ -135,28 +143,92 @@ public static class LootGranter {
         playerActor.Tell(msg);
     }
 
-    private static void UpdateCharacterItems(IActorRef playerActor, Wizard wizard, List<DropItemResult> items) {
-        if (items.Count == 0) {
+    private static void UpdateCharacterItems(IActorRef playerActor, Wizard wizard, DropTableResult results) {
+        if (results.Items.Count == 0) {
             return;
         }
 
-        // Add each item to the wizard's inventory.
-        foreach (var item in items) {
+        // Replaced below by what was actually granted, so the loot popup lists only that.
+        var rolledItems = results.Items;
+        var grantedItems = new List<DropItemResult>();
+        results.Items = grantedItems;
+
+        foreach (var item in rolledItems) {
             if (!ulong.TryParse(item.ItemId, out var itemGuid)) {
                 continue;
             }
 
-            if (!wizard.AddItemToInventory(itemGuid, out var addedItem)) {
-                Logger.Error("Failed to add item {0} to wizard {1}'s inventory.",
-                    Logger.Args(item.ItemId, wizard.CharId));
+            // A drop table entry may name an item, a spell or something else; resolve it first.
+            switch (CoreObjectFactory.GetCoreTemplate(itemGuid)) {
+                case ItemTemplate:
+                    if (GrantItem(playerActor, wizard, item, itemGuid)) {
+                        grantedItems.Add(item);
+                    }
 
-                continue;
+                    break;
+                case SpellTemplate spellTemplate:
+                    GrantSpell(playerActor, wizard, results, spellTemplate, (uint) itemGuid, item.Quantity);
+
+                    break;
+                default:
+                    WarnSkippedOnce(itemGuid, "is neither an item nor a spell");
+
+                    break;
             }
-
-            // The attach payload (which carries the inventory) was already sent, so push each
-            // item to the client explicitly or the reward stays invisible this session.
-            SendInventoryAdd(playerActor, wizard, addedItem);
         }
+    }
+
+    private static bool GrantItem(IActorRef playerActor, Wizard wizard, DropItemResult item, ulong templateId) {
+        if (!wizard.AddItemToInventory(templateId, out var addedItem)) {
+            Logger.Error("Failed to add item {0} to wizard {1}'s inventory.",
+                Logger.Args(item.ItemId, wizard.CharId));
+
+            return false;
+        }
+
+        // The attach payload (which carries the inventory) was already sent, so push each
+        // item to the client explicitly or the reward stays invisible this session.
+        SendInventoryAdd(playerActor, wizard, addedItem);
+
+        return true;
+    }
+
+    private static void GrantSpell(IActorRef playerActor, Wizard wizard, DropTableResult results,
+        SpellTemplate spellTemplate, uint templateId, int quantity) {
+        if (spellTemplate.m_Treasure) {
+            // Treasure cards (booster pack contents) go to the treasure card book, never the spellbook.
+            GrantTreasureCards(playerActor, wizard, spellTemplate, templateId, quantity);
+
+            return;
+        }
+
+        if (SpellTeacher.TryTeach(playerActor, wizard, templateId) == SpellTeachResult.Learned) {
+            results.SpellIds.Add(templateId);
+        }
+    }
+
+    private static void GrantTreasureCards(IActorRef playerActor, Wizard wizard,
+        SpellTemplate spellTemplate, uint templateId, int quantity) {
+        var spellHash = StringHash.Compute(spellTemplate.m_name);
+
+        // Same path as buying a treasure card: the wizard's treasure book, persisted, then the client.
+        for (var i = 0; i < Math.Max(1, quantity); i++) {
+            wizard.SpellbookBehavior.AddTreasureCard(templateId);
+            WizardCollection.AddTreasureCard(wizard, templateId);
+
+            playerActor.Tell(new WIZARD_12_PROTOCOL.MSG_ADDTREASURESPELLTOBOOK {
+                SpellID = (int) spellHash,
+                EnchantmentID = 0,
+            });
+        }
+    }
+
+    private static void WarnSkippedOnce(ulong templateId, string reason) {
+        if (!s_warnedTemplateIds.TryAdd(templateId, 0)) {
+            return;
+        }
+
+        Logger.Warning("Skipping drop table entry {0}: template {1}.", Logger.Args(templateId, reason));
     }
 
     private static void SendInventoryAdd(IActorRef playerActor, Wizard wizard, WizClientObjectItem item) {

@@ -66,7 +66,12 @@ public class DropTableResult {
     public int TrainingPoints { get; set; } = 0;
     public bool GrantsPotionSlot { get; set; } = false;
     public List<DropItemResult> Items { get; set; } = [];
-    public bool HasRewards => GoldAmount > 0 || ExperienceAmount > 0 || TrainingPoints > 0 || Items.Count > 0;
+
+    /// <summary>
+    /// Spell template IDs taught to the player by the loot granter (not rolled; filled when granting).
+    /// </summary>
+    public List<uint> SpellIds { get; set; } = [];
+    public bool HasRewards => GoldAmount > 0 || ExperienceAmount > 0 || TrainingPoints > 0 || Items.Count > 0 || SpellIds.Count > 0;
 
 }
 

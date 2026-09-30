@@ -18,7 +18,6 @@
 
 using System;
 using Akka.Actor;
-using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
 using Imlight.CoreLib.Game.Spells;
@@ -46,25 +45,10 @@ internal sealed class ResLearnSpellHandler : BaseResultHandler<ResLearnSpell> {
 
         var wizard = queryResponse.Wizard;
 
-        var spell = SpellFactory.GetSpell(Result.m_templateID);
-        if (spell is null) {
-            Logger.Error("ResLearnSpell handler could not resolve a spell for template ID {0}.",
-                Logger.Args(Result.m_templateID));
+        // A spell that is already known is fine; the learn is idempotent.
+        var outcome = SpellTeacher.TryTeach(context.GetPlayerRef(), wizard, Result.m_templateID);
 
-            return false;
-        }
-
-        if (!wizard.LearnSpell(spell)) {
-            // Already known; the learn is idempotent.
-            return true;
-        }
-
-        // The attach payload with the spellbook was already sent, so push the new spell to the client.
-        context.GetPlayerRef().Tell(new WIZARD_12_PROTOCOL.MSG_ADDSPELLTOBOOK {
-            SpellID = (int) Result.m_templateID,
-        });
-
-        return true;
+        return outcome != SpellTeachResult.Failed;
     }
 
 }
