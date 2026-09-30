@@ -82,8 +82,8 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
     private void ReceivePostEvent(ZONE_102_PROTOCOL.MSG_POSTEVENT message) {
         // Client wads pair multiple triggers on the same event; every passing trigger fires
         // (their results are independent), but paired teleporter triggers must not both win:
-        // only the first ResTeleport in wad order may execute.
-        var teleportDispatched = false;
+        // only one ResTeleport trigger may execute (see PickTeleportTrigger).
+        var passing = new List<(Trigger Trigger, IActorRef Actor)>();
         foreach (var (trigger, triggerActor) in _orderedTriggers) {
             if (trigger.m_fireEvents is null || !trigger.m_fireEvents.Any(x => x == message.EventName)) {
                 continue;
@@ -102,17 +102,66 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
                 continue;
             }
 
-            var hasTeleportResult = trigger.m_results?.m_results?.Any(result => result is ResTeleport) == true;
-            var suppressTeleportResults = hasTeleportResult && teleportDispatched;
-            teleportDispatched |= hasTeleportResult;
+            passing.Add((trigger, triggerActor));
+        }
 
+        var teleportWinner = PickTeleportTrigger(passing, message);
+        foreach (var (trigger, triggerActor) in passing) {
+            var hasTeleportResult = HasTeleportResult(trigger);
             triggerActor.Forward(new ZONE_102_PROTOCOL.MSG_POSTEVENT {
                 EventName = message.EventName,
                 PlayerActor = message.PlayerActor,
                 PlayerGameObject = message.PlayerGameObject,
-                SuppressTeleportResults = suppressTeleportResults,
+                SuppressTeleportResults = hasTeleportResult && !ReferenceEquals(trigger, teleportWinner),
                 Adjectives = message.Adjectives,
             });
+        }
+    }
+
+    private static bool HasTeleportResult(Trigger trigger)
+        => trigger.m_results?.m_results?.Any(result => result is ResTeleport) == true;
+
+    /// <summary>
+    /// Chooses which of several passing teleport triggers runs. ReqHasQuest also passes for a completed quest,
+    /// so a story-stage pair (part 1 needs quest A, part 2 needs quest B) would always send the player to part 1.
+    /// Prefer the trigger whose ReqHasQuest names a quest the player has active right now; if none or several
+    /// qualify, take the last passing one (later in the wad is later in the story). One passing trigger is unchanged.
+    /// </summary>
+    private static Trigger PickTeleportTrigger(List<(Trigger Trigger, IActorRef Actor)> passing, ZONE_102_PROTOCOL.MSG_POSTEVENT message) {
+        var teleports = passing.Where(x => HasTeleportResult(x.Trigger)).Select(x => x.Trigger).ToList();
+        if (teleports.Count <= 1) {
+            return teleports.FirstOrDefault();
+        }
+
+        HashSet<string> activeQuests = [];
+        if (message.PlayerActor is not null) {
+            var wizardResponse = message.PlayerActor
+                .Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD()).Result;
+            activeQuests = wizardResponse.Wizard.QuestBehavior.CurrentQuestInstances
+                .Select(q => q.QuestName).ToHashSet();
+        }
+
+        var qualifying = teleports
+            .Where(t => CollectRequiredQuests(t.m_requirements).Any(activeQuests.Contains))
+            .ToList();
+
+        return qualifying.Count == 1 ? qualifying[0] : teleports[^1];
+    }
+
+    private static IEnumerable<string> CollectRequiredQuests(RequirementList list) {
+        if (list?.m_requirements is null) {
+            yield break;
+        }
+
+        foreach (var requirement in list.m_requirements) {
+            if (requirement is RequirementList nested) {
+                foreach (var name in CollectRequiredQuests(nested)) {
+                    yield return name;
+                }
+            }
+            else if (requirement is ReqHasQuest hasQuest && !hasQuest.m_applyNOT && !string.IsNullOrEmpty(hasQuest.m_questName)) {
+                yield return hasQuest.m_questName;
+            }
         }
     }
 
