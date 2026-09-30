@@ -30,8 +30,10 @@
  * NOTE:
  * An option that carries goal tags belongs to a quest usage goal: InteractQuestSelectComponent offers it
  * and calls <see cref="ApplyGoalOptions"/> when the goal is used (which also applies the plain state options, so
- * goal-less stands still raise their EnterState). Every other option is offered here while
- * its requirements hold and the object is in the option's visible state.
+ * goal-less stands still raise their EnterState). Every other option is a candidate while its requirements
+ * hold and the object is in the option's visible state. The client gets one press-X entry per object; each
+ * use applies the option that fits the current state (see ChooseOption), so two- and four-state objects step
+ * through their states. Options whose results show dialog make a readable object (a book) attach too.
  *
  * TODO:
  *
@@ -73,17 +75,51 @@ internal sealed class InteractObjectStateComponent(ZoneEntity entity)
         => template is GameObjectTemplate go && GetStateOptions(go).Any(ChangesWorld);
 
     public IEnumerable<ServiceOptionBase> GetServiceOptions(Wizard playerCharacter)
-        => GetOfferedOptions(playerCharacter).Select(_ => new InteractableOption { m_serviceName = ServiceName });
+        => GetOfferedOptions(playerCharacter).Any()
+            ? [new InteractableOption { m_serviceName = ServiceName }]
+            : [];
 
     public void OnServiceInteraction(IActorRef playerActor, Wizard playerCharacter, CoreObject playerObject, uint serviceOptionIndex) {
-        // The memento hands each component the index of its own option.
-        var offered = GetOfferedOptions(playerCharacter).ToList();
-        if (serviceOptionIndex >= offered.Count) {
+        // One press-X entry stands for the whole object; the memento hands each component the index of its own option.
+        if (serviceOptionIndex != 0) {
             return;
         }
 
-        Apply(offered[(int) serviceOptionIndex], playerActor, playerObject);
+        var chosen = ChooseOption(GetOfferedOptions(playerCharacter).ToList(), CurrentState());
+        if (chosen is not null) {
+            Apply(chosen, playerActor, playerObject);
+        }
     }
+
+    /// <summary>
+    /// The option one use applies. Options with requirements are the specific ones (the offered list already
+    /// holds only those that pass), so they win over unconditional ones. Among several, the use steps to the option
+    /// after the one matching the current state, wrapping around; an unmatched state starts at the first.
+    /// </summary>
+    internal static InteractStateOptionTemplate ChooseOption(IReadOnlyList<InteractStateOptionTemplate> offered, string currentState) {
+        if (offered.Count == 0) {
+            return null;
+        }
+
+        var pool = offered.Where(o => o.m_requirements?.m_requirements is { Count: > 0 }).ToList();
+        if (pool.Count == 0) {
+            pool = [.. offered];
+        }
+
+        if (pool.Count == 1) {
+            return pool[0];
+        }
+
+        var at = string.IsNullOrEmpty(currentState)
+            ? -1
+            : pool.FindIndex(o => string.Equals(o.m_enterState.ToString(), currentState, StringComparison.OrdinalIgnoreCase));
+
+        return pool[(at + 1) % pool.Count];
+    }
+
+    // The state the object is in now, else the state its placement starts it in.
+    private string CurrentState()
+        => Zone.ObjectStates.Get(ObjectName) is { Length: > 0 } known ? known : Entity.Info?.m_startState;
 
     /// <summary>
     /// Applies the object's options for a quest goal use: every goal-tagged option, plus the plain state
@@ -137,7 +173,7 @@ internal sealed class InteractObjectStateComponent(ZoneEntity entity)
     }
 
     private IEnumerable<InteractStateOptionTemplate> GetOfferedOptions(Wizard wizard) {
-        var current = Zone.ObjectStates.Get(ObjectName);
+        var current = CurrentState();
 
         foreach (var option in GetStateOptions(Entity.Template as GameObjectTemplate)) {
             if (IsGoalOption(option) || !ChangesWorld(option)) {
@@ -171,7 +207,7 @@ internal sealed class InteractObjectStateComponent(ZoneEntity entity)
 
     private static bool ChangesWorld(InteractStateOptionTemplate option)
         => !string.IsNullOrEmpty(option.m_enterState.ToString())
-        || option.m_results?.m_results?.Any(r => r is ResPostEvent or ResModifyTriggerObject) == true;
+        || option.m_results?.m_results?.Any(r => r is ResPostEvent or ResModifyTriggerObject or ResActorDialog) == true;
 
     private static IEnumerable<InteractStateOptionTemplate> GetStateOptions(GameObjectTemplate template)
         => template?.m_behaviors?
