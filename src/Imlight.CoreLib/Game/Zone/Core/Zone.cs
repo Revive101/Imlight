@@ -384,6 +384,10 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     private void ReceiveModifyTriggerObject(ZONE_102_PROTOCOL.MSG_MODIFYTRIGGEROBJECT message)
         => _triggerSupervisor.Forward(message);
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_STARTSTAGEDCINEMATIC))]
+    private void ReceiveStartStagedCinematic(ZONE_102_PROTOCOL.MSG_STARTSTAGEDCINEMATIC message)
+        => _triggerSupervisor.Forward(message);
+
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEENTITY))]
     private void ReceiveQueryEntityObject(ZONE_102_PROTOCOL.MSG_QUERYZONEENTITY message) {
         foreach (var supervisor in _supervisors) {

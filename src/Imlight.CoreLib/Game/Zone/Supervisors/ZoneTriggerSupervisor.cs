@@ -47,6 +47,7 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
     private readonly List<(Trigger Trigger, IActorRef Actor)> _orderedTriggers = [];
     private readonly HashSet<string> _undecodableLogged = [];
     private readonly HashSet<string> _chainedEvents = [];
+    private readonly HashSet<string> _cinematicEndsPosted = [];
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS))]
     public override void ReceiveZoneLoadResults(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS message) {
@@ -175,6 +176,44 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
         || eventName.StartsWith("Enter_", StringComparison.Ordinal)
         || eventName.StartsWith("Exit_", StringComparison.Ordinal)
         || _chainedEvents.Contains(eventName);
+
+    /// <summary>
+    /// A trigger started a staged cinematic. The client asset does not name an end event and the result carries
+    /// none, so the event comes from the waiting trigger: a fire event that names a cinematic end and that nothing in
+    /// the zone posts (the client would post it when the cutscene ends). It is posted at once, as if the cutscene
+    /// had played, so the triggers waiting for it fire. Each end event is posted once per zone instance.
+    /// </summary>
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_STARTSTAGEDCINEMATIC))]
+    private void ReceiveStartStagedCinematic(ZONE_102_PROTOCOL.MSG_STARTSTAGEDCINEMATIC message) {
+        var posted = _orderedTriggers
+            .Where(x => x.Trigger?.m_results?.m_results is not null)
+            .SelectMany(x => x.Trigger.m_results.m_results)
+            .OfType<ResPostEvent>()
+            .Select(x => x.m_eventName.ToString())
+            .ToHashSet();
+
+        var endEvents = _orderedTriggers
+            .Where(x => x.Trigger?.m_fireEvents is not null)
+            .SelectMany(x => x.Trigger.m_fireEvents)
+            .Select(x => x.ToString())
+            .Where(x => x.Contains("Cinematic", StringComparison.OrdinalIgnoreCase)
+                && x.Contains("End", StringComparison.OrdinalIgnoreCase)
+                && !x.EndsWith(".EnterState", StringComparison.Ordinal)
+                && !x.StartsWith("Enter_", StringComparison.Ordinal)
+                && !x.StartsWith("Exit_", StringComparison.Ordinal)
+                && !posted.Contains(x))
+            .Distinct()
+            .Where(_cinematicEndsPosted.Add)
+            .ToList();
+
+        foreach (var endEvent in endEvents) {
+            Self.Tell(new ZONE_102_PROTOCOL.MSG_POSTEVENT {
+                EventName = endEvent,
+                PlayerActor = message.PlayerActor,
+                PlayerGameObject = message.PlayerGameObject,
+            });
+        }
+    }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_MODIFYTRIGGEROBJECT))]
     private void ReceiveModifyTriggerObject(ZONE_102_PROTOCOL.MSG_MODIFYTRIGGEROBJECT message)

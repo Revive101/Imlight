@@ -539,6 +539,20 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     }
 
     /// <summary>
+    /// Sent to a <see cref="Zone"/> by a ResStartStagedCinematic result. Cutscenes are not played, so the zone
+    /// raises the end event the triggers wait for at once.
+    /// </summary>
+    public class MSG_STARTSTAGEDCINEMATIC : IServerMessage {
+
+        public byte MessageOrder { get; } = 69;
+        public byte ServiceID { get; } = 102;
+
+        public IActorRef PlayerActor;
+        public CoreObject PlayerGameObject;
+
+    }
+
+    /// <summary>
     /// Sent to a <see cref="Zone"/> by a ResModifyTriggerObject result: the named object enters the state
     /// for every player in the zone, and the zone raises the object's EnterState event.
     /// </summary>
