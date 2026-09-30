@@ -156,7 +156,6 @@ internal sealed class MinigameProcess : Process {
 
     private void SendLeaderboardResponse(byte[] leaderboardData) {
         var reply = new WIZARD_12_PROTOCOL.MSG_MINIGAMEREWARDS {
-            GlobalID = 0,
             Data = "",
             Scores = new ByteString(leaderboardData),
             MinigameIndex = _minigameIndex,
@@ -209,7 +208,6 @@ internal sealed class MinigameProcess : Process {
         var success = loot.m_loot.Count > 0 || loot.m_goldInfo.m_goldAmount > 0 ? 1 : 0;
 
         var replyEnd = new WIZARD_12_PROTOCOL.MSG_MINIGAMEREWARDS {
-            GlobalID = 0,
             Data = lootData,
             Scores = leaderboardData,
             MinigameIndex = _minigameIndex,

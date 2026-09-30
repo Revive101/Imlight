@@ -86,6 +86,8 @@ public abstract class RavenDatabaseSingleton<T> where T : RavenDatabaseSingleton
             return true;
         };
 
+        RavenSystemTextJsonBridge.Apply(store.Conventions);
+
         store.Initialize();
         Logger.Information("Database initialized.");
 
