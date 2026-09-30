@@ -437,6 +437,32 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         CompleteGoal(qInstance, gTemplate);
     }
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEEVENTFORQUESTS))]
+    private void ReceiveZoneEventForQuests(ZONE_102_PROTOCOL.MSG_ZONEEVENTFORQUESTS message) {
+        // A zone event was posted: every active goal that lists it in m_genericEvents completes.
+        if (string.IsNullOrEmpty(message.EventName)) {
+            return;
+        }
+
+        var wizard = GetActiveWizard();
+        foreach (var qInstance in wizard.QuestBehavior.CurrentQuestInstances.ToList()) {
+            var qTemplate = _cachedQuestTemplates.FirstOrDefault(q => q.m_questName == qInstance.QuestName);
+            if (qTemplate?.m_goals is null) {
+                continue;
+            }
+
+            foreach (var gTemplate in qTemplate.m_goals) {
+                if (gTemplate.m_genericEvents is null
+                    || !gTemplate.m_genericEvents.Contains(message.EventName)
+                    || !qInstance.IsGoalActive(gTemplate.m_goalName)) {
+                    continue;
+                }
+
+                CompleteGoal(qInstance, gTemplate);
+            }
+        }
+    }
+
     [MessageHandler(typeof(QUEST_MESSAGES_52_PROTOCOL.MSG_ACCEPTQUEST))]
     private void ReceiveQuestAccept(QUEST_MESSAGES_52_PROTOCOL.MSG_ACCEPTQUEST message) {
         var account = GetActiveAccount();

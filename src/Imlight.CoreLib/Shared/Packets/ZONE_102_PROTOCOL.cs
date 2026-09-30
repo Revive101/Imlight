@@ -553,6 +553,19 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     }
 
     /// <summary>
+    /// Sent to a player's session when an event was posted in the zone (or to the one player a quest result
+    /// posts it for): active quest goals that list the event in their generic events complete.
+    /// </summary>
+    public class MSG_ZONEEVENTFORQUESTS : IServerMessage {
+
+        public byte MessageOrder { get; } = 70;
+        public byte ServiceID { get; } = 102;
+
+        public string EventName;
+
+    }
+
+    /// <summary>
     /// Sent to a <see cref="Zone"/> by a ResModifyTriggerObject result: the named object enters the state
     /// for every player in the zone, and the zone raises the object's EnterState event.
     /// </summary>

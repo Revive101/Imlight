@@ -380,6 +380,12 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         foreach (var supervisor in _supervisors) {
             supervisor.Tell(message);
         }
+
+        // Goals that list the event complete for every player in this zone instance.
+        DispatchBroadcast(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+            Messages = [new ZONE_102_PROTOCOL.MSG_ZONEEVENTFORQUESTS { EventName = message.EventName.ToString() }],
+            Targets = ZoneBroadcastTarget.Players,
+        });
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_MODIFYTRIGGEROBJECT))]

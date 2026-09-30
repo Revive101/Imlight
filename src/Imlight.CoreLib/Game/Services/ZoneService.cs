@@ -135,6 +135,20 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         return;
     }
 
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_POSTZONEEVENTFROMCLIENT))]
+    private void ReceivePostZoneEventFromClient(GAME_5_PROTOCOL.MSG_POSTZONEEVENTFROMCLIENT message) {
+        // An event the client's own scripting posts (e.g. the end of a cutscene): quest goals that list it
+        // in their generic events complete for every player in the zone.
+        if (string.IsNullOrEmpty(message.EventName) || ZoneActor is null) {
+            return;
+        }
+
+        ZoneActor.Tell(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+            Messages = [new ZONE_102_PROTOCOL.MSG_ZONEEVENTFORQUESTS { EventName = message.EventName }],
+            Targets = ZoneBroadcastTarget.Players,
+        });
+    }
+
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_COMPLETEDIALOG))]
     private void ReceiveCompleteDialog(WIZARD_12_PROTOCOL.MSG_COMPLETEDIALOG message) {
         // A dialog entry with an m_dialogEvent is reported as CompletionType "ENTRY" when the client reaches
