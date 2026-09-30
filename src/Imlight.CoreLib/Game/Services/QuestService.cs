@@ -489,6 +489,249 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
 
         // Otherwise, we're good to start the quest. Send them the send quest message and send goal message(s)
         // for any of the starting goals the quest has.
+        StartQuest(quest, wizard);
+
+        // Remove it from the cached offers now that it's accepted.
+        _cachedQuestOffers.RemoveAll(q => q.m_questName == quest.m_questName);
+    }
+
+    [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_QUESTCOMMAND))]
+    private void ReceiveQuestCommand(CHARACTER_103_PROTOCOL.MSG_QUESTCOMMAND message) {
+        var wizard = GetActiveWizard();
+        var questName = message.QuestName?.Trim() ?? string.Empty;
+
+        switch (message.Action) {
+            case "list":
+                CommandListQuests(wizard);
+                return;
+            case "grant":
+            case "forcegrant":
+                CommandGrantQuest(wizard, questName, message.Action == "forcegrant");
+                return;
+            case "remove":
+                CommandRemoveQuest(wizard, questName);
+                return;
+        }
+
+        // The remaining actions act on an active quest. The server does not learn which quest the client
+        // has tracked, so an empty name means the wizard's only active quest.
+        var qInstance = ResolveCommandQuest(wizard, questName);
+        if (qInstance is null) {
+            return;
+        }
+
+        var qTemplate = GetQuestTemplate(qInstance.QuestName);
+        if (qTemplate?.m_goals is null) {
+            CommandReply($"Quest '{qInstance.QuestName}' has no template.");
+            return;
+        }
+
+        switch (message.Action) {
+            case "completegoal":
+                CommandCompleteGoal(qInstance, qTemplate);
+                break;
+            case "complete":
+                CommandCompleteQuest(qInstance, qTemplate);
+                break;
+            case "info":
+                CommandQuestInfo(qInstance, qTemplate);
+                break;
+            default:
+                CommandReply($"Unknown quest action '{message.Action}'.");
+                break;
+        }
+    }
+
+    private void CommandReply(string text)
+        => SendToSocket(new EXTENDEDBASE_2_PROTOCOL.MSG_SERVERMESSAGE { Message = text, Modal = 0 });
+
+    private QuestTemplate GetQuestTemplate(string questName) {
+        var template = _cachedQuestTemplates.FirstOrDefault(q => q.m_questName == questName)
+            ?? QuestTemplateCollection.GetQuestByName(questName);
+        if (template is not null && !_cachedQuestTemplates.Contains(template)) {
+            _cachedQuestTemplates.Add(template);
+        }
+
+        return template;
+    }
+
+    private QuestInstance ResolveCommandQuest(Wizard wizard, string questName) {
+        var active = wizard.QuestBehavior.CurrentQuestInstances.Where(q => q is not null).ToList();
+        if (string.IsNullOrEmpty(questName)) {
+            if (active.Count == 1) {
+                return active[0];
+            }
+
+            CommandReply(active.Count == 0
+                ? "You have no active quests."
+                : "You have several active quests: give a quest name (see '.quest list').");
+            return null;
+        }
+
+        var found = active.FirstOrDefault(q => q.QuestName.Equals(questName, StringComparison.OrdinalIgnoreCase));
+        if (found is null) {
+            CommandReply(QuestTemplateCollection.GetQuestByName(questName) is null
+                ? $"Quest '{questName}' does not exist."
+                : $"You do not have the quest '{questName}' active.");
+        }
+
+        return found;
+    }
+
+    private static IEnumerable<GoalTemplate> ActiveGoals(QuestInstance qInstance, QuestTemplate qTemplate)
+        => qTemplate.m_goals.Where(g => qInstance.IsGoalActive(g.m_goalName));
+
+    private void CommandListQuests(Wizard wizard) {
+        var active = wizard.QuestBehavior.CurrentQuestInstances.Where(q => q is not null).ToList();
+        if (active.Count == 0) {
+            CommandReply("You have no active quests.");
+            return;
+        }
+
+        foreach (var qInstance in active) {
+            var qTemplate = GetQuestTemplate(qInstance.QuestName);
+            var goals = qTemplate?.m_goals is null
+                ? []
+                : ActiveGoals(qInstance, qTemplate).Select(g => g.m_goalName).ToList();
+            CommandReply($"{qInstance.QuestName}: {(goals.Count == 0 ? "no active goal" : string.Join(", ", goals))}");
+        }
+    }
+
+    private void CommandQuestInfo(QuestInstance qInstance, QuestTemplate qTemplate) {
+        CommandReply($"{qInstance.QuestName} (level {qTemplate.m_questLevel}):");
+        foreach (var gTemplate in qTemplate.m_goals) {
+            var gInstance = qInstance.GoalProgress.FirstOrDefault(g => g.GoalName == gTemplate.m_goalName);
+            string state;
+            if (gInstance is null || gInstance.CurrentProgress < 0) {
+                state = "not started";
+            }
+            else if (gInstance.IsGoalCompleted()) {
+                state = "done";
+            }
+            else {
+                var total = gTemplate.m_tallyCounter?.m_count ?? 0;
+                state = total > 0 ? $"active {gInstance.CurrentProgress}/{total}" : "active";
+            }
+
+            CommandReply($"  {gTemplate.m_goalName} [{gTemplate.m_goalType}]: {state}");
+        }
+    }
+
+    private void CommandCompleteGoal(QuestInstance qInstance, QuestTemplate qTemplate) {
+        var goal = ActiveGoals(qInstance, qTemplate).FirstOrDefault();
+        if (goal is null) {
+            CommandReply($"Quest '{qInstance.QuestName}' has no active goal.");
+            return;
+        }
+
+        CommandReply($"Completing goal '{goal.m_goalName}' of '{qInstance.QuestName}'.");
+        CompleteGoal(qInstance, goal);
+    }
+
+    private void CommandCompleteQuest(QuestInstance qInstance, QuestTemplate qTemplate) {
+        var wizard = GetActiveWizard();
+        var questName = qInstance.QuestName;
+
+        // Walk the goals the way a player would: each completion starts the next goals and, after the last
+        // one, completes the quest with its end results. Bounded so a looping quest cannot hang the session.
+        for (var step = 0; step < 256 && wizard.HasQuest(questName); step++) {
+            var goal = ActiveGoals(qInstance, qTemplate).FirstOrDefault();
+            if (goal is null) {
+                break;
+            }
+
+            CompleteGoal(qInstance, goal, showCompletionDialogue: false);
+        }
+
+        if (wizard.HasQuest(questName)) {
+            // Nothing left to complete (for example a goal whose requirements were not met): finish it.
+            CompleteQuest(qInstance);
+        }
+
+        CommandReply(wizard.HasQuest(questName)
+            ? $"Could not complete quest '{questName}'."
+            : $"Completed quest '{questName}'.");
+    }
+
+    private void CommandRemoveQuest(Wizard wizard, string questName) {
+        if (string.IsNullOrEmpty(questName)) {
+            CommandReply("Give a quest name.");
+            return;
+        }
+
+        var qInstance = wizard.QuestBehavior.CurrentQuestInstances
+            .FirstOrDefault(q => q is not null && q.QuestName.Equals(questName, StringComparison.OrdinalIgnoreCase));
+        var registryName = qInstance?.QuestName ?? questName;
+        var wasActive = qInstance is not null;
+
+        if (wasActive) {
+            var questId = qInstance.ID;
+            if (!wizard.RemoveQuest(qInstance.QuestName)) {
+                CommandReply($"Could not remove quest '{questName}'.");
+                return;
+            }
+
+            SendToSocket(new QUEST_MESSAGES_52_PROTOCOL.MSG_REMOVEQUEST { QuestID = questId });
+        }
+
+        var cleared = wizard.QuestBehavior.RemoveAllQuestRegistryEntries(registryName);
+        if (cleared > 0) {
+            WizardCollection.UpdateCharacterQuestBehavior(wizard);
+        }
+
+        if (!wasActive && cleared == 0) {
+            CommandReply(QuestTemplateCollection.GetQuestByName(questName) is null
+                ? $"Quest '{questName}' does not exist."
+                : $"You have no record of quest '{questName}'.");
+            return;
+        }
+
+        CommandReply($"Removed quest '{registryName}' ({(wasActive ? "was active" : "was not active")}, "
+            + $"{cleared} registry entries cleared). It can be offered again.");
+    }
+
+    private void CommandGrantQuest(Wizard wizard, string questName, bool force) {
+        if (string.IsNullOrEmpty(questName)) {
+            CommandReply("Give a quest name.");
+            return;
+        }
+
+        var template = QuestTemplateCollection.GetQuestByName(questName);
+        if (template is null) {
+            CommandReply($"Quest '{questName}' does not exist.");
+            return;
+        }
+        if (wizard.HasQuest(template.m_questName)) {
+            CommandReply($"You already have the quest '{template.m_questName}'.");
+            return;
+        }
+
+        if (!force) {
+            if (wizard.HasQuestRegistryValue(template.m_questName, QUEST_COMPLETED_ENTRY)) {
+                CommandReply($"You already completed '{template.m_questName}'. Use '.quest remove' first, or '.quest forcegrant'.");
+                return;
+            }
+
+            if (template.m_requirements is not null
+                && !RequirementDispatcher.EvaluateRequirements(template.m_requirements,
+                    new GenericRequirementContext(
+                        requirements: template.m_requirements,
+                        playerRef: SessionActor.ActorRef,
+                        playerObj: GetActiveGameObject(),
+                        wizard: wizard))) {
+                CommandReply($"You do not meet the requirements for '{template.m_questName}'. Use '.quest forcegrant' to skip them.");
+                return;
+            }
+        }
+
+        StartQuest(template, wizard);
+        CommandReply($"Granted quest '{template.m_questName}'{(force ? " (requirements skipped)" : "")}.");
+    }
+
+    /// <summary>
+    /// Starts a quest for the wizard exactly as accepting its offer does.
+    /// </summary>
+    private void StartQuest(QuestTemplate quest, Wizard wizard) {
         var questInstance = new QuestInstance(quest, wizard.CharId);
         wizard.AddQuest(questInstance);
 
@@ -497,9 +740,6 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         }
 
         SendQuestStartingMessage(quest, questInstance);
-
-        // Remove it from the cached offers now that it's accepted.
-        _cachedQuestOffers.RemoveAll(q => q.m_questName == quest.m_questName);
     }
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_COMBATWIN))]

@@ -94,6 +94,32 @@ The `$clientTag` may contain spaces (e.g. `WC_Rattlebones_ButterFlyZone instance
 :::
 
 
+## Quest Commands
+Every action runs through the quest service's normal paths (goal completion, quest completion, removal, offer acceptance), so dialogs, results, rewards and client messages match normal play. Replies appear as server messages.
+
+The server does not learn which quest the client has tracked. Commands that act on "the current quest" therefore use your **only active quest** when no name is given, and ask for a name when you have several. Quest names are not case-sensitive for active quests.
+
+| Command | Security | Syntax | Description |
+| ------- | -------- | ------ | ----------- |
+| offer | Quality Assurance | `.quest offer $questName` | Shows the quest's offer dialog (no NPC). Does not grant the quest; accepting the offer does. |
+| list | Quality Assurance | `.quest list` | Lists your active quests with the names of their active goals. |
+| info | Quality Assurance | `.quest info` | Shows every goal of your only active quest with its state and progress. |
+| show | Quality Assurance | `.quest show $questName` | Same as `info` for the named active quest. |
+| completegoal | Quality Assurance | `.quest completegoal` | Completes the first active goal of your only active quest, with its dialog, results and next goals. |
+| completegoalfor | Quality Assurance | `.quest completegoalfor $questName` | Completes the first active goal of the named quest. |
+| complete | Quality Assurance | `.quest complete $questName` | Completes every remaining goal in order, then the quest itself with its end results and rewards. Goal completion dialogs are skipped; the quest completion dialog plays. |
+| grant | Quality Assurance | `.quest grant $questName` | Starts a quest as accepting its offer does. Refused if you have it, already completed it, or do not meet its requirements. |
+| forcegrant | Quality Assurance | `.quest forcegrant $questName` | Same as `grant`, but skips the requirement and already-completed checks. |
+| remove | Quality Assurance | `.quest remove $questName` | Removes an active quest (the client gets the normal removal message) and clears all of its registry entries, including `Complete`, so it can be offered again. Also works on a completed quest that is no longer active. |
+
+:::tip
+`$questName` is the full quest name (e.g. `QT-KT-SPH3-C02-003`) and is always the last argument. An unknown quest or a quest you do not have gets a reply, never an error.
+:::
+
+:::note
+`.quest completegoal` completes one goal only; a quest with several parallel goals needs it repeated. The effects of a goal's results (teleports, spawns, loot) happen exactly as if you had done the goal.
+:::
+
 ## Spellbook Commands
 | Command | Security | Syntax | Description |
 | ------- | -------- | ------ | ----------- |

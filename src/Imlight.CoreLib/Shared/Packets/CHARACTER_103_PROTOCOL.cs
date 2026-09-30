@@ -362,4 +362,25 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
 
     }
 
+    /// <summary>
+    /// Sent by the quest commands: the quest service runs the action through its normal goal, quest and
+    /// removal paths and replies to the player with a server message.
+    /// </summary>
+    public sealed class MSG_QUESTCOMMAND : IServerMessage {
+
+        public byte MessageOrder { get; } = 30;
+        public byte ServiceID { get; } = 103;
+
+        /// <summary>
+        /// One of: remove, completegoal, complete, grant, forcegrant, list, info.
+        /// </summary>
+        public string Action;
+
+        /// <summary>
+        /// The quest name, or empty for the only active quest.
+        /// </summary>
+        public string QuestName;
+
+    }
+
 }
