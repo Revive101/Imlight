@@ -25,6 +25,7 @@ using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
 using Imlight.CoreLib.Game.Requirements;
 using Imlight.CoreLib.Game.Requirements.Contexts;
+using Imlight.CoreLib.Game.Zone.Components;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
@@ -55,7 +56,7 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
     private readonly HashSet<string> _unenforceableTriggers = [];
 
     // The objects that enabled triggers own (walls, gates, collision), by trigger name.
-    private readonly Dictionary<string, (IActorRef Actor, CoreObject Object)> _triggerObjects = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, (IActorRef Actor, CoreObject Object, string Tag)> _triggerObjects = new(StringComparer.OrdinalIgnoreCase);
 
     // The activate event a trigger lists to start the zone with it enabled.
     private const string START_ZONE_EVENT = "StartZone";
@@ -228,7 +229,25 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
     private void SpawnTriggerObject(Trigger trigger) {
         var info = trigger.m_triggerObjInfo;
         string name = trigger.m_triggerName;
-        if (info is null || info.m_templateID == 0 || string.IsNullOrEmpty(name) || _triggerObjects.ContainsKey(name)) {
+        if (info is null) {
+            return;
+        }
+
+        if (info.m_templateID == 0) {
+            return;
+        }
+
+        if (string.IsNullOrEmpty(name)) {
+            Logger.Debug("Trigger in {0}: object {1} skipped, the trigger has no name.",
+                Logger.Args(Zone.ZonePath, info.m_zoneTag));
+
+            return;
+        }
+
+        if (_triggerObjects.ContainsKey(name)) {
+            Logger.Debug("Trigger {0} in {1}: object {2} skipped, the trigger already has its object.",
+                Logger.Args(name, Zone.ZonePath, info.m_zoneTag));
+
             return;
         }
 
@@ -242,8 +261,14 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
 
         var coreObject = CoreObjectFactory.FinalizeCoreObject(info, template);
         if (coreObject is null) {
+            Logger.Debug("Trigger {0} in {1}: object {2} skipped, the core object could not be finalized.",
+                Logger.Args(name, Zone.ZonePath, info.m_zoneTag));
+
             return;
         }
+
+        // TriggerObjectInfo hides the template id with its own property, so the base one the factory copies is 0.
+        coreObject.m_templateID = info.m_templateID;
 
         // The trigger's own object comes back in its start state, not the "Off" it was hidden with.
         var objectTag = info.m_zoneTag;
@@ -252,7 +277,10 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
         }
 
         var actor = CreateEntityActor(coreObject, template, info);
-        _triggerObjects[name] = (actor, coreObject);
+        _triggerObjects[name] = (actor, coreObject, objectTag);
+        Logger.Debug("Trigger {0} in {1}: object {2} created, template {3} ({4}), location {5}, start state {6}, drawn by the client: {7}.",
+            Logger.Args(name, Zone.ZonePath, objectTag, info.m_templateID, template.GetType().Name, info.m_location,
+                info.m_startState, RenderComponent.ShouldAttachToEntity(template)));
     }
 
     /// <summary>
@@ -265,14 +293,34 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
             return;
         }
 
+        StopTriggerObject(owned.Actor, owned.Object);
+    }
+
+    /// <summary>
+    /// Removes the object a trigger owns by the object's zone tag, for every player in the zone. A tag no
+    /// trigger object carries does nothing.
+    /// </summary>
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVETRIGGEROBJECT))]
+    private void ReceiveRemoveTriggerObject(ZONE_102_PROTOCOL.MSG_REMOVETRIGGEROBJECT message) {
+        var match = _triggerObjects.FirstOrDefault(x => string.Equals(x.Value.Tag, message.ObjectName, StringComparison.OrdinalIgnoreCase));
+        if (match.Key is null || !_triggerObjects.Remove(match.Key, out var owned)) {
+            Logger.Debug("Zone {0}: no trigger object {1} to remove.", Logger.Args(Zone.ZonePath, message.ObjectName));
+
+            return;
+        }
+
+        StopTriggerObject(owned.Actor, owned.Object);
+    }
+
+    private void StopTriggerObject(IActorRef actor, CoreObject triggerObject) {
         ZoneRef.Tell(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
-            Message = new GAME_5_PROTOCOL.MSG_REMOVEOBJECT { GameObjectID = owned.Object.m_globalID },
+            Message = new GAME_5_PROTOCOL.MSG_REMOVEOBJECT { GameObjectID = triggerObject.m_globalID },
             Targets = ZoneBroadcastTarget.Players,
         });
-        ZoneRef.Tell(new ZONE_102_PROTOCOL.MSG_RELEASEMOBILEID { MobileId = owned.Object.m_nMobileID });
+        ZoneRef.Tell(new ZONE_102_PROTOCOL.MSG_RELEASEMOBILEID { MobileId = triggerObject.m_nMobileID });
 
-        EntityActors.Remove(owned.Actor);
-        Context.Stop(owned.Actor);
+        EntityActors.Remove(actor);
+        Context.Stop(actor);
     }
 
     private static bool HasTeleportResult(Trigger trigger)

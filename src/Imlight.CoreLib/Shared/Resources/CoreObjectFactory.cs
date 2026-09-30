@@ -298,9 +298,9 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
         obj.m_orientation = objInfo.m_orientation;
         obj.m_fScale = objInfo.m_fScale;
         obj.m_globalID = RandomGen.GenerateGUID();
+        obj.m_zoneTagID = StringHash.Compute(objInfo.m_zoneTag);
         obj.m_permID = RandomGen.GenerateHash(string.Create(CultureInfo.InvariantCulture,
             $"{obj.m_zoneTagID}{obj.m_templateID}{obj.m_location.X}"));
-        obj.m_zoneTagID = StringHash.Compute(objInfo.m_zoneTag);
         obj.m_debugName = objInfo.m_zoneTag;
 
         // Check to see if the template has a field called "m_displayName."

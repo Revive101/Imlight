@@ -602,6 +602,19 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     }
 
     /// <summary>
+    /// Sent to a <see cref="Zone"/> by a ResRemoveTriggerObject result: the trigger-owned object with that zone tag
+    /// is removed for every player in the zone.
+    /// </summary>
+    public class MSG_REMOVETRIGGEROBJECT : IServerMessage {
+
+        public byte MessageOrder { get; } = 73;
+        public byte ServiceID { get; } = 102;
+
+        public string ObjectName;
+
+    }
+
+    /// <summary>
     /// Sent by a <see cref="VolumeComponent"/> to a player's session when the player entered
     /// a quest-proximity volume and has one of that volume's goals active. The volume already
     /// matched the goal to itself; the session only needs to complete it.

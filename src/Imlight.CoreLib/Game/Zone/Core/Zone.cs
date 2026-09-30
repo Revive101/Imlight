@@ -402,6 +402,10 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     private void ReceiveModifyTriggerObject(ZONE_102_PROTOCOL.MSG_MODIFYTRIGGEROBJECT message)
         => _triggerSupervisor.Forward(message);
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVETRIGGEROBJECT))]
+    private void ReceiveRemoveTriggerObject(ZONE_102_PROTOCOL.MSG_REMOVETRIGGEROBJECT message)
+        => _triggerSupervisor.Forward(message);
+
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONESCRIPTRESULT))]
     private void ReceiveZoneScriptResult(ZONE_102_PROTOCOL.MSG_ZONESCRIPTRESULT message)
         => ScriptState.Apply(message.Result, message.PlayerGameObject?.m_globalID.Full ?? 0);
