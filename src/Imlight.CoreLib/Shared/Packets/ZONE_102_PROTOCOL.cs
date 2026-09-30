@@ -756,6 +756,9 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         // ResSpawn.m_activate: true switches the spawner on and spawns; false switches it off (no spawn).
         public bool Activate = true;
 
+        // Spawn only when the spawner has nothing up (a character's remembered spawn coming back).
+        public bool OnlyIfAbsent;
+
         // The player whose quest or trigger caused the spawn, if any. The spawned creature checks its
         // aggro radius against this player at once instead of waiting for the player's next step.
         public CoreObject PlayerObject;

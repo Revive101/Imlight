@@ -20,6 +20,8 @@ using System;
 using Akka.Actor;
 using Imlight.CoreLib.Shared.Packets;
 using Imcodec.ObjectProperty.TypeCache;
+using Imlight.CoreLib.Game.Results.Contexts;
+using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Results.Handlers;
@@ -71,6 +73,14 @@ internal sealed class ResSpawnHandler : BaseResultHandler<ResSpawn> {
                 spawnMsg.PlayerActor = playerRef;
                 spawnMsg.PlayerWizard = wizard;
             }
+
+            // A quest result's spawn belongs to the character: bring it back when they re-enter the zone.
+            if (context is QuestResultContext) {
+                RememberedSpawns.Remember(wizard, wizard?.Zone, Result.m_spawnID);
+            }
+        }
+        else if (context is QuestResultContext) {
+            RememberedSpawns.Forget(wizard, wizard?.Zone, Result.m_spawnID);
         }
 
         var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
@@ -96,6 +106,10 @@ internal sealed class ResDespawnHandler : BaseResultHandler<ResDespawn> {
         if (Result is null) {
             return false;
         }
+
+        // A despawned spawner is no longer the character's to bring back.
+        var wizard = SpawnHandlerHelper.GetWizard(context.GetPlayerRef());
+        RememberedSpawns.Forget(wizard, wizard?.Zone, Result.m_spawnID);
 
         // Path-spawned creatures live under the path supervisor; include Paths so they see the removal.
         var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {

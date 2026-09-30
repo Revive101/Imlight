@@ -54,6 +54,7 @@ using Imlight.CoreLib.Game.Zone.Supervisors;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Zone.Core;
 
@@ -219,6 +220,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
 
         _playerCount++;
         InformZoneSupervisors(message.PlayerActor, message);
+        RestoreRememberedSpawns(message.Wizard);
         
         // Send response to confirm player was added
         var response = new ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP {
@@ -434,6 +436,21 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         return Context.ActorOf(props, typeof(T).Name);
     }
 
+    /// <summary>
+    /// Brings back the spawners this character's quests switched on, unless something already stands there.
+    /// </summary>
+    private void RestoreRememberedSpawns(Wizard wizard) {
+        foreach (var spawnId in RememberedSpawns.Get(wizard, ZonePath)) {
+            DispatchBroadcast(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+                Messages = [new ZONE_102_PROTOCOL.MSG_ZONEPATHSPAWN {
+                    SpawnObjectID = (uint) spawnId,
+                    OnlyIfAbsent = true,
+                }],
+                Targets = ZoneBroadcastTarget.Paths,
+            });
+        }
+    }
+
     private void InformZoneSupervisors(IActorRef player, IServerMessage message) {
         DispatchBroadcast(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
             Sender = player,
@@ -495,6 +512,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
             else if (pendingEvent is ZONE_102_PROTOCOL.MSG_ADDPLAYER addPlayer) {
                 _playerCount++;
                 InformZoneSupervisors(playerActor, addPlayer);
+                RestoreRememberedSpawns(addPlayer.Wizard);
                 
                 // Send response to confirm player was added
                 var response = new ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP {

@@ -215,6 +215,9 @@ public sealed class ZonePath : ZoneEntity {
         }
 
         var spawnObject = _creatures[index];
+        if (message.OnlyIfAbsent && CreatureCount(spawnObject) > 0) {
+            return;
+        }
 
         if (!message.Activate) {
             // ResSpawn with m_activate false switches the spawner off: stop its timer, spawn nothing more.
