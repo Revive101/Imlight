@@ -26,42 +26,54 @@ internal static class ZoneScriptResult {
 
 }
 
-/// <summary>ResZoneTokenEnable: turns a zone token on.</summary>
+/// <summary>
+/// ResZoneTokenEnable: turns a zone token on.
+/// </summary>
 internal sealed class ResZoneTokenEnableHandler : BaseResultHandler<ResZoneTokenEnable> {
 
     public override bool Execute(IResultContext context) => ZoneScriptResult.Send(context, Result);
 
 }
 
-/// <summary>ResZoneTokenDisable: turns a zone token off.</summary>
+/// <summary>
+/// ResZoneTokenDisable: turns a zone token off.
+/// </summary>
 internal sealed class ResZoneTokenDisableHandler : BaseResultHandler<ResZoneTokenDisable> {
 
     public override bool Execute(IResultContext context) => ZoneScriptResult.Send(context, Result);
 
 }
 
-/// <summary>ResZoneTokenModify: adds to a zone token's value.</summary>
+/// <summary>
+/// ResZoneTokenModify: adds to a zone token's value.
+/// </summary>
 internal sealed class ResZoneTokenModifyHandler : BaseResultHandler<ResZoneTokenModify> {
 
     public override bool Execute(IResultContext context) => ZoneScriptResult.Send(context, Result);
 
 }
 
-/// <summary>ResZoneTokenReset: resets a zone token.</summary>
+/// <summary>
+/// ResZoneTokenReset: resets a zone token.
+/// </summary>
 internal sealed class ResZoneTokenResetHandler : BaseResultHandler<ResZoneTokenReset> {
 
     public override bool Execute(IResultContext context) => ZoneScriptResult.Send(context, Result);
 
 }
 
-/// <summary>ResZoneCounter: changes a zone counter.</summary>
+/// <summary>
+/// ResZoneCounter: changes a zone counter.
+/// </summary>
 internal sealed class ResZoneCounterHandler : BaseResultHandler<ResZoneCounter> {
 
     public override bool Execute(IResultContext context) => ZoneScriptResult.Send(context, Result);
 
 }
 
-/// <summary>ResEncounterSetVariable: sets a puzzle variable.</summary>
+/// <summary>
+/// ResEncounterSetVariable: sets a puzzle variable.
+/// </summary>
 internal sealed class ResEncounterSetVariableHandler : BaseResultHandler<ResEncounterSetVariable> {
 
     public override bool Execute(IResultContext context) => ZoneScriptResult.Send(context, Result);

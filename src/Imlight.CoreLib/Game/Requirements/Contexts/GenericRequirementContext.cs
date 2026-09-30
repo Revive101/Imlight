@@ -51,10 +51,14 @@ public class GenericRequirementContext(RequirementList requirements,
     public string GetGoalName() => _goalName;
     public string GetTriggerName() => _triggerName;
 
-    /// <summary>The state of every named object in the zone, when the check runs for a zone trigger.</summary>
+    /// <summary>
+    /// The state of every named object in the zone, when the check runs for a zone trigger.
+    /// </summary>
     public Game.Zone.Core.ZoneObjectStates ObjectStates { get; init; }
 
-    /// <summary>The tokens, counters and trigger states of the zone, when the check runs for a zone trigger.</summary>
+    /// <summary>
+    /// The tokens, counters and trigger states of the zone, when the check runs for a zone trigger.
+    /// </summary>
     public Game.Zone.Core.ZoneScriptState ScriptState { get; init; }
 
 }

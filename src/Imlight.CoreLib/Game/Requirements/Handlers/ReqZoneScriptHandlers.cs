@@ -4,12 +4,16 @@ namespace Imlight.CoreLib.Game.Requirements.Handlers;
 
 internal static class ZoneScriptRequirement {
 
-    /// <summary>The player's game object id, which per-player tokens are keyed by (0 when there is none).</summary>
+    /// <summary>
+    /// The player's game object id, which per-player tokens are keyed by (0 when there is none).
+    /// </summary>
     public static ulong PlayerId(IRequirementContext context) => context.GetPlayerObj()?.m_globalID.Full ?? 0;
 
 }
 
-/// <summary>ReqZoneToken: the zone token is enabled (for the zone, or for this player).</summary>
+/// <summary>
+/// ReqZoneToken: the zone token is enabled (for the zone, or for this player).
+/// </summary>
 internal sealed class ReqZoneTokenHandler : BaseRequirementHandler<ReqZoneToken> {
 
     public override bool Evaluate(IRequirementContext context)
@@ -18,7 +22,9 @@ internal sealed class ReqZoneTokenHandler : BaseRequirementHandler<ReqZoneToken>
 
 }
 
-/// <summary>ReqZoneTokenValue: the zone token's value lies between the minimum and the maximum, inclusive.</summary>
+/// <summary>
+/// ReqZoneTokenValue: the zone token's value lies between the minimum and the maximum, inclusive.
+/// </summary>
 internal sealed class ReqZoneTokenValueHandler : BaseRequirementHandler<ReqZoneTokenValue> {
 
     public override bool Evaluate(IRequirementContext context) {
@@ -33,7 +39,9 @@ internal sealed class ReqZoneTokenValueHandler : BaseRequirementHandler<ReqZoneT
 
 }
 
-/// <summary>ReqZoneCounter: the zone counter compares with the number.</summary>
+/// <summary>
+/// ReqZoneCounter: the zone counter compares with the number.
+/// </summary>
 internal sealed class ReqZoneCounterHandler : BaseRequirementHandler<ReqZoneCounter> {
 
     public override bool Evaluate(IRequirementContext context)
@@ -42,7 +50,9 @@ internal sealed class ReqZoneCounterHandler : BaseRequirementHandler<ReqZoneCoun
 
 }
 
-/// <summary>ReqGetEncounterVariable: a puzzle variable a trigger set is on.</summary>
+/// <summary>
+/// ReqGetEncounterVariable: a puzzle variable a trigger set is on.
+/// </summary>
 internal sealed class ReqGetEncounterVariableHandler : BaseRequirementHandler<ReqGetEncounterVariable> {
 
     public override bool Evaluate(IRequirementContext context)

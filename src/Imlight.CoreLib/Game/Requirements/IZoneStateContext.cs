@@ -8,10 +8,14 @@ namespace Imlight.CoreLib.Game.Requirements;
 /// </summary>
 public interface IZoneStateContext {
 
-    /// <summary>The state of every named object in the zone (null outside a zone).</summary>
+    /// <summary>
+    /// The state of every named object in the zone (null outside a zone).
+    /// </summary>
     ZoneObjectStates ObjectStates { get; }
 
-    /// <summary>The tokens, counters, puzzle variables and trigger states of the zone (null outside a zone).</summary>
+    /// <summary>
+    /// The tokens, counters, puzzle variables and trigger states of the zone (null outside a zone).
+    /// </summary>
     ZoneScriptState ScriptState { get; }
 
 }

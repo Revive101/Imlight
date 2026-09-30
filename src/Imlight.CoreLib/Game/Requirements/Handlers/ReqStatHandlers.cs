@@ -27,7 +27,9 @@ internal static class NumericRequirement {
 
 }
 
-/// <summary>ReqHealth: the player's current health (or its percentage of the maximum) against a number.</summary>
+/// <summary>
+/// ReqHealth: the player's current health (or its percentage of the maximum) against a number.
+/// </summary>
 internal sealed class ReqHealthHandler : BaseRequirementHandler<ReqHealth> {
 
     public override bool Evaluate(IRequirementContext context) {
@@ -42,7 +44,9 @@ internal sealed class ReqHealthHandler : BaseRequirementHandler<ReqHealth> {
 
 }
 
-/// <summary>ReqMana: the player's current mana (or its percentage of the maximum) against a number.</summary>
+/// <summary>
+/// ReqMana: the player's current mana (or its percentage of the maximum) against a number.
+/// </summary>
 internal sealed class ReqManaHandler : BaseRequirementHandler<ReqMana> {
 
     public override bool Evaluate(IRequirementContext context) {
@@ -57,7 +61,9 @@ internal sealed class ReqManaHandler : BaseRequirementHandler<ReqMana> {
 
 }
 
-/// <summary>ReqHasGold: the player carries at least the gold.</summary>
+/// <summary>
+/// ReqHasGold: the player carries at least the gold.
+/// </summary>
 internal sealed class ReqHasGoldHandler : BaseRequirementHandler<ReqHasGold> {
 
     public override bool Evaluate(IRequirementContext context) {
@@ -111,7 +117,9 @@ internal sealed class ReqHasItemsHandler : BaseRequirementHandler<ReqHasItems> {
 
 }
 
-/// <summary>ReqHasRegistryEntry: the player has the (global) registry entry.</summary>
+/// <summary>
+/// ReqHasRegistryEntry: the player has the (global) registry entry.
+/// </summary>
 internal sealed class ReqHasRegistryEntryHandler : BaseRequirementHandler<ReqHasRegistryEntry> {
 
     public override bool Evaluate(IRequirementContext context) {
@@ -124,7 +132,9 @@ internal sealed class ReqHasRegistryEntryHandler : BaseRequirementHandler<ReqHas
 
 }
 
-/// <summary>ReqIsInParty: the player is in a group with someone else.</summary>
+/// <summary>
+/// ReqIsInParty: the player is in a group with someone else.
+/// </summary>
 internal sealed class ReqIsInPartyHandler : BaseRequirementHandler<ReqIsInParty> {
 
     public override bool Evaluate(IRequirementContext context) {
@@ -137,14 +147,18 @@ internal sealed class ReqIsInPartyHandler : BaseRequirementHandler<ReqIsInParty>
 
 }
 
-/// <summary>ReqHasExpansion: every player owns every expansion.</summary>
+/// <summary>
+/// ReqHasExpansion: every player owns every expansion.
+/// </summary>
 internal sealed class ReqHasExpansionHandler : BaseRequirementHandler<ReqHasExpansion> {
 
     public override bool Evaluate(IRequirementContext context) => true;
 
 }
 
-/// <summary>ReqIsCSR: nobody here is a customer service representative.</summary>
+/// <summary>
+/// ReqIsCSR: nobody here is a customer service representative.
+/// </summary>
 internal sealed class ReqIsCSRHandler : BaseRequirementHandler<ReqIsCSR> {
 
     public override bool Evaluate(IRequirementContext context) => false;

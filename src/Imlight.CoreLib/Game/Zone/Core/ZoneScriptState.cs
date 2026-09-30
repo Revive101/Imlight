@@ -30,7 +30,9 @@ public sealed class ZoneScriptState {
 
     private const string COUNTER_SET = "ZCA_Set";
 
-    /// <summary>Applies a token, counter or puzzle-variable result for the player (their game object id, 0 for none) who triggered it.</summary>
+    /// <summary>
+    /// Applies a token, counter or puzzle-variable result for the player (their game object id, 0 for none) who triggered it.
+    /// </summary>
     /// <returns>False when the result is not one this state keeps.</returns>
     public bool Apply(Result result, ulong player) {
         lock (_lock) {
@@ -62,12 +64,16 @@ public sealed class ZoneScriptState {
         }
     }
 
-    /// <summary>True when the token is enabled, for the whole zone or for this player.</summary>
+    /// <summary>
+    /// True when the token is enabled, for the whole zone or for this player.
+    /// </summary>
     public bool IsTokenEnabled(string name, ulong player)
         => _tokens.TryGetValue(TokenKey(name, true, 0), out var zoneToken) && zoneToken.Enabled
         || player != 0 && _tokens.TryGetValue(TokenKey(name, false, player), out var playerToken) && playerToken.Enabled;
 
-    /// <summary>The token's value: the zone-wide one when the token is zone-wide, else the player's.</summary>
+    /// <summary>
+    /// The token's value: the zone-wide one when the token is zone-wide, else the player's.
+    /// </summary>
     public int GetTokenValue(string name, ulong player) {
         if (_tokens.TryGetValue(TokenKey(name, true, 0), out var zoneToken)) {
             return zoneToken.Value;
@@ -78,14 +84,18 @@ public sealed class ZoneScriptState {
             : 0;
     }
 
-    /// <summary>Records whether a trigger is enabled (the zone's trigger supervisor keeps this current).</summary>
+    /// <summary>
+    /// Records whether a trigger is enabled (the zone's trigger supervisor keeps this current).
+    /// </summary>
     public void SetTriggerEnabled(string triggerName, bool enabled) {
         if (!string.IsNullOrEmpty(triggerName)) {
             _triggers.AddOrUpdate(triggerName, enabled, (_, old) => enabled);
         }
     }
 
-    /// <summary>True when the trigger is enabled; a trigger the zone does not have is not.</summary>
+    /// <summary>
+    /// True when the trigger is enabled; a trigger the zone does not have is not.
+    /// </summary>
     public bool IsTriggerEnabled(string triggerName)
         => !string.IsNullOrEmpty(triggerName) && _triggers.TryGetValue(triggerName, out var enabled) && enabled;
 
@@ -96,11 +106,15 @@ public sealed class ZoneScriptState {
     public bool HasTriggerFiresLeft(string triggerName, uint triggerMax)
         => triggerMax == 0 || triggerMax == uint.MaxValue || GetTriggerFires(triggerName) < triggerMax;
 
-    /// <summary>How many times the trigger has fired in this zone instance.</summary>
+    /// <summary>
+    /// How many times the trigger has fired in this zone instance.
+    /// </summary>
     public int GetTriggerFires(string triggerName)
         => !string.IsNullOrEmpty(triggerName) && _triggerFires.TryGetValue(triggerName, out var fires) ? fires : 0;
 
-    /// <summary>Counts one fire of the trigger in this zone instance.</summary>
+    /// <summary>
+    /// Counts one fire of the trigger in this zone instance.
+    /// </summary>
     public void RecordTriggerFire(string triggerName) {
         if (!string.IsNullOrEmpty(triggerName)) {
             _triggerFires.AddOrUpdate(triggerName, 1, (_, old) => old + 1);

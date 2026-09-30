@@ -15,7 +15,9 @@ public sealed class ZoneObjectStates {
     private readonly ConcurrentDictionary<string, string> _states = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, byte> _changed = new(StringComparer.OrdinalIgnoreCase);
 
-    /// <summary>Records the state an object enters. Returns false when it was already in that state.</summary>
+    /// <summary>
+    /// Records the state an object enters. Returns false when it was already in that state.
+    /// </summary>
     public bool Set(string objectName, string state) {
         if (string.IsNullOrEmpty(objectName)) {
             return false;
@@ -31,7 +33,9 @@ public sealed class ZoneObjectStates {
         return changed;
     }
 
-    /// <summary>Records the state an object starts in, unless it has already been changed.</summary>
+    /// <summary>
+    /// Records the state an object starts in, unless it has already been changed.
+    /// </summary>
     public void SeedDefault(string objectName, string state) {
         if (!string.IsNullOrEmpty(objectName) && !string.IsNullOrEmpty(state)) {
             _states.TryAdd(objectName, state);
@@ -44,11 +48,15 @@ public sealed class ZoneObjectStates {
     public bool IsIn(string objectName, string state)
         => string.Equals(Get(objectName), state, StringComparison.OrdinalIgnoreCase);
 
-    /// <summary>The state of an object something changed since the zone loaded, else null.</summary>
+    /// <summary>
+    /// The state of an object something changed since the zone loaded, else null.
+    /// </summary>
     public string GetIfChanged(string objectName)
         => !string.IsNullOrEmpty(objectName) && _changed.ContainsKey(objectName) ? Get(objectName) : null;
 
-    /// <summary>Every object something changed since the zone loaded, with its state.</summary>
+    /// <summary>
+    /// Every object something changed since the zone loaded, with its state.
+    /// </summary>
     public KeyValuePair<string, string>[] SnapshotChanged()
         => [.. _states.Where(kv => _changed.ContainsKey(kv.Key))];
 
