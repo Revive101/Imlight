@@ -136,6 +136,7 @@ internal static class Program {
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         Logger.Information("Director is now explicitly loading resources..");
         var resourceContainer = new ResourceContainer();
+        LoadResources();
         Logger.Information("Director has called all resources to load.");
         stopwatch.Stop();
         Logger.Information($"Resource loading completed in {0} ms.",
@@ -163,6 +164,10 @@ internal static class Program {
         }
     }
 
+    private static void LoadResources() {
+        // Load SpiralDB — the in-memory world database from JSON files.
+        SpiralDB.Load();
+    }
     private static IActorRef StartLoginServer() {
         var loginServerName = s_loginServerName;
         var loginServerPort = s_loginServerPort;
