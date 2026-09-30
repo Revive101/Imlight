@@ -30,7 +30,8 @@
  * NOTE:
  * An option that carries goal tags belongs to a quest usage goal: InteractQuestSelectComponent offers it
  * and calls <see cref="ApplyGoalOptions"/> when the goal is used (which also applies the plain state options, so
- * goal-less stands still raise their EnterState). Every other option is a candidate while its requirements
+ * goal-less stands still raise their EnterState). An option that only carries a quest event (a book) is offered
+ * too, and using it posts that event to the zone, where triggers waiting on it fire. Every other option is a candidate while its requirements
  * hold and the object is in the option's visible state. The client gets one press-X entry per object; each
  * use applies the option that fits the current state (see ChooseOption), so two- and four-state objects step
  * through their states. Options whose results show dialog make a readable object (a book) attach too.
@@ -96,12 +97,12 @@ internal sealed class InteractObjectStateComponent(ZoneEntity entity)
     /// holds only those that pass), so they win over unconditional ones. Among several, the use steps to the option
     /// after the one matching the current state, wrapping around; an unmatched state starts at the first.
     /// </summary>
-    internal static InteractStateOptionTemplate ChooseOption(IReadOnlyList<InteractStateOptionTemplate> offered, string currentState) {
+    internal static InteractOptionTemplate ChooseOption(IReadOnlyList<InteractOptionTemplate> offered, string currentState) {
         if (offered.Count == 0) {
             return null;
         }
 
-        var pool = offered.Where(o => o.m_requirements?.m_requirements is { Count: > 0 }).ToList();
+        var pool = offered.Where(o => Requirements(o)?.m_requirements is { Count: > 0 }).ToList();
         if (pool.Count == 0) {
             pool = [.. offered];
         }
@@ -112,7 +113,7 @@ internal sealed class InteractObjectStateComponent(ZoneEntity entity)
 
         var at = string.IsNullOrEmpty(currentState)
             ? -1
-            : pool.FindIndex(o => string.Equals(o.m_enterState.ToString(), currentState, StringComparison.OrdinalIgnoreCase));
+            : pool.FindIndex(o => string.Equals(EnterState(o), currentState, StringComparison.OrdinalIgnoreCase));
 
         return pool[(at + 1) % pool.Count];
     }
@@ -138,13 +139,13 @@ internal sealed class InteractObjectStateComponent(ZoneEntity entity)
                 continue;
             }
 
-            var visibleState = option.m_visibleState.ToString();
+            var visibleState = VisibleState(option);
             if (!string.IsNullOrEmpty(visibleState) && current is not null
                 && !string.Equals(current, visibleState, StringComparison.OrdinalIgnoreCase)) {
                 continue;
             }
 
-            var enterState = option.m_enterState.ToString();
+            var enterState = EnterState(option);
             if (!string.IsNullOrEmpty(enterState) && string.Equals(current, enterState, StringComparison.OrdinalIgnoreCase)) {
                 continue;
             }
@@ -153,9 +154,9 @@ internal sealed class InteractObjectStateComponent(ZoneEntity entity)
         }
     }
 
-    private void Apply(InteractStateOptionTemplate option, IActorRef playerActor, CoreObject playerObject) {
+    private void Apply(InteractOptionTemplate option, IActorRef playerActor, CoreObject playerObject) {
         var objectName = ObjectName;
-        var newState = option.m_enterState.ToString();
+        var newState = EnterState(option);
         if (!string.IsNullOrEmpty(newState) && !string.IsNullOrEmpty(objectName)) {
             Zone.ObjectStates.Set(objectName, newState);
             Entity.ChangeState(newState);
@@ -167,12 +168,20 @@ internal sealed class InteractObjectStateComponent(ZoneEntity entity)
             });
         }
 
-        if (option.m_results?.m_results is { Count: > 0 }) {
-            Entity.ExecuteResults(option.m_results, playerActor, playerObject, objectName);
+        if (!string.IsNullOrEmpty(option.m_questEvent)) {
+            ZoneActor.Tell(new ZONE_102_PROTOCOL.MSG_POSTEVENT {
+                EventName = option.m_questEvent,
+                PlayerActor = playerActor,
+                PlayerGameObject = playerObject,
+            });
+        }
+
+        if (Results(option) is { m_results: { Count: > 0 } } results) {
+            Entity.ExecuteResults(results, playerActor, playerObject, objectName);
         }
     }
 
-    private IEnumerable<InteractStateOptionTemplate> GetOfferedOptions(Wizard wizard) {
+    private IEnumerable<InteractOptionTemplate> GetOfferedOptions(Wizard wizard) {
         var current = CurrentState();
 
         foreach (var option in GetStateOptions(Entity.Template as GameObjectTemplate)) {
@@ -181,13 +190,13 @@ internal sealed class InteractObjectStateComponent(ZoneEntity entity)
             }
 
             // An unknown current state offers everything; a known one must match the option's.
-            var visibleState = option.m_visibleState.ToString();
+            var visibleState = VisibleState(option);
             if (!string.IsNullOrEmpty(visibleState) && current is not null
                 && !string.Equals(current, visibleState, StringComparison.OrdinalIgnoreCase)) {
                 continue;
             }
 
-            var requirements = option.m_requirements;
+            var requirements = Requirements(option);
             if (requirements?.m_requirements is { Count: > 0 }
                 && !RequirementDispatcher.EvaluateRequirements(
                     requirements,
@@ -202,18 +211,31 @@ internal sealed class InteractObjectStateComponent(ZoneEntity entity)
         }
     }
 
-    private static bool IsGoalOption(InteractStateOptionTemplate option)
+    private static bool IsGoalOption(InteractOptionTemplate option)
         => option.m_goalTags is { Count: > 0 };
 
-    private static bool ChangesWorld(InteractStateOptionTemplate option)
-        => !string.IsNullOrEmpty(option.m_enterState.ToString())
-        || option.m_results?.m_results?.Any(r => r is ResPostEvent or ResModifyTriggerObject or ResActorDialog) == true;
+    private static bool ChangesWorld(InteractOptionTemplate option)
+        => !string.IsNullOrEmpty(EnterState(option))
+        || !string.IsNullOrEmpty(option.m_questEvent)
+        || Results(option)?.m_results?.Any(r => r is ResPostEvent or ResModifyTriggerObject or ResActorDialog) == true;
 
-    private static IEnumerable<InteractStateOptionTemplate> GetStateOptions(GameObjectTemplate template)
+    private static string EnterState(InteractOptionTemplate option)
+        => (option as InteractStateOptionTemplate)?.m_enterState.ToString();
+
+    private static string VisibleState(InteractOptionTemplate option)
+        => (option as InteractStateOptionTemplate)?.m_visibleState.ToString();
+
+    private static RequirementList Requirements(InteractOptionTemplate option)
+        => (option as InteractStateOptionTemplate)?.m_requirements;
+
+    private static ResultList Results(InteractOptionTemplate option)
+        => (option as InteractStateOptionTemplate)?.m_results;
+
+    private static IEnumerable<InteractOptionTemplate> GetStateOptions(GameObjectTemplate template)
         => template?.m_behaviors?
             .OfType<InteractableBehaviorTemplate>()
             .SelectMany(behavior => behavior.m_interactOptions ?? [])
-            .OfType<InteractStateOptionTemplate>()
+            .OfType<InteractOptionTemplate>()
         ?? [];
 
 }

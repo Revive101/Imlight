@@ -847,6 +847,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             results: startResults,
             playerRef: SessionActor.ActorRef,
             playerObj: GetActiveGameObject(),
+            zoneActor: SessionActor.GetZoneActor(),
             questName: questInstance.QuestName
         );
     }
@@ -1030,6 +1031,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             results: activationResults,
             playerRef: SessionActor.ActorRef,
             playerObj: GetActiveGameObject(),
+            zoneActor: SessionActor.GetZoneActor(),
             questName: questInstance.QuestName,
             goalName: goalTemplate.m_goalName
         );
@@ -1084,6 +1086,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             results: goalTemplate.m_completeResults,
             playerRef: SessionActor.ActorRef,
             playerObj: GetActiveGameObject(),
+            zoneActor: SessionActor.GetZoneActor(),
             questName: questInstance.QuestName,
             goalName: goalTemplate.m_goalName
         );
@@ -1131,6 +1134,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             results: qTemplate.m_endResults,
             playerRef: SessionActor.ActorRef,
             playerObj: GetActiveGameObject(),
+            zoneActor: SessionActor.GetZoneActor(),
             questName: questInstance.QuestName
         );
 
