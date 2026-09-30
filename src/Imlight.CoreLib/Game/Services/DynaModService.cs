@@ -48,6 +48,8 @@ namespace Imlight.CoreLib.Game.Services;
 
 internal class DynaModService(SessionActor sessionActor) : MessageService(sessionActor) {
 
+    private int _addIndex = 1;
+
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new DynaModService(parentActor));
 
@@ -94,6 +96,18 @@ internal class DynaModService(SessionActor sessionActor) : MessageService(sessio
         var dynaModState = message.DynaMod.m_dynaModState;
 
         wizard.AddDynamod(zoneName, dynaModClientTag, dynaModState);
+
+        // A mod added by a quest result (not echoed from the client) must reach the client as well: mods on
+        // client-only objects such as the arena gates are otherwise never applied. Live sends it to the owner.
+        if (message.ContextActor is not null) {
+            var addMsg = DynaModMessages.Add(
+                GetActiveGameObject().m_globalID.Full,
+                new WizardData.Models.Player.Dynamod { ZoneName = zoneName, ClientTag = dynaModClientTag, ModState = dynaModState },
+                ++_addIndex);
+            if (addMsg is not null) {
+                SendToSocket(addMsg);
+            }
+        }
 
         // Broadcast the state change to the zone.
         // Objects that match the client tag will apply the state change.

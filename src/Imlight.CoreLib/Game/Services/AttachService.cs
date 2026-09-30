@@ -182,6 +182,15 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
         // that arrives earlier holds its loading screen until a 30 second timeout. Joining the zone sends them.
         SendToSocket(_loginCompleteMessage);
 
+        // Replay the player's quest dynamods, as live does right after login. Objects the client owns
+        // (arena gates, doors) only learn their state from this message.
+        var dynamodsMsg = DynaModMessages.UpdateAll(
+            charGameObject.m_globalID.Full,
+            _wizard.DynamodSet?.Dynamods ?? []);
+        if (dynamodsMsg is not null) {
+            SendToSocket(dynamodsMsg);
+        }
+
         // Wait for the zone to confirm the player was added
         var addPlayerResponse = AddPlayerToZone(charGameObject, _wizard);
         if (addPlayerResponse.WizardGameObject == null) {
