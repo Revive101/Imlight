@@ -64,6 +64,11 @@ internal sealed class AnimationComponent(ZoneEntity entity) : ZoneEntityComponen
             return;
         }
 
+        // A state for the whole zone is applied by the render component; this one answers a single player.
+        if (msg.Sender is null) {
+            return;
+        }
+
         if (msg.ObjectName == goTemplate.m_objectName) {
             // If the name matches, we can be fairly certain this message is for us.
             Entity.ChangeStateExclusiveSender(msg.StateName, msg.Sender);

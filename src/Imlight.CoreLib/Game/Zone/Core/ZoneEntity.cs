@@ -239,6 +239,14 @@ public class ZoneEntity(
         sender.Tell(stateMsg);
     }
 
+    /// <summary>
+    /// Runs a result list on behalf of a player (the results an interact option carries), as a child of this entity.
+    /// Only valid on the entity's own thread, which is where its components run.
+    /// </summary>
+    internal void ExecuteResults(ResultList results, IActorRef playerActor, CoreObject playerObject, string triggerName = null)
+        => Imlight.CoreLib.Game.Results.ResultDispatcher.ExecuteResults(
+            Context, results, playerActor, playerObject, zoneActor: ZoneRef, triggerName: triggerName);
+
     #region Message Handlers
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN))]

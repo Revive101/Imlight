@@ -20,6 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
+using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
 using Imlight.CoreLib.Game.Requirements;
@@ -44,6 +45,8 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
         = ConfigurationManager.Settings["April Fools.RandomizeGateways"].AsBool();
 
     private readonly List<(Trigger Trigger, IActorRef Actor)> _orderedTriggers = [];
+    private readonly HashSet<string> _undecodableLogged = [];
+    private readonly HashSet<string> _chainedEvents = [];
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS))]
     public override void ReceiveZoneLoadResults(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS message) {
@@ -53,6 +56,14 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
         var replacedTriggers = ReplaceTriggerDataWithDatabase(message.TriggerData);
         var spawners = message.SpawnData.m_spawners;
         UpdateSpawnResultTriggers(ref replacedTriggers, spawners, message.PathData.m_pathList, message.NodeData.m_nodeList);
+
+        _chainedEvents.Clear();
+        foreach (var chained in replacedTriggers
+                     .Where(t => t?.m_results?.m_results is not null)
+                     .SelectMany(t => t.m_results.m_results)
+                     .OfType<ResPostEvent>()) {
+            _chainedEvents.Add(chained.m_eventName.ToString());
+        }
 
         _orderedTriggers.Clear();
         foreach (var trigger in replacedTriggers) {
@@ -78,6 +89,15 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
                 continue;
             }
 
+            if (ZoneTrigger.HasUndecodableRequirement(trigger.m_requirements) && !IsLongRaisedEvent(message.EventName)) {
+                if (_undecodableLogged.Add(trigger.m_triggerName)) {
+                    Logger.Warning("Trigger {0} in {1} has a requirement class Imcodec cannot decode; it will not fire.",
+                        Logger.Args(trigger.m_triggerName, Zone.ZonePath));
+                }
+
+                continue;
+            }
+
             if (!EvaluateRequirements(trigger, message)) {
                 continue;
             }
@@ -91,8 +111,59 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
                 PlayerActor = message.PlayerActor,
                 PlayerGameObject = message.PlayerGameObject,
                 SuppressTeleportResults = suppressTeleportResults,
+                Adjectives = message.Adjectives,
             });
         }
+    }
+
+    /// <summary>
+    /// Events Imlight raised before object and kill events existed: zone entry, volume enter and exit, and
+    /// events another trigger of the zone posts. A trigger on one of them keeps firing with a requirement it
+    /// cannot decode (as before); a trigger on any other event fails closed.
+    /// </summary>
+    private bool IsLongRaisedEvent(string eventName)
+        => eventName == "EnterZone"
+        || eventName.StartsWith("Enter_", StringComparison.Ordinal)
+        || eventName.StartsWith("Exit_", StringComparison.Ordinal)
+        || _chainedEvents.Contains(eventName);
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_MODIFYTRIGGEROBJECT))]
+    private void ReceiveModifyTriggerObject(ZONE_102_PROTOCOL.MSG_MODIFYTRIGGEROBJECT message)
+        => ApplyObjectState(message.ObjectName, message.StateName, message.PlayerActor, message.PlayerGameObject);
+
+    /// <summary>
+    /// Puts a named zone object into a state for every player, then raises "&lt;object&gt;.&lt;state&gt;.EnterState".
+    /// Objects the server owns change state through their entity; objects only the client owns (doors, collision)
+    /// are told through a dynamic mod, as live does.
+    /// </summary>
+    private void ApplyObjectState(string objectName, string stateName, IActorRef playerActor, CoreObject playerObject) {
+        if (string.IsNullOrEmpty(objectName) || string.IsNullOrEmpty(stateName)) {
+            return;
+        }
+
+        Zone.ObjectStates.Set(objectName, stateName);
+
+        ZoneRef.Tell(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+            Messages = [new ZONE_102_PROTOCOL.MSG_ENTERSTATE {
+                ObjectName = objectName,
+                StateName = stateName,
+                ExclusiveToSender = false,
+            }],
+            Targets = ZoneBroadcastTarget.Objects,
+        });
+        ZoneRef.Tell(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+            Messages = [new CHARACTER_103_PROTOCOL.MSG_SENDDYNAMODSTATE {
+                ObjectName = objectName,
+                StateName = stateName,
+            }],
+            Targets = ZoneBroadcastTarget.Players,
+        });
+
+        Self.Tell(new ZONE_102_PROTOCOL.MSG_POSTEVENT {
+            EventName = $"{objectName}.{stateName}.EnterState",
+            PlayerActor = playerActor,
+            PlayerGameObject = playerObject,
+        });
     }
 
     private bool EvaluateRequirements(Trigger trigger, ZONE_102_PROTOCOL.MSG_POSTEVENT message) {
@@ -111,7 +182,10 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
                 message.PlayerGameObject,
                 wizardResponse.Wizard,
                 ZoneRef,
-                trigger.m_triggerName));
+                trigger.m_triggerName) {
+                ObjectStates = Zone.ObjectStates,
+                EventAdjectives = message.Adjectives,
+            });
     }
 
     private void UpdateSpawnResultTriggers(ref List<Trigger> clientTriggers, List<SpawnObject> spawners, List<PathObjectTemplate> paths, List<NodeObject> nodes) {

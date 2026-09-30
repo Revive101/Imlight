@@ -225,6 +225,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         }
     }
 
+    private const string MONSTER_KILLED_EVENT = "Monster_Killed";
+
     internal void ZoneBroadcast(IMessage message) => Entity.ZoneRef.Tell(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
         Selfless = false,
         Sender = Self,
@@ -1355,6 +1357,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         SendCombatPhase((byte) Duel.m_duelPhase);
 
         var adjectivesOfDefeatedMobs = new List<string>();
+        var adjectivesPerDefeatedMob = new List<List<string>>();
         var templateIdsOfDefeatedMobs = new List<ulong>();
         EnactActionOnSubCircles(circle => {
             if (circle.OccupiedTeam == CombatTeam.Monster) {
@@ -1370,6 +1373,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
                 var mobAdjectives = gameObjectTemplate.m_adjectiveList;
                 adjectivesOfDefeatedMobs.AddRange(mobAdjectives);
+                adjectivesPerDefeatedMob.Add([.. mobAdjectives]);
                 templateIdsOfDefeatedMobs.Add(gameObjectTemplate.m_templateID);
             }
         });
@@ -1398,6 +1402,37 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
             };
             circle.ParticipantActor.Tell(victoryMsg);
         });
+
+        PostMonsterKilledEvents(adjectivesPerDefeatedMob);
+    }
+
+    /// <summary>
+    /// Raises Monster_Killed in the zone once for every monster the players defeated. Zone triggers match it
+    /// against the killed monster's adjectives (a boss's ".AdjRef"), and act for the first winning player.
+    /// </summary>
+    private void PostMonsterKilledEvents(List<List<string>> adjectivesPerDefeatedMob) {
+        IActorRef winnerActor = null;
+        CoreObject winnerObject = null;
+        EnactActionOnSubCircles(circle => {
+            if (winnerActor is null && circle.OccupiedTeam == CombatTeam.Player && !circle.IsSummonedMinion
+                && circle.ParticipantActor is not null) {
+                winnerActor = circle.ParticipantActor;
+                winnerObject = circle.ParticipantObject;
+            }
+        });
+
+        if (winnerActor is null) {
+            return;
+        }
+
+        foreach (var adjectives in adjectivesPerDefeatedMob) {
+            Entity.ZoneRef.Tell(new ZONE_102_PROTOCOL.MSG_POSTEVENT {
+                EventName = MONSTER_KILLED_EVENT,
+                PlayerActor = winnerActor,
+                PlayerGameObject = winnerObject,
+                Adjectives = adjectives,
+            });
+        }
     }
 
     private void CreatureWin() {

@@ -348,4 +348,18 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
 
     }
 
+    /// <summary>
+    /// Sent to every player's session when a trigger puts a named zone object into a state: objects only the
+    /// client owns (doors, collision) learn it through a dynamic mod, as live does.
+    /// </summary>
+    public sealed class MSG_SENDDYNAMODSTATE : IServerMessage {
+
+        public byte MessageOrder { get; } = 29;
+        public byte ServiceID { get; } = 103;
+
+        public string ObjectName;
+        public string StateName;
+
+    }
+
 }

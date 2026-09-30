@@ -531,6 +531,27 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public CoreObject? PlayerGameObject;
         public bool SuppressTeleportResults;
 
+        /// <summary>
+        /// The adjectives of the monster a Monster_Killed event is about; requirements on the event read them.
+        /// </summary>
+        public IReadOnlyList<string> Adjectives;
+
+    }
+
+    /// <summary>
+    /// Sent to a <see cref="Zone"/> by a ResModifyTriggerObject result: the named object enters the state
+    /// for every player in the zone, and the zone raises the object's EnterState event.
+    /// </summary>
+    public class MSG_MODIFYTRIGGEROBJECT : IServerMessage {
+
+        public byte MessageOrder { get; } = 68;
+        public byte ServiceID { get; } = 102;
+
+        public string ObjectName;
+        public string StateName;
+        public IActorRef PlayerActor;
+        public CoreObject PlayerGameObject;
+
     }
 
     /// <summary>

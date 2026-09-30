@@ -120,6 +120,19 @@ internal class DynaModService(SessionActor sessionActor) : MessageService(sessio
         ZoneBroadcastNoPlayers(stateChangeMsg);
     }
 
+    [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_SENDDYNAMODSTATE))]
+    private void ReceiveSendDynaModState(CHARACTER_103_PROTOCOL.MSG_SENDDYNAMODSTATE message) {
+        // A zone-wide state a trigger gave a named object: the client applies it to the object with that tag.
+        // It is not saved; it belongs to this zone instance.
+        var addMsg = DynaModMessages.Add(
+            GetActiveGameObject().m_globalID.Full,
+            new WizardData.Models.Player.Dynamod { ClientTag = message.ObjectName, ModState = message.StateName },
+            ++_addIndex);
+        if (addMsg is not null) {
+            SendToSocket(addMsg);
+        }
+    }
+
     [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_REMOVEDYNAMOD))]
     private void ReceiveRemoveDynaMod(CHARACTER_103_PROTOCOL.MSG_REMOVEDYNAMOD message) {
         var wizard = GetActiveWizard();

@@ -140,6 +140,10 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
         };
         playerActor.Tell(goalCompleteMsg);
 
+        // The object's own options (a state such as "RedDown", posted events such as "InsertCrystalRed")
+        // run when it is used for the goal.
+        Entity.GetComponentOfType<InteractObjectStateComponent>()?.ApplyGoalOptions(playerActor, playerObject);
+
         var goalMax = goal.m_tallyCounter?.m_count ?? 1;
 
         // Collection goals (tally count > 1, e.g. the Triton cogs) consume the object:

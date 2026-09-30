@@ -47,4 +47,10 @@ public class ZoneRequirementContext(RequirementList requirements,
     public string GetGoalName() => null; // Not applicable for zone contexts
     public string GetTriggerName() => _triggerName;
 
+    /// <summary>The state of every named object in the zone (null outside a zone).</summary>
+    public Game.Zone.Core.ZoneObjectStates ObjectStates { get; init; }
+
+    /// <summary>The adjectives of the monster a Monster_Killed event is about (null for other events).</summary>
+    public IReadOnlyList<string> EventAdjectives { get; init; }
+
 }

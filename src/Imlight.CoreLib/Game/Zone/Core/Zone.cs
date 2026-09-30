@@ -95,6 +95,11 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         }
     }
 
+    /// <summary>
+    /// The state of every named object in this zone instance, read by trigger requirements.
+    /// </summary>
+    public ZoneObjectStates ObjectStates { get; } = new();
+
     public ITimerScheduler Timers { get; set; }
 
     private readonly uint _dynamicZoneId;
@@ -374,6 +379,10 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
             supervisor.Tell(message);
         }
     }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_MODIFYTRIGGEROBJECT))]
+    private void ReceiveModifyTriggerObject(ZONE_102_PROTOCOL.MSG_MODIFYTRIGGEROBJECT message)
+        => _triggerSupervisor.Forward(message);
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEENTITY))]
     private void ReceiveQueryEntityObject(ZONE_102_PROTOCOL.MSG_QUERYZONEENTITY message) {

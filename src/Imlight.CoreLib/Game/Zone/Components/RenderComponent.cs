@@ -90,6 +90,9 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
 
         _renderDistance = Entity.Zone.ZoneData.m_farClip;
 
+        // Trigger requirements on an object's state ("Snake obelisk is Idle_On") start from the state it is placed in.
+        Entity.Zone.ObjectStates.SeedDefault(Entity.Info?.m_zoneTag, Entity.Info?.m_startState);
+
         CreateObjectForAllPlayers();
     }
 
@@ -146,6 +149,7 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
 
             // A dynamod state such as "IdleOpen" is only ever sent as a state change, so a player
             // arriving in the zone has to be told again or the object reverts to its default.
+            persistedState ??= Entity.Zone.ObjectStates.GetIfChanged(Entity.Info?.m_zoneTag);
             if (persistedState is not null) {
                 Entity.ChangeStateExclusiveSender(persistedState, suspect);
             }
@@ -227,6 +231,13 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
         // If the tag matches, spawn or despawn the object for the sender.
         var zoneTag = msg.ObjectName;
         if (Entity.Info is not null && Entity.Info.m_zoneTag.Equals(zoneTag, System.StringComparison.OrdinalIgnoreCase)) {
+            // A state for the whole zone (a trigger result) reaches every player, not just one.
+            if (!msg.ExclusiveToSender && msg.Sender is null) {
+                Entity.ChangeState(msg.StateName);
+
+                return;
+            }
+
             var player = msg.Sender;
             if (player is null) {
                 return;

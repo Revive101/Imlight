@@ -100,7 +100,10 @@ public sealed class ZoneTrigger(IActorRef zoneRef, Zone zone, Trigger trigger)
                     wizardResponse.Wizard,
                     ZoneRef,
                     TriggerData.m_triggerName
-                )
+                ) {
+                    ObjectStates = Zone.ObjectStates,
+                    EventAdjectives = message.Adjectives,
+                }
             );
 
             if (!requirementsMet) {
@@ -120,6 +123,14 @@ public sealed class ZoneTrigger(IActorRef zoneRef, Zone zone, Trigger trigger)
         ResultDispatcher.ExecuteResults(Context, results, message.PlayerActor, message.PlayerGameObject,
                                        Sender, ZoneRef, triggerName: TriggerData.m_triggerName);
     }
+
+    /// <summary>
+    /// True when a requirement class the client data uses failed to decode (it came back null). Such a trigger
+    /// must not fire: skipping the requirement would make it pass for every event.
+    /// </summary>
+    internal static bool HasUndecodableRequirement(RequirementList requirements)
+        => requirements?.m_requirements is { } list
+        && list.Any(r => r is null || r is RequirementList nested && HasUndecodableRequirement(nested));
 
     private bool CooldownCheck(IActorRef playerRef) {
         if (_cooldowns.TryGetValue(playerRef, out var lastTriggered)) {
