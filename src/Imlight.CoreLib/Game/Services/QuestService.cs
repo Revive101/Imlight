@@ -677,7 +677,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
                     continue;
                 }
 
-                CompleteGoal(qInstance, gTemplate);
+                TryCompleteZoneEntryGoal(qInstance, gTemplate, wizard);
             }
         }
     }
@@ -769,6 +769,25 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         // Play goal start dialogue if it exists.
         var goalId = questInstance.GoalProgress.First(g => g.GoalName == goalTemplate.m_goalName).ID;
         ShowGoalStartDialogue(goalTemplate, questInstance.ID, goalId);
+
+        // A zone-entry goal that starts while the player is already in its zone would otherwise wait for
+        // the next zone attach. Complete it now, after the start message, as the attach path does.
+        TryCompleteZoneEntryGoal(questInstance, goalTemplate, wizard);
+    }
+
+    private void TryCompleteZoneEntryGoal(QuestInstance questInstance, GoalTemplate goalTemplate, Wizard wizard) {
+        if (goalTemplate is not WaypointGoalTemplate waypointGoal || !waypointGoal.m_zoneEntry) {
+            return;
+        }
+        if (waypointGoal.m_zoneTag != wizard.Zone) {
+            return;
+        }
+        // Guards against double completion (already completed or never started).
+        if (!questInstance.IsGoalActive(goalTemplate.m_goalName)) {
+            return;
+        }
+
+        CompleteGoal(questInstance, goalTemplate);
     }
 
     private void CompleteGoal(QuestInstance questInstance, GoalTemplate goalTemplate, bool showCompletionDialogue = true) {
