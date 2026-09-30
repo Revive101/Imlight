@@ -61,4 +61,9 @@ public class GenericRequirementContext(RequirementList requirements,
     /// </summary>
     public Game.Zone.Core.ZoneScriptState ScriptState { get; init; }
 
+    /// <summary>
+    /// Judges the completion of dungeon quests by the instance, when a player's entry grants them.
+    /// </summary>
+    public System.Func<string, bool?> InstanceQuestCompleted { get; init; }
+
 }

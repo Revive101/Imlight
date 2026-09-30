@@ -66,6 +66,21 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
     private const string GOAL_COMPLETION_DIALOG_TAG = "Completion";
     private const string DIALOG_ENTRY_EVENT_COMPLETION = "ENTRY";
 
+    private const float FIRST_RUN_XP_SCALE = 1f;
+    private const float SECOND_RUN_XP_SCALE = 0.5f;
+    private const float LATER_RUN_XP_SCALE = 0f;
+    private static readonly TimeSpan INSTANCE_QUERY_TIMEOUT = TimeSpan.FromSeconds(5);
+
+    /// <summary>
+    /// How a goal completes: on the player's own progress, because another player in the instance completed it, or
+    /// as the instance's progress is replayed to a player who joins late.
+    /// </summary>
+    private enum GoalCompletion {
+        Own,
+        Shared,
+        CatchUp,
+    }
+
     private static readonly TimeSpan PENDING_GOAL_DIALOG_TIMEOUT = TimeSpan.FromMinutes(2);
     private static readonly TimeSpan PERSONA_TRANSITION_DELAY = TimeSpan.FromMilliseconds(1500);
 
@@ -121,7 +136,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         // Dungeon quests are force-added on entry (a quest marked by a ReqInZone requirement for this
         // zone). Grant BEFORE the waypoint check so a fresh quest's enter-the-dungeon goal completes on
         // this same attach.
-        TryGrantDungeonQuests(wizard);
+        TryGrantDungeonQuests(wizard, reconcileWithInstance: true);
 
         // Entering the zone may have triggered waypoint goals for quests.
         CheckForWaypointGoalZoneEntry(wizard);
@@ -463,6 +478,24 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
                 CompleteGoal(qInstance, gTemplate);
             }
         }
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_INSTANCEGOALCOMPLETED))]
+    private void ReceiveInstanceGoalCompleted(ZONE_102_PROTOCOL.MSG_INSTANCEGOALCOMPLETED message) {
+        if (SessionActor.ActorRef.Equals(message.Origin)) {
+            return;
+        }
+
+        var qInstance = GetActiveWizard().QuestBehavior.CurrentQuestInstances
+            .FirstOrDefault(q => q.QuestName == message.QuestName);
+        var gTemplate = _cachedQuestTemplates
+            .FirstOrDefault(q => q.m_questName == message.QuestName)?.m_goals?
+            .FirstOrDefault(g => g.m_goalName == message.GoalName);
+        if (qInstance is null || gTemplate is null || !qInstance.IsGoalActive(gTemplate.m_goalName)) {
+            return;
+        }
+
+        CompleteGoal(qInstance, gTemplate, completion: GoalCompletion.Shared);
     }
 
     [MessageHandler(typeof(QUEST_MESSAGES_52_PROTOCOL.MSG_ACCEPTQUEST))]
@@ -848,7 +881,8 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             playerRef: SessionActor.ActorRef,
             playerObj: GetActiveGameObject(),
             zoneActor: SessionActor.GetZoneActor(),
-            questName: questInstance.QuestName
+            questName: questInstance.QuestName,
+            skipWorldEffects: !ClaimInstanceStep(InstanceQuestClaimKind.QuestStart, questInstance.QuestName, "")
         );
     }
 
@@ -1033,7 +1067,8 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             playerObj: GetActiveGameObject(),
             zoneActor: SessionActor.GetZoneActor(),
             questName: questInstance.QuestName,
-            goalName: goalTemplate.m_goalName
+            goalName: goalTemplate.m_goalName,
+            skipWorldEffects: !ClaimInstanceStep(InstanceQuestClaimKind.GoalStart, questInstance.QuestName, goalTemplate.m_goalName)
         );
 
         // Play goal start dialogue if it exists.
@@ -1060,7 +1095,8 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         CompleteGoal(questInstance, goalTemplate);
     }
 
-    private void CompleteGoal(QuestInstance questInstance, GoalTemplate goalTemplate, bool showCompletionDialogue = true) {
+    private void CompleteGoal(QuestInstance questInstance, GoalTemplate goalTemplate, bool showCompletionDialogue = true,
+        GoalCompletion completion = GoalCompletion.Own) {
         var wizard = GetActiveWizard();
 
         if (!wizard.CompleteQuestGoal(questInstance.QuestName, goalTemplate.m_goalName)) {
@@ -1077,19 +1113,26 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         }
 
         SendCompleteGoal(questInstance.ID, gInstance.ID);
-        if (showCompletionDialogue) {
-            ShowGoalCompletionDialogue(goalTemplate, questInstance.ID, gInstance.ID);
-        }
+        if (completion != GoalCompletion.CatchUp) {
+            if (showCompletionDialogue) {
+                ShowGoalCompletionDialogue(goalTemplate, questInstance.ID, gInstance.ID);
+            }
 
-        ResultDispatcher.ExecuteResults(
-            actorContext: Context,
-            results: goalTemplate.m_completeResults,
-            playerRef: SessionActor.ActorRef,
-            playerObj: GetActiveGameObject(),
-            zoneActor: SessionActor.GetZoneActor(),
-            questName: questInstance.QuestName,
-            goalName: goalTemplate.m_goalName
-        );
+            // The player who completes it first tells the instance; the others run only their personal results.
+            var first = completion == GoalCompletion.Own
+                && ClaimInstanceStep(InstanceQuestClaimKind.GoalComplete, questInstance.QuestName, goalTemplate.m_goalName);
+            ResultDispatcher.ExecuteResults(
+                actorContext: Context,
+                results: goalTemplate.m_completeResults,
+                playerRef: SessionActor.ActorRef,
+                playerObj: GetActiveGameObject(),
+                zoneActor: SessionActor.GetZoneActor(),
+                questName: questInstance.QuestName,
+                goalName: goalTemplate.m_goalName,
+                skipWorldEffects: !first,
+                xpScale: GetRunXpScale(wizard, questInstance.QuestName)
+            );
+        }
 
         var qTemplate = _cachedQuestTemplates.FirstOrDefault(q => q.m_questName == questInstance.QuestName);
         if (qTemplate == null) {
@@ -1099,7 +1142,9 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         }
 
         if (!DetermineNextGoals(qTemplate, questInstance, out var gTemplates)) {
-            CompleteQuest(questInstance);
+            if (completion != GoalCompletion.CatchUp) {
+                CompleteQuest(questInstance);
+            }
 
             return;
         }
@@ -1112,10 +1157,20 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
     private void CompleteQuest(QuestInstance questInstance) {
         var wizard = GetActiveWizard();
 
+        var xpScale = GetRunXpScale(wizard, questInstance.QuestName);
+        var runCount = IsZoneDungeonQuest(wizard, questInstance.QuestName)
+            ? wizard.GetQuestRegistryValue(questInstance.QuestName, QUEST_COMPLETED_ENTRY)
+            : 0UL;
+
         if (!wizard.CompleteQuest(questInstance.QuestName)) {
             Logger.Error("Failed to complete quest '{0}' for player '{1}'",
                 Logger.Args(questInstance.QuestName, wizard.CharId));
             return;
+        }
+
+        // The "Complete" entry counts this player's completions of a dungeon quest.
+        if (IsZoneDungeonQuest(wizard, questInstance.QuestName)) {
+            wizard.SetQuestRegistryValue(questInstance.QuestName, QUEST_COMPLETED_ENTRY, runCount + 1);
         }
 
         SendCompleteQuest(questInstance.ID);
@@ -1135,7 +1190,9 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             playerRef: SessionActor.ActorRef,
             playerObj: GetActiveGameObject(),
             zoneActor: SessionActor.GetZoneActor(),
-            questName: questInstance.QuestName
+            questName: questInstance.QuestName,
+            skipWorldEffects: !ClaimInstanceStep(InstanceQuestClaimKind.QuestComplete, questInstance.QuestName, ""),
+            xpScale: xpScale
         );
 
         // Fire the "you have learned a new spell!" cinematic for the spell rewards. Only the spells
@@ -1623,27 +1680,68 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         }
     }
 
-    private void TryGrantDungeonQuests(Wizard wizard) {
+    private void TryGrantDungeonQuests(Wizard wizard, bool reconcileWithInstance = false) {
         if (wizard is null) {
             return;
         }
 
-        foreach (var template in DungeonQuestIndex.GetQuestsForZone(wizard.Zone)) {
-            if (wizard.HasQuest(template.m_questName)
-                || wizard.HasQuestRegistryValue(template.m_questName, QUEST_COMPLETED_ENTRY)) {
-                continue;
+        var templates = DungeonQuestIndex.GetQuestsForZone(wizard.Zone);
+        if (templates.Count == 0) {
+            return;
+        }
+
+        var progress = QueryInstanceProgress();
+        var inInstance = progress?.IsInstance == true;
+        var completedQuests = (progress?.CompletedQuests ?? []).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var zoneQuestNames = templates.Select(t => t.m_questName).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        bool Eligible(QuestTemplate template) {
+            // An instance runs each quest once, whatever the player completed in earlier runs.
+            var done = inInstance
+                ? completedQuests.Contains(template.m_questName)
+                : wizard.HasQuestRegistryValue(template.m_questName, QUEST_COMPLETED_ENTRY);
+            if (done) {
+                return false;
             }
 
-            if (template.m_requirements is not null) {
-                var context = new GenericRequirementContext(
-                    requirements: template.m_requirements,
-                    playerRef: null,
-                    playerObj: null,
-                    wizard: wizard);
+            if (template.m_requirements is null) {
+                return true;
+            }
 
-                if (!RequirementDispatcher.EvaluateRequirements(template.m_requirements, context)) {
+            var context = new GenericRequirementContext(
+                requirements: template.m_requirements,
+                playerRef: null,
+                playerObj: null,
+                wizard: wizard) {
+                InstanceQuestCompleted = inInstance
+                    ? name => zoneQuestNames.Contains(name) ? completedQuests.Contains(name) : null
+                    : null,
+            };
+
+            return RequirementDispatcher.EvaluateRequirements(template.m_requirements, context);
+        }
+
+        foreach (var template in templates) {
+            var saved = wizard.QuestBehavior.CurrentQuestInstances.FirstOrDefault(q => q.QuestName == template.m_questName);
+            if (saved is not null) {
+                // The instance's progress wins over what the player saved for the quest.
+                if (!(reconcileWithInstance && inInstance)) {
                     continue;
                 }
+
+                var savedGoals = saved.GoalProgress.Where(g => g.IsGoalCompleted()).Select(g => g.GoalName)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var instanceGoals = progress.CompletedGoals.TryGetValue(template.m_questName, out var goals)
+                    ? goals : [];
+                if (Eligible(template) && savedGoals.SetEquals(instanceGoals)) {
+                    continue;
+                }
+
+                DropSavedDungeonQuest(wizard, saved);
+            }
+
+            if (!Eligible(template)) {
+                continue;
             }
 
             var questInstance = new QuestInstance(template, wizard.CharId);
@@ -1657,6 +1755,89 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
 
             Logger.Information("Granted dungeon quest '{0}' to {1} in '{2}'.",
                 Logger.Args(template.m_questName, wizard.CharId, wizard.Zone));
+
+            // A player who joins an instance midway continues where it is.
+            if (inInstance && progress.CompletedGoals.TryGetValue(template.m_questName, out var completedGoals)) {
+                foreach (var goalName in completedGoals) {
+                    var goalTemplate = template.m_goals.FirstOrDefault(g => g.m_goalName == goalName);
+                    if (goalTemplate is not null && questInstance.IsGoalActive(goalName)) {
+                        CompleteGoal(questInstance, goalTemplate, showCompletionDialogue: false,
+                            completion: GoalCompletion.CatchUp);
+                    }
+                }
+            }
+        }
+    }
+
+    private void DropSavedDungeonQuest(Wizard wizard, QuestInstance saved) {
+        var questId = saved.ID;
+        wizard.QuestBehavior.RemoveAllQuestRegistryEntries(saved.QuestName, keepComplete: true);
+        if (!wizard.RemoveQuest(saved.QuestName)) {
+            return;
+        }
+
+        SendToSocket(new QUEST_MESSAGES_52_PROTOCOL.MSG_REMOVEQUEST {
+            QuestID = questId,
+        });
+
+        Logger.Information("Replaced saved dungeon quest '{0}' of {1} with the instance's progress.",
+            Logger.Args(saved.QuestName, wizard.CharId));
+    }
+
+    private static bool IsZoneDungeonQuest(Wizard wizard, string questName)
+        => DungeonQuestIndex.GetQuestsForZone(wizard.Zone)
+            .Any(t => string.Equals(t.m_questName, questName, StringComparison.OrdinalIgnoreCase));
+
+    // Quest XP shrinks with the player's completions of a dungeon quest: full, half, then none.
+    private static float GetRunXpScale(Wizard wizard, string questName) {
+        if (!IsZoneDungeonQuest(wizard, questName)) {
+            return 1f;
+        }
+
+        return wizard.GetQuestRegistryValue(questName, QUEST_COMPLETED_ENTRY) switch {
+            0 => FIRST_RUN_XP_SCALE,
+            1 => SECOND_RUN_XP_SCALE,
+            _ => LATER_RUN_XP_SCALE,
+        };
+    }
+
+    // True when the step is the instance's first or the quest is not shared; the world effects of a step run once.
+    private bool ClaimInstanceStep(InstanceQuestClaimKind kind, string questName, string goalName) {
+        var zoneActor = SessionActor.GetZoneActor();
+        if (zoneActor is null || !IsZoneDungeonQuest(GetActiveWizard(), questName)) {
+            return true;
+        }
+
+        try {
+            return zoneActor.Ask<ZONE_102_PROTOCOL.MSG_CLAIMINSTANCEQUESTRSP>(
+                new ZONE_102_PROTOCOL.MSG_CLAIMINSTANCEQUEST {
+                    Kind = kind,
+                    QuestName = questName,
+                    GoalName = goalName,
+                    Origin = SessionActor.ActorRef,
+                }, INSTANCE_QUERY_TIMEOUT).Result.First;
+        }
+        catch (Exception ex) {
+            Logger.Error("Instance quest claim for '{0}' failed: {1}", Logger.Args(questName, ex.Message));
+
+            return true;
+        }
+    }
+
+    private ZONE_102_PROTOCOL.MSG_QUERYINSTANCEQUESTSRSP QueryInstanceProgress() {
+        var zoneActor = SessionActor.GetZoneActor();
+        if (zoneActor is null) {
+            return null;
+        }
+
+        try {
+            return zoneActor.Ask<ZONE_102_PROTOCOL.MSG_QUERYINSTANCEQUESTSRSP>(
+                new ZONE_102_PROTOCOL.MSG_QUERYINSTANCEQUESTS(), INSTANCE_QUERY_TIMEOUT).Result;
+        }
+        catch (Exception ex) {
+            Logger.Error("Instance quest query failed: {0}", Logger.Args(ex.Message));
+
+            return null;
         }
     }
 

@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using Imcodec.ObjectProperty.TypeCache;
+using Imlight.CoreLib.Shared.Packets;
 
 namespace Imlight.CoreLib.Game.Zone.Core;
 
@@ -26,6 +29,9 @@ public sealed class ZoneScriptState {
     private readonly ConcurrentDictionary<string, bool> _variables = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, bool> _triggers = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, int> _triggerFires = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _questClaims = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _completedQuests = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, List<string>> _completedGoals = new(StringComparer.OrdinalIgnoreCase);
     private readonly Lock _lock = new();
 
     private const string COUNTER_SET = "ZCA_Set";
@@ -149,5 +155,45 @@ public sealed class ZoneScriptState {
 
     private static string VariableKey(string questName, string varName)
         => $"{questName}|{varName}";
+
+    /// <summary>
+    /// Records a dungeon quest step of this instance and returns whether it is the first time the instance saw it.
+    /// </summary>
+    public bool TryClaimQuestStep(InstanceQuestClaimKind kind, string questName, string goalName) {
+        lock (_lock) {
+            if (!_questClaims.Add($"{kind}|{questName}|{goalName}")) {
+                return false;
+            }
+
+            switch (kind) {
+                case InstanceQuestClaimKind.GoalComplete:
+                    if (!_completedGoals.TryGetValue(questName, out var goals)) {
+                        goals = [];
+                        _completedGoals[questName] = goals;
+                    }
+
+                    goals.Add(goalName);
+                    break;
+                case InstanceQuestClaimKind.QuestComplete:
+                    _completedQuests.Add(questName);
+                    break;
+            }
+
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// The dungeon quests this instance finished and, per quest, the goals it completed in order.
+    /// </summary>
+    public ZONE_102_PROTOCOL.MSG_QUERYINSTANCEQUESTSRSP SnapshotQuestProgress() {
+        lock (_lock) {
+            return new() {
+                IsInstance = true,
+                CompletedQuests = [.. _completedQuests],
+                CompletedGoals = _completedGoals.ToDictionary(kv => kv.Key, kv => kv.Value.ToArray()),
+            };
+        }
+    }
 
 }

@@ -406,6 +406,33 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     private void ReceiveRemoveTriggerObject(ZONE_102_PROTOCOL.MSG_REMOVETRIGGEROBJECT message)
         => _triggerSupervisor.Forward(message);
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYINSTANCEQUESTS))]
+    private void ReceiveQueryInstanceQuests(ZONE_102_PROTOCOL.MSG_QUERYINSTANCEQUESTS message)
+        => Sender.Tell(IsInstance ? ScriptState.SnapshotQuestProgress() : new ZONE_102_PROTOCOL.MSG_QUERYINSTANCEQUESTSRSP());
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_CLAIMINSTANCEQUEST))]
+    private void ReceiveClaimInstanceQuest(ZONE_102_PROTOCOL.MSG_CLAIMINSTANCEQUEST message) {
+        if (!IsInstance) {
+            Sender.Tell(new ZONE_102_PROTOCOL.MSG_CLAIMINSTANCEQUESTRSP { First = true });
+
+            return;
+        }
+
+        var first = ScriptState.TryClaimQuestStep(message.Kind, message.QuestName, message.GoalName);
+        Sender.Tell(new ZONE_102_PROTOCOL.MSG_CLAIMINSTANCEQUESTRSP { First = first });
+
+        if (first && message.Kind == InstanceQuestClaimKind.GoalComplete) {
+            DispatchBroadcast(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+                Messages = [new ZONE_102_PROTOCOL.MSG_INSTANCEGOALCOMPLETED {
+                    Origin = message.Origin,
+                    QuestName = message.QuestName,
+                    GoalName = message.GoalName,
+                }],
+                Targets = ZoneBroadcastTarget.Players,
+            });
+        }
+    }
+
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONESCRIPTRESULT))]
     private void ReceiveZoneScriptResult(ZONE_102_PROTOCOL.MSG_ZONESCRIPTRESULT message)
         => ScriptState.Apply(message.Result, message.PlayerGameObject?.m_globalID.Full ?? 0);

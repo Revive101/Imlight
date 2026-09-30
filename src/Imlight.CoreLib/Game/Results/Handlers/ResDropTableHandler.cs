@@ -58,7 +58,7 @@ internal sealed class ResDropTableHandler : BaseResultHandler<ResDropTable> {
                                                wizard);
 
         // Process the results.
-        LootGranter.GrantAndDisplay(context.GetPlayerRef(), wizard, rollResults);
+        LootGranter.GrantAndDisplay(context.GetPlayerRef(), wizard, rollResults, context.GetXpScale());
 
         return true;
     }

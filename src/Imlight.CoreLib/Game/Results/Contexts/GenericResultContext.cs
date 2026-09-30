@@ -34,6 +34,11 @@ public class GenericResultContext(ResultList results,
                            string goalName = null,
                            string triggerName = null) : IResultContext {
 
+    /// <summary>
+    /// Multiplies the experience of drop tables among the results.
+    /// </summary>
+    public float XpScale { get; init; } = 1f;
+
     public IActorRef PlayerRef { get; } = playerRef;
     public CoreObject PlayerObj { get; } = playerObj;
     public IActorRef ReplyTo { get; } = replyTo;
@@ -58,6 +63,9 @@ public class GenericResultContext(ResultList results,
 
     public IActorRef GetReplyTo() 
         => ReplyTo;
+
+    public float GetXpScale()
+        => XpScale;
 
     public bool IsQuestContext => !string.IsNullOrEmpty(QuestName);
     public bool IsGoalContext => !string.IsNullOrEmpty(GoalName);

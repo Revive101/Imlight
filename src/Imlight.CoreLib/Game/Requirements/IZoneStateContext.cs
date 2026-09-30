@@ -1,3 +1,4 @@
+using System;
 using Imlight.CoreLib.Game.Zone.Core;
 
 namespace Imlight.CoreLib.Game.Requirements;
@@ -17,5 +18,11 @@ public interface IZoneStateContext {
     /// The tokens, counters, puzzle variables and trigger states of the zone (null outside a zone).
     /// </summary>
     ZoneScriptState ScriptState { get; }
+
+    /// <summary>
+    /// Judges the completion of dungeon quests by the instance a player's entry grants them in, instead of by
+    /// the player's registry: true or false for a quest the instance judges, null for any other (and by default).
+    /// </summary>
+    Func<string, bool?> InstanceQuestCompleted => null;
 
 }

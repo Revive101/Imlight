@@ -76,7 +76,12 @@ public static class LootGranter {
     /// <param name="playerActor">The player's SessionActor, which routes the messages.</param>
     /// <param name="wizard">The player wizard data receiving the rewards.</param>
     /// <param name="results">The rolled drop table results to grant.</param>
-    public static void GrantAndDisplay(IActorRef playerActor, Wizard wizard, DropTableResult results) {
+    /// <param name="xpScale">Multiplies the experience, in the grant and in the popup.</param>
+    public static void GrantAndDisplay(IActorRef playerActor, Wizard wizard, DropTableResult results, float xpScale = 1f) {
+        if (xpScale != 1f) {
+            results.ExperienceAmount = (int) (results.ExperienceAmount * xpScale);
+        }
+
         UpdateWizardGold(playerActor, wizard, results.GoldAmount);
         UpdateWizardXP(playerActor, results.ExperienceAmount);
         UpdateWizardTP(playerActor, wizard, results.TrainingPoints);

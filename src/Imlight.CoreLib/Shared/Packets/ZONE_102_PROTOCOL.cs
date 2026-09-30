@@ -34,6 +34,16 @@ using Imcodec.Types;
 namespace Imlight.CoreLib.Shared.Packets;
 
 /// <summary>
+/// What a session claims on the instance it is in; the zone answers whether it is the first to do it.
+/// </summary>
+public enum InstanceQuestClaimKind : byte {
+    QuestStart,
+    GoalStart,
+    GoalComplete,
+    QuestComplete,
+}
+
+/// <summary>
 /// Bitmask selecting which zone supervisors receive a broadcast.
 /// </summary>
 [Flags]
@@ -1119,6 +1129,76 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
 
         public byte MessageOrder { get; } = 72;
         public byte ServiceID { get; } = 102;
+
+    }
+
+    /// <summary>
+    /// Sent to a <see cref="Zone"/> by a session that starts or completes a dungeon quest or goal. The zone records
+    /// it as the instance's progress and answers with <see cref="MSG_CLAIMINSTANCEQUESTRSP"/>. A goal completion
+    /// the zone has not seen yet is also told to every other player in the instance.
+    /// </summary>
+    public sealed class MSG_CLAIMINSTANCEQUEST : IServerMessage {
+
+        public byte MessageOrder { get; } = 74;
+        public byte ServiceID { get; } = 102;
+
+        public InstanceQuestClaimKind Kind;
+        public string QuestName;
+        public string GoalName;
+        public IActorRef Origin;
+
+    }
+
+    /// <summary>
+    /// The zone's answer to <see cref="MSG_CLAIMINSTANCEQUEST"/>: whether the claim was the first for this
+    /// instance, so the world effects of the quest step run only for it. Always true outside an instance.
+    /// </summary>
+    public sealed class MSG_CLAIMINSTANCEQUESTRSP : IServerMessage {
+
+        public byte MessageOrder { get; } = 75;
+        public byte ServiceID { get; } = 102;
+
+        public bool First;
+
+    }
+
+    /// <summary>
+    /// Sent to a <see cref="Zone"/> by a session that enters it, asking for the dungeon quest progress of the instance.
+    /// </summary>
+    public sealed class MSG_QUERYINSTANCEQUESTS : IServerMessage {
+
+        public byte MessageOrder { get; } = 76;
+        public byte ServiceID { get; } = 102;
+
+    }
+
+    /// <summary>
+    /// The dungeon quest progress of an instance: the quests it finished and, per quest, the goals it completed
+    /// in order.
+    /// </summary>
+    public sealed class MSG_QUERYINSTANCEQUESTSRSP : IServerMessage {
+
+        public byte MessageOrder { get; } = 77;
+        public byte ServiceID { get; } = 102;
+
+        public bool IsInstance;
+        public string[] CompletedQuests = [];
+        public Dictionary<string, string[]> CompletedGoals = [];
+
+    }
+
+    /// <summary>
+    /// Sent to every other session in an instance when a player completes a dungeon quest goal: the same goal
+    /// completes for them.
+    /// </summary>
+    public sealed class MSG_INSTANCEGOALCOMPLETED : IServerMessage {
+
+        public byte MessageOrder { get; } = 78;
+        public byte ServiceID { get; } = 102;
+
+        public IActorRef Origin;
+        public string QuestName;
+        public string GoalName;
 
     }
 

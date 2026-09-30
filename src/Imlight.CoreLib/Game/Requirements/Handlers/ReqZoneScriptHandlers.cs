@@ -73,6 +73,11 @@ internal sealed class ReqEncounterCompleteHandler : BaseRequirementHandler<ReqEn
         var wizard = context.GetWizard();
         var name = Requirement.m_encounterName;
 
+        if (context is IZoneStateContext { InstanceQuestCompleted: { } instanceCompleted }
+            && instanceCompleted(name) is { } completed) {
+            return completed;
+        }
+
         return wizard is not null
             && !string.IsNullOrEmpty(name)
             && wizard.HasQuestRegistryValue(name, QUEST_COMPLETED_ENTRY);
