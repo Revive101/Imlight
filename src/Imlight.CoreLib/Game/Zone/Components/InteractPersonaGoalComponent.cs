@@ -110,6 +110,16 @@ internal sealed class InteractPersonaGoalComponent(ZoneEntity entity)
             .Any(goal => goal.m_personaName == npcName);
     }
 
+    /// <summary>
+    /// True when the wizard has an active quest goal whose persona is this entity. Such an NPC shows
+    /// the goal instead of his quest offers and underway entries.
+    /// </summary>
+    public static bool HasPendingGoalFor(ZoneEntity entity, Wizard wizard) {
+        var personaGoalComponent = entity.GetComponentOfType<InteractPersonaGoalComponent>();
+
+        return personaGoalComponent != null && personaGoalComponent.GetServiceOptions(wizard).Any();
+    }
+
     public IEnumerable<ServiceOptionBase> GetServiceOptions(Wizard wizard) {
         if (wizard is null) {
             yield break;

@@ -115,6 +115,11 @@ internal sealed class InteractQuestOfferComponent(ZoneEntity entity)
             yield break;
         }
 
+        // Persona goals take priority over quest offers: offer nothing until the goal is done.
+        if (InteractPersonaGoalComponent.HasPendingGoalFor(Entity, wizard)) {
+            yield break;
+        }
+
         var state = GetOrUpdatePlayerState(wizard);
 
         // The memento wizbang tick reads this property; refresh it from live state.
