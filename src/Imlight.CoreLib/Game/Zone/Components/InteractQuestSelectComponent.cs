@@ -123,28 +123,37 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
     }
 
     public void OnServiceInteraction(IActorRef playerActor, Wizard playerCharacter, CoreObject playerObject, uint serviceOptionIndex) {
-        // Find the first active goal that matches this object's client tags.
-        // This ensures we only complete one goal per interaction, even if multiple goals match.
-        var activeGoalData = FindActiveMatchingGoal(playerCharacter);
-        if (activeGoalData == null) {
+        // One use completes every active usage goal that matches this object, across all of the
+        // player's quests, each through the normal goal-completion path.
+        var activeGoals = FindActiveMatchingGoals(playerCharacter);
+        if (activeGoals.Count == 0) {
             return;
         }
 
-        var (quest, goal, goalProgress) = activeGoalData.Value;
+        var shownDialogs = new HashSet<string>();
+        foreach (var (quest, goal, goalProgress) in activeGoals) {
+            // Two goals that share a completion dialog show it once.
+            var suppressDialog = false;
+            var willComplete = goalProgress.CurrentProgress + 1 >= (goal.m_tallyCounter?.m_count ?? 1);
+            var dialogKey = CompletionDialogKey(goal);
+            if (willComplete && dialogKey is not null) {
+                suppressDialog = !shownDialogs.Add(dialogKey);
+            }
 
-        // Route the use through the quest service: it increments the tally, reports the
-        // new count to the client (progress SENDGOAL), and completes the goal at the cap.
-        var goalCompleteMsg = new CHARACTER_103_PROTOCOL.MSG_COMPLETEUSAGEGOAL {
-            QuestID = quest.ID,
-            GoalID = goalProgress.ID,
-        };
-        playerActor.Tell(goalCompleteMsg);
+            // Route the use through the quest service: it increments the tally, reports the
+            // new count to the client (progress SENDGOAL), and completes the goal at the cap.
+            playerActor.Tell(new CHARACTER_103_PROTOCOL.MSG_COMPLETEUSAGEGOAL {
+                QuestID = quest.ID,
+                GoalID = goalProgress.ID,
+                SuppressCompletionDialog = suppressDialog,
+            });
+        }
 
         // The object's own options (a state such as "RedDown", posted events such as "InsertCrystalRed")
         // run when it is used for the goal.
         Entity.GetComponentOfType<InteractObjectStateComponent>()?.ApplyGoalOptions(playerActor, playerObject);
 
-        var goalMax = goal.m_tallyCounter?.m_count ?? 1;
+        var goalMax = activeGoals.Max(g => g.Goal.m_tallyCounter?.m_count ?? 1);
 
         // Collection goals (tally count > 1, e.g. the Triton cogs) consume the object:
         // each use removes that instance from the world. Single-use objects (levers,
@@ -161,32 +170,39 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
     }
 
     private bool HasActiveMatchingUsageGoal(Wizard playerCharacter)
-        => FindActiveMatchingGoal(playerCharacter) != null;
+        => FindActiveMatchingGoals(playerCharacter).Count > 0;
 
-    private (QuestInstance Quest, GoalTemplate Goal, GoalInstance GoalProgress)? FindActiveMatchingGoal(Wizard playerCharacter) {
+    private List<(QuestInstance Quest, GoalTemplate Goal, GoalInstance GoalProgress)> FindActiveMatchingGoals(Wizard playerCharacter) {
+        var result = new List<(QuestInstance, GoalTemplate, GoalInstance)>();
         var questsWithActiveUsageGoals = GetQuestsWithActiveUsageGoals(playerCharacter);
         if (questsWithActiveUsageGoals == null) {
-            return null;
+            return result;
         }
 
-        foreach (var quest in questsWithActiveUsageGoals) {
+        // Stable order (quest id, then the goal's order in its template) so dialogs play in the same order every time.
+        foreach (var quest in questsWithActiveUsageGoals.OrderBy(q => q.ID)) {
             if (!_usageGoalsByQuest.TryGetValue(quest.QuestName, out var goals)) {
                 continue;
             }
 
-            // Check each matching goal for this quest.
-            // Return the first active goal found to ensure only one goal is processed per interaction.
             foreach (var goal in goals) {
                 var goalProgress = quest.GoalProgress.FirstOrDefault(gp =>
                     IsActiveUsageGoal(gp, goal.m_goalName));
 
                 if (goalProgress != null) {
-                    return (quest, goal, goalProgress);
+                    result.Add((quest, goal, goalProgress));
                 }
             }
         }
 
-        return null;
+        return result;
+    }
+
+    private static string CompletionDialogKey(GoalTemplate goal) {
+        var dialog = (goal.m_dialogList as ActorDialogList)?.m_dialogs?.FirstOrDefault(d => d.m_dialogTag == "Completion");
+        return dialog?.m_dialogEntries is null
+            ? null
+            : string.Join("|", dialog.m_dialogEntries.Select(e => e.m_dialog));
     }
 
     private static List<QuestInstance> GetQuestsWithActiveUsageGoals(Wizard playerCharacter)

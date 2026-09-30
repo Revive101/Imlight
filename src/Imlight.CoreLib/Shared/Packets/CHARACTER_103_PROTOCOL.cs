@@ -230,6 +230,9 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
         public ulong QuestID;
         public ulong GoalID;
 
+        /// <summary>True when another goal completed by the same use already shows this goal's completion dialog.</summary>
+        public bool SuppressCompletionDialog;
+
     }
 
     public sealed class MSG_RESULTHANDLERCOMPLETED : IServerMessage {

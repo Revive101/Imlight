@@ -379,7 +379,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
 
         var goalMax = gTemplate.m_tallyCounter?.m_count ?? 1;
         if (gInstance.CurrentProgress >= goalMax) {
-            CompleteGoal(qInstance, gTemplate);
+            CompleteGoal(qInstance, gTemplate, showCompletionDialogue: !message.SuppressCompletionDialog);
 
             return;
         }
