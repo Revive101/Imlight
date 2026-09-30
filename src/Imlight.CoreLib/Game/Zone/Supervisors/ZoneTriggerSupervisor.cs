@@ -44,10 +44,17 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
     private static readonly bool s_randomizeGateways 
         = ConfigurationManager.Settings["April Fools.RandomizeGateways"].AsBool();
 
+    // A trigger's own object is hidden with this state when the trigger is deactivated.
+    private const string DEACTIVATED_OBJECT_STATE = "Off";
+
     private readonly List<(Trigger Trigger, IActorRef Actor)> _orderedTriggers = [];
     private readonly HashSet<string> _undecodableLogged = [];
     private readonly HashSet<string> _chainedEvents = [];
     private readonly HashSet<string> _cinematicEndsPosted = [];
+    private readonly HashSet<string> _unenforceableTriggers = [];
+
+    // The activate event a trigger lists to start the zone with it enabled.
+    private const string START_ZONE_EVENT = "StartZone";
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS))]
     public override void ReceiveZoneLoadResults(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS message) {
@@ -65,6 +72,8 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
                      .OfType<ResPostEvent>()) {
             _chainedEvents.Add(chained.m_eventName.ToString());
         }
+
+        SeedTriggerStates(replacedTriggers);
 
         _orderedTriggers.Clear();
         foreach (var trigger in replacedTriggers) {
@@ -87,6 +96,10 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
         var passing = new List<(Trigger Trigger, IActorRef Actor)>();
         foreach (var (trigger, triggerActor) in _orderedTriggers) {
             if (trigger.m_fireEvents is null || !trigger.m_fireEvents.Any(x => x == message.EventName)) {
+                continue;
+            }
+
+            if (!IsLongRaisedEvent(message.EventName) && !IsEnforcedEnabled(trigger)) {
                 continue;
             }
 
@@ -115,7 +128,64 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
                 PlayerGameObject = message.PlayerGameObject,
                 SuppressTeleportResults = hasTeleportResult && !ReferenceEquals(trigger, teleportWinner),
                 Adjectives = message.Adjectives,
+                RequirementsChecked = true,
             });
+        }
+
+        // Triggers that fired saw the state from before this event; now the event's own enables and disables land.
+        ApplyTriggerStateEvents(message.EventName, message.PlayerActor, message.PlayerGameObject);
+    }
+
+    /// <summary>
+    /// Every trigger starts enabled when it lists the StartZone activate event (or lists none), and disabled when it
+    /// only lists other activate events. A trigger whose activate events nothing in the zone posts keeps firing, as
+    /// it always did, because no trigger could ever enable it.
+    /// </summary>
+    private void SeedTriggerStates(List<Trigger> triggers) {
+        _unenforceableTriggers.Clear();
+        foreach (var trigger in triggers.Where(t => t is not null)) {
+            var activate = trigger.m_activateEvents?.Select(e => e.ToString()).ToList() ?? [];
+            var startsEnabled = activate.Count == 0 || activate.Contains(START_ZONE_EVENT);
+            string name = trigger.m_triggerName;
+            Zone.ScriptState.SetTriggerEnabled(name, startsEnabled);
+
+            if (!startsEnabled && !activate.Any(_chainedEvents.Contains)) {
+                _unenforceableTriggers.Add(name);
+            }
+        }
+    }
+
+    /// <summary>
+    /// A trigger that is disabled does not fire on an event Imlight raised only since object, kill and interaction
+    /// events existed. Events it raised before (zone entry, volumes, chained events) fire as they always did.
+    /// </summary>
+    private bool IsEnforcedEnabled(Trigger trigger) {
+        string name = trigger.m_triggerName;
+
+        return _unenforceableTriggers.Contains(name) || Zone.ScriptState.IsTriggerEnabled(name);
+    }
+
+    private void ApplyTriggerStateEvents(string eventName, IActorRef playerActor, CoreObject playerObject) {
+        foreach (var (trigger, _) in _orderedTriggers) {
+            string name = trigger?.m_triggerName;
+            if (string.IsNullOrEmpty(name)) {
+                continue;
+            }
+
+            if (trigger.m_activateEvents?.Any(e => e.ToString() == eventName) == true) {
+                Zone.ScriptState.SetTriggerEnabled(name, true);
+            }
+
+            if (trigger.m_deactivateEvents?.Any(e => e.ToString() == eventName) == true) {
+                Zone.ScriptState.SetTriggerEnabled(name, false);
+
+                // A trigger's own object (a collision volume, a door) goes away when one of the trigger's
+                // deactivate events is posted.
+                var objectTag = trigger.m_triggerObjInfo?.m_zoneTag;
+                if (!string.IsNullOrEmpty(objectTag)) {
+                    ApplyObjectState(objectTag, DEACTIVATED_OBJECT_STATE, playerActor, playerObject);
+                }
+            }
         }
     }
 
@@ -272,6 +342,7 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
                 ZoneRef,
                 trigger.m_triggerName) {
                 ObjectStates = Zone.ObjectStates,
+                ScriptState = Zone.ScriptState,
                 EventAdjectives = message.Adjectives,
             });
     }

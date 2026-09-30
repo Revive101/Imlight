@@ -101,6 +101,11 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     /// </summary>
     public ZoneObjectStates ObjectStates { get; } = new();
 
+    /// <summary>
+    /// The tokens, counters and puzzle variables of this zone instance, read by trigger requirements.
+    /// </summary>
+    public ZoneScriptState ScriptState { get; } = new();
+
     public ITimerScheduler Timers { get; set; }
 
     private readonly uint _dynamicZoneId;
@@ -391,6 +396,10 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_MODIFYTRIGGEROBJECT))]
     private void ReceiveModifyTriggerObject(ZONE_102_PROTOCOL.MSG_MODIFYTRIGGEROBJECT message)
         => _triggerSupervisor.Forward(message);
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONESCRIPTRESULT))]
+    private void ReceiveZoneScriptResult(ZONE_102_PROTOCOL.MSG_ZONESCRIPTRESULT message)
+        => ScriptState.Apply(message.Result, message.PlayerGameObject?.m_globalID.Full ?? 0);
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_STARTSTAGEDCINEMATIC))]
     private void ReceiveStartStagedCinematic(ZONE_102_PROTOCOL.MSG_STARTSTAGEDCINEMATIC message)

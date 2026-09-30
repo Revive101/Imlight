@@ -63,11 +63,13 @@ public static class ResultDispatcher {
                                      IActorRef zoneActor = null,
                                      string questName = null,
                                      string goalName = null,
-                                     string triggerName = null) {
+                                     string triggerName = null,
+                                     Zone.Core.ZoneObjectStates objectStates = null,
+                                     Zone.Core.ZoneScriptState scriptState = null) {
         // Results carry their own requirements in the data; evaluate them here, before the executor
         // is created, so an executor actor only ever handles results whose requirements were met.
         var filteredResults = FilterResultsByRequirements(
-            results, playerRef, playerObj, zoneActor, questName, goalName, triggerName);
+            results, playerRef, playerObj, zoneActor, questName, goalName, triggerName, objectStates, scriptState);
         var context = new GenericResultContext(filteredResults, playerRef, playerObj, replyTo, zoneActor, questName, goalName, triggerName);
         var executor = CreateExecutorInstance(actorContext, context);
 
@@ -80,7 +82,9 @@ public static class ResultDispatcher {
                                                            IActorRef zoneActor,
                                                            string questName,
                                                            string goalName,
-                                                           string triggerName) {
+                                                           string triggerName,
+                                                           Zone.Core.ZoneObjectStates objectStates,
+                                                           Zone.Core.ZoneScriptState scriptState) {
         if (results?.m_results is null || results.m_results.Count == 0
             || !results.m_results.Any(r => r?.m_requirements is not null)) {
             return results;
@@ -118,7 +122,10 @@ public static class ResultDispatcher {
                     questName: questName,
                     goalName: goalName,
                     triggerName: triggerName
-                );
+                ) {
+                    ObjectStates = objectStates,
+                    ScriptState = scriptState,
+                };
                 if (!RequirementDispatcher.EvaluateRequirements(result.m_requirements, requirementContext)) {
                     continue;
                 }

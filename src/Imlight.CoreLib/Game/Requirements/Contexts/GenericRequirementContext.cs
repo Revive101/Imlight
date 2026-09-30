@@ -30,7 +30,7 @@ public class GenericRequirementContext(RequirementList requirements,
                                IActorRef zoneRef = null,
                                string questName = null,
                                string goalName = null,
-                               string triggerName = null) : IRequirementContext {
+                               string triggerName = null) : IRequirementContext, IZoneStateContext {
 
     private readonly RequirementList _requirements = requirements;
     private readonly IActorRef _playerRef = playerRef;
@@ -50,5 +50,11 @@ public class GenericRequirementContext(RequirementList requirements,
     public string GetQuestName() => _questName;
     public string GetGoalName() => _goalName;
     public string GetTriggerName() => _triggerName;
+
+    /// <summary>The state of every named object in the zone, when the check runs for a zone trigger.</summary>
+    public Game.Zone.Core.ZoneObjectStates ObjectStates { get; init; }
+
+    /// <summary>The tokens, counters and trigger states of the zone, when the check runs for a zone trigger.</summary>
+    public Game.Zone.Core.ZoneScriptState ScriptState { get; init; }
 
 }

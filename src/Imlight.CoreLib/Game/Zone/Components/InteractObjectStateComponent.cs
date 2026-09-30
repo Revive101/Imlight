@@ -157,6 +157,7 @@ internal sealed class InteractObjectStateComponent(ZoneEntity entity)
                     requirements,
                     new ZoneRequirementContext(requirements, null, null, wizard, ZoneActor, ObjectName) {
                         ObjectStates = Zone.ObjectStates,
+                        ScriptState = Zone.ScriptState,
                     })) {
                 continue;
             }

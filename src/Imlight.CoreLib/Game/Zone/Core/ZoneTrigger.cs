@@ -85,7 +85,8 @@ public sealed class ZoneTrigger(IActorRef zoneRef, Zone zone, Trigger trigger)
         }
 
         // Evaluate requirements when present.
-        if (   TriggerData.m_requirements is not null
+        if (!message.RequirementsChecked
+            && TriggerData.m_requirements is not null
             && TriggerData.m_requirements.m_requirements is not null
             && TriggerData.m_requirements.m_requirements.Count > 0) {
             var queryWizardMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
@@ -102,6 +103,7 @@ public sealed class ZoneTrigger(IActorRef zoneRef, Zone zone, Trigger trigger)
                     TriggerData.m_triggerName
                 ) {
                     ObjectStates = Zone.ObjectStates,
+                    ScriptState = Zone.ScriptState,
                     EventAdjectives = message.Adjectives,
                 }
             );
@@ -121,7 +123,8 @@ public sealed class ZoneTrigger(IActorRef zoneRef, Zone zone, Trigger trigger)
         }
 
         ResultDispatcher.ExecuteResults(Context, results, message.PlayerActor, message.PlayerGameObject,
-                                       Sender, ZoneRef, triggerName: TriggerData.m_triggerName);
+                                       Sender, ZoneRef, triggerName: TriggerData.m_triggerName,
+                                       objectStates: Zone.ObjectStates, scriptState: Zone.ScriptState);
     }
 
     /// <summary>

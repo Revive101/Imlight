@@ -532,6 +532,12 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public bool SuppressTeleportResults;
 
         /// <summary>
+        /// Set by the trigger supervisor once it has checked the trigger's requirements, so the trigger does not
+        /// check them again against state the same event has since changed.
+        /// </summary>
+        public bool RequirementsChecked;
+
+        /// <summary>
         /// The adjectives of the monster a Monster_Killed event is about; requirements on the event read them.
         /// </summary>
         public IReadOnlyList<string> Adjectives;
@@ -562,6 +568,20 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte ServiceID { get; } = 102;
 
         public string EventName;
+
+    }
+
+    /// <summary>
+    /// Sent to a <see cref="Zone"/> by a token, counter or puzzle-variable result: the zone keeps the change in its
+    /// script state for the player who triggered it.
+    /// </summary>
+    public class MSG_ZONESCRIPTRESULT : IServerMessage {
+
+        public byte MessageOrder { get; } = 71;
+        public byte ServiceID { get; } = 102;
+
+        public Imcodec.ObjectProperty.TypeCache.Result Result;
+        public CoreObject PlayerGameObject;
 
     }
 
