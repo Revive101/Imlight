@@ -16,22 +16,23 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
+using Imcodec.ObjectProperty.TypeCache;
+using Imlight.Common;
+using Imlight.CoreLib.WizardData.Models.World;
+using LibGit2Sharp;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using Imlight.Common;
-using Imlight.CoreLib.WizardData.Models.World;
-using Imcodec.ObjectProperty.TypeCache;
-using Newtonsoft.Json;
 
 namespace Imlight.CoreLib.WizardData;
 
 public static class SpiralDB {
 
-    private static readonly string s_remote
-        = ConfigurationManager.Settings["Database.SpiralDBRemote"];
+    private static readonly string s_remoteUrl
+        = ConfigurationManager.Settings["Database.SpiralDBRemoteUrl"];
     private static readonly string s_branch
         = ConfigurationManager.Settings["Database.SpiralDBBranch"];
     private static readonly string s_localPath
@@ -180,6 +181,92 @@ public static class SpiralDB {
         }
     }
 
+    private static void SyncRepository(string basePath) {
+        if (!Directory.Exists(basePath)) {
+            Logger.Information(
+                "SpiralDB not found... cloning from {0} (branch {1})...",
+                Logger.Args(s_remoteUrl, s_branch));
+
+            var startStopWatch = Stopwatch.GetTimestamp();
+
+            var cloneOptions = new CloneOptions {
+                BranchName = s_branch,
+                Checkout = true,
+                IsBare = false
+            };
+
+            cloneOptions.FetchOptions.Depth = 1;
+            cloneOptions.FetchOptions.OnTransferProgress = _ =>
+                Stopwatch.GetElapsedTime(startStopWatch) < TimeSpan.FromSeconds(s_fetchTimeoutSec);
+
+            try {
+                Repository.Clone(s_remoteUrl, basePath, cloneOptions);
+            }
+            catch (Exception ex) when (Stopwatch.GetElapsedTime(startStopWatch) >= TimeSpan.FromSeconds(s_fetchTimeoutSec)) {
+                throw new TimeoutException(
+                    $"SpiralDB Git fetch timed out after {s_fetchTimeoutSec} seconds.",
+                    ex);
+            }
+
+            return;
+        }
+
+        if (!s_autoFetch) {
+            Logger.Information(
+                "SpiralDB auto-fetch disabled. Using existing local data.");
+
+            return;
+        }
+
+        Logger.Information(
+            "Fetching SpiralDB updates from {0} (branch {1})...",
+            Logger.Args(s_remoteUrl, s_branch));
+
+        using var repository = new Repository(basePath);
+        var remote = repository.Network.Remotes["origin"]
+            ?? throw new InvalidOperationException(
+                "SpiralDB repository does not have an 'origin' remote.");
+
+        var start = Stopwatch.GetTimestamp();
+
+        var fetchOptions = new FetchOptions {
+            Prune = true,
+            Depth = 1,
+            OnTransferProgress = _ =>
+                Stopwatch.GetElapsedTime(start) < TimeSpan.FromSeconds(s_fetchTimeoutSec)
+        };
+
+        try {
+            Commands.Fetch(
+                repository,
+                remote.Name,
+                new[] { s_branch },
+                fetchOptions,
+                null);
+        }
+        catch (Exception ex) when (Stopwatch.GetElapsedTime(start) >= TimeSpan.FromSeconds(s_fetchTimeoutSec)) {
+            throw new TimeoutException(
+                $"SpiralDB Git fetch timed out after {s_fetchTimeoutSec} seconds.",
+                ex);
+        }
+
+        var remoteBranch = repository.Branches[$"origin/{s_branch}"]
+            ?? throw new InvalidOperationException(
+                $"Remote branch 'origin/{s_branch}' does not exist.");
+
+        if (repository.Head.Tip?.Sha == remoteBranch.Tip.Sha) {
+            Logger.Information("SpiralDB is already up-to-date (commit {0}).", Logger.Args(remoteBranch.Tip.Sha[..7]));
+            return;
+        }
+
+        repository.Reset(
+            ResetMode.Hard,
+            remoteBranch.Tip
+        );
+
+        Logger.Information("SpiralDB updated to commit {0}.", Logger.Args(remoteBranch.Tip.Sha[..7]));
+    }
+
     public static CreatureSpellbook GetCreatureSpellbook(string deckName) {
         s_creatureSpellbooks.TryGetValue(deckName, out var spellbook);
 
@@ -225,59 +312,6 @@ public static class SpiralDB {
 
     public static IReadOnlyCollection<WizardZoneData> GetAllZoneData()
         => (IReadOnlyCollection<WizardZoneData>) s_zoneData.Values;
-
-    private static void SyncRepository(string basePath) {
-        // @todo: maybe sometime in the future, allow for remotes not hosted on Github.
-        var repoUrl = $"https://github.com/{s_remote}.git";
-
-        if (!Directory.Exists(basePath)) {
-            Logger.Information("Cloning SpiralDB from {0} (branch {1})...",
-                Logger.Args(repoUrl, s_branch));
-
-            var cloneArgs = $"clone --branch {s_branch} --depth 1 --single-branch {repoUrl} \"{basePath}\"";
-            RunGit(cloneArgs);
-        }
-        else if (s_autoFetch) {
-            Logger.Information("Fetching SpiralDB updates from {0} (branch {1})...",
-                Logger.Args(repoUrl, s_branch));
-
-            RunGit($"-C \"{basePath}\" fetch origin {s_branch}", s_fetchTimeoutSec);
-            RunGit($"-C \"{basePath}\" checkout {s_branch}");
-            RunGit($"-C \"{basePath}\" reset --hard origin/{s_branch}");
-
-            Logger.Information("SpiralDB updated.");
-        }
-        else {
-            Logger.Information("SpiralDB auto-fetch disabled — using existing local data.");
-        }
-    }
-
-    private static void RunGit(string arguments, int timeoutSec = 0) {
-        if (timeoutSec <= 0) {
-            timeoutSec = s_fetchTimeoutSec;
-        }
-
-        var startInfo = new ProcessStartInfo("git", arguments) {
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
-
-        using var process = Process.Start(startInfo)
-            ?? throw new InvalidOperationException("Failed to start git process. Is git installed?");
-
-        if (!process.WaitForExit(timeoutSec * 1000)) {
-            process.Kill();
-            throw new TimeoutException($"Git command timed out after {timeoutSec}s: git {arguments}");
-        }
-
-        if (process.ExitCode != 0) {
-            var err = process.StandardError.ReadToEnd().Trim();
-            throw new InvalidOperationException(
-                $"Git command failed (exit {process.ExitCode}): git {arguments}\n{err}");
-        }
-    }
 
     private static int LoadCreatureSpellbooks(string basePath,
                                               ConcurrentDictionary<string, CreatureSpellbook> target) {
