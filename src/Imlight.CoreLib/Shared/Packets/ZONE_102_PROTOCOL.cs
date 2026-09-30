@@ -1098,4 +1098,15 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
 
     }
 
+    /// <summary>
+    /// Timer-fired message to an instanced <see cref="Zone"/>: it has had no players for the configured
+    /// idle time, so it asks its <see cref="InstanceContainer"/> to drop it.
+    /// </summary>
+    public sealed class MSG_INSTANCEIDLEEXPIRE : IServerMessage {
+
+        public byte MessageOrder { get; } = 72;
+        public byte ServiceID { get; } = 102;
+
+    }
+
 }

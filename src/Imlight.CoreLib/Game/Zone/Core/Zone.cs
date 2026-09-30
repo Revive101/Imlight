@@ -124,6 +124,8 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     private readonly HashSet<GID> _criticalObjectIds = [];
     private bool _isLoading;
     private int _playerCount;
+    private const string IDLE_EXPIRE_TIMER = "instance-idle-expire";
+    private const int DEFAULT_INSTANCE_IDLE_MINUTES = 10;
     private readonly List<ZONE_102_PROTOCOL.MSG_PLAYERMOVE> _pendingPlayerMoves = [];
     private readonly List<ZONE_102_PROTOCOL.MSG_CREATUREMOVE> _pendingCreatureMoves = [];
 
@@ -224,6 +226,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         }
 
         _playerCount++;
+        Timers.Cancel(IDLE_EXPIRE_TIMER);
         InformZoneSupervisors(message.PlayerActor, message);
         RestoreRememberedSpawns(message.Wizard);
         
@@ -249,6 +252,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
 
         InformZoneSupervisors(message.PlayerActor, message);
         ReleaseObjectIdentifier(message.MobileId);
+        ScheduleIdleExpiryIfEmpty();
         Sender.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYERRSP());
     }
 
@@ -342,6 +346,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
             _zoneLoadTimer.Stop();
             Logger.Information("Zone {ZoneName} loaded in {Time}ms.", Logger.Args(ZoneName, _zoneLoadTimer.ElapsedMilliseconds));
             _isLoading = false;
+            ScheduleIdleExpiryIfEmpty();
 
             var startMsg = new ZONE_102_PROTOCOL.MSG_ZONESTART();
 
@@ -526,6 +531,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
             }
             else if (pendingEvent is ZONE_102_PROTOCOL.MSG_ADDPLAYER addPlayer) {
                 _playerCount++;
+                Timers.Cancel(IDLE_EXPIRE_TIMER);
                 InformZoneSupervisors(playerActor, addPlayer);
                 RestoreRememberedSpawns(addPlayer.Wizard);
                 
@@ -541,6 +547,35 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         }
         
         _pendingPlayerEvents.Clear();
+    }
+
+    /// <summary>
+    /// An instance with no players is dropped after the idle time (Instance.IdleMinutes, default 10;
+    /// 0 or less disables it). A join cancels the timer. Dropping the zone takes all per-instance state
+    /// with it: script state, object states, trigger counts and trigger-owned objects.
+    /// </summary>
+    private void ScheduleIdleExpiryIfEmpty() {
+        if (!IsInstance || _playerCount > 0 || _isLoading) {
+            return;
+        }
+
+        var minutes = ConfigurationManager.GetValue("Instance.IdleMinutes", DEFAULT_INSTANCE_IDLE_MINUTES);
+        if (minutes <= 0) {
+            return;
+        }
+
+        Timers.StartSingleTimer(IDLE_EXPIRE_TIMER, new ZONE_102_PROTOCOL.MSG_INSTANCEIDLEEXPIRE(),
+            TimeSpan.FromMinutes(minutes));
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_INSTANCEIDLEEXPIRE))]
+    private void ReceiveInstanceIdleExpire(ZONE_102_PROTOCOL.MSG_INSTANCEIDLEEXPIRE message) {
+        if (!IsInstance || _playerCount > 0) {
+            return;
+        }
+
+        Logger.Information("Instance zone {ZoneName} idle with no players, dropping it.", Logger.Args(ZoneName));
+        Context.Parent.Tell(new ZONE_102_PROTOCOL.MSG_DROPINSTANCEZONE { ZoneName = ZonePath });
     }
 
     private ushort GenerateObjectIdentifier() {
