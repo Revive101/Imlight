@@ -42,6 +42,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
 using Imcodec.CoreObject;
+using Imcodec.Cryptography;
+using Imcodec.IO;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
@@ -149,7 +151,6 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
 
             // A dynamod state such as "IdleOpen" is only ever sent as a state change, so a player
             // arriving in the zone has to be told again or the object reverts to its default.
-            persistedState ??= Entity.Zone.ObjectStates.GetIfChanged(Entity.Info?.m_zoneTag);
             if (persistedState is not null) {
                 Entity.ChangeStateExclusiveSender(persistedState, suspect);
             }
@@ -310,6 +311,10 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
             Data = serializedData
         };
         player.Tell(newObjectMsg);
+
+        if (CreateCurrentStateMessage() is { } stateMsg) {
+            player.Tell(stateMsg);
+        }
     }
 
     private void CreateObjectForAllPlayers() {
@@ -325,6 +330,25 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
         PlayerBroadcast(new GAME_5_PROTOCOL.MSG_NEWOBJECT {
             Data = serializedData
         });
+
+        if (CreateCurrentStateMessage() is { } stateMsg) {
+            PlayerBroadcast(stateMsg);
+        }
+    }
+
+    // The client builds an object in its template's default state, so the state the zone holds for it
+    // (the placement's start state, or what a player or trigger changed since) is sent right after it.
+    private GAME_5_PROTOCOL.MSG_ENTERSTATE CreateCurrentStateMessage() {
+        var state = Entity.Zone.ObjectStates.Get(Entity.Info?.m_zoneTag);
+        if (IsDespawnState(state) || string.Equals(state, SPAWN_STATE_NAME, System.StringComparison.OrdinalIgnoreCase)) {
+            return null;
+        }
+
+        return new GAME_5_PROTOCOL.MSG_ENTERSTATE {
+            GameObjectID = Entity.ActiveGameObject.m_globalID,
+            State = StringHash.Compute(state),
+            Data = new ByteString(),
+        };
     }
 
     private void DespawnObjectForPlayer(IActorRef player) {
