@@ -78,13 +78,8 @@ public enum WizBangs {
     SellFish = 1346845383,
     DailyQuest = 666762553,
     WhirlyBurly = 931528087,
-    RateMyStitch = 1442124734,
-    PvPLobby = 15124520,
-    PrepQuest = 382121735,
-    Interactable = 1690032729,
-    GuildMuseumCurator = 1423210987,
-    MagicWeavingTome = 1218894793,
-    HousingHallOfFame = 776365457
+    RateMyStitch = 1442124734
+
 }
 
 /// <summary>
@@ -109,8 +104,7 @@ internal class WizBangFactory : RootSingleResourceSingleton<WizBangFactory>, IMe
         // Iterate through the WizBangs enum and ensure that all of them are valid and present
         // in the template manager.
         foreach (var wizBang in Enum.GetValues<WizBangs>().Cast<WizBangs>()) {
-            // PrepQuest and Interactable are priority (only) interaction states, not visual 3D templates
-            if (wizBang is WizBangs.None or WizBangs.PrepQuest or WizBangs.Interactable) {
+            if (wizBang == WizBangs.None) {
                 continue;
             }
 
