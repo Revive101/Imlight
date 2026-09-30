@@ -302,8 +302,13 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity)
         // Get all service options and track which component owns each flat index.
         _optionIndexToComponent.Clear();
         var allOptions = new List<ServiceOptionBase>();
+        var componentsWithOptions = new List<IServiceComponent>();
         foreach (var component in _serviceComponents) {
             var componentOptions = component.GetServiceOptions(playerCharacter).ToList();
+            if (componentOptions.Count > 0) {
+                componentsWithOptions.Add(component);
+            }
+
             foreach (var option in componentOptions) {
                 _optionIndexToComponent[allOptions.Count] = component;
                 allOptions.Add(option);
@@ -311,7 +316,9 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity)
         }
 
         // Get UI overrides based on priority.
-        var sortedComponents = SortComponentsByPriority(_serviceComponents);
+        // A component with nothing to offer must not set the dialog's icon, name and text (a quest
+        // interactable that is currently unused would otherwise shadow an "Enter door" prompt).
+        var sortedComponents = SortComponentsByPriority(componentsWithOptions.Count > 0 ? componentsWithOptions : _serviceComponents);
         var highestPriority = sortedComponents.FirstOrDefault();
 
         SetMadLibBlock();
