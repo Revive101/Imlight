@@ -77,13 +77,14 @@ public sealed class ZonePath : ZoneEntity {
     private readonly PathObjectTemplate _template;
     private readonly List<NodeObject> _nodes;
     private readonly List<SpawnObject> _creatures;
-    private readonly Dictionary<SpawnObject, byte> _creatureCount = [];
+    // SpawnObject is a record with value equality and m_active changes at runtime, so these are keyed by reference.
+    private readonly Dictionary<SpawnObject, byte> _creatureCount = new(ReferenceEqualityComparer.Instance);
     private readonly List<IActorRef> _creatureActors = [];
     private readonly Dictionary<ulong, SpawnObject> _spawnObjectInfo = [];
     private readonly Dictionary<IActorRef, (SpawnObject Spawner, GID ObjectId, string Name)> _loadingCreatures = [];
-    private readonly HashSet<SpawnObject> _defeatedInInstance = [];
+    private readonly HashSet<SpawnObject> _defeatedInInstance = new(ReferenceEqualityComparer.Instance);
     // Spawners a ResSpawn switched off (m_activate false).
-    private readonly HashSet<SpawnObject> _deactivated = [];
+    private readonly HashSet<SpawnObject> _deactivated = new(ReferenceEqualityComparer.Instance);
     // Players that caused a spawn (quest or trigger result); the creature checks aggro against them once loaded.
     private readonly Dictionary<IActorRef, ZONE_102_PROTOCOL.MSG_PLAYERMOVE> _aggroOnLoad = [];
     private readonly bool _randomizeCreatures
