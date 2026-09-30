@@ -55,21 +55,26 @@ public static class QuestInstanceCollection {
     }
 
     /// <summary>
-    /// Removes a quest instance from the database by character ID and quest name.
+    /// Removes every quest instance of a character with the given quest name, waiting for the index so a
+    /// just-stored instance is found too.
     /// </summary>
     /// <param name="charId">The character ID of the quest instance owner.</param>
     /// <param name="questName">The name of the quest instance to remove.</param>
-    /// <returns>True if the quest instance was removed successfully, false otherwise.</returns>
+    /// <returns>True if at least one quest instance was removed, false otherwise.</returns>
     public static bool RemoveQuestInstance(ulong charId, string questName) {
         using var session = s_store.OpenSession();
 
-        var questInstance = session.Query<QuestInstance>(collectionName: CollectionName)
-            .FirstOrDefault(q => q.OwnerCharId == charId && q.QuestName == questName);
-        if (questInstance == null) {
+        var questInstances = session.Query<QuestInstance>(collectionName: CollectionName)
+            .Customize(query => query.WaitForNonStaleResults())
+            .Where(q => q.OwnerCharId == charId && q.QuestName == questName)
+            .ToList();
+        if (questInstances.Count == 0) {
             return false;
         }
 
-        session.Delete(questInstance);
+        foreach (var questInstance in questInstances) {
+            session.Delete(questInstance);
+        }
         session.SaveChanges();
 
         return true;

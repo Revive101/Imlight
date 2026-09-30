@@ -1603,6 +1603,9 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
 
         foreach (var qInstance in stale) {
             var questId = qInstance.ID;
+
+            // Progress kept in the registry goes too; the next grant starts fresh.
+            wizard.QuestBehavior.RemoveAllQuestRegistryEntries(qInstance.QuestName, keepComplete: true);
             if (!wizard.RemoveQuest(qInstance.QuestName)) {
                 continue;
             }

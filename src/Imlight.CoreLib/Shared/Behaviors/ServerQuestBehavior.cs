@@ -232,16 +232,18 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
 
     /// <summary>
     /// Removes every registry entry of a quest (the "&lt;quest&gt;_&lt;entry&gt;" keys, including "Complete")
-    /// so the quest can be offered again. Returns the number of entries removed.
+    /// so the quest can be offered again. Returns the number of entries removed. With
+    /// <paramref name="keepComplete"/> the "Complete" entry stays.
     /// </summary>
-    public int RemoveAllQuestRegistryEntries(string questName) {
+    public int RemoveAllQuestRegistryEntries(string questName, bool keepComplete = false) {
         if (string.IsNullOrWhiteSpace(questName)) {
             return 0;
         }
 
         var prefix = $"{questName}_";
         var keys = Registry.Keys
-            .Where(k => k.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            .Where(k => k.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+                && !(keepComplete && k.Equals($"{prefix}Complete", StringComparison.OrdinalIgnoreCase)))
             .ToList();
         foreach (var key in keys) {
             Registry.Remove(key);

@@ -1571,7 +1571,7 @@ public class Wizard {
                     Logger.Args(quest.QuestName, PlayerNameBehavior.GetWizardName()));
 
                 QuestBehavior.CurrentQuestInstances.Remove(quest);
-                QuestInstanceCollection.RemoveQuestInstance(CharId, quest.QuestName);
+                QuestInstanceCollection.RemoveQuestInstance(quest.ID);
 
                 continue;
             }
