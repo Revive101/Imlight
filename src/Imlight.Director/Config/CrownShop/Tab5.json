@@ -1,0 +1,40 @@
+{
+    "tabId": 41,
+    "name": "CrownShopSWF_MenuGold",
+    "icon": "GUI/CrownShopIcons/Categories/Gold.dds",
+    "categoryIds": [ 1, 47 ],
+    "tags": "",
+    "description": "0",
+    "categories": [
+        {
+            "categoryId": 1,
+            "parentTabId": 41,
+            "name": "CrownShopSWF_CategoryGold",
+            "icon": "GUI/CrownShopIcons/Categories/Gold.dds",
+            "tags": "None",
+            "flags": {
+                "allowMultipleBuy": false,
+                "forceDisallowMultipleBuy": true,
+                "dontFilterOwnedRecoItems": true,
+                "isHousesCategory": false,
+                "isEverythingCategory": false,
+                "isGroupElixirsCategory": false
+            }
+        },
+        {
+            "categoryId": 47,
+            "parentTabId": 41,
+            "name": "CrownShopSWF_Lunari",
+            "icon": "GUI/CrownShopIcons/Categories/Lunari.dds",
+            "tags": "None",
+            "flags": {
+                "allowMultipleBuy": false,
+                "forceDisallowMultipleBuy": false,
+                "dontFilterOwnedRecoItems": true,
+                "isHousesCategory": false,
+                "isEverythingCategory": false,
+                "isGroupElixirsCategory": false
+            }
+        }
+    ]
+}

@@ -441,7 +441,6 @@ public class ZoneEntity(
 
         return petCopy;
     }
-
     private T BuildClientObject<T>() where T : ClientObject, new() {
         var gameObj = new T() {
             m_debugName = ActiveGameObject.m_debugName,

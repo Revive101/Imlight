@@ -1,0 +1,55 @@
+{
+    "tabId": 42,
+    "name": "CrownShopSWF_MenuElixirs",
+    "icon": "GUI/CrownShopIcons/Categories/Elixirs.dds",
+    "categoryIds": [ 16, 34, 35 ],
+    "tags": "",
+    "description": "0",
+    "categories": [
+        {
+            "categoryId": 16,
+            "parentTabId": 42,
+            "name": "CrownShopSWF_CategoryElixirs",
+            "icon": "GUI/CrownShopIcons/Categories/Elixirs.dds",
+            "tags": "None",
+            "flags": {
+                "allowMultipleBuy": true,
+                "forceDisallowMultipleBuy": false,
+                "dontFilterOwnedRecoItems": true,
+                "isHousesCategory": false,
+                "isEverythingCategory": false,
+                "isGroupElixirsCategory": false
+            }
+        },
+        {
+            "categoryId": 34,
+            "parentTabId": 42,
+            "name": "CrownShopSWF_CategoryGroupElixirs",
+            "icon": "GUI/CrownShopIcons/Categories/Elixirs_Group.dds",
+            "tags": "None",
+            "flags": {
+                "allowMultipleBuy": false,
+                "forceDisallowMultipleBuy": false,
+                "dontFilterOwnedRecoItems": true,
+                "isHousesCategory": false,
+                "isEverythingCategory": false,
+                "isGroupElixirsCategory": true
+            }
+        },
+        {
+            "categoryId": 35,
+            "parentTabId": 42,
+            "name": "CrownShopSWF_CategoryWorldElixirs",
+            "icon": "GUI/CrownShopIcons/Categories/Elixirs_World.dds",
+            "tags": "None",
+            "flags": {
+                "allowMultipleBuy": false,
+                "forceDisallowMultipleBuy": true,
+                "dontFilterOwnedRecoItems": true,
+                "isHousesCategory": false,
+                "isEverythingCategory": false,
+                "isGroupElixirsCategory": false
+            }
+        }
+    ]
+}

@@ -1,0 +1,130 @@
+{
+    "tabId": 45,
+    "name": "CrownShopSWF_MenuGameplay",
+    "icon": "GUI/CrownShopIcons/Categories/Everything.dds",
+    "categoryIds": [ 18, 33, 28, 29, 31, 32, 48, 19 ],
+    "tags": "",
+    "description": "0",
+    "categories": [
+        {
+            "categoryId": 18,
+            "parentTabId": 45,
+            "name": "CrownShopSWF_CategoryHenchmen",
+            "icon": "GUI/CrownShopIcons/Categories/Henchmen.dds",
+            "tags": "OpenToDuringCombat",
+            "flags": {
+                "allowMultipleBuy": false,
+                "forceDisallowMultipleBuy": true,
+                "dontFilterOwnedRecoItems": false,
+                "isHousesCategory": false,
+                "isEverythingCategory": false,
+                "isGroupElixirsCategory": false
+            }
+        },
+        {
+            "categoryId": 33,
+            "parentTabId": 45,
+            "name": "CrownShopSWF_CategoryBundles",
+            "icon": "GUI/CrownShopIcons/Categories/Bundles.dds",
+            "tags": "None",
+            "flags": {
+                "allowMultipleBuy": true,
+                "forceDisallowMultipleBuy": false,
+                "dontFilterOwnedRecoItems": false,
+                "isHousesCategory": false,
+                "isEverythingCategory": false,
+                "isGroupElixirsCategory": false
+            }
+        },
+        {
+            "categoryId": 28,
+            "parentTabId": 45,
+            "name": "CrownShopSWF_CategoryCCGReagent",
+            "icon": "GUI/CrownShopIcons/Categories/Reagents.dds",
+            "tags": "None",
+            "flags": {
+                "allowMultipleBuy": true,
+                "forceDisallowMultipleBuy": false,
+                "dontFilterOwnedRecoItems": false,
+                "isHousesCategory": false,
+                "isEverythingCategory": false,
+                "isGroupElixirsCategory": false
+            }
+        },
+        {
+            "categoryId": 29,
+            "parentTabId": 45,
+            "name": "CrownShopSWF_CategoryFishing",
+            "icon": "GUI/CrownShopIcons/Categories/Fishing.dds",
+            "tags": "None",
+            "flags": {
+                "allowMultipleBuy": true,
+                "forceDisallowMultipleBuy": false,
+                "dontFilterOwnedRecoItems": true,
+                "isHousesCategory": false,
+                "isEverythingCategory": false,
+                "isGroupElixirsCategory": false
+            }
+        },
+        {
+            "categoryId": 31,
+            "parentTabId": 45,
+            "name": "CrownShopSWF_CategoryEmotes",
+            "icon": "GUI/CrownShopIcons/Categories/Emotes.dds",
+            "tags": "None",
+            "flags": {
+                "allowMultipleBuy": false,
+                "forceDisallowMultipleBuy": true,
+                "dontFilterOwnedRecoItems": false,
+                "isHousesCategory": false,
+                "isEverythingCategory": false,
+                "isGroupElixirsCategory": false
+            }
+        },
+        {
+            "categoryId": 32,
+            "parentTabId": 45,
+            "name": "CrownShopSWF_CategoryTeleportEffects",
+            "icon": "GUI/CrownShopIcons/Categories/Teleport_Effects.dds",
+            "tags": "None",
+            "flags": {
+                "allowMultipleBuy": false,
+                "forceDisallowMultipleBuy": true,
+                "dontFilterOwnedRecoItems": false,
+                "isHousesCategory": false,
+                "isEverythingCategory": false,
+                "isGroupElixirsCategory": false
+            }
+        },
+        {
+            "categoryId": 48,
+            "parentTabId": 45,
+            "name": "CrownShopSWF_Raid",
+            "icon": "GUI/CrownShopIcons/Categories/Bundles.dds",
+            "tags": "None",
+            "flags": {
+                "allowMultipleBuy": false,
+                "forceDisallowMultipleBuy": false,
+                "dontFilterOwnedRecoItems": true,
+                "isHousesCategory": false,
+                "isEverythingCategory": false,
+                "isGroupElixirsCategory": false
+            }
+        },
+        {
+            "categoryId": 19,
+            "parentTabId": 45,
+            "name": "CrownShopSWF_CategoryEverything",
+            "icon": "GUI/CrownShopIcons/Categories/Everything.dds",
+            "tags": "None",
+            "flags": {
+                "allowMultipleBuy": false,
+                "forceDisallowMultipleBuy": false,
+                "dontFilterOwnedRecoItems": false,
+                "isHousesCategory": false,
+                "isEverythingCategory": true,
+                "isGroupElixirsCategory": false
+            }
+        }
+    ]
+}

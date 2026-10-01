@@ -1,0 +1,38 @@
+{
+    "tabId": 37,
+    "name": "CrownShopSWF_MenuFeatured",
+    "icon": "GUI/CrownShopIcons/Categories/Sale_Items.dds",
+    "categoryIds": [ 0 ],
+    "tags": "",
+    "description": "Featured",
+    "categories": [
+        {
+            "categoryId": 0,
+            "parentTabId": 37,
+            "name": "CrownShopSWF_CategoryFeatured",
+            "description": "0",
+            "icon": "GUI/CrownShopIcons/Categories/Sale_Items.dds",
+            "tags": "Featured",
+            "flags": {
+                "allowMultipleBuy": false,
+                "forceDisallowMultipleBuy": false,
+                "dontFilterOwnedRecoItems": false,
+                "isHousesCategory": false,
+                "isEverythingCategory": false,
+                "isGroupElixirsCategory": false
+            }
+        }
+    ],
+    "items": [
+        {
+            "templateId": 1363076,
+            "crownsCost": 1,
+            "itemFlags": 8191,
+            "displayPriority": [
+                {
+                    "categoryId": 0
+                }
+            ]
+        }
+    ]
+}

@@ -52,6 +52,7 @@ using Imlight.CoreLib.Shared.Structures;
 using Imcodec.IO;
 using Imcodec.MessageLayer.Generated;
 using Imlight.CoreLib.WizardData.Collections;
+using Imlight.CoreLib.Game.CrownShop;
 
 namespace Imlight.CoreLib.Game;
 
@@ -283,6 +284,14 @@ public class GameServer : Server {
         }
 
         return newId;
+    }
+
+    private void LoadResources() {
+        // Load SpiralDB — the in-memory world database from JSON files.
+        SpiralDB.Load();
+
+        // Load Crown Shop layout and tabs from JSON files using System.Text.Json
+        CrownShopHandler.Load();
     }
 
     private void ActiveSessionsChangedEvent(object obj, NotifyCollectionChangedEventArgs args) {

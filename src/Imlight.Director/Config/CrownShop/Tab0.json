@@ -1,0 +1,10 @@
+{
+    "tabId": 36,
+    "name": "CrownShopSWF_DailySpiral",
+    "icon": "GUI/CrownShopIcons/Categories/DailySpiral.dds",
+    "categoryIds": [ 0, 25, 2, 4, 16, 8, 15, 13, 5, 7 ],
+    "tags": "Splash",
+    "description": "0",
+    "categories": [],
+    "items": []
+}

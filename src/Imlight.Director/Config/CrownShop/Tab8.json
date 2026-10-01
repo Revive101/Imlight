@@ -1,0 +1,130 @@
+{
+    "tabId": 44,
+    "name": "CrownShopSWF_MenuHousing",
+    "icon": "GUI/CrownShopIcons/Categories/Housing.dds",
+    "categoryIds": [ 5, 7, 30, 27, 6, 24, 21, 22 ],
+    "tags": "",
+    "description": "0",
+    "categories": [
+        {
+            "categoryId": 5,
+            "parentTabId": 44,
+            "name": "CrownShopSWF_CategoryHouses",
+            "icon": "GUI/CrownShopIcons/Categories/Housing.dds",
+            "tags": "None",
+            "flags": {
+                "allowMultipleBuy": false,
+                "forceDisallowMultipleBuy": true,
+                "dontFilterOwnedRecoItems": false,
+                "isHousesCategory": true,
+                "isEverythingCategory": false,
+                "isGroupElixirsCategory": false
+            }
+        },
+        {
+            "categoryId": 7,
+            "parentTabId": 44,
+            "name": "CrownShopSWF_CategoryGardening",
+            "icon": "GUI/CrownShopIcons/Categories/Seeds.dds",
+            "tags": "None",
+            "flags": {
+                "allowMultipleBuy": true,
+                "forceDisallowMultipleBuy": false,
+                "dontFilterOwnedRecoItems": true,
+                "isHousesCategory": false,
+                "isEverythingCategory": false,
+                "isGroupElixirsCategory": false
+            }
+        },
+        {
+            "categoryId": 30,
+            "parentTabId": 44,
+            "name": "CrownShopSWF_CategoryCastleBlocks",
+            "icon": "GUI/CrownShopIcons/Categories/Building_Blocks.dds",
+            "tags": "None",
+            "flags": {
+                "allowMultipleBuy": true,
+                "forceDisallowMultipleBuy": false,
+                "dontFilterOwnedRecoItems": true,
+                "isHousesCategory": false,
+                "isEverythingCategory": false,
+                "isGroupElixirsCategory": false
+            }
+        },
+        {
+            "categoryId": 27,
+            "parentTabId": 44,
+            "name": "CrownShopSWF_CategoryCCGHousing",
+            "icon": "GUI/CrownShopIcons/Categories/Furniture_Sets.dds",
+            "tags": "None",
+            "flags": {
+                "allowMultipleBuy": true,
+                "forceDisallowMultipleBuy": false,
+                "dontFilterOwnedRecoItems": false,
+                "isHousesCategory": false,
+                "isEverythingCategory": false,
+                "isGroupElixirsCategory": false
+            }
+        },
+        {
+            "categoryId": 6,
+            "parentTabId": 44,
+            "name": "CrownShopSWF_CategoryFurniture",
+            "icon": "GUI/CrownShopIcons/Categories/Furniture.dds",
+            "tags": "None",
+            "flags": {
+                "allowMultipleBuy": true,
+                "forceDisallowMultipleBuy": false,
+                "dontFilterOwnedRecoItems": true,
+                "isHousesCategory": false,
+                "isEverythingCategory": false,
+                "isGroupElixirsCategory": false
+            }
+        },
+        {
+            "categoryId": 24,
+            "parentTabId": 44,
+            "name": "CrownShopSWF_CategoryMinigames",
+            "icon": "GUI/CrownShopIcons/Categories/Games.dds",
+            "tags": "None",
+            "flags": {
+                "allowMultipleBuy": true,
+                "forceDisallowMultipleBuy": false,
+                "dontFilterOwnedRecoItems": true,
+                "isHousesCategory": false,
+                "isEverythingCategory": false,
+                "isGroupElixirsCategory": false
+            }
+        },
+        {
+            "categoryId": 21,
+            "parentTabId": 44,
+            "name": "CrownShopSWF_CategoryTeleporters",
+            "icon": "GUI/CrownShopIcons/Categories/Teleporter.dds",
+            "tags": "None",
+            "flags": {
+                "allowMultipleBuy": true,
+                "forceDisallowMultipleBuy": false,
+                "dontFilterOwnedRecoItems": true,
+                "isHousesCategory": false,
+                "isEverythingCategory": false,
+                "isGroupElixirsCategory": false
+            }
+        },
+        {
+            "categoryId": 22,
+            "parentTabId": 44,
+            "name": "CrownShopSWF_CategoryInstruments",
+            "icon": "GUI/CrownShopIcons/Categories/Instruments.dds",
+            "tags": "None",
+            "flags": {
+                "allowMultipleBuy": true,
+                "forceDisallowMultipleBuy": false,
+                "dontFilterOwnedRecoItems": true,
+                "isHousesCategory": false,
+                "isEverythingCategory": false,
+                "isGroupElixirsCategory": false
+            }
+        }
+    ]
+}
