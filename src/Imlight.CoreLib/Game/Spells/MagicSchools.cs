@@ -49,7 +49,7 @@ namespace Imlight.CoreLib.Game.Spells;
 /// <summary>
 /// Manages the loading, caching, and retrieval of magic school templates.
 /// </summary>
-internal class MagicSchools : RootDirectoryResourceSingleton<SpellFactory>, IMemoryStreamDisposable {
+internal class MagicSchools : RootDirectoryResourceSingleton<MagicSchools>, IMemoryStreamDisposable {
 
     protected override string DirectoryName => "MagicSchools/";
 

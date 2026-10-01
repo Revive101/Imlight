@@ -39,7 +39,6 @@
 
 using System;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
 using Imlight.CoreLib.Shared.Resources;
 
@@ -50,7 +49,7 @@ namespace Imlight.Director;
 /// </summary>
 /// <remarks>
 /// Uses reflection to find classes inheriting from RootSingleResourceSingleton
-/// and RootDirectoryResourceSingleton, then instantiates and initializes each one.
+/// and RootDirectoryResourceSingleton, then initializes their shared instances.
 /// </remarks>
 internal class ResourceContainer {
 
@@ -68,27 +67,16 @@ internal class ResourceContainer {
                             t.BaseType != null &&
                             t.BaseType.IsGenericType &&
                             t.BaseType.GetGenericTypeDefinition() == baseType)) {
-                var instance = Activator.CreateInstance(derivedType);
-
-                // Get a delegate to the method using an expression.
-                var methodDelegate = CreateDelegate<Action>(derivedType, "Initialize");
-                methodDelegate?.Invoke();
+                // Startup and request handlers must use the same Lazy<T>. Constructing
+                // a separate object here leaves Instance uninitialized and makes the
+                // first request reload static resource tables (e.g. duplicate spells).
+                var instanceProperty = derivedType.GetProperty("Instance",
+                    BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy);
+                var instance = instanceProperty?.GetValue(null);
+                if (instance?.GetType() != derivedType)
+                    throw new InvalidOperationException($"Resource {derivedType.Name} must declare its own singleton type.");
             }
         }
     }
 
-    private static TDelegate CreateDelegate<TDelegate>(Type type, string methodName)
-        where TDelegate : class {
-        var methodInfo = type.GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic);
-
-        if (methodInfo == null) {
-            return null;
-        }
-
-        var instance = Expression.Parameter(type, "instance");
-        var methodCall = Expression.Call(instance, methodInfo);
-
-        return Expression.Lambda<TDelegate>(methodCall, instance).Compile();
-    }
-    
 }
