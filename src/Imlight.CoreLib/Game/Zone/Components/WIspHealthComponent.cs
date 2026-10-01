@@ -135,6 +135,7 @@ internal sealed class WispHealthComponent : ZoneEntityComponent, IComponentFacto
         }
 
         // Enter ActionEmoting with the particle and sound
+        // For some reason, the wisp is not doing the "360" around the player when collecting
         var stateHealth = new EmoteStateOverrideInfo {
             m_stateNameID = WISP_STATE_ID,
             m_emoteName = "",
