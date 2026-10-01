@@ -117,7 +117,7 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
                 continue;
             }
 
-            if (!IsLongRaisedEvent(message.EventName) && !IsEnforcedEnabled(trigger)) {
+            if (!_chainedEvents.Contains(message.EventName) && !IsEnforcedEnabled(trigger)) {
                 continue;
             }
 
