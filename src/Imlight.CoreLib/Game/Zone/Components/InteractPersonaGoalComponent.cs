@@ -134,9 +134,9 @@ internal sealed class InteractPersonaGoalComponent(ZoneEntity entity)
             yield break;
         }
 
-        var qTemplate = QuestTemplateCollection.GetQuestByName(
-            wizard.QuestBehavior.CurrentQuestInstances
-                .FirstOrDefault(q => q.ID == state.ActiveQuestId)?.QuestName);
+        var questName = wizard.QuestBehavior.CurrentQuestInstances
+            .FirstOrDefault(q => q.ID == state.ActiveQuestId)?.QuestName;
+        var qTemplate = questName is null ? null : QuestTemplateCollection.GetQuestByName(questName);
 
         if (qTemplate == null) {
             yield break;
@@ -222,7 +222,8 @@ internal sealed class InteractPersonaGoalComponent(ZoneEntity entity)
         var now = DateTime.UtcNow;
 
         if (!forceUpdate && _cachedPlayerStates.TryGetValue(playerId, out var cachedState)) {
-            if ((now - cachedState.LastUpdated).TotalSeconds < WIZBANG_UPDATE_INTERVAL_SECONDS) {
+            if ((now - cachedState.LastUpdated).TotalSeconds < WIZBANG_UPDATE_INTERVAL_SECONDS
+                && IsCachedGoalStillActive(wizard, cachedState)) {
                 return cachedState;
             }
         }
@@ -240,6 +241,17 @@ internal sealed class InteractPersonaGoalComponent(ZoneEntity entity)
         _cachedPlayerStates[playerId] = state;
 
         return state;
+    }
+
+    private static bool IsCachedGoalStillActive(Wizard wizard, PlayerPersonaGoalState state) {
+        // The quest can end (completed, abandoned) inside the cache window, so the cached ids may be dead.
+        if (!state.HasActiveGoal) {
+            return true;
+        }
+
+        var quest = wizard.QuestBehavior.CurrentQuestInstances.FirstOrDefault(q => q.ID == state.ActiveQuestId);
+
+        return quest is not null && quest.IsGoalActive(state.ActiveGoal.m_goalName);
     }
 
     private (PersonaGoalTemplate Goal, ulong QuestId, ulong GoalId)? FindActivePersonaGoal(Wizard wizard) {
