@@ -140,6 +140,7 @@ internal static class QuestMadlibs {
                     m_madlibToken = "LOCATION",
                     m_madlibArgument = gTemplate.m_locationName
                 },
+                ..GetTallyArguments(gTemplate),
                 new MadlibArgT_ByteString {
                     m_madlibToken = "FIRSTNAME",
                     m_madlibArgument = firstName
@@ -166,6 +167,18 @@ internal static class QuestMadlibs {
 
         return madLibs;
     }
+
+    private static MadlibArgT_ByteString[] GetTallyArguments(GoalTemplate gTemplate)
+        => gTemplate.m_tallyCounter is null ? [] : [
+            new MadlibArgT_ByteString {
+                m_madlibToken = "TALLYTEXT",
+                m_madlibArgument = gTemplate.m_tallyCounter.m_descriptor ?? string.Empty
+            },
+            new MadlibArgT_ByteString {
+                m_madlibToken = "TALLYTEXT2",
+                m_madlibArgument = gTemplate.m_tallyCounter.m_descriptor2 ?? string.Empty
+            },
+        ];
 
     private static string GetGoalNameFormat(string npcNameFormat, string lastName) {
         // The goal variant of a name format is the NPC's own format with "Goal_" after the prefix.
