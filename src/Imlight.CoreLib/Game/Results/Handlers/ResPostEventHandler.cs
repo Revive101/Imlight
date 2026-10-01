@@ -37,7 +37,8 @@ internal sealed class ResPostEventHandler : BaseResultHandler<ResPostEvent> {
         var msg = new ZONE_102_PROTOCOL.MSG_POSTEVENT {
             PlayerActor = context.GetPlayerRef(),
             PlayerGameObject = context.GetPlayerObj(),
-            EventName = Result.m_eventName
+            EventName = Result.m_eventName,
+            PlayerSpawned = context.IsPlayerSpawn()
         };
 
         zoneActor.Tell(msg);

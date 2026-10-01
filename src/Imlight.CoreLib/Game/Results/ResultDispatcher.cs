@@ -68,7 +68,8 @@ public static class ResultDispatcher {
                                      string triggerName = null,
                                      Zone.Core.ZoneScriptState scriptState = null,
                                      bool skipWorldEffects = false,
-                                     float xpScale = 1f) {
+                                     float xpScale = 1f,
+                                     bool playerSpawned = false) {
         if (skipWorldEffects && results?.m_results is not null) {
             results = new ResultList { m_results = results.m_results.Where(r => !ChangesZone(r)).ToList() };
         }
@@ -79,6 +80,7 @@ public static class ResultDispatcher {
             results, playerRef, playerObj, zoneActor, questName, goalName, triggerName, scriptState);
         var context = new GenericResultContext(filteredResults, playerRef, playerObj, replyTo, zoneActor, questName, goalName, triggerName) {
             XpScale = xpScale,
+            PlayerSpawned = playerSpawned,
         };
         var executor = CreateExecutorInstance(actorContext, context);
 

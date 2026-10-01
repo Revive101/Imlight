@@ -542,6 +542,11 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public bool SuppressTeleportResults;
 
         /// <summary>
+        /// Set when a player spawned inside the volume that raised the event instead of walking into it.
+        /// </summary>
+        public bool PlayerSpawned;
+
+        /// <summary>
         /// Set by the trigger supervisor once it has checked the trigger's requirements, so the trigger does not
         /// check them again against state the same event has since changed.
         /// </summary>
@@ -608,6 +613,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public string StateName;
         public IActorRef PlayerActor;
         public CoreObject PlayerGameObject;
+        public bool PlayerSpawned;
 
     }
 

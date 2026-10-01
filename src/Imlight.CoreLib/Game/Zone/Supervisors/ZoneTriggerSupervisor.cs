@@ -156,6 +156,7 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
                 PlayerActor = message.PlayerActor,
                 PlayerGameObject = message.PlayerGameObject,
                 SuppressTeleportResults = hasTeleportResult && !ReferenceEquals(trigger, teleportWinner),
+                PlayerSpawned = message.PlayerSpawned,
                 Adjectives = message.Adjectives,
                 RequirementsChecked = true,
             });
@@ -389,9 +390,9 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_MODIFYTRIGGEROBJECT))]
     private void ReceiveModifyTriggerObject(ZONE_102_PROTOCOL.MSG_MODIFYTRIGGEROBJECT message)
-        => ApplyObjectState(message.ObjectName, message.StateName, message.PlayerActor, message.PlayerGameObject);
+        => ApplyObjectState(message.ObjectName, message.StateName, message.PlayerActor, message.PlayerGameObject, message.PlayerSpawned);
 
-    private void ApplyObjectState(string objectName, string stateName, IActorRef playerActor, CoreObject playerObject) {
+    private void ApplyObjectState(string objectName, string stateName, IActorRef playerActor, CoreObject playerObject, bool playerSpawned = false) {
         if (string.IsNullOrEmpty(objectName) || string.IsNullOrEmpty(stateName)) {
             return;
         }
@@ -420,6 +421,7 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
             EventName = $"{objectName}.{stateName}.EnterState",
             PlayerActor = playerActor,
             PlayerGameObject = playerObject,
+            PlayerSpawned = playerSpawned,
         });
     }
 
@@ -500,9 +502,13 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
                     persistentTriggerData.Teleport = randomZoneTransfer.Teleport;
                 }
 
-                // Set the trigger results to the results stored in the database.
+                // A trigger that already teleports (a ride waits, then teleports) keeps its other results and takes
+                // the stored destination; any other trigger's results become the stored teleport.
+                var existing = trigger.m_results?.m_results;
                 var resultList = new ResultList {
-                    m_results = [persistentTriggerData.Teleport]
+                    m_results = existing is not null && existing.Any(r => r is ResTeleport)
+                        ? [.. existing.Select(r => r is ResTeleport ? persistentTriggerData.Teleport : r)]
+                        : [persistentTriggerData.Teleport]
                 };
                 trigger.m_results = resultList;
             }

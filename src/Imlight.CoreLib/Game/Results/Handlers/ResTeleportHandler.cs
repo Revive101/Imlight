@@ -29,6 +29,15 @@ internal sealed class ResTeleportHandler : BaseResultHandler<ResTeleport> {
             return false;
         }
 
+        // A player who spawned inside a door's volume would be sent straight back out of it.
+        if (context.IsPlayerSpawn()) {
+            return true;
+        }
+
+        if (string.IsNullOrEmpty(Result.m_destinationZone)) {
+            return false;
+        }
+
         var msg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
             DestinationZone = Result.m_destinationZone,
             DestinationLocation = Result.m_destinationLoc,

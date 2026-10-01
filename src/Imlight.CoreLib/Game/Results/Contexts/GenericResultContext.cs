@@ -39,6 +39,12 @@ public class GenericResultContext(ResultList results,
     /// </summary>
     public float XpScale { get; init; } = 1f;
 
+    /// <summary>
+    /// True while the results run for a player who spawned inside the volume that raised the event, until the
+    /// results first wait.
+    /// </summary>
+    public bool PlayerSpawned { get; set; }
+
     public IActorRef PlayerRef { get; } = playerRef;
     public CoreObject PlayerObj { get; } = playerObj;
     public IActorRef ReplyTo { get; } = replyTo;
@@ -66,6 +72,12 @@ public class GenericResultContext(ResultList results,
 
     public float GetXpScale()
         => XpScale;
+
+    public bool IsPlayerSpawn()
+        => PlayerSpawned;
+
+    public void EndPlayerSpawn()
+        => PlayerSpawned = false;
 
     public bool IsQuestContext => !string.IsNullOrEmpty(QuestName);
     public bool IsGoalContext => !string.IsNullOrEmpty(GoalName);

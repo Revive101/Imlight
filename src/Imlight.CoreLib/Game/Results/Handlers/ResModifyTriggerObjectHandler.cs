@@ -19,7 +19,8 @@ internal sealed class ResModifyTriggerObjectHandler : BaseResultHandler<ResModif
             ObjectName = Result.m_triggerObjName.ToString(),
             StateName = Result.m_triggerObjState.ToString(),
             PlayerActor = context.GetPlayerRef(),
-            PlayerGameObject = context.GetPlayerObj()
+            PlayerGameObject = context.GetPlayerObj(),
+            PlayerSpawned = context.IsPlayerSpawn()
         }, Akka.Actor.ActorRefs.NoSender);
 
         return true;

@@ -95,6 +95,7 @@ public class ResultExecutorActor(IResultContext context) : ReceiveProtocolDispat
         // Special case: ResWait doesn't need a handler, just schedule a delay.
         if (result is ResWait resWait) {
             _isExecuting = true;
+            _context.EndPlayerSpawn();
 
             Timers.StartSingleTimer(
                 key: $"ResWait_{Guid.NewGuid():N}",
