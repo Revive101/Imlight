@@ -16,22 +16,23 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
+using Imcodec.Cryptography;
+using Imcodec.Math;
+using Imcodec.ObjectProperty.TypeCache;
+using Imcodec.Types;
+using Imlight.Common;
+using Imlight.CoreLib.Game.Effects;
+using Imlight.CoreLib.Game.Pet;
+using Imlight.CoreLib.Shared.Behaviors;
+using Imlight.CoreLib.Shared.Character;
+using Imlight.CoreLib.Shared.Items;
+using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.Shared.Utilities;
+using Imlight.CoreLib.WizardData.Collections;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json.Serialization;
-using Imlight.CoreLib.Game.Effects;
-using Imlight.CoreLib.Shared.Items;
-using Imlight.CoreLib.Shared.Behaviors;
-using Imlight.CoreLib.Shared.Character;
-using Imlight.CoreLib.Shared.Resources;
-using Imlight.CoreLib.WizardData.Collections;
-using Imlight.CoreLib.Shared.Utilities;
-using Imcodec.Math;
-using Imcodec.ObjectProperty.TypeCache;
-using Imlight.Common;
-using Imcodec.Types;
-using Imlight.CoreLib.Game.Pet;
 
 namespace Imlight.CoreLib.WizardData.Models.Player;
 
@@ -132,6 +133,13 @@ public class Wizard {
     [JsonIgnore] internal DynamodSet DynamodSet { get; set; }
     [JsonIgnore] internal bool IsInCombatGrace { get; set; }
     [JsonIgnore] internal bool IsInDuel { get; set; }
+
+    /// <summary>
+    /// Tracks the current emote state of the player during this session.
+    /// Defaults to Unremarkable (idle).
+    /// </summary>
+    [JsonIgnore]
+    public uint CurrentEmoteState { get; set; } = StringHash.Compute("Unremarkable");
 
     /// <summary>
     /// Tracks hatched pets for MSG_PETTOMEPETADDED. Key: pet global ID, Value: pet template ID.
