@@ -211,7 +211,7 @@ internal sealed class InteractObjectStateComponent(ZoneEntity entity)
     }
 
     private static bool IsGoalOption(InteractOptionTemplate option)
-        => option.m_goalTags is { Count: > 0 };
+        => option.m_goalTags is { Count: > 0 } || InteractQuestSelectComponent.IsNamedByUsageGoal(option);
 
     private static bool ChangesWorld(InteractOptionTemplate option)
         => !string.IsNullOrEmpty(EnterState(option))

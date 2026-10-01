@@ -29,7 +29,8 @@
  * Collection goals (tally count > 1) consume the object on use; single-use goals
  * leave the object in place and drive post-use state via completeResults.
  * A usage goal's client tags name the object, or a goal tag of one of its interact
- * options (Ddl_WC_DarkCave_Bubble1 on WC_DarkCave_Bubble1).
+ * options (Ddl_WC_DarkCave_Bubble1 on WC_DarkCave_Bubble1), or a global registry entry the option's
+ * results remove (a staff whose use removes the entry its goal names).
  *
  * TODO:
  *
@@ -238,11 +239,45 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
             && scavengeGoal.m_itemAdjectives?.Any(gameObjectTemplate.m_adjectiveList.Contains) == true;
     }
 
+    /// <summary>
+    /// The tags a usage goal can name an interact option by: the option's goal tags, and the
+    /// global registry entries its results remove (a staff whose option removes the entry its goal's client tag names).
+    /// </summary>
+    internal static IEnumerable<string> OptionTags(InteractOptionTemplate option) {
+        if (option is null) {
+            yield break;
+        }
+
+        foreach (var tag in option.m_goalTags ?? []) {
+            yield return tag;
+        }
+
+        if (option is not InteractStateOptionTemplate { m_results.m_results: { } results }) {
+            yield break;
+        }
+
+        foreach (var removal in results.OfType<ResRemoveEntry>().Where(r => !r.m_isQuestRegistry && !string.IsNullOrEmpty(r.m_entryName))) {
+            yield return removal.m_entryName;
+        }
+    }
+
+    /// <summary>
+    /// True when some usage goal names this option by one of its tags, so using the option is using that goal.
+    /// </summary>
+    internal static bool IsNamedByUsageGoal(InteractOptionTemplate option) {
+        var tags = OptionTags(option).ToList();
+
+        return tags.Count > 0
+            && QuestTemplateCollection.GetAllQuests()
+                .Where(q => q?.m_goals is not null)
+                .SelectMany(q => q.m_goals)
+                .Any(g => g is not null && g.m_goalType == GOAL_TYPE.GOAL_TYPE_USAGE && g.m_clientTags?.Any(tags.Contains) == true);
+    }
+
     private static IEnumerable<string> InteractOptionGoalTags(GameObjectTemplate gameObjectTemplate)
         => gameObjectTemplate.m_behaviors
             .OfType<InteractableBehaviorTemplate>()
-            .SelectMany(behavior => behavior.m_interactOptions)
-            .Where(option => option?.m_goalTags is not null)
-            .SelectMany(option => option.m_goalTags);
+            .SelectMany(behavior => behavior.m_interactOptions ?? [])
+            .SelectMany(OptionTags);
 
 }

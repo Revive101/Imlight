@@ -273,6 +273,26 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
         return true;
     }
 
+    public bool RemoveRegistryValue(string entryName) {
+        if (string.IsNullOrWhiteSpace(entryName)) {
+            return false;
+        }
+
+        Registry.Remove(entryName);
+
+        return true;
+    }
+
+    public bool RemoveQuestRegistryValue(string questName, string entryName) {
+        if (string.IsNullOrWhiteSpace(questName) || string.IsNullOrWhiteSpace(entryName)) {
+            return false;
+        }
+
+        Registry.Remove($"{questName}_{entryName}");
+
+        return true;
+    }
+
     public bool HasRegistryValue(string key) {
         if (string.IsNullOrWhiteSpace(key)) {
             return false;

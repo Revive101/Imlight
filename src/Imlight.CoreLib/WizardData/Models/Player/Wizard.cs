@@ -1185,6 +1185,36 @@ public class Wizard {
         return true;
     }
 
+    public bool RemoveRegistryValue(string key) {
+        if (!QuestBehavior.HasRegistryValue(key)) {
+            return true;
+        }
+
+        if (!QuestBehavior.RemoveRegistryValue(key)) {
+            return false;
+        }
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterQuestBehavior(this);
+
+        return true;
+    }
+
+    public bool RemoveQuestRegistryValue(string questName, string key) {
+        if (!QuestBehavior.HasQuestRegistryValue(questName, key)) {
+            return true;
+        }
+
+        if (!QuestBehavior.RemoveQuestRegistryValue(questName, key)) {
+            return false;
+        }
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterQuestBehavior(this);
+
+        return true;
+    }
+
     public bool HasRegistryValue(string key)
         => QuestBehavior.HasRegistryValue(key);
 
