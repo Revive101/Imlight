@@ -227,6 +227,11 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
             return;
         }
 
+        // A STATIC_CLIENT object is built by the client from its own zone data; the server only changes its state.
+        if (info.m_loadingType == LoadingType.STATIC_CLIENT) {
+            return;
+        }
+
         if (string.IsNullOrEmpty(name)) {
             Logger.Debug("Trigger in {0}: object {1} skipped, the trigger has no name.",
                 Logger.Args(Zone.ZonePath, info.m_zoneTag));
