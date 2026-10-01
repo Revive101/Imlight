@@ -520,6 +520,13 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             return;
         }
 
+        if (DungeonQuestIndex.IsDungeonQuest(quest.m_questName)) {
+            Logger.Warning("Player '{0}' attempted to accept dungeon quest '{1}', which the instance grants.",
+                Logger.Args(wizard.CharId, questName));
+
+            return;
+        }
+
         // Otherwise, we're good to start the quest. Send them the send quest message and send goal message(s)
         // for any of the starting goals the quest has.
         StartQuest(quest, wizard);
@@ -1656,17 +1663,11 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             .ToList();
 
         foreach (var qInstance in stale) {
-            var questId = qInstance.ID;
-
             // Progress kept in the registry goes too; the next grant starts fresh.
             wizard.QuestBehavior.RemoveAllQuestRegistryEntries(qInstance.QuestName, keepComplete: true);
-            if (!wizard.RemoveQuest(qInstance.QuestName)) {
+            if (!RemoveQuestEverywhere(wizard, qInstance.QuestName)) {
                 continue;
             }
-
-            SendToSocket(new QUEST_MESSAGES_52_PROTOCOL.MSG_REMOVEQUEST {
-                QuestID = questId,
-            });
 
             Logger.Information("Removed dungeon quest '{0}' from {1}: left its zone (now in '{2}').",
                 Logger.Args(qInstance.QuestName, wizard.CharId, wizard.Zone));
@@ -1738,7 +1739,9 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             }
 
             var questInstance = new QuestInstance(template, wizard.CharId);
-            wizard.AddQuest(questInstance);
+            if (!wizard.AddQuest(questInstance)) {
+                continue;
+            }
 
             if (!_cachedQuestTemplates.Contains(template)) {
                 _cachedQuestTemplates.Add(template);
@@ -1763,18 +1766,32 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
     }
 
     private void DropSavedDungeonQuest(Wizard wizard, QuestInstance saved) {
-        var questId = saved.ID;
         wizard.QuestBehavior.RemoveAllQuestRegistryEntries(saved.QuestName, keepComplete: true);
-        if (!wizard.RemoveQuest(saved.QuestName)) {
+        if (!RemoveQuestEverywhere(wizard, saved.QuestName)) {
             return;
         }
 
-        SendToSocket(new QUEST_MESSAGES_52_PROTOCOL.MSG_REMOVEQUEST {
-            QuestID = questId,
-        });
-
         Logger.Information("Replaced saved dungeon quest '{0}' of {1} with the instance's progress.",
             Logger.Args(saved.QuestName, wizard.CharId));
+    }
+
+    // Removes the quest and tells the client about every copy of it the player holds.
+    private bool RemoveQuestEverywhere(Wizard wizard, string questName) {
+        var questIds = wizard.QuestBehavior.CurrentQuestInstances
+            .Where(q => q is not null && q.QuestName == questName)
+            .Select(q => q.ID)
+            .ToList();
+        if (!wizard.RemoveQuest(questName)) {
+            return false;
+        }
+
+        foreach (var questId in questIds) {
+            SendToSocket(new QUEST_MESSAGES_52_PROTOCOL.MSG_REMOVEQUEST {
+                QuestID = questId,
+            });
+        }
+
+        return true;
     }
 
     private static bool IsZoneDungeonQuest(Wizard wizard, string questName)
