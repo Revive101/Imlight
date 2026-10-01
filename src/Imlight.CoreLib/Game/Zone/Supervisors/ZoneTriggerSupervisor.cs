@@ -392,7 +392,6 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
         => ApplyObjectState(message.ObjectName, message.StateName, message.PlayerActor, message.PlayerGameObject);
 
     private void ApplyObjectState(string objectName, string stateName, IActorRef playerActor, CoreObject playerObject) {
-        // Client-only objects (doors, collision) are told through a dynamic mod.
         if (string.IsNullOrEmpty(objectName) || string.IsNullOrEmpty(stateName)) {
             return;
         }
@@ -405,8 +404,10 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
                 StateName = stateName,
                 ExclusiveToSender = false,
             }],
-            Targets = ZoneBroadcastTarget.Objects,
+            // Zone objects and the trigger-owned (server-spawned) ones live under different supervisors.
+            Targets = ZoneBroadcastTarget.Objects | ZoneBroadcastTarget.Triggers,
         });
+        // Client-only objects take the state through a dynamic mod.
         ZoneRef.Tell(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
             Messages = [new CHARACTER_103_PROTOCOL.MSG_SENDDYNAMODSTATE {
                 ObjectName = objectName,
