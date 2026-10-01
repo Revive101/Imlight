@@ -66,7 +66,6 @@ public static class ResultDispatcher {
                                      string questName = null,
                                      string goalName = null,
                                      string triggerName = null,
-                                     Zone.Core.ZoneObjectStates objectStates = null,
                                      Zone.Core.ZoneScriptState scriptState = null,
                                      bool skipWorldEffects = false,
                                      float xpScale = 1f) {
@@ -77,7 +76,7 @@ public static class ResultDispatcher {
         // Results carry their own requirements in the data; evaluate them here, before the executor
         // is created, so an executor actor only ever handles results whose requirements were met.
         var filteredResults = FilterResultsByRequirements(
-            results, playerRef, playerObj, zoneActor, questName, goalName, triggerName, objectStates, scriptState);
+            results, playerRef, playerObj, zoneActor, questName, goalName, triggerName, scriptState);
         var context = new GenericResultContext(filteredResults, playerRef, playerObj, replyTo, zoneActor, questName, goalName, triggerName) {
             XpScale = xpScale,
         };
@@ -114,7 +113,6 @@ public static class ResultDispatcher {
                                                            string questName,
                                                            string goalName,
                                                            string triggerName,
-                                                           Zone.Core.ZoneObjectStates objectStates,
                                                            Zone.Core.ZoneScriptState scriptState) {
         if (results?.m_results is null || results.m_results.Count == 0
             || !results.m_results.Any(r => r?.m_requirements is not null)) {
@@ -154,7 +152,6 @@ public static class ResultDispatcher {
                     goalName: goalName,
                     triggerName: triggerName
                 ) {
-                    ObjectStates = objectStates,
                     ScriptState = scriptState,
                 };
                 if (!RequirementDispatcher.EvaluateRequirements(result.m_requirements, requirementContext)) {

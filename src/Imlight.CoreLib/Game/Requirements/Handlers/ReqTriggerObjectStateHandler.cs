@@ -10,11 +10,11 @@ namespace Imlight.CoreLib.Game.Requirements.Handlers;
 internal sealed class ReqTriggerObjectStateHandler : BaseRequirementHandler<ReqTriggerObjectState> {
 
     public override bool Evaluate(IRequirementContext context) {
-        if (context is not IZoneStateContext { ObjectStates: { } states }) {
+        if (context is not IZoneStateContext { ScriptState: { } states }) {
             return false;
         }
 
-        return states.IsIn(Requirement.m_triggerObjName.ToString(), Requirement.m_triggerObjState.ToString());
+        return states.IsObjectIn(Requirement.m_triggerObjName.ToString(), Requirement.m_triggerObjState.ToString());
     }
 
 }

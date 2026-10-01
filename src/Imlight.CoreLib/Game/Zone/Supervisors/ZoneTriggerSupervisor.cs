@@ -272,8 +272,8 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
 
         // The trigger's own object comes back in its start state, not the "Off" it was hidden with.
         var objectTag = info.m_zoneTag;
-        if (Zone.ObjectStates.IsIn(objectTag, DEACTIVATED_OBJECT_STATE) && !string.IsNullOrEmpty(info.m_startState)) {
-            Zone.ObjectStates.Set(objectTag, info.m_startState);
+        if (Zone.ScriptState.IsObjectIn(objectTag, DEACTIVATED_OBJECT_STATE) && !string.IsNullOrEmpty(info.m_startState)) {
+            Zone.ScriptState.SetObjectState(objectTag, info.m_startState);
         }
 
         var actor = CreateEntityActor(coreObject, template, info);
@@ -433,7 +433,7 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
             return;
         }
 
-        Zone.ObjectStates.Set(objectName, stateName);
+        Zone.ScriptState.SetObjectState(objectName, stateName);
 
         ZoneRef.Tell(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
             Messages = [new ZONE_102_PROTOCOL.MSG_ENTERSTATE {
@@ -475,7 +475,6 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
                 wizardResponse.Wizard,
                 ZoneRef,
                 trigger.m_triggerName) {
-                ObjectStates = Zone.ObjectStates,
                 ScriptState = Zone.ScriptState,
                 EventAdjectives = message.Adjectives,
             });

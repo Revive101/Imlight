@@ -9,7 +9,8 @@ using Imlight.CoreLib.Shared.Packets;
 namespace Imlight.CoreLib.Game.Zone.Core;
 
 /// <summary>
-/// The tokens, counters and puzzle variables that zone triggers keep in one zone instance. Trigger results write
+/// The state of one zone instance: the tokens, counters and puzzle variables that zone triggers keep, the current
+/// state of every named object (a lever's "On", a door's "Idle_Open"), and the dungeon quest progress. Trigger results write
 /// them (ResZoneToken*, ResZoneCounter, ResEncounterSetVariable) and trigger requirements read them
 /// (ReqZoneToken, ReqZoneTokenValue, ReqZoneCounter, ReqGetEncounterVariable). The state lives and dies with the
 /// zone, so every instance keeps its own progress. Per-player tokens are keyed by the player's game object id,
@@ -29,6 +30,8 @@ public sealed class ZoneScriptState {
     private readonly ConcurrentDictionary<string, bool> _variables = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, bool> _triggers = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, int> _triggerFires = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, string> _objectStates = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, byte> _changedObjects = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _questClaims = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _completedQuests = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, List<string>> _completedGoals = new(StringComparer.OrdinalIgnoreCase);
@@ -195,5 +198,50 @@ public sealed class ZoneScriptState {
             };
         }
     }
+
+    /// <summary>
+    /// Records the state an object enters. Returns false when it was already in that state.
+    /// </summary>
+    public bool SetObjectState(string objectName, string state) {
+        if (string.IsNullOrEmpty(objectName)) {
+            return false;
+        }
+
+        var changed = false;
+        _changedObjects[objectName] = 0;
+        _objectStates.AddOrUpdate(
+            objectName,
+            _ => { changed = true; return state ?? string.Empty; },
+            (_, old) => { changed = !string.Equals(old, state, StringComparison.Ordinal); return state ?? string.Empty; });
+
+        return changed;
+    }
+
+    /// <summary>
+    /// Records the state an object starts in, unless it has already been changed.
+    /// </summary>
+    public void SeedObjectDefault(string objectName, string state) {
+        if (!string.IsNullOrEmpty(objectName) && !string.IsNullOrEmpty(state)) {
+            _objectStates.TryAdd(objectName, state);
+        }
+    }
+
+    public string GetObjectState(string objectName)
+        => !string.IsNullOrEmpty(objectName) && _objectStates.TryGetValue(objectName, out var state) ? state : null;
+
+    public bool IsObjectIn(string objectName, string state)
+        => string.Equals(GetObjectState(objectName), state, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// The state of an object something changed since the zone loaded, else null.
+    /// </summary>
+    public string GetObjectStateIfChanged(string objectName)
+        => !string.IsNullOrEmpty(objectName) && _changedObjects.ContainsKey(objectName) ? GetObjectState(objectName) : null;
+
+    /// <summary>
+    /// Every object something changed since the zone loaded, with its state.
+    /// </summary>
+    public KeyValuePair<string, string>[] SnapshotChangedObjects()
+        => [.. _objectStates.Where(kv => _changedObjects.ContainsKey(kv.Key))];
 
 }

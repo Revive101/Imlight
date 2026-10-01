@@ -102,7 +102,6 @@ public sealed class ZoneTrigger(IActorRef zoneRef, Zone zone, Trigger trigger)
                     ZoneRef,
                     TriggerData.m_triggerName
                 ) {
-                    ObjectStates = Zone.ObjectStates,
                     ScriptState = Zone.ScriptState,
                     EventAdjectives = message.Adjectives,
                 }
@@ -124,7 +123,7 @@ public sealed class ZoneTrigger(IActorRef zoneRef, Zone zone, Trigger trigger)
 
         ResultDispatcher.ExecuteResults(Context, results, message.PlayerActor, message.PlayerGameObject,
                                        Sender, ZoneRef, triggerName: TriggerData.m_triggerName,
-                                       objectStates: Zone.ObjectStates, scriptState: Zone.ScriptState);
+                                       scriptState: Zone.ScriptState);
     }
 
     /// <summary>

@@ -99,7 +99,6 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     /// <summary>
     /// The state of every named object in this zone instance, read by trigger requirements.
     /// </summary>
-    public ZoneObjectStates ObjectStates { get; } = new();
 
     /// <summary>
     /// The tokens, counters and puzzle variables of this zone instance, read by trigger requirements.

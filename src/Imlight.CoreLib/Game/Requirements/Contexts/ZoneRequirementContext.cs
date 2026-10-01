@@ -48,11 +48,6 @@ public class ZoneRequirementContext(RequirementList requirements,
     public string GetTriggerName() => _triggerName;
 
     /// <summary>
-    /// The state of every named object in the zone (null outside a zone).
-    /// </summary>
-    public Game.Zone.Core.ZoneObjectStates ObjectStates { get; init; }
-
-    /// <summary>
     /// The tokens, counters and puzzle variables of the zone (null outside a zone).
     /// </summary>
     public Game.Zone.Core.ZoneScriptState ScriptState { get; init; }

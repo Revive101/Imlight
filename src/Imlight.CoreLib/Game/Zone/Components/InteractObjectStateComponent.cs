@@ -120,7 +120,7 @@ internal sealed class InteractObjectStateComponent(ZoneEntity entity)
 
     // The state the object is in now, else the state its placement starts it in.
     private string CurrentState()
-        => Zone.ObjectStates.Get(ObjectName) is { Length: > 0 } known ? known : Entity.Info?.m_startState;
+        => Zone.ScriptState.GetObjectState(ObjectName) is { Length: > 0 } known ? known : Entity.Info?.m_startState;
 
     /// <summary>
     /// Applies the object's options for a quest goal use: every goal-tagged option, plus the plain state
@@ -128,7 +128,7 @@ internal sealed class InteractObjectStateComponent(ZoneEntity entity)
     /// A plain option is skipped once the object is already in its state, so it never applies twice.
     /// </summary>
     public void ApplyGoalOptions(IActorRef playerActor, CoreObject playerObject) {
-        var current = Zone.ObjectStates.Get(ObjectName);
+        var current = Zone.ScriptState.GetObjectState(ObjectName);
         foreach (var option in GetStateOptions(Entity.Template as GameObjectTemplate)) {
             if (IsGoalOption(option)) {
                 Apply(option, playerActor, playerObject);
@@ -158,7 +158,7 @@ internal sealed class InteractObjectStateComponent(ZoneEntity entity)
         var objectName = ObjectName;
         var newState = EnterState(option);
         if (!string.IsNullOrEmpty(newState) && !string.IsNullOrEmpty(objectName)) {
-            Zone.ObjectStates.Set(objectName, newState);
+            Zone.ScriptState.SetObjectState(objectName, newState);
             Entity.ChangeState(newState);
 
             ZoneActor.Tell(new ZONE_102_PROTOCOL.MSG_POSTEVENT {
@@ -201,7 +201,6 @@ internal sealed class InteractObjectStateComponent(ZoneEntity entity)
                 && !RequirementDispatcher.EvaluateRequirements(
                     requirements,
                     new ZoneRequirementContext(requirements, null, null, wizard, ZoneActor, ObjectName) {
-                        ObjectStates = Zone.ObjectStates,
                         ScriptState = Zone.ScriptState,
                     })) {
                 continue;
