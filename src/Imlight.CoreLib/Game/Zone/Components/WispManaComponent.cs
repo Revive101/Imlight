@@ -47,7 +47,7 @@ using Imlight.CoreLib.WizardData.Models.Player;
 namespace Imlight.CoreLib.Game.Zone.Components;
 
 internal sealed class WispManaComponent : ZoneEntityComponent, IComponentFactory {
-
+    // StateData\PlayerMobileStates.xml
     private readonly uint RESET_STATE_ID = StringHash.Compute("Unremarkable");
     private readonly uint WISP_STATE_ID = StringHash.Compute("ActionEmoting");
 
@@ -128,7 +128,8 @@ internal sealed class WispManaComponent : ZoneEntityComponent, IComponentFactory
         }
 
         // Enter ActionEmoting with the particle and sound
-        var stateHealth = new EmoteStateOverrideInfo {
+        // For some reason, the wisp is not doing the "360" around the player when collecting
+        var stateMana = new EmoteStateOverrideInfo {
             m_stateNameID = WISP_STATE_ID,
             m_emoteName = "",
             m_particleAsset = ParticleAsset,
@@ -143,7 +144,7 @@ internal sealed class WispManaComponent : ZoneEntityComponent, IComponentFactory
             Behaviors: SerializerFlags.None
         );
 
-        if (serializer.Serialize(stateHealth, 1, out var emoteData)) {
+        if (serializer.Serialize(stateMana, 1, out var emoteData)) {
             var enterMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
                 GameObjectID = playerGid,
                 State = WISP_STATE_ID,
