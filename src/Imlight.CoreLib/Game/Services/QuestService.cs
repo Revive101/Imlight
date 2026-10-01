@@ -63,6 +63,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
 
     private const float DEFAULT_KILL_COLLECT_CHANCE = 0.5f;
     private const string QUEST_COMPLETED_ENTRY = "Complete";
+    private const string GOAL_COMPLETE_EVENT_PREFIX = "GoalComplete_";
     private const string GOAL_COMPLETION_DIALOG_TAG = "Completion";
     private const string DIALOG_ENTRY_EVENT_COMPLETION = "ENTRY";
 
@@ -1136,6 +1137,10 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
                 skipWorldEffects: !first,
                 xpScale: GetRunXpScale(wizard, questInstance.QuestName)
             );
+
+            if (first) {
+                PostGoalCompleteEvent(questInstance.QuestName, goalTemplate.m_goalName);
+            }
         }
 
         var qTemplate = _cachedQuestTemplates.FirstOrDefault(q => q.m_questName == questInstance.QuestName);
@@ -1156,6 +1161,20 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         foreach (var g in gTemplates) {
             StartGoal(questInstance, g);
         }
+    }
+
+    // Zone triggers listen for this event to react to a goal (an NPC walks to a new spot, a barricade falls).
+    private void PostGoalCompleteEvent(string questName, string goalName) {
+        var zoneActor = SessionActor.GetZoneActor();
+        if (zoneActor is null) {
+            return;
+        }
+
+        zoneActor.Tell(new ZONE_102_PROTOCOL.MSG_POSTEVENT {
+            EventName = $"{GOAL_COMPLETE_EVENT_PREFIX}{questName}_{goalName}",
+            PlayerActor = SessionActor.ActorRef,
+            PlayerGameObject = GetActiveGameObject(),
+        });
     }
 
     private void CompleteQuest(QuestInstance questInstance) {
