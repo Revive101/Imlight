@@ -220,4 +220,11 @@ internal sealed class SERVICE_101_PROTOCOL : IServerProtocol {
 
     }
 
+    public class MSG_CROWNSHOPPAGE : IServerMessage {
+        public byte MessageOrder { get; } = 20;
+        public byte ServiceID { get; } = 101;
+        public int Page = 1;
+        public string Search = "";
+    }
+
 }

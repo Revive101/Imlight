@@ -41,6 +41,7 @@ public class ServerWizGameStats : IClientTypeProvider<WizGameStats> {
     public int m_currentEventCurrency1;
     public int m_currentEventCurrency2;
     public int m_currentPvPCurrency;
+    public int m_currentPvPTourneyCurrency;
     public int m_currentMana;
     public int m_currentArenaPoints;
     public List<int> m_spellChargeBase;
@@ -264,6 +265,7 @@ public class ServerWizGameStats : IClientTypeProvider<WizGameStats> {
             m_currentEventCurrency1 = m_currentEventCurrency1,
             m_currentEventCurrency2 = m_currentEventCurrency2,
             m_currentPvPCurrency = m_currentPvPCurrency,
+            m_currentPvPTourneyCurrency = m_currentPvPTourneyCurrency,
             m_currentMana = m_currentMana,
             m_currentArenaPoints = m_currentArenaPoints,
             m_spellChargeBase = m_spellChargeBase,

@@ -96,6 +96,9 @@ public class Account {
     public string LastLoginIp { get; set; }
     public bool IsLocked { get; set; }
     public int PurchasedCharacterSlots { get; set; }
+    // Null identifies accounts created before the Crown Shop was implemented.
+    // Zero is a spent balance and must never receive another starting grant.
+    public int? Crowns { get; set; }
 
     [JsonIgnore] public List<Wizard> Characters = new();
     [JsonIgnore] public InfractionHistory InfractionHistory { get; set; }
@@ -119,6 +122,7 @@ public class Account {
         this.PasswordHash = passwordHash;
         this.CreationTime = DateTime.UtcNow;
         this.ChatMode = ChatMode.Open;
+        this.Crowns = 10_000;
     }
 
     /// <summary>
@@ -129,7 +133,7 @@ public class Account {
     public bool AddCharacter(Wizard character) {
         // Return false if adding this character would exceed the maximum allowed characters per account.
         // Return false if the character already exists in the account.
-        if (this.CharacterIds.Count >= MAX_ALLOWED_CHARACTERS) {
+        if (this.CharacterIds.Count >= MAX_ALLOWED_CHARACTERS + Math.Max(0, PurchasedCharacterSlots)) {
             return false;
         }
 

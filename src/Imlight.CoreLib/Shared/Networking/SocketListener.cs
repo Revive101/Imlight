@@ -72,6 +72,7 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
             typeof(ControlMessageProtocol.KeepAlive),
             typeof(ControlMessageProtocol.KeepAliveResponse)
         ];
+    private readonly KiPacketStream _packetStream = new();
     private bool _isDisposed;
 
     private sealed class SocketReadCompleted {
@@ -178,25 +179,25 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
                     return;
                 }
 
+                Dispose();
                 return;
             }
 
-            var packets = GetPacketsFromBuffer(buffer, bytesReceived);
-            if (packets is null) {
-                Logger.Verbose("SessionActor {Id} received invalid packet.", Logger.Args(_sessionid));
-                
-                return;
-            }
-
-            foreach (var packet in packets) {
-                LogReceivedPacket(packet);
-
-                var msgPacket = new SERVER_100_PROTOCOL.MSG_RECEIVEDPACKET { Packet = packet };
-                _sessionActorRef.Tell(msgPacket);
+            foreach (var frame in _packetStream.Append(buffer.AsSpan(0, bytesReceived))) {
+                var packets = GetPacketsFromBuffer(frame, frame.Length);
+                if (packets is null) {
+                    Dispose();
+                    return;
+                }
+                foreach (var packet in packets) {
+                    LogReceivedPacket(packet);
+                    _sessionActorRef.Tell(new SERVER_100_PROTOCOL.MSG_RECEIVEDPACKET { Packet = packet });
+                }
             }
 
         }
-        catch {
+        catch (Exception error) {
+            Logger.Warning("SessionActor {Id} receive framing failed: {Message}", Logger.Args(_sessionid, error.Message));
             this.Dispose();
         }
         finally {

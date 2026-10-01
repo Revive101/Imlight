@@ -92,7 +92,8 @@ internal class ChatService(SessionActor sessionActor) : MessageService(sessionAc
         var cleanedMessage = CleanMessageTrash(message.Message);
 
         // Parse in-game chat commands. Do not broadcast it to the zone.
-        if (cleanedMessage.StartsWith(CommandPrefix) && account.AuthLevel > AuthLevel.None) {
+        if (cleanedMessage.StartsWith(CommandPrefix) && (account.AuthLevel > AuthLevel.None
+            || cleanedMessage.StartsWith(".crownshop ", StringComparison.OrdinalIgnoreCase))) {
             SendChatCommand(cleanedMessage, charObj, wizard);
 
             return;

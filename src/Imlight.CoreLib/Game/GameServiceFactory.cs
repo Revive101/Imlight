@@ -63,6 +63,7 @@ public class GameServiceFactory : ServiceFactory {
         typeof(CombatService),
         typeof(InteractService),
         typeof(ShopService),
+        typeof(CrownShopService),
         typeof(AuctionHouseService),
         typeof(DynaModService),
         typeof(CantripService),

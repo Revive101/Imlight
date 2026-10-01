@@ -53,7 +53,7 @@ public static class WizardCollection {
     static WizardCollection()
         => s_store = PlayerDatabase.Instance.Store;
 
-    private static T WithWriteLane<T>(ulong charId, Func<T> write) {
+    internal static T WithWriteLane<T>(ulong charId, Func<T> write) {
         var laneIndex = (int) (charId & WriteLaneMask);
         if (s_heldWriteLane is { } heldLane && heldLane != laneIndex)
             throw new InvalidOperationException($"Cannot acquire wizard lane {laneIndex} while holding wizard lane {heldLane}.");

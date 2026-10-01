@@ -48,7 +48,7 @@ public static class AccountCollection {
     [ThreadStatic]
     private static int? s_heldWriteLane;
 
-    private static T WithWriteLane<T>(ulong accountId, Func<T> write) {
+    internal static T WithWriteLane<T>(ulong accountId, Func<T> write) {
         if (WizardCollection.HoldsWriteLane)
             throw new InvalidOperationException("Cannot acquire an account write lane while holding a wizard write lane.");
 
@@ -319,6 +319,16 @@ public static class AccountCollection {
     public static bool AddPurchasedCharacterSlot(ulong accountId) {
         return UpdateAccount(accountId, account =>
             ++account.PurchasedCharacterSlots);
+    }
+
+    public static int EnsureStartingCrowns(ulong accountId) {
+        var balance = 0;
+        if (!UpdateAccount(accountId, account => {
+            account.Crowns ??= 10_000;
+            balance = account.Crowns.Value;
+        }))
+            throw new InvalidOperationException("Cannot initialize crowns for a missing account.");
+        return balance;
     }
 
     /// <summary>
