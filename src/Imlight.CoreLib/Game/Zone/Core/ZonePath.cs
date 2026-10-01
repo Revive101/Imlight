@@ -119,9 +119,11 @@ public sealed class ZonePath : ZoneEntity {
         var msg = new ZONE_102_PROTOCOL.MSG_PATHSPAWNINTERVAL { SpawnObject = spawnObject };
         var interval = TimeSpan.FromSeconds(spawnObject.m_spawnTime);
 
-        // If the interval is 0 or below, this creature only spawns once.
+        // Without an interval the spawn point fills up to its maximum at once and never refills.
         if (interval <= TimeSpan.Zero) {
-            Timers.StartSingleTimer(timerKey, msg, TimeSpan.Zero);
+            for (var i = 0; i < Math.Max(1, (int) spawnObject.m_maxNumberOfSpawns); i++) {
+                Timers.StartSingleTimer($"{timerKey}_{i}", msg, TimeSpan.Zero);
+            }
 
             return;
         }
