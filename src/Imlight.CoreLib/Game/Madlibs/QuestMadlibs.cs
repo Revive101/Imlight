@@ -38,6 +38,7 @@
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Models.Player;
+using System;
 using System.Linq;
 
 namespace Imlight.CoreLib.Game.Madlibs;
@@ -98,6 +99,7 @@ internal static class QuestMadlibs {
         string lastName = string.Empty;
         string title = string.Empty;
         string nickname = string.Empty;
+        string nameFormat = null;
 
         if (gTemplate.m_dialogList is ActorDialogList dialogList) {
             var completionDialogEntry = dialogList.m_dialogs
@@ -111,6 +113,7 @@ internal static class QuestMadlibs {
                 lastName = GetStringArgument(npcBlock, "LASTNAME") ?? lastName;
                 title = GetStringArgument(npcBlock, "TITLE") ?? title;
                 nickname = GetStringArgument(npcBlock, "NICKNAME") ?? nickname;
+                nameFormat = GetStringArgument(npcBlock, "FULLNAME");
             }
             else {
                 // Fallback: resolve the display name from the entry's actor template.
@@ -155,13 +158,23 @@ internal static class QuestMadlibs {
                 },
                 new MadlibArgT_ByteString {
                     m_madlibToken = "FULLNAME",
-                    m_madlibArgument = "NPCFormats_Goal_First_Last"
+                    m_madlibArgument = GetGoalNameFormat(nameFormat, lastName)
                 }
             ],
             m_blockToken = "GOAL"
         };
 
         return madLibs;
+    }
+
+    private static string GetGoalNameFormat(string npcNameFormat, string lastName) {
+        // The goal variant of a name format is the NPC's own format with "Goal_" after the prefix.
+        const string prefix = "NPCFormats_";
+        if (npcNameFormat is not null && npcNameFormat.StartsWith(prefix, StringComparison.Ordinal)) {
+            return string.Concat(prefix, "Goal_", npcNameFormat.AsSpan(prefix.Length));
+        }
+
+        return string.IsNullOrEmpty(lastName) ? "NPCFormats_Goal_First_Only" : "NPCFormats_Goal_First_Last";
     }
 
     private static string GetStringArgument(MadlibBlock block, string token)
