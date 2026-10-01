@@ -336,7 +336,7 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
     // (the placement's start state, or what a player or trigger changed since) is sent right after it.
     private GAME_5_PROTOCOL.MSG_ENTERSTATE CreateCurrentStateMessage() {
         var state = Entity.Zone.ScriptState.GetObjectState(Entity.Info?.m_zoneTag);
-        if (IsDespawnState(state) || string.Equals(state, SPAWN_STATE_NAME, System.StringComparison.OrdinalIgnoreCase)) {
+        if (IsDespawnState(state)) {
             return null;
         }
 
