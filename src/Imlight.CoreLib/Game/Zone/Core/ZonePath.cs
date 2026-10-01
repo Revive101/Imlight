@@ -87,6 +87,8 @@ public sealed class ZonePath : ZoneEntity {
     private readonly HashSet<SpawnObject> _deactivated = new(ReferenceEqualityComparer.Instance);
     // Players that caused a spawn (quest or trigger result); the creature checks aggro against them once loaded.
     private readonly Dictionary<IActorRef, ZONE_102_PROTOCOL.MSG_PLAYERMOVE> _aggroOnLoad = [];
+    // Players in the zone, so a creature spawned after they joined is told about them like one that was there.
+    private readonly Dictionary<IActorRef, ZONE_102_PROTOCOL.MSG_ADDPLAYER> _players = [];
     private readonly bool _randomizeCreatures
         = ConfigurationManager.Settings["April Fools.RandomizeCreatures"].AsBool();
 
@@ -149,6 +151,13 @@ public sealed class ZonePath : ZoneEntity {
             return;
         }
 
+        if (message is ZONE_102_PROTOCOL.MSG_ADDPLAYER addPlayer) {
+            _players[addPlayer.PlayerActor] = addPlayer;
+        }
+        else if (message is ZONE_102_PROTOCOL.MSG_REMOVEPLAYER removePlayer) {
+            _players.Remove(removePlayer.PlayerActor);
+        }
+
         // ZonePath does not have any components. Instead, it manages the creatures that follow the path.
         // Dispatch the message to all of the creatures that follow the path.
         foreach (var actor in _creatureActors) {
@@ -160,6 +169,11 @@ public sealed class ZonePath : ZoneEntity {
     private void ReceiveCreatureLoaded() {
         if (_loadingCreatures.Remove(Sender)) {
             Timers.Cancel(Sender);
+
+            // The creature spawned after the players joined, so it never saw their join.
+            foreach (var player in _players.Values) {
+                Sender.Tell(player);
+            }
         }
 
         if (_aggroOnLoad.Remove(Sender, out var playerMove)) {
