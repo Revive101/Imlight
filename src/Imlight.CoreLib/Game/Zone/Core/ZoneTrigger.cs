@@ -121,6 +121,14 @@ public sealed class ZoneTrigger(IActorRef zoneRef, Zone zone, Trigger trigger)
             };
         }
 
+        // A result that posts one of this trigger's own fire events would fire it again without end,
+        // and the event that fired it has already reached every trigger and quest goal.
+        if (results?.m_results is { Count: > 0 } && results.m_results.Any(IsSelfPost)) {
+            results = new ResultList {
+                m_results = results.m_results.Where(result => !IsSelfPost(result)).ToList()
+            };
+        }
+
         ResultDispatcher.ExecuteResults(Context, results, message.PlayerActor, message.PlayerGameObject,
                                        Sender, ZoneRef, triggerName: TriggerData.m_triggerName,
                                        scriptState: Zone.ScriptState);
@@ -133,6 +141,9 @@ public sealed class ZoneTrigger(IActorRef zoneRef, Zone zone, Trigger trigger)
     internal static bool HasUndecodableRequirement(RequirementList requirements)
         => requirements?.m_requirements is { } list
         && list.Any(r => r is null || r is RequirementList nested && HasUndecodableRequirement(nested));
+
+    private bool IsSelfPost(Result result)
+        => result is ResPostEvent post && TriggerData.m_fireEvents.Any(x => x == post.m_eventName);
 
     private bool CooldownCheck(IActorRef playerRef) {
         if (_cooldowns.TryGetValue(playerRef, out var lastTriggered)) {
