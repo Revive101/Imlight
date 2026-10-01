@@ -29,15 +29,17 @@
  * Supports different mana restoration percentages for starter and non-starter wisps.
  * 
  * TODO:
- * - Improve state change information sourcing
  * 
  * Created by: Joji
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 01.10.2026
  */
 
 using Akka.Actor;
+using Imcodec.Cryptography;
+using Imcodec.IO;
 using Imcodec.MessageLayer.Generated;
+using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.WizardData.Models.Player;
@@ -45,6 +47,12 @@ using Imlight.CoreLib.WizardData.Models.Player;
 namespace Imlight.CoreLib.Game.Zone.Components;
 
 internal sealed class WispManaComponent : ZoneEntityComponent, IComponentFactory {
+
+    private readonly uint RESET_STATE_ID = StringHash.Compute("Unremarkable");
+    private readonly uint WISP_STATE_ID = StringHash.Compute("ActionEmoting");
+
+    private readonly string ParticleAsset = "Character/FX_WispBlue_Dsppr.nif";
+    private readonly string SoundAsset = "Sound/GUI/ui_health_powerup_01.wav";
 
     private const float INTERACTION_RADIUS = 100.0f;
     private const float STARTING_WORLD_WISP_MANA = 0.25f;
@@ -95,21 +103,56 @@ internal sealed class WispManaComponent : ZoneEntityComponent, IComponentFactory
             };
             playerActor.Tell(manaUpdateMsg);
 
-            SendStateChange();
+            SendPlayerStateChange(playerWizard);
+
             SendDestroy(playerWizard.GameObjectID);
+
             playerWizard.UpdateMana(currentMana + manaUpdate);
         }
     }
 
-    private void SendStateChange() {
-        // Todo: Get this info from somewhere else. Also, currently only works on first pickup.
+    private void SendPlayerStateChange(Wizard playerWizard) {
+        var playerGid = playerWizard.GameObjectID;
+
+        // If the player is already in ActionEmoting, send Unremarkable first to reset!
+        if (playerWizard.CurrentEmoteState == WISP_STATE_ID) {
+            var resetMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
+                GameObjectID = playerGid,
+                State = RESET_STATE_ID,
+                Data = new ByteString(),
+                IgnoreIfCurrentStateIsOff = 0,
+            };
+
+            PlayerBroadcast(resetMsg);
+            playerWizard.CurrentEmoteState = RESET_STATE_ID;
+        }
+
+        // Enter ActionEmoting with the particle and sound
         var stateHealth = new EmoteStateOverrideInfo {
+            m_stateNameID = WISP_STATE_ID,
+            m_emoteName = "",
+            m_particleAsset = ParticleAsset,
             m_loop = false,
-            m_particleAsset = "Character/FX_WispRed_Dsppr.nif",
-            m_soundAsset = "Sound/GUI/ui_health_powerup_01.wav",
-            m_stateNameID = 1896147676
+            m_particleNode = "",
+            m_soundAsset = SoundAsset,
+            m_wizBangID = 0
         };
-        Entity.ChangeState(1896147676, stateHealth);
+
+        var serializer = new ObjectSerializer(
+            Versionable: false,
+            Behaviors: SerializerFlags.None
+        );
+
+        if (serializer.Serialize(stateHealth, 1, out var emoteData)) {
+            var enterMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
+                GameObjectID = playerGid,
+                State = WISP_STATE_ID,
+                Data = emoteData,
+                IgnoreIfCurrentStateIsOff = 0,
+            };
+            PlayerBroadcast(enterMsg);
+            playerWizard.CurrentEmoteState = WISP_STATE_ID;
+        }
     }
 
     private void SendDestroy(ulong killer)
