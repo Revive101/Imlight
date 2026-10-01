@@ -42,11 +42,12 @@
  * Last Updated: 09/26/2026
  */
 
-using System;
-using System.Collections.Generic;
-using System.Text;
 using Imcodec.Wad;
 using Imlight.Common;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
 
 namespace Imlight.CoreLib.Shared.Resources;
 
@@ -160,35 +161,36 @@ internal class Locale : RootDirectoryResourceSingleton<Locale>, IMemoryStreamDis
         => Files.Clear();
 
     private static Dictionary<string, string> ProcessLocaleFile(FileEntry record, Memory<byte>? stream) {
-        var strings = ReadStrings(stream);
-        var data = new Dictionary<string, string>();
+        if (stream is null || stream.Value.IsEmpty) {
+            return [];
+        }
+        var content = Encoding.Unicode.GetString(stream.Value.Span);
+        var estimatedCount = Math.Max(16, content.Length / 40);
+        var data = new Dictionary<string, string>(estimatedCount);
+        using var reader = new StringReader(content);
 
-        for (int i = 1; i < strings.Length; i += 3) {
-            if (i + 2 >= strings.Length) {
+        if (reader.ReadLine() is null) {
+            return data;
+        }
+
+        while (true) {
+            var key = reader.ReadLine();
+            if (key is null) {
                 break;
             }
 
-            var key = strings[i];
-            var value = strings[i + 2];
-
-            if (key.EndsWith('\r')) {
-                key = key[..^1];
+            // Skip delimiter
+            if (reader.ReadLine() is null) {
+                break;
             }
 
-            if (value.EndsWith('\r')) {
-                value = value[..^1];
+            var value = reader.ReadLine();
+            if (value is null) {
+                break;
             }
 
-            if (data.ContainsKey(key)) {
-                Logger.Warning("Duplicate key {0} in {1}.",
-                    Logger.Args(key, record.FileName));
-
-                continue;
-            }
-
-            data.Add(key, value);
+            data[key] = value;
         }
-
         return data;
     }
 

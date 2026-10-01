@@ -16,22 +16,25 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
+using Imcodec.ObjectProperty.TypeCache;
+using Imlight.Common;
+using Imlight.CoreLib.WizardData.Models.World;
+using LibGit2Sharp;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using Imlight.Common;
-using Imlight.CoreLib.WizardData.Models.World;
-using Imcodec.ObjectProperty.TypeCache;
-using Newtonsoft.Json;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Imlight.CoreLib.WizardData;
 
 public static class SpiralDB {
 
-    private static readonly string s_remote
-        = ConfigurationManager.Settings["Database.SpiralDBRemote"];
+    private static readonly string s_remoteUrl
+        = ConfigurationManager.Settings["Database.SpiralDBRemoteUrl"];
     private static readonly string s_branch
         = ConfigurationManager.Settings["Database.SpiralDBBranch"];
     private static readonly string s_localPath
@@ -45,10 +48,7 @@ public static class SpiralDB {
     private static readonly bool s_rollbackOnFailure
         = ConfigurationManager.Settings["Database.SpiralDBRollbackOnFailure"].AsBool();
 
-    private static readonly JsonSerializerSettings s_jsonSettings = new() {
-        TypeNameHandling = TypeNameHandling.Auto,
-        NullValueHandling = NullValueHandling.Ignore
-    };
+    private static readonly JsonSerializerOptions s_jsonOptions = SpiralJsonOptions.Options;
 
     private static ConcurrentDictionary<string, CreatureSpellbook> s_creatureSpellbooks
         = new(StringComparer.OrdinalIgnoreCase);
@@ -103,7 +103,6 @@ public static class SpiralDB {
 
         if (!Directory.Exists(basePath)) {
             Logger.Error("SpiralDB local path does not exist: {0}", Logger.Args(basePath));
-
             return;
         }
 
@@ -117,22 +116,24 @@ public static class SpiralDB {
             var npcInventories = new ConcurrentDictionary<ulong, NPCInventory>();
             var npcSpellInventories = new ConcurrentDictionary<ulong, NPCSpellInventory>();
             var npcDropTables = new ConcurrentDictionary<ulong, NpcDropTable>();
-            var questTemplates = new List<QuestTemplate>();
+            var questTemplatesBag = new ConcurrentBag<QuestTemplate>();
             var questTemplatesByName = new ConcurrentDictionary<string, QuestTemplate>(StringComparer.OrdinalIgnoreCase);
             var zoneData = new ConcurrentDictionary<string, WizardZoneData>(StringComparer.OrdinalIgnoreCase);
             var treasureCardInventories = new ConcurrentDictionary<ulong, NpcTreasureCardInventory>();
 
             var filesLoaded = 0;
 
-            filesLoaded += LoadCreatureSpellbooks(basePath, spellbooks);
-            filesLoaded += LoadDropTables(basePath, dropTables);
-            filesLoaded += LoadGlobalRegistry(basePath, globalRegistry);
-            filesLoaded += LoadNpcInventories(basePath, npcInventories);
-            filesLoaded += LoadNpcSpellInventories(basePath, npcSpellInventories);
-            filesLoaded += LoadNpcDropTables(basePath, npcDropTables);
-            filesLoaded += LoadTreasureCardInventories(basePath, treasureCardInventories);
-            filesLoaded += LoadQuestTemplates(basePath, questTemplates, questTemplatesByName);
-            filesLoaded += LoadZoneData(basePath, zoneData);
+            Parallel.Invoke(
+                () => Interlocked.Add(ref filesLoaded, LoadCreatureSpellbooks(basePath, spellbooks)),
+                () => Interlocked.Add(ref filesLoaded, LoadDropTables(basePath, dropTables)),
+                () => Interlocked.Add(ref filesLoaded, LoadGlobalRegistry(basePath, globalRegistry)),
+                () => Interlocked.Add(ref filesLoaded, LoadNpcInventories(basePath, npcInventories)),
+                () => Interlocked.Add(ref filesLoaded, LoadNpcSpellInventories(basePath, npcSpellInventories)),
+                () => Interlocked.Add(ref filesLoaded, LoadNpcDropTables(basePath, npcDropTables)),
+                () => Interlocked.Add(ref filesLoaded, LoadTreasureCardInventories(basePath, treasureCardInventories)),
+                () => Interlocked.Add(ref filesLoaded, LoadQuestTemplates(basePath, questTemplatesBag, questTemplatesByName)),
+                () => Interlocked.Add(ref filesLoaded, LoadZoneData(basePath, zoneData))
+            );
 
             // Atomically swap.
             s_creatureSpellbooks = spellbooks;
@@ -141,7 +142,7 @@ public static class SpiralDB {
             s_npcInventories = npcInventories;
             s_npcSpellInventories = npcSpellInventories;
             s_npcDropTables = npcDropTables;
-            s_questTemplates = questTemplates;
+            s_questTemplates = [.. questTemplatesBag];
             s_questTemplatesByName = questTemplatesByName;
             s_zoneData = zoneData;
             s_treasureCardInventories = treasureCardInventories;
@@ -180,17 +181,97 @@ public static class SpiralDB {
         }
     }
 
-    public static CreatureSpellbook GetCreatureSpellbook(string deckName) {
-        s_creatureSpellbooks.TryGetValue(deckName, out var spellbook);
+    private static void SyncRepository(string basePath) {
+        if (!Directory.Exists(basePath)) {
+            Logger.Information(
+                "SpiralDB not found... cloning from {0} (branch {1})...",
+                Logger.Args(s_remoteUrl, s_branch));
 
-        return spellbook;
+            var startStopWatch = Stopwatch.GetTimestamp();
+
+            var cloneOptions = new CloneOptions {
+                BranchName = s_branch,
+                Checkout = true,
+                IsBare = false
+            };
+
+            cloneOptions.FetchOptions.Depth = 1;
+            cloneOptions.FetchOptions.OnTransferProgress = _ =>
+                Stopwatch.GetElapsedTime(startStopWatch) < TimeSpan.FromSeconds(s_fetchTimeoutSec);
+
+            try {
+                Repository.Clone(s_remoteUrl, basePath, cloneOptions);
+            }
+            catch (Exception ex) when (Stopwatch.GetElapsedTime(startStopWatch) >= TimeSpan.FromSeconds(s_fetchTimeoutSec)) {
+                throw new TimeoutException(
+                    $"SpiralDB Git fetch timed out after {s_fetchTimeoutSec} seconds.",
+                    ex);
+            }
+
+            return;
+        }
+
+        if (!s_autoFetch) {
+            Logger.Information(
+                "SpiralDB auto-fetch disabled. Using existing local data.");
+
+            return;
+        }
+
+        Logger.Information(
+            "Fetching SpiralDB updates from {0} (branch {1})...",
+            Logger.Args(s_remoteUrl, s_branch));
+
+        using var repository = new Repository(basePath);
+        var remote = repository.Network.Remotes["origin"]
+            ?? throw new InvalidOperationException(
+                "SpiralDB repository does not have an 'origin' remote.");
+
+        var start = Stopwatch.GetTimestamp();
+
+        var fetchOptions = new FetchOptions {
+            Prune = true,
+            Depth = 1,
+            OnTransferProgress = _ =>
+                Stopwatch.GetElapsedTime(start) < TimeSpan.FromSeconds(s_fetchTimeoutSec)
+        };
+
+        try {
+            Commands.Fetch(
+                repository,
+                remote.Name,
+                new[] { s_branch },
+                fetchOptions,
+                null);
+        }
+        catch (Exception ex) when (Stopwatch.GetElapsedTime(start) >= TimeSpan.FromSeconds(s_fetchTimeoutSec)) {
+            throw new TimeoutException(
+                $"SpiralDB Git fetch timed out after {s_fetchTimeoutSec} seconds.",
+                ex);
+        }
+
+        var remoteBranch = repository.Branches[$"origin/{s_branch}"]
+            ?? throw new InvalidOperationException(
+                $"Remote branch 'origin/{s_branch}' does not exist.");
+
+        if (repository.Head.Tip?.Sha == remoteBranch.Tip.Sha) {
+            Logger.Information("SpiralDB is already up-to-date (commit {0}).", Logger.Args(remoteBranch.Tip.Sha[..7]));
+            return;
+        }
+
+        repository.Reset(
+            ResetMode.Hard,
+            remoteBranch.Tip
+        );
+
+        Logger.Information("SpiralDB updated to commit {0}.", Logger.Args(remoteBranch.Tip.Sha[..7]));
     }
 
-    public static DropTable GetDropTable(string tableName) {
-        s_dropTables.TryGetValue(tableName, out var dropTable);
+    public static CreatureSpellbook GetCreatureSpellbook(string deckName)
+        => s_creatureSpellbooks.GetValueOrDefault(deckName);
 
-        return dropTable;
-    }
+    public static DropTable GetDropTable(string tableName)
+        => s_dropTables.GetValueOrDefault(tableName);
 
     public static bool TryGetNpcInventory(ulong templateID, out NPCInventory npcInventory)
         => s_npcInventories.TryGetValue(templateID, out npcInventory);
@@ -204,129 +285,67 @@ public static class SpiralDB {
     public static bool TryGetTreasureCardInventory(ulong templateID, out NpcTreasureCardInventory inventory)
         => s_treasureCardInventories.TryGetValue(templateID, out inventory);
 
-    public static QuestTemplate GetQuestByName(string questName) {
-        if (questName is null) {
-            return null;
-        }
-
-        s_questTemplatesByName.TryGetValue(questName, out var quest);
-
-        return quest;
-    }
+    public static QuestTemplate GetQuestByName(string questName)
+        => s_questTemplatesByName.GetValueOrDefault(questName);
 
     public static bool QuestExists(string questName)
         => s_questTemplatesByName.ContainsKey(questName);
 
-    public static WizardZoneData GetZoneData(string zoneName) {
-        s_zoneData.TryGetValue(zoneName, out var zone);
-
-        return zone;
-    }
+    public static WizardZoneData GetZoneData(string zoneName)
+        => s_zoneData.GetValueOrDefault(zoneName);
 
     public static IReadOnlyCollection<WizardZoneData> GetAllZoneData()
         => (IReadOnlyCollection<WizardZoneData>) s_zoneData.Values;
 
-    private static void SyncRepository(string basePath) {
-        // @todo: maybe sometime in the future, allow for remotes not hosted on Github.
-        var repoUrl = $"https://github.com/{s_remote}.git";
-
-        if (!Directory.Exists(basePath)) {
-            Logger.Information("Cloning SpiralDB from {0} (branch {1})...",
-                Logger.Args(repoUrl, s_branch));
-
-            var cloneArgs = $"clone --branch {s_branch} --depth 1 --single-branch {repoUrl} \"{basePath}\"";
-            RunGit(cloneArgs);
-        }
-        else if (s_autoFetch) {
-            Logger.Information("Fetching SpiralDB updates from {0} (branch {1})...",
-                Logger.Args(repoUrl, s_branch));
-
-            RunGit($"-C \"{basePath}\" fetch origin {s_branch}", s_fetchTimeoutSec);
-            RunGit($"-C \"{basePath}\" checkout {s_branch}");
-            RunGit($"-C \"{basePath}\" reset --hard origin/{s_branch}");
-
-            Logger.Information("SpiralDB updated.");
-        }
-        else {
-            Logger.Information("SpiralDB auto-fetch disabled — using existing local data.");
-        }
-    }
-
-    private static void RunGit(string arguments, int timeoutSec = 0) {
-        if (timeoutSec <= 0) {
-            timeoutSec = s_fetchTimeoutSec;
-        }
-
-        var startInfo = new ProcessStartInfo("git", arguments) {
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
-
-        using var process = Process.Start(startInfo)
-            ?? throw new InvalidOperationException("Failed to start git process. Is git installed?");
-
-        if (!process.WaitForExit(timeoutSec * 1000)) {
-            process.Kill();
-            throw new TimeoutException($"Git command timed out after {timeoutSec}s: git {arguments}");
-        }
-
-        if (process.ExitCode != 0) {
-            var err = process.StandardError.ReadToEnd().Trim();
-            throw new InvalidOperationException(
-                $"Git command failed (exit {process.ExitCode}): git {arguments}\n{err}");
-        }
-    }
-
-    private static int LoadCreatureSpellbooks(string basePath,
-                                              ConcurrentDictionary<string, CreatureSpellbook> target) {
+    private static int LoadCreatureSpellbooks(string basePath, ConcurrentDictionary<string, CreatureSpellbook> target) {
         var dir = Path.Combine(basePath, "CreatureSpellbook");
         if (!Directory.Exists(dir)) {
             return 0;
         }
 
+        var files = Directory.GetFiles(dir, "*.json");
         var count = 0;
-        foreach (var file in Directory.EnumerateFiles(dir, "*.json")) {
+
+        Parallel.ForEach(files, file => {
             try {
-                var json = File.ReadAllText(file);
-                var spellbook = JsonConvert.DeserializeObject<CreatureSpellbook>(json, s_jsonSettings);
+                using var stream = File.OpenRead(file);
+                var spellbook = JsonSerializer.Deserialize<CreatureSpellbook>(stream, s_jsonOptions);
+
                 if (spellbook != null) {
                     target[spellbook.DeckName] = spellbook;
-                    count++;
+                    Interlocked.Increment(ref count);
                 }
-            }
-            catch (Exception ex) {
+            } catch (Exception e) {
                 Logger.Warning("Failed to load creature spellbook {0}: {1}",
-                    Logger.Args(Path.GetFileName(file), ex.Message));
+                    Logger.Args(Path.GetFileName(file), e.Message));
             }
-        }
+        });
 
         return count;
     }
 
-    private static int LoadDropTables(string basePath,
-                                      ConcurrentDictionary<string, DropTable> target) {
+    private static int LoadDropTables(string basePath, ConcurrentDictionary<string, DropTable> target) {
         var dir = Path.Combine(basePath, "DropTables");
         if (!Directory.Exists(dir)) {
             return 0;
         }
 
+        var files = Directory.GetFiles(dir, "*.json");
         var count = 0;
-        foreach (var file in Directory.EnumerateFiles(dir, "*.json")) {
+
+        Parallel.ForEach(files, file => {
             try {
-                var json = File.ReadAllText(file);
-                var dropTable = JsonConvert.DeserializeObject<DropTable>(json, s_jsonSettings);
+                using var stream = File.OpenRead(file);
+                var dropTable = JsonSerializer.Deserialize<DropTable>(stream, s_jsonOptions);
                 if (dropTable != null) {
                     target[dropTable.Name] = dropTable;
-                    count++;
+                    Interlocked.Increment(ref count);
                 }
-            }
-            catch (Exception ex) {
+            } catch (Exception e) {
                 Logger.Warning("Failed to load drop table {0}: {1}",
-                    Logger.Args(Path.GetFileName(file), ex.Message));
+                    Logger.Args(Path.GetFileName(file), e.Message));
             }
-        }
+        });
 
         return count;
     }
@@ -340,179 +359,172 @@ public static class SpiralDB {
         var count = 0;
         foreach (var file in Directory.EnumerateFiles(dir, "*.json")) {
             try {
-                var json = File.ReadAllText(file);
-                var registry = JsonConvert.DeserializeObject<GlobalRegistryModel>(json, s_jsonSettings);
+                using var stream = File.OpenRead(file);
+                var registry = JsonSerializer.Deserialize<GlobalRegistryModel>(stream, s_jsonOptions);
                 if (registry != null) {
                     foreach (var kvp in registry.GlobalRegistryValues) {
                         target.GlobalRegistryValues[kvp.Key] = kvp.Value;
                     }
-
                     count++;
                 }
-            }
-            catch (Exception ex) {
+            } catch (Exception e) {
                 Logger.Warning("Failed to load global registry {0}: {1}",
-                    Logger.Args(Path.GetFileName(file), ex.Message));
+                    Logger.Args(Path.GetFileName(file), e.Message));
             }
         }
 
         return count;
     }
 
-    private static int LoadNpcInventories(string basePath,
-                                          ConcurrentDictionary<ulong, NPCInventory> target) {
+    private static int LoadNpcInventories(string basePath, ConcurrentDictionary<ulong, NPCInventory> target) {
         var dir = Path.Combine(basePath, "NpcInventory");
         if (!Directory.Exists(dir)) {
             return 0;
         }
-
+        var files = Directory.GetFiles(dir, "*.json");
         var count = 0;
-        foreach (var file in Directory.EnumerateFiles(dir, "*.json")) {
+
+        Parallel.ForEach(files, file => {
             try {
-                var json = File.ReadAllText(file);
-                var inventory = JsonConvert.DeserializeObject<NPCInventory>(json, s_jsonSettings);
+                using var stream = File.OpenRead(file);
+                var inventory = JsonSerializer.Deserialize<NPCInventory>(stream, s_jsonOptions);
                 if (inventory != null) {
                     target[inventory.TemplateID] = inventory;
-                    count++;
+                    Interlocked.Increment(ref count);
                 }
-            }
-            catch (Exception ex) {
+            } catch (Exception e) {
                 Logger.Warning("Failed to load NPC inventory {0}: {1}",
-                    Logger.Args(Path.GetFileName(file), ex.Message));
+                    Logger.Args(Path.GetFileName(file), e.Message));
             }
-        }
+        });
 
         return count;
     }
 
-    private static int LoadNpcSpellInventories(string basePath,
-                                               ConcurrentDictionary<ulong, NPCSpellInventory> target) {
+    private static int LoadNpcSpellInventories(string basePath, ConcurrentDictionary<ulong, NPCSpellInventory> target) {
         var dir = Path.Combine(basePath, "NpcSpellInventory");
         if (!Directory.Exists(dir)) {
             return 0;
         }
-
+        var files = Directory.GetFiles(dir, "*.json");
         var count = 0;
-        foreach (var file in Directory.EnumerateFiles(dir, "*.json")) {
+
+        Parallel.ForEach(files, file => {
             try {
-                var json = File.ReadAllText(file);
-                var inventory = JsonConvert.DeserializeObject<NPCSpellInventory>(json, s_jsonSettings);
+                using var stream = File.OpenRead(file);
+                var inventory = JsonSerializer.Deserialize<NPCSpellInventory>(stream, s_jsonOptions);
                 if (inventory != null) {
                     target[inventory.TemplateID] = inventory;
-                    count++;
+                    Interlocked.Increment(ref count);
                 }
-            }
-            catch (Exception ex) {
+            } catch (Exception e) {
                 Logger.Warning("Failed to load NPC spell inventory {0}: {1}",
-                    Logger.Args(Path.GetFileName(file), ex.Message));
+                    Logger.Args(Path.GetFileName(file), e.Message));
             }
-        }
+        });
 
         return count;
     }
 
-    private static int LoadNpcDropTables(string basePath,
-                                         ConcurrentDictionary<ulong, NpcDropTable> target) {
+    private static int LoadNpcDropTables(string basePath, ConcurrentDictionary<ulong, NpcDropTable> target) {
         var dir = Path.Combine(basePath, "NpcDropTable");
         if (!Directory.Exists(dir)) {
             return 0;
         }
-
+        var files = Directory.GetFiles(dir, "*.json");
         var count = 0;
-        foreach (var file in Directory.EnumerateFiles(dir, "*.json")) {
+
+        Parallel.ForEach(files, file => {
             try {
-                var json = File.ReadAllText(file);
-                var dropTable = JsonConvert.DeserializeObject<NpcDropTable>(json, s_jsonSettings);
+                using var stream = File.OpenRead(file);
+                var dropTable = JsonSerializer.Deserialize<NpcDropTable>(stream, s_jsonOptions);
                 if (dropTable != null) {
                     target[dropTable.TemplateID] = dropTable;
-                    count++;
+                    Interlocked.Increment(ref count);
                 }
-            }
-            catch (Exception ex) {
+            } catch (Exception e) {
                 Logger.Warning("Failed to load NPC drop table {0}: {1}",
-                    Logger.Args(Path.GetFileName(file), ex.Message));
+                    Logger.Args(Path.GetFileName(file), e.Message));
             }
-        }
+        });
 
         return count;
     }
 
-    private static int LoadTreasureCardInventories(string basePath,
-                                                   ConcurrentDictionary<ulong, NpcTreasureCardInventory> target) {
+    private static int LoadTreasureCardInventories(string basePath, ConcurrentDictionary<ulong, NpcTreasureCardInventory> target) {
         var dir = Path.Combine(basePath, "TreasureCardInventory");
         if (!Directory.Exists(dir)) {
             return 0;
         }
-
+        var files = Directory.GetFiles(dir, "*.json");
         var count = 0;
-        foreach (var file in Directory.EnumerateFiles(dir, "*.json")) {
+
+        Parallel.ForEach(files, file => {
             try {
-                var json = File.ReadAllText(file);
-                var inventory = JsonConvert.DeserializeObject<NpcTreasureCardInventory>(json, s_jsonSettings);
+                using var stream = File.OpenRead(file);
+                var inventory = JsonSerializer.Deserialize<NpcTreasureCardInventory>(stream, s_jsonOptions);
                 if (inventory != null) {
                     target[inventory.TemplateID] = inventory;
-                    count++;
+                    Interlocked.Increment(ref count);
                 }
-            }
-            catch (Exception ex) {
+            } catch (Exception e) {
                 Logger.Warning("Failed to load treasure card inventory {0}: {1}",
-                    Logger.Args(Path.GetFileName(file), ex.Message));
+                    Logger.Args(Path.GetFileName(file), e.Message));
             }
-        }
+        });
 
         return count;
     }
 
     private static int LoadQuestTemplates(string basePath,
-                                          List<QuestTemplate> targetList,
+                                          ConcurrentBag<QuestTemplate> targetBag,
                                           ConcurrentDictionary<string, QuestTemplate> targetDict) {
         var dir = Path.Combine(basePath, "QuestTemplates");
         if (!Directory.Exists(dir)) {
             return 0;
         }
-
+        var files = Directory.GetFiles(dir, "*.json");
         var count = 0;
-        foreach (var file in Directory.EnumerateFiles(dir, "*.json")) {
+
+        Parallel.ForEach(files, file => {
             try {
-                var json = File.ReadAllText(file);
-                var quest = JsonConvert.DeserializeObject<QuestTemplate>(json, s_jsonSettings);
+                using var stream = File.OpenRead(file);
+                var quest = JsonSerializer.Deserialize<QuestTemplate>(stream, s_jsonOptions);
                 if (quest != null) {
-                    targetList.Add(quest);
+                    targetBag.Add(quest);
                     targetDict[quest.m_questName] = quest;
-                    count++;
+                    Interlocked.Increment(ref count);
                 }
-            }
-            catch (Exception ex) {
+            } catch (Exception e) {
                 Logger.Warning("Failed to load quest template {0}: {1}",
-                    Logger.Args(Path.GetFileName(file), ex.Message));
+                    Logger.Args(Path.GetFileName(file), e.Message));
             }
-        }
+        });
 
         return count;
     }
 
-    private static int LoadZoneData(string basePath,
-                                    ConcurrentDictionary<string, WizardZoneData> target) {
+    private static int LoadZoneData(string basePath, ConcurrentDictionary<string, WizardZoneData> target) {
         var dir = Path.Combine(basePath, "ZoneTransfer");
         if (!Directory.Exists(dir)) {
             return 0;
         }
-
+        var files = Directory.GetFiles(dir, "*.json");
         var count = 0;
-        foreach (var file in Directory.EnumerateFiles(dir, "*.json")) {
+
+        Parallel.ForEach(files, file => {
             try {
-                var json = File.ReadAllText(file);
-                var zone = JsonConvert.DeserializeObject<WizardZoneData>(json, s_jsonSettings);
+                using var stream = File.OpenRead(file);
+                var zone = JsonSerializer.Deserialize<WizardZoneData>(stream, s_jsonOptions);
                 if (zone != null) {
                     target[zone.ZoneName] = zone;
-                    count++;
+                    Interlocked.Increment(ref count);
                 }
-            }
-            catch (Exception ex) {
+            } catch (Exception e) {
                 Logger.Warning("Failed to load zone data {0}: {1}",
-                    Logger.Args(Path.GetFileName(file), ex.Message));
+                    Logger.Args(Path.GetFileName(file), e.Message));
             }
-        }
+        });
 
         return count;
     }

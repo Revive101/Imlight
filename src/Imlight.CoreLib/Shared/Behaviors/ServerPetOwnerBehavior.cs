@@ -22,7 +22,7 @@ using System.Linq;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
 using Imlight.CoreLib.Shared.Utilities;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace Imlight.CoreLib.Shared.Behaviors;
 
