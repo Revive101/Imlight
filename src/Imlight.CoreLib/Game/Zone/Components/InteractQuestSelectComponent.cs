@@ -88,7 +88,8 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
         }
 
         // Only show interaction option if player has an active usage goal that matches this object.
-        if (HasActiveMatchingUsageGoal(playerCharacter)) {
+        if (HasActiveMatchingUsageGoal(playerCharacter)
+            && Entity.GetComponentOfType<InteractObjectStateComponent>()?.IsInGoalOptionState() != true) {
             yield return new InteractableOption { m_serviceName = ServiceName };
         }
     }
@@ -110,7 +111,7 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
             }
 
             foreach (var goal in qTemplate.m_goals) {
-                if (goal.m_goalType != GOAL_TYPE.GOAL_TYPE_USAGE || !DoesGoalMatchObject(gameObjectTemplate, goal)) {
+                if (goal.m_goalType != GOAL_TYPE.GOAL_TYPE_USAGE || !DoesGoalMatchObject(gameObjectTemplate, qTemplate.m_questName, goal)) {
                     continue;
                 }
 
@@ -160,7 +161,7 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
         // each use removes that instance from the world. Single-use objects (levers,
         // fairy cages) persist and manage their own post-use state via the goal's
         // completeResults (dyna-mods).
-        if (goalMax > 1) {
+        if (goalMax > 1 && !InteractObjectStateComponent.KeepsStateAfterGoalUse(Entity.Template as GameObjectTemplate)) {
             var leaveServiceRangeMsg = new GAME_5_PROTOCOL.MSG_LEAVESERVICERANGE {
                 MobileID = Entity.ActiveGameObject.m_globalID.Full
             };
@@ -224,13 +225,17 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
     private static bool IsNamedByAnyUsageGoal(GameObjectTemplate gameObjectTemplate)
         => QuestTemplateCollection.GetAllQuests()
             .Where(q => q is not null)
-            .SelectMany(q => q.m_goals)
-            .Any(g => g is not null && g.m_goalType == GOAL_TYPE.GOAL_TYPE_USAGE && DoesGoalMatchObject(gameObjectTemplate, g));
+            .SelectMany(q => q.m_goals.Where(g => g is not null).Select(g => (q.m_questName, Goal: g)))
+            .Any(x => x.Goal.m_goalType == GOAL_TYPE.GOAL_TYPE_USAGE && DoesGoalMatchObject(gameObjectTemplate, x.m_questName, x.Goal));
 
-    private static bool DoesGoalMatchObject(GameObjectTemplate gameObjectTemplate, GoalTemplate goal) {
+    private static bool DoesGoalMatchObject(GameObjectTemplate gameObjectTemplate, string questName, GoalTemplate goal) {
         var clientTags = goal.m_clientTags;
         if (clientTags is not null
             && (clientTags.Contains(gameObjectTemplate.m_objectName) || InteractOptionGoalTags(gameObjectTemplate).Any(clientTags.Contains))) {
+            return true;
+        }
+
+        if (InteractOptions(gameObjectTemplate).Any(option => RequiresGoal(option, questName, goal.m_goalName))) {
             return true;
         }
 
@@ -266,18 +271,24 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
     /// </summary>
     internal static bool IsNamedByUsageGoal(InteractOptionTemplate option) {
         var tags = OptionTags(option).ToList();
+        var quests = QuestTemplateCollection.GetAllQuests().Where(q => q?.m_goals is not null).ToList();
 
-        return tags.Count > 0
-            && QuestTemplateCollection.GetAllQuests()
-                .Where(q => q?.m_goals is not null)
-                .SelectMany(q => q.m_goals)
-                .Any(g => g is not null && g.m_goalType == GOAL_TYPE.GOAL_TYPE_USAGE && g.m_clientTags?.Any(tags.Contains) == true);
+        return (tags.Count > 0
+                && quests.SelectMany(q => q.m_goals)
+                    .Any(g => g is not null && g.m_goalType == GOAL_TYPE.GOAL_TYPE_USAGE && g.m_clientTags?.Any(tags.Contains) == true))
+            || quests.Any(q => q.m_goals.Any(g => g is not null && g.m_goalType == GOAL_TYPE.GOAL_TYPE_USAGE && RequiresGoal(option, q.m_questName, g.m_goalName)));
     }
 
     private static IEnumerable<string> InteractOptionGoalTags(GameObjectTemplate gameObjectTemplate)
+        => InteractOptions(gameObjectTemplate).SelectMany(OptionTags);
+
+    private static IEnumerable<InteractOptionTemplate> InteractOptions(GameObjectTemplate gameObjectTemplate)
         => gameObjectTemplate.m_behaviors
             .OfType<InteractableBehaviorTemplate>()
-            .SelectMany(behavior => behavior.m_interactOptions ?? [])
-            .SelectMany(OptionTags);
+            .SelectMany(behavior => behavior.m_interactOptions ?? []);
+
+    private static bool RequiresGoal(InteractOptionTemplate option, string questName, string goalName)
+        => option is InteractStateOptionTemplate { m_requirements.m_requirements: { } requirements }
+            && requirements.OfType<ReqHasGoal>().Any(r => r.m_questName == questName && r.m_goalName == goalName);
 
 }

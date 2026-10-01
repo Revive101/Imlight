@@ -140,7 +140,7 @@ internal sealed class InteractObjectStateComponent(ZoneEntity entity)
             }
 
             var visibleState = VisibleState(option);
-            if (!string.IsNullOrEmpty(visibleState) && current is not null
+            if (!string.IsNullOrEmpty(visibleState) && !string.IsNullOrEmpty(current)
                 && !string.Equals(current, visibleState, StringComparison.OrdinalIgnoreCase)) {
                 continue;
             }
@@ -191,7 +191,7 @@ internal sealed class InteractObjectStateComponent(ZoneEntity entity)
 
             // An unknown current state offers everything; a known one must match the option's.
             var visibleState = VisibleState(option);
-            if (!string.IsNullOrEmpty(visibleState) && current is not null
+            if (!string.IsNullOrEmpty(visibleState) && !string.IsNullOrEmpty(current)
                 && !string.Equals(current, visibleState, StringComparison.OrdinalIgnoreCase)) {
                 continue;
             }
@@ -209,6 +209,23 @@ internal sealed class InteractObjectStateComponent(ZoneEntity entity)
             yield return option;
         }
     }
+
+    /// <summary>
+    /// True when the object is already in the state one of its quest-goal options puts it in.
+    /// </summary>
+    internal bool IsInGoalOptionState() {
+        var current = CurrentState();
+
+        return !string.IsNullOrEmpty(current)
+            && GetStateOptions(Entity.Template as GameObjectTemplate)
+                .Any(option => IsGoalOption(option) && string.Equals(EnterState(option), current, StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// True when a quest-goal option of the template puts the object into a state, so the object stays in the world after its use.
+    /// </summary>
+    internal static bool KeepsStateAfterGoalUse(GameObjectTemplate template)
+        => GetStateOptions(template).Any(option => IsGoalOption(option) && !string.IsNullOrEmpty(EnterState(option)));
 
     private static bool IsGoalOption(InteractOptionTemplate option)
         => option.m_goalTags is { Count: > 0 } || InteractQuestSelectComponent.IsNamedByUsageGoal(option);
