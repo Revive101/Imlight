@@ -133,9 +133,8 @@ public class ServerWizInventoryBehavior : IClientBehaviorProvider<ClientWizInven
         m_numItemsAllowed = s_maxItemsAllowed,
         m_numJewelsAllowed = s_maxJewelsAllowed,
         m_itemList = Items.ConvertAll(item =>
-            (item as IClientBehaviorProvider<CoreObject>)?.GetClientBehaviorInstance() ?? item),
-        m_numCEEmotesAllowed = 100,
-        m_numCETeleportsAllowed = 100
+            (item as IClientBehaviorProvider<CoreObject>)?.GetClientBehaviorInstance() ?? item)
+
     };
 
 }

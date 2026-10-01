@@ -65,7 +65,6 @@ public static class SpiralDB {
         = new(StringComparer.OrdinalIgnoreCase);
     private static ConcurrentDictionary<ulong, NpcTreasureCardInventory> s_treasureCardInventories = new();
 
-
     public static IReadOnlyDictionary<string, CreatureSpellbook> CreatureSpellbooks => s_creatureSpellbooks;
     public static IReadOnlyDictionary<string, DropTable> DropTables => s_dropTables;
     public static GlobalRegistryModel GlobalRegistry => s_globalRegistry;
@@ -75,7 +74,6 @@ public static class SpiralDB {
     public static IReadOnlyList<QuestTemplate> QuestTemplates => s_questTemplates;
     public static IReadOnlyDictionary<string, WizardZoneData> ZoneData => s_zoneData;
     public static IReadOnlyDictionary<ulong, NpcTreasureCardInventory> TreasureCardInventories => s_treasureCardInventories;
-
 
     /// <summary>
     /// Fetches the spiralDB repository (if remote is enabled) and loads all JSON
@@ -136,7 +134,6 @@ public static class SpiralDB {
                 () => Interlocked.Add(ref filesLoaded, LoadQuestTemplates(basePath, questTemplatesBag, questTemplatesByName)),
                 () => Interlocked.Add(ref filesLoaded, LoadZoneData(basePath, zoneData))
             );
-
 
             // Atomically swap.
             s_creatureSpellbooks = spellbooks;
@@ -531,4 +528,5 @@ public static class SpiralDB {
 
         return count;
     }
+
 }

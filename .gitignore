@@ -361,6 +361,3 @@ src/Imlight.Director/cache
 spiraldb-cache/
 /.scratch
 /scratch
-
-# Cache file created by Imlight
-cache
