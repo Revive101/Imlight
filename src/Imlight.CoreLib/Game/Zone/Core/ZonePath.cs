@@ -160,11 +160,12 @@ public sealed class ZonePath : ZoneEntity {
 
         // ZonePath does not have any components. Instead, it manages the creatures that follow the path.
         // Dispatch the message to all of the creatures that follow the path.
-        var isPlayerJoinOrLeave = message is ZONE_102_PROTOCOL.MSG_ADDPLAYER or ZONE_102_PROTOCOL.MSG_REMOVEPLAYER;
+        var isPlayerMessage = message is ZONE_102_PROTOCOL.MSG_ADDPLAYER or ZONE_102_PROTOCOL.MSG_REMOVEPLAYER
+                                      or ZONE_102_PROTOCOL.MSG_PLAYERMOVE;
         foreach (var actor in _creatureActors) {
-            // A creature still loading gets the players from _players once it has loaded; sending the join now too
-            // would make it process the same join twice.
-            if (isPlayerJoinOrLeave && _loadingCreatures.ContainsKey(actor)) {
+            // A creature still loading gets the players from _players once it has loaded; a join sent now too would
+            // be processed twice, and a move ahead of that join would reach a creature that does not know the player.
+            if (isPlayerMessage && _loadingCreatures.ContainsKey(actor)) {
                 continue;
             }
 

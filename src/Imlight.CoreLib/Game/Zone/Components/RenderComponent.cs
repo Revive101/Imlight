@@ -69,8 +69,8 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
     private readonly PropertyFlags _propertyFlags = PropertyFlags.Prop_Public
                                                   | PropertyFlags.Prop_Transmit
                                                   | PropertyFlags.Prop_AuthorityTransmit;
-    // Keyed by the player's object instance: CoreObject is a record, so its hash follows its location.
-    private readonly Dictionary<CoreObject, IActorRef> _playersInRange = new(ReferenceEqualityComparer.Instance);
+    // Keyed by the player's actor: CoreObject is a record, so its hash follows its location and a move replaces it.
+    private readonly HashSet<IActorRef> _playersInRange = [];
     private readonly Dictionary<Wizard, IActorRef> _playersWithRequirementsMet = [];
     private readonly Dictionary<IActorRef, Wizard> _playerIgnoreBecauseDynamod = [];
     private float _renderDistance;
@@ -140,7 +140,7 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
         }
 
         if (requirementsMet) {
-            _playersWithRequirementsMet.Add(wizard, suspect);
+            _playersWithRequirementsMet[wizard] = suspect;
 
             // Always send MSG_NEWOBJECT so the client registers this object,
             // even if the player is outside the render distance. Without this,
@@ -160,7 +160,7 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
             // MSG_REMOVEOBJECT if the player is outside the render radius.
             // The client needs the ~250ms gap between MSG_NEWOBJECT and
             // any MSG_REMOVEOBJECT to register the object properly.
-            _playersInRange.Add(player, suspect);
+            _playersInRange.Add(suspect);
 
             return;
         }
@@ -174,8 +174,7 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
             DespawnObjectForPlayer(suspect);
         }
         else {
-            _playersInRange.Remove(player);
-            _playersInRange.Add(player, suspect);
+            _playersInRange.Add(suspect);
         }
     }
 
@@ -186,10 +185,7 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
         }
 
         // Remove the player from the list of players in range.
-        var player = _playersInRange.FirstOrDefault(x => x.Value == suspect).Key;
-        if (player != null) {
-            _playersInRange.Remove(player);
-        }
+        _playersInRange.Remove(suspect);
 
         if (_playerIgnoreBecauseDynamod.Remove(suspect)) {
             return;
@@ -209,18 +205,18 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
         }
 
         // Check if the player is now in range of the object.
-        if (IsInRadius(playerObj, _renderDistance) && !_playersInRange.ContainsKey(playerObj)) {
+        if (IsInRadius(playerObj, _renderDistance) && !_playersInRange.Contains(playerActor)) {
             // Respawn the object if the player is in range and we've determined they meet the requirements.
             if (playerWizard is not null && _playersWithRequirementsMet.ContainsKey(playerWizard)) {
                 CreateObjectForPlayer(playerActor);
             }
 
-            _playersInRange.Add(playerObj, playerActor);
+            _playersInRange.Add(playerActor);
         }
-        else if (!IsInRadius(playerObj, _renderDistance) && _playersInRange.ContainsKey(playerObj)) {
+        else if (!IsInRadius(playerObj, _renderDistance) && _playersInRange.Contains(playerActor)) {
             // If the player is out of range, despawn the object for them.
             DespawnObjectForPlayer(playerActor);
-            _playersInRange.Remove(playerObj);
+            _playersInRange.Remove(playerActor);
         }
     }
 

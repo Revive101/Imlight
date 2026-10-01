@@ -121,7 +121,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         => (byte) SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Monster && x.IsAlive && x.AddedToDuel);
     public ulong SigilId => Entity.ActiveGameObject.m_globalID;
 
-    private readonly Dictionary<CoreObject, IActorRef> _entitiesInRange = [];
+    // Keyed by the actor: a CoreObject is a record whose hash follows its location.
+    private readonly HashSet<IActorRef> _entitiesInRange = [];
     private readonly CombatGroupReservations _groupReservations = new();
     private readonly ObjectSerializer _serializer = new(
         Versionable: false,
@@ -184,15 +185,15 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
         // Check if the player is now in range of the object.
         // If there's a slot available, add the player to the duel.
-        if (IsInRadius(playerObj, _combatSigilObjectInfo.m_radius) && !_entitiesInRange.ContainsKey(playerObj)) {
-            _entitiesInRange.Add(playerObj, playerActor);
+        if (IsInRadius(playerObj, _combatSigilObjectInfo.m_radius) && !_entitiesInRange.Contains(playerActor)) {
+            _entitiesInRange.Add(playerActor);
 
             if (IsSlotAvailable(CombatTeam.Player)) {
                 AddParticipant(playerObj, playerActor);
             }
         }
-        else if (!IsInRadius(playerObj, _combatSigilObjectInfo.m_radius) && _entitiesInRange.ContainsKey(playerObj)) {
-            _entitiesInRange.Remove(playerObj);
+        else if (!IsInRadius(playerObj, _combatSigilObjectInfo.m_radius) && _entitiesInRange.Contains(playerActor)) {
+            _entitiesInRange.Remove(playerActor);
         }
     }
 
@@ -203,8 +204,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
         // Check if the creature is now in range of the object.
         // If there's a slot available, add the creature to the duel.
-        if (IsInRadius(creature, _combatSigilObjectInfo.m_radius) && !_entitiesInRange.ContainsKey(creature)) {
-            _entitiesInRange.Add(creature, suspect);
+        if (IsInRadius(creature, _combatSigilObjectInfo.m_radius) && !_entitiesInRange.Contains(suspect)) {
+            _entitiesInRange.Add(suspect);
 
             var npcComponent = entity.GetComponentOfType<NpcComponent>();
             if (npcComponent != null && !npcComponent.IsMonster) {
@@ -220,8 +221,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
                 suspect.Tell(deleteMsg);
             }
         }
-        else if (!IsInRadius(creature, _combatSigilObjectInfo.m_radius) && _entitiesInRange.ContainsKey(creature)) {
-            _entitiesInRange.Remove(creature);
+        else if (!IsInRadius(creature, _combatSigilObjectInfo.m_radius) && _entitiesInRange.Contains(suspect)) {
+            _entitiesInRange.Remove(suspect);
         }
     }
 
