@@ -165,12 +165,8 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
         ApplyTriggerStateEvents(message.EventName, message.PlayerActor, message.PlayerGameObject);
     }
 
-    /// <summary>
-    /// Every trigger starts enabled when it lists the StartZone activate event (or lists none), and disabled when it
-    /// only lists other activate events. A trigger whose activate events nothing in the zone posts keeps firing, as
-    /// it always did, because no trigger could ever enable it.
-    /// </summary>
     private void SeedTriggerStates(List<Trigger> triggers) {
+        // A trigger whose activate events nothing in the zone posts stays enabled, since nothing could ever enable it.
         _unenforceableTriggers.Clear();
         foreach (var trigger in triggers.Where(t => t is not null)) {
             var activate = trigger.m_activateEvents?.Select(e => e.ToString()).ToList() ?? [];
@@ -184,11 +180,8 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
         }
     }
 
-    /// <summary>
-    /// A trigger that is disabled does not fire on an event Imlight raised only since object, kill and interaction
-    /// events existed. Events it raised before (zone entry, volumes, chained events) fire as they always did.
-    /// </summary>
     private bool IsEnforcedEnabled(Trigger trigger) {
+        // Only events raised since object, kill and interaction events existed are enforced; older ones fire as they always did.
         string name = trigger.m_triggerName;
 
         return _unenforceableTriggers.Contains(name) || Zone.ScriptState.IsTriggerEnabled(name);
@@ -221,12 +214,8 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
         }
     }
 
-    /// <summary>
-    /// Creates the object a trigger owns (m_triggerObjInfo, loaded DYNAMIC_SERVER, so the client only has it once the
-    /// server sends MSG_NEWOBJECT) as a zone entity. Its render component sends MSG_NEWOBJECT to the players in the
-    /// zone now and to every player who joins later. A trigger that already has its object, or has none, does nothing.
-    /// </summary>
     private void SpawnTriggerObject(Trigger trigger) {
+        // The object is a DYNAMIC_SERVER one, so the client only has it once MSG_NEWOBJECT arrives.
         var info = trigger.m_triggerObjInfo;
         string name = trigger.m_triggerName;
         if (info is null) {
@@ -283,11 +272,8 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
                 info.m_startState, RenderComponent.ShouldAttachToEntity(template)));
     }
 
-    /// <summary>
-    /// Removes the object a trigger owns: the client is told with MSG_REMOVEOBJECT and the entity stops, so a player
-    /// who joins afterwards never sees it. The trigger's object comes back when the trigger is enabled again.
-    /// </summary>
     private void DespawnTriggerObject(Trigger trigger) {
+        // The object comes back when the trigger is enabled again.
         string name = trigger.m_triggerName;
         if (string.IsNullOrEmpty(name) || !_triggerObjects.Remove(name, out var owned)) {
             return;
@@ -296,10 +282,6 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
         StopTriggerObject(owned.Actor, owned.Object);
     }
 
-    /// <summary>
-    /// Removes the object a trigger owns by the object's zone tag, for every player in the zone. A tag no
-    /// trigger object carries does nothing.
-    /// </summary>
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVETRIGGEROBJECT))]
     private void ReceiveRemoveTriggerObject(ZONE_102_PROTOCOL.MSG_REMOVETRIGGEROBJECT message) {
         var match = _triggerObjects.FirstOrDefault(x => string.Equals(x.Value.Tag, message.ObjectName, StringComparison.OrdinalIgnoreCase));
@@ -326,13 +308,8 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
     private static bool HasTeleportResult(Trigger trigger)
         => trigger.m_results?.m_results?.Any(result => result is ResTeleport) == true;
 
-    /// <summary>
-    /// Chooses which of several passing teleport triggers runs. ReqHasQuest also passes for a completed quest,
-    /// so a story-stage pair (part 1 needs quest A, part 2 needs quest B) would always send the player to part 1.
-    /// Prefer the trigger whose ReqHasQuest names a quest the player has active right now; if none or several
-    /// qualify, take the last passing one (later in the wad is later in the story). One passing trigger is unchanged.
-    /// </summary>
     private static Trigger PickTeleportTrigger(List<(Trigger Trigger, IActorRef Actor)> passing, ZONE_102_PROTOCOL.MSG_POSTEVENT message) {
+        // ReqHasQuest also passes for a completed quest: prefer the trigger naming a currently active quest, else the last passing one.
         var teleports = passing.Where(x => HasTeleportResult(x.Trigger)).Select(x => x.Trigger).ToList();
         if (teleports.Count <= 1) {
             return teleports.FirstOrDefault();
@@ -370,25 +347,16 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
         }
     }
 
-    /// <summary>
-    /// Events Imlight raised before object and kill events existed: zone entry, volume enter and exit, and
-    /// events another trigger of the zone posts. A trigger on one of them keeps firing with a requirement it
-    /// cannot decode (as before); a trigger on any other event fails closed.
-    /// </summary>
+    // Events raised before object and kill events existed: zone entry, volumes and chained events.
     private bool IsLongRaisedEvent(string eventName)
         => eventName == "EnterZone"
         || eventName.StartsWith("Enter_", StringComparison.Ordinal)
         || eventName.StartsWith("Exit_", StringComparison.Ordinal)
         || _chainedEvents.Contains(eventName);
 
-    /// <summary>
-    /// A trigger started a staged cinematic. The client asset does not name an end event and the result carries
-    /// none, so the event comes from the waiting trigger: a fire event that names a cinematic end and that nothing in
-    /// the zone posts (the client would post it when the cutscene ends). It is posted at once, as if the cutscene
-    /// had played, so the triggers waiting for it fire. Each end event is posted once per zone instance.
-    /// </summary>
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_STARTSTAGEDCINEMATIC))]
     private void ReceiveStartStagedCinematic(ZONE_102_PROTOCOL.MSG_STARTSTAGEDCINEMATIC message) {
+        // The end event is the waiting trigger's fire event that nothing in the zone posts; posted once per instance, as if the cutscene had played.
         var posted = _orderedTriggers
             .Where(x => x.Trigger?.m_results?.m_results is not null)
             .SelectMany(x => x.Trigger.m_results.m_results)
@@ -423,12 +391,8 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
     private void ReceiveModifyTriggerObject(ZONE_102_PROTOCOL.MSG_MODIFYTRIGGEROBJECT message)
         => ApplyObjectState(message.ObjectName, message.StateName, message.PlayerActor, message.PlayerGameObject);
 
-    /// <summary>
-    /// Puts a named zone object into a state for every player, then raises "&lt;object&gt;.&lt;state&gt;.EnterState".
-    /// Objects the server owns change state through their entity; objects only the client owns (doors, collision)
-    /// are told through a dynamic mod, as live does.
-    /// </summary>
     private void ApplyObjectState(string objectName, string stateName, IActorRef playerActor, CoreObject playerObject) {
+        // Client-only objects (doors, collision) are told through a dynamic mod.
         if (string.IsNullOrEmpty(objectName) || string.IsNullOrEmpty(stateName)) {
             return;
         }

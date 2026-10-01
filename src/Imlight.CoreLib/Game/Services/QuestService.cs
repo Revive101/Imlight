@@ -761,9 +761,6 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         CommandReply($"Granted quest '{template.m_questName}'{(force ? " (requirements skipped)" : "")}.");
     }
 
-    /// <summary>
-    /// Starts a quest for the wizard exactly as accepting its offer does.
-    /// </summary>
     private void StartQuest(QuestTemplate quest, Wizard wizard) {
         var questInstance = new QuestInstance(quest, wizard.CharId);
         wizard.AddQuest(questInstance);
@@ -1644,12 +1641,8 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         SendToSocket(dialogMsg);
     }
 
-    /// <summary>
-    /// Drops dungeon quests (a top-level ReqInZone) whose dungeon is not the player's current zone. Live
-    /// removes them when the player leaves, and a leave is a zone change: a relog into the same zone
-    /// never gets here with a different zone, so its quests stay.
-    /// </summary>
     private void RemoveDungeonQuestsOutsideZone(Wizard wizard) {
+        // A relog into the same zone never arrives with a different zone, so its dungeon quests stay.
         if (wizard?.QuestBehavior is null) {
             return;
         }

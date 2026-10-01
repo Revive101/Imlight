@@ -1406,11 +1406,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         PostMonsterKilledEvents(adjectivesPerDefeatedMob);
     }
 
-    /// <summary>
-    /// Raises Monster_Killed in the zone once for every monster the players defeated. Zone triggers match it
-    /// against the killed monster's adjectives (a boss's ".AdjRef"), and act for the first winning player.
-    /// </summary>
     private void PostMonsterKilledEvents(List<List<string>> adjectivesPerDefeatedMob) {
+        // Triggers match the killed monster's adjectives (a boss's ".AdjRef") and act for the first winning player.
         IActorRef winnerActor = null;
         CoreObject winnerObject = null;
         EnactActionOnSubCircles(circle => {

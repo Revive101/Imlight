@@ -84,9 +84,6 @@ internal sealed class ResInitiateCombatHandler : BaseResultHandler<ResInitiateCo
         return true;
     }
 
-    /// <summary>
-    /// Waits for an Ask, returning null when it times out instead of throwing.
-    /// </summary>
     private static TResponse AskOrDefault<TResponse>(Task<TResponse> ask) where TResponse : class {
         try {
             return ask.Result;

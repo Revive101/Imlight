@@ -486,9 +486,6 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         return Context.ActorOf(props, typeof(T).Name);
     }
 
-    /// <summary>
-    /// Brings back the spawners this character's quests switched on, unless something already stands there.
-    /// </summary>
     private void RestoreRememberedSpawns(Wizard wizard) {
         foreach (var spawnId in RememberedSpawns.Get(wizard, ZonePath)) {
             DispatchBroadcast(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
@@ -579,12 +576,8 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         _pendingPlayerEvents.Clear();
     }
 
-    /// <summary>
-    /// An instance with no players is dropped after the idle time (Instance.IdleMinutes, default 10;
-    /// 0 or less disables it). A join cancels the timer. Dropping the zone takes all per-instance state
-    /// with it: script state, object states, trigger counts and trigger-owned objects.
-    /// </summary>
     private void ScheduleIdleExpiryIfEmpty() {
+        // Instance.IdleMinutes of 0 or less disables the expiry; a join cancels the timer.
         if (!IsInstance || _playerCount > 0 || _isLoading) {
             return;
         }
