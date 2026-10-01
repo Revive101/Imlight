@@ -402,8 +402,14 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         => _triggerSupervisor.Forward(message);
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVETRIGGEROBJECT))]
-    private void ReceiveRemoveTriggerObject(ZONE_102_PROTOCOL.MSG_REMOVETRIGGEROBJECT message)
-        => _triggerSupervisor.Forward(message);
+    private void ReceiveRemoveTriggerObject(ZONE_102_PROTOCOL.MSG_REMOVETRIGGEROBJECT message) {
+        _triggerSupervisor.Forward(message);
+        _objectSupervisor.Forward(message);
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDTRIGGEROBJECT))]
+    private void ReceiveAddTriggerObject(ZONE_102_PROTOCOL.MSG_ADDTRIGGEROBJECT message)
+        => _objectSupervisor.Forward(message);
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYINSTANCEQUESTS))]
     private void ReceiveQueryInstanceQuests(ZONE_102_PROTOCOL.MSG_QUERYINSTANCEQUESTS message)

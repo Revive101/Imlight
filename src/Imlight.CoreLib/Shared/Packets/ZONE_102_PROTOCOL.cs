@@ -618,8 +618,8 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     }
 
     /// <summary>
-    /// Sent to a <see cref="Zone"/> by a ResRemoveTriggerObject result: the trigger-owned object with that zone tag
-    /// is removed for every player in the zone.
+    /// Sent to a <see cref="Zone"/> by a ResRemoveTriggerObject result: the object with that zone tag, trigger-owned
+    /// or placed in the zone, is removed for every player in the zone.
     /// </summary>
     public class MSG_REMOVETRIGGEROBJECT : IServerMessage {
 
@@ -627,6 +627,20 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte ServiceID { get; } = 102;
 
         public string ObjectName;
+
+    }
+
+    /// <summary>
+    /// Sent to a <see cref="Zone"/> by a ResAddTriggerObject result: the placed object with that zone tag is
+    /// brought back in the given state if a ResRemoveTriggerObject removed it.
+    /// </summary>
+    public class MSG_ADDTRIGGEROBJECT : IServerMessage {
+
+        public byte MessageOrder { get; } = 79;
+        public byte ServiceID { get; } = 102;
+
+        public string ObjectName;
+        public string StateName;
 
     }
 

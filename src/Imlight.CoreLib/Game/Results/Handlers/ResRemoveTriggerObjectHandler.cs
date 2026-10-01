@@ -4,8 +4,8 @@ using Imlight.CoreLib.Shared.Packets;
 namespace Imlight.CoreLib.Game.Results.Handlers;
 
 /// <summary>
-/// ResRemoveTriggerObject: a trigger removes the object another trigger owns (a wall, a gate) by its zone tag.
-/// The zone removes it for every player.
+/// ResRemoveTriggerObject: a trigger removes an object by its zone tag, one another trigger owns (a wall, a gate)
+/// or one placed in the zone (a puzzle object). The zone removes it for every player.
 /// </summary>
 internal sealed class ResRemoveTriggerObjectHandler : BaseResultHandler<ResRemoveTriggerObject> {
 
