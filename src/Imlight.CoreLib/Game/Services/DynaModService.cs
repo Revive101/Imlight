@@ -67,9 +67,8 @@ internal class DynaModService(SessionActor sessionActor) : MessageService(sessio
 
     [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE))]
     private void ReceiveAttachComplete(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE message) {
-        var dynamodsMsg = BuildUpdateAll(
-            GetActiveGameObject().m_globalID.Full,
-            GetActiveWizard().DynamodSet?.Dynamods ?? []);
+        var wizard = GetActiveWizard();
+        var dynamodsMsg = BuildUpdateAll(wizard.GameObjectID, wizard.DynamodSet?.Dynamods ?? []);
         if (dynamodsMsg is not null) {
             SendToSocket(dynamodsMsg);
         }
