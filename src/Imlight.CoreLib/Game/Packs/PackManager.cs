@@ -57,55 +57,53 @@ public static class PackManager {
             }
 
             foreach (var droppedItem in rollResult.Items) {
-                if (!ulong.TryParse(droppedItem.ItemId, out var itemTemplateId)) {
+                if (!uint.TryParse(droppedItem.ItemId, out var itemTemplateId)) {
                     continue;
                 }
 
                 var itemTemplate = CoreObjectFactory.GetCoreTemplate(itemTemplateId);
                 var rarity = ResolveRarity(itemTemplate, tableName);
 
-                if (itemTemplate is SpellTemplate) {
-                    lootItems.Add(new TreasureCardLootInfo {
-                        m_lootType = LOOT_TYPE.LOOT_TYPE_TREASURE_CARD,
-                        m_spellID = (uint) itemTemplateId,
-                        m_numItems = 1
-                    });
-                    lootRarities.Add(new LootRarity {
-                        m_rarity = rarity,
-                        m_lootGid = (GID) itemTemplateId,
-                        m_odds = 0
-                    });
+                lootItems.Add(new TreasureCardLootInfo {
+                    m_lootType = LOOT_TYPE.LOOT_TYPE_TREASURE_CARD,
+                    m_spellID = itemTemplateId,
+                    m_numItems = 1
+                });
+                lootRarities.Add(new LootRarity {
+                    m_rarity = rarity,
+                    m_lootGid = (GID) itemTemplateId,
+                    m_odds = 0
+                });
 
-                    wizard.SpellbookBehavior.AddTreasureCard((uint) itemTemplateId);
-                    WizardCollection.AddTreasureCard(wizard, (uint) itemTemplateId);
-
-                    Logger.Information("Granted TC {0} ({1}) from slot {2}", Logger.Args(droppedItem.ItemName, droppedItem.ItemId, tableName));
-                }
-                else {
-                    lootItems.Add(new ItemLootInfo {
-                        m_lootType = LOOT_TYPE.LOOT_TYPE_ITEM,
-                        m_itemID = (GID) itemTemplateId,
-                        m_numItems = 1
-                    });
-
-                    lootRarities.Add(new LootRarity {
-                        m_rarity = rarity,
-                        m_lootGid = (GID) itemTemplateId,
-                        m_odds = 0
-                    });
-
-                    if (wizard.AddItemToInventory(itemTemplateId, out WizClientObjectItem itemCoreObject)) {
-                        if (s_coSerializer.Serialize(itemCoreObject, 24, out var serializedItem)) {
-                            sessionActorRef.Tell(new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_ADDITEM {
-                                GlobalID = wizard.GameObjectID,
-                                SerializedItem = serializedItem
-                            });
+                switch (itemTemplate) {
+                    case SpellTemplate:
+                        wizard.SpellbookBehavior.AddTreasureCard(itemTemplateId);
+                        WizardCollection.AddTreasureCard(wizard, itemTemplateId);
+                        break;
+                    case ReagentItemTemplate:
+                        wizard.AddReagent(itemTemplateId, out ClientReagentItem reagentItem);
+                        WizardReagentCollection.AddReagent(reagentItem);
+                        break;
+                    case PetSnackItemTemplate:
+                        wizard.AddSnack(itemTemplateId, out ClientPetSnackItem snack);
+                        WizardPetSnackCollection.AddSnack(snack);
+                        break;
+                    default:
+                        if (wizard.AddItemToInventory(itemTemplateId, out WizClientObjectItem itemCoreObject)) {
+                            if (s_coSerializer.Serialize(itemCoreObject, 24, out var serializedItem)) {
+                                sessionActorRef.Tell(new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_ADDITEM {
+                                    GlobalID = wizard.GameObjectID,
+                                    SerializedItem = serializedItem
+                                });
+                            }
                         }
-                    }
-                    else {
-                        Logger.Warning("Could not add item {0} to inventory.", Logger.Args(itemTemplateId));
-                    }
+                        else {
+                            Logger.Warning("Could not add item {0} to inventory.", Logger.Args(itemTemplateId));
+                        }
+                        break;
                 }
+
+                Logger.Information("Granted {0} ({1}) from slot {2}", Logger.Args(droppedItem.ItemName, droppedItem.ItemId, tableName));
             }
         }
 
