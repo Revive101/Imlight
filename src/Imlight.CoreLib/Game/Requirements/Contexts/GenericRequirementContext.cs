@@ -61,4 +61,9 @@ public class GenericRequirementContext(RequirementList requirements,
     /// </summary>
     public System.Func<string, bool?> InstanceQuestCompleted { get; init; }
 
+    /// <summary>
+    /// The zones of the player's instance container, when the player is in an instance; ReqInZone then holds for any of them.
+    /// </summary>
+    public System.Collections.Generic.IReadOnlyCollection<string> InstanceZones { get; init; }
+
 }

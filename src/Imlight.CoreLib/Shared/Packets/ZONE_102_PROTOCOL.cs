@@ -1204,6 +1204,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public bool IsInstance;
         public string[] CompletedQuests = [];
         public Dictionary<string, string[]> CompletedGoals = [];
+        public string[] Zones = [];
 
     }
 

@@ -103,7 +103,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     /// <summary>
     /// The tokens, counters and puzzle variables of this zone instance, read by trigger requirements.
     /// </summary>
-    public ZoneScriptState ScriptState { get; } = new();
+    public ZoneScriptState ScriptState { get; }
 
     public ITimerScheduler Timers { get; set; }
 
@@ -134,7 +134,9 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     /// <param name="zonePath">The path of the zone, formatted as it would be in the access pass.</param>
     /// <param name="dynamicZoneId">The dynamic zone ID of the zone.</param>
     /// <param name="isInstance">Whether this zone is a private, per-owner instance.</param>
-    public Zone(string zonePath, uint dynamicZoneId, bool isInstance) {
+    /// <param name="questProgress">The quest progress shared by the zones of one instance container; null for a zone of its own.</param>
+    public Zone(string zonePath, uint dynamicZoneId, bool isInstance, InstanceQuestProgress questProgress = null) {
+        this.ScriptState = new ZoneScriptState(questProgress);
         this.ZonePath = zonePath;
         this._dynamicZoneId = dynamicZoneId;
         this.IsInstance = isInstance;
@@ -164,8 +166,8 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     // Props
-    public static Props Props(string zonePath, uint dynamicZoneId, bool isInstance)
-        => Akka.Actor.Props.Create(() => new Zone(zonePath, dynamicZoneId, isInstance))
+    public static Props Props(string zonePath, uint dynamicZoneId, bool isInstance, InstanceQuestProgress questProgress = null)
+        => Akka.Actor.Props.Create(() => new Zone(zonePath, dynamicZoneId, isInstance, questProgress))
             .WithMailbox("akka.actor.mailbox.zone-priority");
 
     protected override void PreRestart(Exception reason, object message) {

@@ -56,6 +56,7 @@ internal sealed class InstanceContainer(ulong instanceOwnerId) : ReceiveProtocol
     private readonly ulong _instanceOwnerId = instanceOwnerId;
     private readonly List<uint> _dynamicZoneIds = [];
     private readonly Dictionary<string, IActorRef> _zones = [];
+    private readonly Zone.Core.InstanceQuestProgress _questProgress = new();
 
     public static Props Props(ulong instanceOwnerId) 
         => Akka.Actor.Props.Create(() => new InstanceContainer(instanceOwnerId));
@@ -81,6 +82,7 @@ internal sealed class InstanceContainer(ulong instanceOwnerId) : ReceiveProtocol
         zoneActor.Tell(message);
 
         _zones[zoneName] = zoneActor;
+        _questProgress.AddZone(zoneName);
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_INSTANCECONTAINERHASZONE))]
@@ -95,6 +97,8 @@ internal sealed class InstanceContainer(ulong instanceOwnerId) : ReceiveProtocol
             return;
         }
 
+        _questProgress.RemoveZone(message.ZoneName);
+
         Logger.Information("Dropping instance zone {ZoneName} (owner {OwnerId})",
             Logger.Args(message.ZoneName, _instanceOwnerId));
 
@@ -106,7 +110,7 @@ internal sealed class InstanceContainer(ulong instanceOwnerId) : ReceiveProtocol
         var zoneId = GetNextDynamicZoneId();
 
         // Every zone created under an instance container is, by definition, instanced.
-        var zone = Context.ActorOf(Zone.Core.Zone.Props(zoneName, zoneId, true), zoneActorName);
+        var zone = Context.ActorOf(Zone.Core.Zone.Props(zoneName, zoneId, true, _questProgress), zoneActorName);
 
         // Log the new zone creation.
         Logger.Information("Game world created new zone: {ZoneName}",

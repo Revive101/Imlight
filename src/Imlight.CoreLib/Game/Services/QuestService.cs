@@ -1673,7 +1673,14 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             return;
         }
 
-        var keep = DungeonQuestIndex.GetQuestsForZone(wizard.Zone)
+        // Inside an instance the dungeon's quests belong to every zone of its container; without an answer
+        // from the zone nothing is removed.
+        var progress = QueryInstanceProgress();
+        if (progress is null) {
+            return;
+        }
+
+        var keep = DungeonQuestIndex.GetQuestsForZones(progress.IsInstance ? progress.Zones : [wizard.Zone])
             .Select(t => t.m_questName)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
@@ -1698,13 +1705,14 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             return;
         }
 
-        var templates = DungeonQuestIndex.GetQuestsForZone(wizard.Zone);
+        var progress = QueryInstanceProgress();
+        var inInstance = progress?.IsInstance == true;
+        var instanceZones = inInstance ? progress.Zones : null;
+        var templates = DungeonQuestIndex.GetQuestsForZones(instanceZones ?? [wizard.Zone]);
         if (templates.Count == 0) {
             return;
         }
 
-        var progress = QueryInstanceProgress();
-        var inInstance = progress?.IsInstance == true;
         var completedQuests = (progress?.CompletedQuests ?? []).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var zoneQuestNames = templates.Select(t => t.m_questName).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
@@ -1726,6 +1734,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
                 playerRef: null,
                 playerObj: null,
                 wizard: wizard) {
+                InstanceZones = instanceZones,
                 InstanceQuestCompleted = inInstance
                     ? name => zoneQuestNames.Contains(name) ? completedQuests.Contains(name) : null
                     : null,
@@ -1813,12 +1822,12 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         return true;
     }
 
-    private static bool IsZoneDungeonQuest(Wizard wizard, string questName)
-        => DungeonQuestIndex.GetQuestsForZone(wizard.Zone)
+    private bool IsZoneDungeonQuest(Wizard wizard, string questName)
+        => DungeonQuestIndex.GetQuestsForZones(GetInstanceZones(wizard))
             .Any(t => string.Equals(t.m_questName, questName, StringComparison.OrdinalIgnoreCase));
 
     // Quest XP shrinks with the player's completions of a dungeon quest: full, half, then none.
-    private static float GetRunXpScale(Wizard wizard, string questName) {
+    private float GetRunXpScale(Wizard wizard, string questName) {
         if (!IsZoneDungeonQuest(wizard, questName)) {
             return 1f;
         }
@@ -1851,6 +1860,13 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
 
             return true;
         }
+    }
+
+    // The zones whose dungeon quests apply to the player: the container's zones in an instance, else the zone itself.
+    private IReadOnlyCollection<string> GetInstanceZones(Wizard wizard) {
+        var progress = QueryInstanceProgress();
+
+        return progress?.IsInstance == true ? progress.Zones : [wizard.Zone];
     }
 
     private ZONE_102_PROTOCOL.MSG_QUERYINSTANCEQUESTSRSP QueryInstanceProgress() {

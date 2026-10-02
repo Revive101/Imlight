@@ -32,10 +32,16 @@ public sealed class ZoneScriptState {
     private readonly ConcurrentDictionary<string, int> _triggerFires = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, string> _objectStates = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, byte> _changedObjects = new(StringComparer.OrdinalIgnoreCase);
-    private readonly HashSet<string> _questClaims = new(StringComparer.OrdinalIgnoreCase);
-    private readonly HashSet<string> _completedQuests = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, List<string>> _completedGoals = new(StringComparer.OrdinalIgnoreCase);
+    private readonly InstanceQuestProgress _quests;
     private readonly Lock _lock = new();
+
+    /// <summary>
+    /// Creates the state of one zone. Zones of the same instance container pass the same quest progress,
+    /// so the instance's quests keep their progress across its zones.
+    /// </summary>
+    public ZoneScriptState(InstanceQuestProgress quests = null) {
+        _quests = quests ?? new();
+    }
 
     private const string COUNTER_SET = "ZCA_Set";
 
@@ -162,42 +168,14 @@ public sealed class ZoneScriptState {
     /// <summary>
     /// Records a dungeon quest step of this instance and returns whether it is the first time the instance saw it.
     /// </summary>
-    public bool TryClaimQuestStep(InstanceQuestClaimKind kind, string questName, string goalName) {
-        lock (_lock) {
-            if (!_questClaims.Add($"{kind}|{questName}|{goalName}")) {
-                return false;
-            }
-
-            switch (kind) {
-                case InstanceQuestClaimKind.GoalComplete:
-                    if (!_completedGoals.TryGetValue(questName, out var goals)) {
-                        goals = [];
-                        _completedGoals[questName] = goals;
-                    }
-
-                    goals.Add(goalName);
-                    break;
-                case InstanceQuestClaimKind.QuestComplete:
-                    _completedQuests.Add(questName);
-                    break;
-            }
-
-            return true;
-        }
-    }
+    public bool TryClaimQuestStep(InstanceQuestClaimKind kind, string questName, string goalName)
+        => _quests.TryClaimStep(kind, questName, goalName);
 
     /// <summary>
     /// The dungeon quests this instance finished and, per quest, the goals it completed in order.
     /// </summary>
-    public ZONE_102_PROTOCOL.MSG_QUERYINSTANCEQUESTSRSP SnapshotQuestProgress() {
-        lock (_lock) {
-            return new() {
-                IsInstance = true,
-                CompletedQuests = [.. _completedQuests],
-                CompletedGoals = _completedGoals.ToDictionary(kv => kv.Key, kv => kv.Value.ToArray()),
-            };
-        }
-    }
+    public ZONE_102_PROTOCOL.MSG_QUERYINSTANCEQUESTSRSP SnapshotQuestProgress()
+        => _quests.Snapshot();
 
     /// <summary>
     /// Records the state an object enters. Returns false when it was already in that state.
