@@ -786,7 +786,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         var foughtWithGroupMate = message.AllyCharIds?.Any(allyCharId => allyCharId != wizard.CharId
             && GroupRegistry.AreGrouped(wizard.CharId, allyCharId)) == true;
 
-        foreach (var qInstance in wizard.QuestBehavior.CurrentQuestInstances) {
+        foreach (var qInstance in wizard.QuestBehavior.CurrentQuestInstances.ToList()) {
             var qTemplate = _cachedQuestTemplates.FirstOrDefault(q => q.m_questName == qInstance.QuestName);
             if (qTemplate == null) {
                 Logger.Error("Failed to find quest template for quest '{0}' when processing combat victory.",
