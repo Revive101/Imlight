@@ -137,6 +137,7 @@ public static class CrownShopHandler {
             var layoutCategories = new List<CrownShopCategory>();
             var crownShopItems = new Dictionary<ulong, CrownShopItem>();
 
+            Random random = new();
             foreach (var tab in s_crownShopTabs) {
                 var layoutTab = new CrownShopCategoryMenu() {
                     m_ID = tab.TabId,
@@ -167,6 +168,7 @@ public static class CrownShopHandler {
                 }
 
                 foreach(var item in tab.Items) {
+                    uint saleId = (uint) Random.Shared.NextInt64(0, (long) uint.MaxValue + 1);
 
                     var displayPriority = new StringBuilder();
                     foreach(var dp in item.DisplayPriority) {
@@ -186,16 +188,15 @@ public static class CrownShopHandler {
                         m_combatOnly = item.CrownShopItemFlags.CombatOnly,
                         m_noGift = item.CrownShopItemFlags.NoGift,
                         m_recommendIfOwned = item.CrownShopItemFlags.RecommendIfOwned,
-                        m_saleID = 1, // TODO: Implement saleID logic
+                        m_saleID = saleId,
                         m_description = "",
                         m_segReqsPoolsStatements = [],
                         m_segReqsStatement = "",
                     };
 
-                    crownShopItems.Add(item.TemplateId, crownShopItem);
+                    crownShopItems[item.TemplateId] = crownShopItem;
                 }
             }
-
             s_items = crownShopItems;
 
             var crownShopLayout = new CrownShopLayout() {
@@ -265,10 +266,8 @@ public static class CrownShopHandler {
     }
 
     public static ByteString GetCrownShopData() => s_serializedCrownShopData;
-
     public static List<CrownShopItem> GetCrownShopItems() => s_items.Values.ToList();
-    public static bool TryGetCrownShopItem(ulong id, out CrownShopItem item) {
-        return s_items.TryGetValue(id, out item);
-    }
+    public static bool TryGetCrownShopItem(ulong id, out CrownShopItem item)
+        => s_items.TryGetValue(id, out item);
 
 }
