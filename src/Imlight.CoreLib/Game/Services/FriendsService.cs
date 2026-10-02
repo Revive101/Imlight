@@ -722,6 +722,9 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
 
     private void InformBuddiesOfStatusChange(bool isOnline) {
         var ownerWizard = GetActiveWizard();
+        if (ownerWizard is null) {
+            return;
+        }
         var charID = ownerWizard.CharId;
 
         // Inform all buddies of the status change.
