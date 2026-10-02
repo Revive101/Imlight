@@ -394,8 +394,23 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_MODIFYTRIGGEROBJECT))]
-    private void ReceiveModifyTriggerObject(ZONE_102_PROTOCOL.MSG_MODIFYTRIGGEROBJECT message)
-        => ApplyObjectState(message.ObjectName, message.StateName, message.PlayerActor, message.PlayerGameObject, message.PlayerSpawned);
+    private void ReceiveModifyTriggerObject(ZONE_102_PROTOCOL.MSG_MODIFYTRIGGEROBJECT message) {
+        var holdsObject = HoldsObject(message.ObjectName);
+        if (message.Relayed && !holdsObject) {
+            return;
+        }
+
+        ApplyObjectState(message.ObjectName, message.StateName, message.PlayerActor, message.PlayerGameObject, message.PlayerSpawned);
+
+        // A goal result runs in the zone the player stands in; an object this zone does not hold may be in another zone of the instance.
+        if (!holdsObject && !message.Relayed && Zone.IsInstance) {
+            Context.ActorSelection(Context.Parent.Path.Parent).Tell(message, ZoneRef);
+        }
+    }
+
+    private bool HoldsObject(string objectName)
+        => _triggerObjects.Values.Any(x => string.Equals(x.Tag, objectName, StringComparison.OrdinalIgnoreCase))
+           || Zone.ZoneData.m_objectList.Any(x => string.Equals(x.m_zoneTag, objectName, StringComparison.OrdinalIgnoreCase));
 
     private void ApplyObjectState(string objectName, string stateName, IActorRef playerActor, CoreObject playerObject, bool playerSpawned = false) {
         if (string.IsNullOrEmpty(objectName) || string.IsNullOrEmpty(stateName)) {

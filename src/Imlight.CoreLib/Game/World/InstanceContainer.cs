@@ -91,6 +91,24 @@ internal sealed class InstanceContainer(ulong instanceOwnerId) : ReceiveProtocol
             HasZone = _zones.ContainsKey(message.ZoneName)
         });
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_MODIFYTRIGGEROBJECT))]
+    public void ReceiveModifyTriggerObject(ZONE_102_PROTOCOL.MSG_MODIFYTRIGGEROBJECT message) {
+        foreach (var zoneActor in _zones.Values) {
+            if (zoneActor.Equals(Sender)) {
+                continue;
+            }
+
+            zoneActor.Tell(new ZONE_102_PROTOCOL.MSG_MODIFYTRIGGEROBJECT {
+                ObjectName = message.ObjectName,
+                StateName = message.StateName,
+                PlayerActor = message.PlayerActor,
+                PlayerGameObject = message.PlayerGameObject,
+                PlayerSpawned = message.PlayerSpawned,
+                Relayed = true,
+            }, Self);
+        }
+    }
+
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_DROPINSTANCEZONE))]
     public void ReceiveDropInstanceZone(ZONE_102_PROTOCOL.MSG_DROPINSTANCEZONE message) {
         if (!_zones.Remove(message.ZoneName, out var zoneActor)) {

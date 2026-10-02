@@ -602,12 +602,18 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
 
     /// <summary>
     /// Sent to a <see cref="Zone"/> by a ResModifyTriggerObject result: the named object enters the state
-    /// for every player in the zone, and the zone raises the object's EnterState event.
+    /// for every player in the zone, and the zone raises the object's EnterState event. A zone of an instance
+    /// hands the message on to the instance's other zones when it does not hold the object itself, since the player may not be in the zone that holds it.
     /// </summary>
     public class MSG_MODIFYTRIGGEROBJECT : IServerMessage {
 
         public byte MessageOrder { get; } = 68;
         public byte ServiceID { get; } = 102;
+
+        /// <summary>
+        /// Whether the instance container already handed this message on, so the zone applies it and does not hand it on again.
+        /// </summary>
+        public bool Relayed;
 
         public string ObjectName;
         public string StateName;
