@@ -287,8 +287,11 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
             .OfType<InteractableBehaviorTemplate>()
             .SelectMany(behavior => behavior.m_interactOptions ?? []);
 
+    // An option that needs the goal already complete follows the goal's use; it is not the use itself.
     private static bool RequiresGoal(InteractOptionTemplate option, string questName, string goalName)
         => option is InteractStateOptionTemplate { m_requirements.m_requirements: { } requirements }
-            && requirements.OfType<ReqHasGoal>().Any(r => r.m_questName == questName && r.m_goalName == goalName);
+            && requirements.OfType<ReqHasGoal>().Any(r => r.m_questName == questName
+                                                          && r.m_goalName == goalName
+                                                          && r.m_requiredStatus != GoalStatusRequirement.Complete);
 
 }
