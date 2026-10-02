@@ -69,6 +69,100 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
     private GAME_5_PROTOCOL.MSG_LOGINCOMPLETE _loginCompleteMessage;
     private bool _attachReceived;
 
+
+    [Flags]
+    public enum AccountPermissions : uint {
+        None = 0,
+
+        /// <summary>
+        /// Allows the player to type in chat using KingsIsle's strict whitelist dictionary.
+        /// Numbers, unwhitelisted words, and personal information are blocked.
+        /// </summary>
+        FilteredChat = 1 << 0,
+
+        /// <summary>
+        /// Unlocks adult text chat. Allows players to freely type numbers (e.g., stats, spell counts)
+        /// and words outside the strict whitelist, using only a basic profanity blacklist.
+        /// </summary>
+        OpenChat = 1 << 2,
+
+        /// <summary>
+        /// Enables the "btnSecureChatSetup" button on the Friends List to generate
+        /// and redeem one-time True Friend Codes for direct cross-tier communication.
+        /// </summary>
+        TrueFriendCodes = 1 << 4,
+
+        /// <summary>
+        /// Allows the player to purchase items as gifts for friends in the Crowns Shop.
+        /// If missing, the client disables the gift button with "Gifting is turned off for this account."
+        /// </summary>
+        Gifting = 1 << 5,
+
+        /// <summary>
+        /// Controls access to the Crowns Shop button on the player HUD.
+        /// If missing, the shop icon is disabled under parental spending locks.
+        /// (The client automatically bypasses this check when TestServer == 1).
+        /// </summary>
+        CrownShopPurchasing = 1 << 6,
+
+        /// <summary>
+        /// Controls access to Player vs. Player (PvP) matches, tournaments,
+        /// and ranked arena queues.
+        /// </summary>
+        PvPAllowed = 1 << 7,
+
+        /// <summary>
+        /// Allows participating in group/team, raid, and guild chat channels.
+        /// </summary>
+        GroupChatAllowed = 1 << 8,
+
+        /// <summary>
+        /// Enables the "Whisper" / private messaging button on friend cards.
+        /// When disabled, the player can only speak in public proximity chat.
+        /// </summary>
+        WhisperChat = 1 << 9,
+
+        /// <summary>
+        /// Set dynamically when entering the Master Password, or granted by the server.
+        /// Enables the Parental Controls button on the Character Selection screen and
+        /// the "Mute" button in the Player Report window.
+        /// </summary>
+        ParentalControlsUnlocked = 1 << 10,
+
+        /// <summary>
+        /// Authorizes the client to play sponsored video ads and open offerwalls.
+        /// If disabled while EarnCrownsVisible is on, clicking the kiosk pops up
+        /// the "Earn Crowns is disabled by Parental Controls" notification.
+        /// </summary>
+        EarnCrownsAllowed = 1 << 11,
+
+        /// <summary>
+        /// Toggles the visibility of the "Earn Crowns" icon on the main HUD
+        /// and the corresponding toggle in the Gameplay Options menu.
+        /// </summary>
+        EarnCrownsVisible = 1 << 12,
+
+        /// <summary>
+        /// Allows the in-game web browser to open external URLs (help articles,
+        /// account management, community event web pages).
+        /// </summary>
+        ExternalWebLinks = 1 << 13,
+
+        /// <summary>
+        /// Permits sending MSG_ADCLICKTHROUGH to credit the player account
+        /// for completing third-party sponsor promotions.
+        /// </summary>
+        AdClickThrough = 1 << 14,
+
+        /// <summary>
+        /// Master toggle for friend networking (teleporting, sending friend invites,
+        /// visiting castles, and private messaging).
+        /// </summary>
+        FriendSocialActions = 1 << 16,
+
+        All = uint.MaxValue
+    }
+
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new AttachService(parentActor));
 
@@ -148,7 +242,7 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
             Data = localGameObjectData,
             IsCSR = _account.AuthLevel > AuthLevel.None ? 1 : 0, // todo: Change this back before prod!
 
-            Permissions = 0b1100_1111,
+            Permissions = (uint) AccountPermissions.All,
 
             // Set zone data.
             ZoneName = message.ZoneName,
