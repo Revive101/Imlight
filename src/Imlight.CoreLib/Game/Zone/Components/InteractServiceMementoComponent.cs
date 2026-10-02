@@ -141,12 +141,12 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity)
             : _interactionRadius;
 
         // Handle interaction range (for service options).
-        if (IsInRadius(playerObj, interactionRadius)
+        if (IsInHorizontalRadius(playerObj, interactionRadius)
             && !_playersInInteractionRange.ContainsKey(playerId)) {
             _playersInInteractionRange.Add(playerId, playerActor);
             SendActorServiceOptions(playerActor);
         }
-        else if (!IsInRadius(playerObj, interactionRadius)
+        else if (!IsInHorizontalRadius(playerObj, interactionRadius)
                  && _playersInInteractionRange.ContainsKey(playerId)) {
             _playersInInteractionRange.Remove(playerId);
             SendLeaveServiceRange(playerActor);

@@ -238,6 +238,16 @@ public abstract class ZoneEntityComponent(ZoneEntity entity) : IZoneComponent {
     }
 
     /// <summary>
+    /// Checks if the specified object is within the radius of the entity on the ground plane, ignoring height.
+    /// </summary>
+    /// <param name="obj">The object to check.</param>
+    /// <returns>True if the object is within the radius, otherwise false.</returns>
+    protected bool IsInHorizontalRadius(CoreObject obj, float distance) {
+        var delta = obj.m_location - Entity.ActiveGameObject.m_location;
+        return (delta.X * delta.X) + (delta.Y * delta.Y) <= distance * distance;
+    }
+
+    /// <summary>
     /// Broadcasts a message to all players within the zone.
     /// </summary>
     /// <param name="message">The message to broadcast.</param>
