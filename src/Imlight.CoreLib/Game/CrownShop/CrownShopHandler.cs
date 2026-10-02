@@ -52,14 +52,14 @@ public static class CrownShopHandler {
         = ConfigurationManager.Settings["CrownShop.Enabled"].AsBool();
     private static readonly string s_crownShopConfigPath
         = ConfigurationManager.Settings["CrownShop.Path"];
-    private static readonly int s_wishlishMaxSize
-        = ConfigurationManager.Settings["CrownShop.WishlistMaxSize"].AsInt();
-    private static readonly int s_wishlistSBExpansionSize
-    = ConfigurationManager.Settings["CrownShop.WishlistSBExpansionSize"].AsInt();
+    private static readonly uint s_wishlishMaxSize
+        = ConfigurationManager.Settings["CrownShop.WishlistMaxSize"].AsUInt();
+    private static readonly uint s_wishlistSBExpansionSize
+    = ConfigurationManager.Settings["CrownShop.WishlistSBExpansionSize"].AsUInt();
     private static readonly bool s_autoReloadOnChanges
         = ConfigurationManager.Settings["CrownShop.AutoReloadOnChanges"].AsBool();
-    public static readonly int s_maxBuyCount
-        = ConfigurationManager.Settings["CrownShop.MaxBuyCount"].AsInt();
+    public static readonly uint s_maxBuyCount
+        = ConfigurationManager.Settings["CrownShop.MaxBuyCount"].AsUInt();
 
 
     private static readonly JsonSerializerOptions _jsonSerializerOptions = new() {
@@ -93,7 +93,6 @@ public static class CrownShopHandler {
             Logger.Warning("CrownShop configuration directory not found: {0}", Logger.Args(basePath));
             return;
         }
-
 
         // Load data from config files
         lock(_reloadLock) {
@@ -137,7 +136,6 @@ public static class CrownShopHandler {
             var layoutCategories = new List<CrownShopCategory>();
             var crownShopItems = new Dictionary<ulong, CrownShopItem>();
 
-            Random random = new();
             foreach (var tab in s_crownShopTabs) {
                 var layoutTab = new CrownShopCategoryMenu() {
                     m_ID = tab.TabId,
@@ -168,7 +166,6 @@ public static class CrownShopHandler {
                 }
 
                 foreach(var item in tab.Items) {
-                    uint saleId = (uint) Random.Shared.NextInt64(0, (long) uint.MaxValue + 1);
 
                     var displayPriority = new StringBuilder();
                     foreach(var dp in item.DisplayPriority) {
@@ -188,7 +185,7 @@ public static class CrownShopHandler {
                         m_combatOnly = item.CrownShopItemFlags.CombatOnly,
                         m_noGift = item.CrownShopItemFlags.NoGift,
                         m_recommendIfOwned = item.CrownShopItemFlags.RecommendIfOwned,
-                        m_saleID = saleId,
+                        m_saleID = 0,
                         m_description = "",
                         m_segReqsPoolsStatements = [],
                         m_segReqsStatement = "",
@@ -197,6 +194,7 @@ public static class CrownShopHandler {
                     crownShopItems[item.TemplateId] = crownShopItem;
                 }
             }
+
             s_items = crownShopItems;
 
             var crownShopLayout = new CrownShopLayout() {
@@ -207,8 +205,8 @@ public static class CrownShopHandler {
             var crownShopData = new CrownShopData() {
                 m_items = crownShopItems.Values.ToList(),
                 m_crownShopLayout = crownShopLayout,
-                m_wishlistMaxSize = s_wishlishMaxSize,
-                m_wishlistSBExpansionSize = s_wishlistSBExpansionSize,
+                m_wishlistMaxSize = (int) s_wishlishMaxSize,
+                m_wishlistSBExpansionSize = (int) s_wishlistSBExpansionSize,
                 // Probably has something todo with MSG_PCS_SEGDATA_RESPONSE
                 m_crownShopSegReqsSummary = new(),
                 // todo: recommended items?
@@ -266,6 +264,7 @@ public static class CrownShopHandler {
     }
 
     public static ByteString GetCrownShopData() => s_serializedCrownShopData;
+
     public static List<CrownShopItem> GetCrownShopItems() => s_items.Values.ToList();
     public static bool TryGetCrownShopItem(ulong id, out CrownShopItem item)
         => s_items.TryGetValue(id, out item);

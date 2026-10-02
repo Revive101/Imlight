@@ -220,7 +220,8 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_PCS_UPDATEUSERWISHLIST))]
     private void ReceiveWishlistUpdate(WIZARD_12_PROTOCOL.MSG_PCS_UPDATEUSERWISHLIST message) { }
 
-    // This checks if the item *can* be bought (NOT if the player has enough money) (Event time ran out, etc.)
+    // Is this saleID still valid and actively running?
+    // Does this saleID grant the price the client is asking to lock
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_PCS_PRICE_LOCK_REQUEST))]
     private void ReceivePriceLockReq(WIZARD_12_PROTOCOL.MSG_PCS_PRICE_LOCK_REQUEST message) {
         Logger.Information("Received MSG_PCS_PRICE_LOCK_REQUEST for item {0}", Logger.Args(message.Item));
@@ -252,16 +253,11 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
     private void ReceivePurchaseRequest(WIZARD_12_PROTOCOL.MSG_PCS_PURCHASE_REQUEST message) {
         var wizard = GetActiveWizard();
 
-        if (message.Count < 1 || message.Count > CrownShopHandler.s_maxBuyCount) {
-            Logger.Warning("Rejected purchase request for item {0}: invalid count {1}.", Logger.Args(message.Item, message.Count));
+        if (message.Count < 1 || message.Count > CrownShopHandler.s_maxBuyCount || message.SaleID != 0) {
+            Logger.Warning("Rejected purchase request for item {0}.", Logger.Args(message.Item));
 
             SendToSocket(new WIZARD_12_PROTOCOL.MSG_PCS_PURCHASE_RESPONSE {
-                Item = message.Item,
                 Error = 1,
-                Cost = 0,
-                Count = message.Count,
-                Gifted = 0,
-                Type = message.Type
             });
             return;
         }
@@ -270,27 +266,16 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
         if(!CrownShopHandler.TryGetCrownShopItem(message.Item, out var catalogItem)) {
             Logger.Warning("Item {0} not found in CrownShop.", Logger.Args(message.Item));
             SendToSocket(new WIZARD_12_PROTOCOL.MSG_PCS_PURCHASE_RESPONSE {
-                Item = message.Item,
                 Error = 1,
-                Cost = 0,
-                Count = message.Count,
-                Gifted = 0,
-                Type = message.Type
             });
             return;
         }
 
         int amountToPay = message.Count * catalogItem.m_crownsCost;
         if (wizard.Account.Crowns < amountToPay) {
-            var msg = new WIZARD_12_PROTOCOL.MSG_PCS_PURCHASE_RESPONSE {
-                Item = message.Item,
+            SendToSocket(new WIZARD_12_PROTOCOL.MSG_PCS_PURCHASE_RESPONSE {
                 Error = 1,
-                Cost = amountToPay,
-                Count = message.Count,
-                Gifted = 0,
-                Type = message.Type
-            };
-            SendToSocket(msg);
+            });
             return;
         }
 
@@ -366,167 +351,4 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
             }
         }
     }
-
-    //private static List<CrownShopItem> GetOrCreateCatalog() {
-    //    if (s_catalogCache != null) {
-    //        return s_catalogCache;
-    //    }
-
-    //    lock (s_catalogLock) {
-    //        if (s_catalogCache != null) {
-    //            return s_catalogCache;
-    //        }
-
-    //        var catalog = new List<CrownShopItem>();
-    //        var templates = CoreObjectFactory.TemplateManifest.m_serializedTemplates;
-    //        foreach (var entry in templates) {
-    //            string path = entry.m_filename;
-    //            ulong id = entry.m_id;
-
-    //            if (path.Contains("Dummy", StringComparison.OrdinalIgnoreCase)
-    //                || path.Contains("DONOTUSE", StringComparison.OrdinalIgnoreCase)
-    //                || path.Contains("Test", StringComparison.OrdinalIgnoreCase)
-    //                || path.Contains("MOB-ONLY", StringComparison.OrdinalIgnoreCase)) {
-    //                continue;
-    //            }
-
-    //            string displayPriority = null;
-
-    //            // 1. Mounts (Permanent & Rental)
-    //            if (path.StartsWith("ObjectData/Mounts/", StringComparison.OrdinalIgnoreCase)
-    //                || path.StartsWith("ObjectData/SpecialSets/Mounts/", StringComparison.OrdinalIgnoreCase)) {
-    //                bool isRental = s_rentalMountTemplateIds.Value.Contains(id);
-    //                displayPriority = isRental ? "3:1,19:1,0:1" : "2:1,19:1,0:1"; // Cat 3: Rental Mounts, Cat 2: Permanent Mounts
-    //            }
-
-    //            // 2. Packs (Hoard & Lore, Booster, Pet Snack Packs)
-    //            else if (s_packDisplayPriorities.Value.TryGetValue(id, out var packPriority)) {
-    //                displayPriority = packPriority;
-    //            }
-
-    //            // 3. Pets
-    //            else if (path.StartsWith("ObjectData/Pets/", StringComparison.OrdinalIgnoreCase)
-    //                     || path.StartsWith("ObjectData/SpecialSets/Pets/", StringComparison.OrdinalIgnoreCase)) {
-    //                displayPriority = "4:1,19:1,0:1"; // Cat 4: Pets
-    //            }
-
-    //            // 4. Elixirs
-    //            else if (path.Contains("Elixir", StringComparison.OrdinalIgnoreCase)
-    //                     && path.StartsWith("ObjectData/", StringComparison.OrdinalIgnoreCase)) {
-    //                displayPriority = "16:1,19:1,0:1"; // Cat 16: Elixirs
-    //            }
-
-    //            // 5. Transformations (Gear Subcategory 17)
-    //            else if (path.StartsWith("ObjectData/Transformations/", StringComparison.OrdinalIgnoreCase)
-    //                     || path.StartsWith("ObjectData/Transformation-", StringComparison.OrdinalIgnoreCase)) {
-    //                displayPriority = "17:1,19:1,0:1"; // Cat 17: Transformations
-    //            }
-
-    //            // 6. Hairstyles / Wigs (Gear Subcategory 23)
-    //            else if (path.StartsWith("ObjectData/Wigs/", StringComparison.OrdinalIgnoreCase)) {
-    //                displayPriority = "23:1,19:1,0:1"; // Cat 23: Hairstyles (Wigs)
-    //            }
-
-    //            // 7. Gear pieces & bundles (SpecialSets, Purchased Character Gear, and Crown accessories)
-    //            else if (path.StartsWith("ObjectData/SpecialSets/", StringComparison.OrdinalIgnoreCase)
-    //                     || path.StartsWith("ObjectData/Purchased Character Gear/", StringComparison.OrdinalIgnoreCase)
-    //                     || path.StartsWith("ObjectData/CrownItems/", StringComparison.OrdinalIgnoreCase)
-    //                     || path.StartsWith("ObjectData/Athames/", StringComparison.OrdinalIgnoreCase)) {
-
-    //                bool isCrownAccessorySeries = path.StartsWith("ObjectData/CrownItems/Series2/", StringComparison.OrdinalIgnoreCase)
-    //                    || path.StartsWith("ObjectData/CrownItems/Series3/", StringComparison.OrdinalIgnoreCase)
-    //                    || path.StartsWith("ObjectData/CrownItems/Series4/", StringComparison.OrdinalIgnoreCase)
-    //                    || path.StartsWith("ObjectData/CrownItems/Series5/", StringComparison.OrdinalIgnoreCase)
-    //                    || path.StartsWith("ObjectData/CrownItems/Series41/", StringComparison.OrdinalIgnoreCase)
-    //                    || path.StartsWith("ObjectData/CrownItems/Series50/", StringComparison.OrdinalIgnoreCase);
-
-    //                if (path.Contains("/Hats/", StringComparison.OrdinalIgnoreCase) || path.Contains("/Hat/", StringComparison.OrdinalIgnoreCase)) {
-    //                    if (!path.StartsWith("ObjectData/CrownItems/", StringComparison.OrdinalIgnoreCase)) {
-    //                        displayPriority = "11:1,19:1,0:1"; // Cat 11: Hats
-    //                    }
-    //                }
-    //                else if (path.Contains("/Robes/", StringComparison.OrdinalIgnoreCase) || path.Contains("/Robe/", StringComparison.OrdinalIgnoreCase)) {
-    //                    if (!path.StartsWith("ObjectData/CrownItems/", StringComparison.OrdinalIgnoreCase)) {
-    //                        displayPriority = "9:1,19:1,0:1"; // Cat 9: Robes
-    //                    }
-    //                }
-    //                else if (path.Contains("/Shoes/", StringComparison.OrdinalIgnoreCase) || path.Contains("/Boots/", StringComparison.OrdinalIgnoreCase)) {
-    //                    if (!path.StartsWith("ObjectData/CrownItems/", StringComparison.OrdinalIgnoreCase)) {
-    //                        displayPriority = "10:1,19:1,0:1"; // Cat 10: Shoes
-    //                    }
-    //                }
-    //                else if (path.Contains("/Wands/", StringComparison.OrdinalIgnoreCase) || path.Contains("/Weapons/", StringComparison.OrdinalIgnoreCase)) {
-    //                    if (!path.StartsWith("ObjectData/CrownItems/", StringComparison.OrdinalIgnoreCase)) {
-    //                        displayPriority = "15:1,19:1,0:1"; // Cat 15: Weapons
-    //                    }
-    //                }
-    //                else if (path.Contains("/Athames/", StringComparison.OrdinalIgnoreCase)
-    //                         || path.StartsWith("ObjectData/Athames/", StringComparison.OrdinalIgnoreCase)) {
-    //                    if (!path.StartsWith("ObjectData/CrownItems/", StringComparison.OrdinalIgnoreCase) || isCrownAccessorySeries) {
-    //                        displayPriority = "14:1,19:1,0:1"; // Cat 14: Athames
-    //                    }
-    //                }
-    //                else if (path.Contains("/Amulet/", StringComparison.OrdinalIgnoreCase) || path.Contains("/Amulets/", StringComparison.OrdinalIgnoreCase)) {
-    //                    if (!path.StartsWith("ObjectData/CrownItems/", StringComparison.OrdinalIgnoreCase) || isCrownAccessorySeries) {
-    //                        displayPriority = "13:1,19:1,0:1"; // Cat 13: Amulets
-    //                    }
-    //                }
-    //                else if (path.Contains("/Rings/", StringComparison.OrdinalIgnoreCase) || path.Contains("/Ring/", StringComparison.OrdinalIgnoreCase)) {
-    //                    if (!path.StartsWith("ObjectData/CrownItems/", StringComparison.OrdinalIgnoreCase) || isCrownAccessorySeries) {
-    //                        displayPriority = "12:1,19:1,0:1"; // Cat 12: Rings
-    //                    }
-    //                }
-    //                else if (path.Contains("/CrownShopBundles/", StringComparison.OrdinalIgnoreCase)) {
-    //                    // Handled above if booster/snack pack
-    //                }
-    //                else if (path.StartsWith("ObjectData/SpecialSets/", StringComparison.OrdinalIgnoreCase)) {
-    //                    displayPriority = "8:1,19:1,0:1"; // Cat 8: Clothing Bundles
-    //                }
-    //            }
-
-    //            // 8. Houses
-    //            else if (path.StartsWith("ObjectData/Housing/Deeds/", StringComparison.OrdinalIgnoreCase)
-    //                     || path.EndsWith("PropertyDeed.xml", StringComparison.OrdinalIgnoreCase)) {
-    //                displayPriority = "5:1,19:1,0:1"; // Cat 5: Houses (Tab 44)
-    //            }
-
-    //            // 9. Emotes & Teleport Effects
-    //            else if (path.StartsWith("ObjectData/Emotes/", StringComparison.OrdinalIgnoreCase)) {
-    //                if (path.Contains("Teleport", StringComparison.OrdinalIgnoreCase)) {
-    //                    displayPriority = "32:1,19:1,0:1"; // Cat 32: Teleport Effects (Tab 45)
-    //                }
-    //                else {
-    //                    displayPriority = "31:1,19:1,0:1"; // Cat 31: Emotes (Tab 45)
-    //                }
-    //            }
-
-    //            if (displayPriority != null) {
-    //                catalog.Add(new CrownShopItem {
-    //                    m_itemTemplateId = id,
-    //                    m_itemFlags = 0,
-    //                    m_goldCost = 0,
-    //                    m_crownsCost = 1,
-    //                    m_ticketCost = 0,
-    //                    m_displayPriority = displayPriority,
-    //                    m_strikethruCrowns = 0,
-    //                    m_strikethruGold = 0,
-    //                    m_description = "", // Client pulls the real name/desc via Template ID
-    //                    m_saleID = 5129,
-    //                    m_recommendIfOwned = false,
-    //                    m_combatOnly = false,
-    //                    m_noGift = false,
-    //                    m_segReqsStatement = "",
-    //                    m_segReqsPoolsStatements = []
-    //                });
-    //            }
-    //        }
-
-    //        s_catalogCache = catalog;
-    //        s_catalogById = catalog
-    //            .GroupBy(i => (ulong) i.m_itemTemplateId)
-    //            .ToDictionary(g => g.Key, g => g.First());
-
-    //        Logger.Information("CrownShop: Loaded {0} special items into the Crown Shop.", Logger.Args(s_catalogCache.Count));
-    //        return s_catalogCache;
-    //    }
 }
