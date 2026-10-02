@@ -45,114 +45,19 @@ using Imcodec.CoreObject;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
-using Imcodec.Types;
 using Imlight.Common;
 using Imlight.CoreLib.Game.CrownShop;
 using Imlight.CoreLib.Game.Packs;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Resources;
-using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
-using Imlight.CoreLib.WizardData.Models.World;
 using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace Imlight.CoreLib.Game.Services;
 
 
 internal class CrownShopService(SessionActor sessionActor) : MessageService(sessionActor) {
-
-
-    private static readonly Lazy<Dictionary<ulong, string>> s_packDisplayPriorities = new(() => {
-        if (!RootArchiveLoader.IsLoaded) {
-            RootArchiveLoader.ReloadRootWad();
-        }
-
-        var wad = RootArchiveLoader.GetRootWad();
-        var priorities = new Dictionary<ulong, string>();
-        if (wad == null) {
-            return priorities;
-        }
-
-        ReadOnlySpan<byte> snackToken = "Snacks"u8;
-        ReadOnlySpan<byte> purreauToken = "PurreauPack"u8;
-        ReadOnlySpan<byte> tcToken = "TreasureCards"u8;
-        ReadOnlySpan<byte> gardenTcToken = "GardenTreasureCards"u8;
-        ReadOnlySpan<byte> reagentToken = "Reagents"u8;
-
-        foreach (var t in CoreObjectFactory.TemplateManifest.m_serializedTemplates) {
-            string fn = t.m_filename;
-            if (!fn.StartsWith("ObjectData/BoosterPack-")
-                && !fn.StartsWith("ObjectData/SpecialSets/CrownShopBundles/BoosterPack")
-                && !fn.Contains("MegaSnackPack")) {
-                continue;
-            }
-
-            // Default: Hoard & Lore Packs
-            string priority = "25:1,19:1,0:1"; 
-
-            var data = wad.OpenFile(fn);
-            if (data.HasValue) {
-                var span = data.Value.Span;
-                // Cat 26: Pet Snack Packs (shared in Packs Tab 38 and Pets Tab 40)
-                if (span.IndexOf(snackToken) >= 0 || span.IndexOf(purreauToken) >= 0 || fn.Contains("Snack")) {
-                    priority = "26:1,19:1,0:1"; 
-                }
-                // Cat 20: Booster Packs (TC)
-                else if (span.IndexOf(tcToken) >= 0 || span.IndexOf(gardenTcToken) >= 0) {
-                    priority = "20:1,19:1,0:1";
-                }
-                // Cat 28: Reagents
-                else if (span.IndexOf(reagentToken) >= 0) {
-                    priority = "28:1,19:1,0:1";
-                }
-            }
-            else if (fn.Contains("Snack")) {
-                priority = "26:1,19:1,0:1";
-            }
-
-            priorities[t.m_id] = priority;
-        }
-
-        Logger.Information("CrownShop: Indexed {0} pack priorities from archive.", Logger.Args(priorities.Count));
-        return priorities;
-    });
-
-    private static readonly Lazy<HashSet<ulong>> s_rentalMountTemplateIds = new(() => {
-        if (!RootArchiveLoader.IsLoaded) {
-            RootArchiveLoader.ReloadRootWad();
-        }
-
-        var wad = RootArchiveLoader.GetRootWad();
-        var rentalIds = new HashSet<ulong>();
-
-        if (wad == null) {
-            return rentalIds;
-        }
-
-        foreach (var t in CoreObjectFactory.TemplateManifest.m_serializedTemplates) {
-            if (!t.m_filename.StartsWith("ObjectData/Mounts/")
-                && !t.m_filename.StartsWith("ObjectData/SpecialSets/Mounts/")) {
-                continue;
-            }
-
-            var data = wad.OpenFile(t.m_filename);
-            if (data.HasValue) {
-                var span = data.Value.Span;
-                if (span.IndexOf("RentalBehavior"u8) >= 0 || span.IndexOf("TimedItemBehavior"u8) >= 0) {
-                    rentalIds.Add(t.m_id);
-                }
-            }
-        }
-
-        Logger.Information("CrownShop: Identified {0} rental mounts from archive behaviors.", Logger.Args(rentalIds.Count));
-        return rentalIds;
-    });
-
-
-
     protected static Props Props(SessionActor parentActor)
             => Akka.Actor.Props.Create(() => new CrownShopService(parentActor));
 
