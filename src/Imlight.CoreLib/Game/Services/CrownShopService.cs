@@ -279,54 +279,6 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
             return;
         }
 
-        var isBooster = PackManager.IsBoosterPack(message.Item);
-        if (!isBooster) {
-            // Add item to inventory
-
-            // Check if the item is emote or teleport effect
-            var template = CoreObjectFactory.GetCoreTemplate(message.Item);
-            var customEmote = template?.m_behaviors?.OfType<CustomEmoteBehaviorTemplate>().FirstOrDefault();
-            if (customEmote != null && customEmote.m_bitFieldNumber >= 0) {
-                if (customEmote.m_emoteType == CustomEmoteType.CE_Teleport) {
-                    wizard.UnlockCustomTeleportEffect(customEmote.m_bitFieldNumber);
-                }
-                else {
-                    wizard.UnlockCustomEmote(customEmote.m_bitFieldNumber);
-                }
-            }
-
-            // todo: serialize the item only once   
-            var coSerializer = new CoreObjectSerializer(
-                behaviors: Imcodec.ObjectProperty.SerializerFlags.None
-            );
-            for (uint i = 0; i < message.Count; i++) {
-                if (!wizard.AddItemToInventory(message.Item, out WizClientObjectItem itemCoreObject)) {
-                    Logger.Warning("Could not add item to inventory.");
-
-                    var msg = new WIZARD_12_PROTOCOL.MSG_PCS_PURCHASE_RESPONSE {
-                        Item = message.Item,
-                        Error = 1,
-                        Cost = amountToPay,
-                        Count = message.Count,
-                        Gifted = 0,
-                        Type = message.Type
-                    };
-                    SendToSocket(msg);
-                    return;
-                }
-
-                if (!coSerializer.Serialize(itemCoreObject, 24, out var serializedItem)) {
-                    Logger.Warning("Failed to serialize core object.");
-                    return;
-                }
-
-                SendToSocket(new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_ADDITEM {
-                    GlobalID = wizard.GameObjectID,
-                    SerializedItem = serializedItem
-                });
-            }
-        }
-
         wizard.Account.SetCrowns(wizard.Account.Crowns - amountToPay);
         SendToSocket(new WIZARD_12_PROTOCOL.MSG_PCS_PURCHASE_RESPONSE {
             Item = message.Item,
@@ -339,16 +291,58 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
 
         // Sync crowns
         SendToSocket(new WIZARD_12_PROTOCOL.MSG_CROWNBALANCE {
-            Failure = (byte) 0,
+            Failure = 0,
             TotalCrowns = wizard.Account.Crowns,
             CharacterID = wizard.CharId,
-            CacheBalanceForCSSegmentation = (byte) 1
+            CacheBalanceForCSSegmentation = 1
         });
 
-        if (isBooster) {
-            for (uint i = 0; i < message.Count; i++) {
-                PackManager.OpenPack(SessionActor.ActorRef, wizard, message.Item);
-            }
+        var itemTemplate = CoreObjectFactory.GetCoreTemplate(message.Item);
+
+        switch(itemTemplate) {
+            case BoosterPackTemplate:
+                for (uint i = 0; i < message.Count; i++) {
+                    PackManager.OpenPack(SessionActor.ActorRef, wizard, message.Item);
+                }
+                return;
+            default:
+                // Check if the item is emote or teleport effect
+                var customEmote = itemTemplate?.m_behaviors?.OfType<CustomEmoteBehaviorTemplate>().FirstOrDefault();
+                if (customEmote != null && customEmote.m_bitFieldNumber >= 0) {
+                    if (customEmote.m_emoteType == CustomEmoteType.CE_Teleport) {
+                        wizard.UnlockCustomTeleportEffect(customEmote.m_bitFieldNumber);
+                    }
+                    else {
+                        wizard.UnlockCustomEmote(customEmote.m_bitFieldNumber);
+                    }
+                }
+
+                // todo: serialize the item only once   
+                var coSerializer = new CoreObjectSerializer(
+                    behaviors: Imcodec.ObjectProperty.SerializerFlags.None
+                );
+
+                for (uint i = 0; i < message.Count; i++) {
+                    if (!wizard.AddItemToInventory(message.Item, out WizClientObjectItem itemCoreObject)) {
+                        Logger.Warning("Could not add item to inventory.");
+
+                        SendToSocket(new WIZARD_12_PROTOCOL.MSG_PCS_PURCHASE_RESPONSE {
+                            Error = 1,
+                        });
+                        return;
+                    }
+
+                    if (!coSerializer.Serialize(itemCoreObject, 24, out var serializedItem)) {
+                        Logger.Warning("Failed to serialize core object.");
+                        return;
+                    }
+
+                    SendToSocket(new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_ADDITEM {
+                        GlobalID = wizard.GameObjectID,
+                        SerializedItem = serializedItem
+                    });
+                }
+                break;
         }
     }
 }

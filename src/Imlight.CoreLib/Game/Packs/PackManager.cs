@@ -21,11 +21,6 @@ public static class PackManager {
     private static readonly CoreObjectSerializer s_coSerializer = new(behaviors: SerializerFlags.None);
     private static readonly ObjectSerializer s_objSerializer = new(Versionable: false);
 
-    public static bool IsBoosterPack(ulong templateId) {
-        var template = CoreObjectFactory.GetCoreTemplate(templateId);
-        return template is BoosterPackTemplate;
-    }
-
     /// <summary>
     /// Opens a booster pack, grants the drops to the player, and sends the client confirmation.
     /// </summary>
