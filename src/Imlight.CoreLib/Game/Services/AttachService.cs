@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Imlight
  * Copyright (C) 2025 Revive101
  *
@@ -156,6 +156,7 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
             DynamicZoneID = zoneDetails.DynamicZoneId,
             DynamicServerProcID = zoneDetails.DynamicZoneId,
             CriticalObjects = criticalObjectData,
+            SubscriberCrownsPricePercent = 100,
 
             // Misc
             ShowSubscriberIcon = 0,
