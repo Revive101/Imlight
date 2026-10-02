@@ -397,7 +397,7 @@ public class Wizard {
         var success = InventoryBehavior.AddItem(item);
         if (!success) {
             Logger.Warning("Could not add item {0} to player {1}'s inventory.",
-                Logger.Args(item.m_globalID, PlayerNameBehavior.GetWizardName()));
+                Logger.Args(item.m_globalID.Value, PlayerNameBehavior.GetWizardName()));
 
             return false;
         }
