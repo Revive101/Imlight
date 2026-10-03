@@ -99,6 +99,7 @@ public class Wizard {
     public ServerAlchemyBehavior AlchemyBehavior { get; set; }
     public ServerFriendBehavior FriendsBehavior { get; set; }
     [JsonIgnore] public ServerObjectStateBehavior ObjectStateBehavior { get; set; }
+    [JsonIgnore] public int TutorialStage { get; set; }
     public ServerWizGameStats GameStats { get; set; }
     public ServerPetOwnerBehavior PetOwnerBehavior { get; set; }
     public ServerQuestBehavior QuestBehavior { get; set; }
