@@ -319,6 +319,22 @@ public class Wizard {
         WizardCollection.UpdateCharacterGameStats(this);
     }
 
+    // TODO: remove hardcode
+    public void AddLunari(int lunari) {
+        if (GameStats.m_currentEventCurrency1 + lunari > 5000) {
+            GameStats.m_currentEventCurrency1 = 5000;
+        } else {
+            GameStats.m_currentEventCurrency1 += lunari;
+        }
+
+        WizardCollection.UpdateCharacterGameStats(this);
+    }
+
+    public void RemoveLunari(int lunari) {
+        GameStats.m_currentEventCurrency1 -= lunari;
+        WizardCollection.UpdateCharacterGameStats(this);
+    }
+
     public void UpdateHealth(int newHealth) {
         GameStats.m_currentHitpoints = newHealth;
 
