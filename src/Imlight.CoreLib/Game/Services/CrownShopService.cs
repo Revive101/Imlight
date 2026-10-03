@@ -50,6 +50,7 @@ using Imlight.CoreLib.Game.CrownShop;
 using Imlight.CoreLib.Game.Packs;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System;
 using System.Linq;
@@ -208,6 +209,13 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
                 for (uint i = 0; i < message.Count; i++) {
                     PackManager.OpenPack(SessionActor.ActorRef, wizard, message.Item);
                 }
+                return;
+            case GoldAmountTemplate goldItem:
+                wizard.AddGold(goldItem.m_goldAmount);
+                SendToSocket(new WIZARD_12_PROTOCOL.MSG_UPDATEGOLD {
+                    Gold = wizard.GameStats.m_currentGold,
+                    MaxGold = wizard.GameStats.m_baseGoldPouch
+                });
                 return;
             default:
                 // Check if the item is emote or teleport effect
