@@ -217,6 +217,14 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
                     MaxGold = wizard.GameStats.m_baseGoldPouch
                 });
                 return;
+            case LunariAmountTemplate lunariTemplate:
+                // TODO: Don't hardcode MaxEventCurrency1
+                wizard.AddLunari(lunariTemplate.m_lunariAmount);
+                SendToSocket(new WIZARD2_53_PROTOCOL.MSG_UPDATEEVENTCURRENCY1 {
+                    EventCurrency1 = wizard.GameStats.m_currentEventCurrency1,
+                    MaxEventCurrency1 = 5000
+                });
+                return;
             default:
                 // Check if the item is emote or teleport effect
                 var customEmote = itemTemplate?.m_behaviors?.OfType<CustomEmoteBehaviorTemplate>().FirstOrDefault();
@@ -229,7 +237,7 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
                     }
                 }
 
-                // todo: serialize the item only once   
+                // todo: serialize the item only once
                 var coSerializer = new CoreObjectSerializer(
                     behaviors: Imcodec.ObjectProperty.SerializerFlags.None
                 );
