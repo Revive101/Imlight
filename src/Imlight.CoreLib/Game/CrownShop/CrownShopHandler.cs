@@ -42,6 +42,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.Intrinsics.Arm;
 using System.Text;
 using System.Text.Json;
 
@@ -168,8 +169,8 @@ public static class CrownShopHandler {
                 foreach(var item in tab.Items) {
 
                     var displayPriority = new StringBuilder();
-                    foreach(var dp in item.DisplayPriority) {
-                        displayPriority.Append($"{dp.CategoryId}:{dp.Position},");
+                    for(int i = 0; i < item.DisplayPriority.Count; i++) {
+                        displayPriority.Append($"{item.DisplayPriority[i]}:{i},");
                     }
                     displayPriority.Length--; // Remove last comma
 
@@ -189,6 +190,8 @@ public static class CrownShopHandler {
                         m_description = "",
                         m_segReqsPoolsStatements = [],
                         m_segReqsStatement = "",
+                        // Example: HasBadge(Raid01_QuestComplete_01) = True
+                        // Example: ExcludeIfNoSegData = True,HasBadge(FinishAR-PostLM-MAIN-001) = True
                     };
 
                     crownShopItems[item.TemplateId] = crownShopItem;

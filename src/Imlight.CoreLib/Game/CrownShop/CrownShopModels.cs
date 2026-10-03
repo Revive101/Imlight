@@ -35,18 +35,13 @@ public class CrownShopCategoryFlags {
 public class CrownShopItemConfig {
     public ulong TemplateId { get; set; }
     public int ItemFlags { get; set; } = 0;
-    public int GoldCost { get; set; }
+    public int GoldCost { get; set; } = 0;
     public int StrikethruGold { get; set; } = 0;
-    public int CrownsCost { get; set; }
+    public int CrownsCost { get; set; } = 0;
     public int StrikethruCrowns { get; set; } = 0;
-    public int TicketCost { get; set; }
-    public List<DisplayPriority> DisplayPriority { get; set; }
+    public int TicketCost { get; set; } = 0;
+    public List<uint> DisplayPriority { get; set; }
     public CrownShopItemFlags CrownShopItemFlags { get; set; } = new();
-}
-
-public class DisplayPriority {
-    public int CategoryId { get; set; }
-    public int Position { get; set; } = 1;
 }
 
 public class CrownShopItemFlags {
