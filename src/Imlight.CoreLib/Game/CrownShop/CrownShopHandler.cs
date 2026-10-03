@@ -192,6 +192,7 @@ public static class CrownShopHandler {
                         m_segReqsStatement = "",
                         // Example: HasBadge(Raid01_QuestComplete_01) = True
                         // Example: ExcludeIfNoSegData = True,HasBadge(FinishAR-PostLM-MAIN-001) = True
+                        // Example: ExcludeIfNoSegData = True,NLevel &gt; 169,HasBadge(WinNightmare) = True,HasBadge(FinishAR-PostWL-MAIN-001) = True
                     };
 
                     crownShopItems[item.TemplateId] = crownShopItem;
