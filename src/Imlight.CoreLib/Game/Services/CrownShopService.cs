@@ -203,7 +203,6 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
         });
 
         var itemTemplate = CoreObjectFactory.GetCoreTemplate(message.Item);
-
         switch(itemTemplate) {
             case BoosterPackTemplate:
                 for (uint i = 0; i < message.Count; i++) {
@@ -249,5 +248,12 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
                 }
                 break;
         }
+    }
+
+    [MessageHandler(typeof(WIZARD2_53_PROTOCOL.MSG_CrownShopLogging))]
+    private void ReceiveCrownShopLogging(WIZARD2_53_PROTOCOL.MSG_CrownShopLogging message) {
+        SendToSocket(new WIZARD2_53_PROTOCOL.MSG_CrownShopLogging {
+            Enabled = 0
+        });
     }
 }
