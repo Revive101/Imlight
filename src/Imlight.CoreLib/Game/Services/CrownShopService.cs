@@ -240,11 +240,10 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
                 });
                 return;
             case LunariAmountTemplate lunariTemplate:
-                // TODO: Don't hardcode MaxEventCurrency1
                 wizard.AddLunari(lunariTemplate.m_lunariAmount);
                 SendToSocket(new WIZARD2_53_PROTOCOL.MSG_UPDATEEVENTCURRENCY1 {
                     EventCurrency1 = wizard.GameStats.m_currentEventCurrency1,
-                    MaxEventCurrency1 = 5000
+                    MaxEventCurrency1 = wizard.GameStats.m_baseEventCurrency1Pouch
                 });
                 return;
             default:
