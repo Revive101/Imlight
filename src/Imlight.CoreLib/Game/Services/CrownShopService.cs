@@ -169,7 +169,7 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
         }
 
         // Authoritative cost lookup from catalog
-        if(!CrownShopHandler.TryGetCrownShopItem(message.Item, out var catalogItem)) {
+        if (!CrownShopHandler.TryGetCrownShopItem(message.Item, out var catalogItem)) {
             Logger.Warning("Item {0} not found in CrownShop.", Logger.Args(message.Item));
             SendToSocket(new WIZARD_12_PROTOCOL.MSG_PCS_PURCHASE_RESPONSE {
                 Error = 1,
@@ -177,31 +177,53 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
             return;
         }
 
-        int amountToPay = message.Count * catalogItem.m_crownsCost;
-        if (wizard.Account.Crowns < amountToPay) {
-            SendToSocket(new WIZARD_12_PROTOCOL.MSG_PCS_PURCHASE_RESPONSE {
-                Error = 1,
+        int amountToPay = int.MaxValue;
+        if (message.Type == 0) {
+            // User is buying with gold
+            amountToPay = message.Count * catalogItem.m_goldCost;
+            if (wizard.GameStats.m_currentGold < amountToPay) {
+                SendToSocket(new WIZARD_12_PROTOCOL.MSG_PCS_PURCHASE_RESPONSE {
+                    Error = 1,
+                });
+                return;
+            }
+
+            wizard.RemoveGold(amountToPay);
+            SendToSocket(new WIZARD_12_PROTOCOL.MSG_UPDATEGOLD {
+                Gold = wizard.GameStats.m_currentGold,
+                MaxGold = wizard.GameStats.m_baseGoldPouch
             });
-            return;
         }
+        else if (message.Type == 1) {
+            // User is buying with crowns
+            amountToPay = message.Count * catalogItem.m_crownsCost;
+            if (wizard.Account.Crowns < amountToPay) {
+                SendToSocket(new WIZARD_12_PROTOCOL.MSG_PCS_PURCHASE_RESPONSE {
+                    Error = 1,
+                });
+                return;
+            }
 
-        wizard.Account.SetCrowns(wizard.Account.Crowns - amountToPay);
-        SendToSocket(new WIZARD_12_PROTOCOL.MSG_PCS_PURCHASE_RESPONSE {
-            Item = message.Item,
-            Error = 0,
-            Cost = amountToPay,
-            Count = message.Count,
-            Gifted = (byte) (message.Recipient == 0 ? 0 : 1),
-            Type = message.Type
-        });
+            wizard.Account.SetCrowns(wizard.Account.Crowns - amountToPay);
+            SendToSocket(new WIZARD_12_PROTOCOL.MSG_PCS_PURCHASE_RESPONSE {
+                Item = message.Item,
+                Error = 0,
+                Cost = amountToPay,
+                Count = message.Count,
+                Gifted = (byte) (message.Recipient == 0 ? 0 : 1),
+                Type = message.Type
+            });
 
-        // Sync crowns
-        SendToSocket(new WIZARD_12_PROTOCOL.MSG_CROWNBALANCE {
-            Failure = 0,
-            TotalCrowns = wizard.Account.Crowns,
-            CharacterID = wizard.CharId,
-            CacheBalanceForCSSegmentation = 1
-        });
+            // Sync crowns
+            SendToSocket(new WIZARD_12_PROTOCOL.MSG_CROWNBALANCE {
+                Failure = 0,
+                TotalCrowns = wizard.Account.Crowns,
+                CharacterID = wizard.CharId,
+                CacheBalanceForCSSegmentation = 1
+            });
+        }else {
+            throw new InvalidOperationException($"Invalid currency provided: {message.Type}");
+        }
 
         var itemTemplate = CoreObjectFactory.GetCoreTemplate(message.Item);
         switch(itemTemplate) {
