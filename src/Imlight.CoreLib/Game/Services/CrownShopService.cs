@@ -261,6 +261,13 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
                         GlobalID = wizard.GameObjectID,
                         SerializedItem = serializedItem
                     });
+
+                    // This adds the item to 'REVIEW MY ORDER'
+                    SendToSocket(new WIZARD2_53_PROTOCOL.MSG_ITEMACQUISITION {
+                        ItemGlobalID = wizard.GameObjectID,
+                        ItemLocation = 1,
+                        ItemTemplateID = (uint) message.Item
+                    });
                 }
                 break;
         }
