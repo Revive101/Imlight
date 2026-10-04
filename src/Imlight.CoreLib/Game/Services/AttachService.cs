@@ -211,7 +211,7 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
         // Serialize the GameObject and send it to the client.
         var coSerializer = new CoreObjectSerializer(
             versionable: false,
-            behaviors: SerializerFlags.Compress
+            behaviors: SerializerFlags.None
         );
         var flags = PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit;
         if (!coSerializer.Serialize(charGameObject, flags, out var localGameObjectData)) {
@@ -239,7 +239,7 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
             ServerTime = (uint) DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
 
             // Set character data.
-            Data = localGameObjectData,
+            Data = Compression.CompressWithLength(localGameObjectData),
             IsCSR = _account.AuthLevel > AuthLevel.None ? 1 : 0, // todo: Change this back before prod!
 
             Permissions = (uint) AccountPermissions.All,
@@ -254,7 +254,7 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
 
             // Misc
             ShowSubscriberIcon = 0,
-            TestServer = 1
+            TestServer = 0
         };
 
         // Send MSG_PRELOGIN so other services may do their work before we send the final login complete message.
