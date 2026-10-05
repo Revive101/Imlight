@@ -84,6 +84,8 @@ public static class SpiralDB {
         var basePath = Path.GetFullPath(s_localPath);
 
         if (!s_disableRemote) {
+            IgnoreUserGitConfig();
+
             try {
                 SyncRepository(basePath);
             }
@@ -179,6 +181,11 @@ public static class SpiralDB {
             }
             // On rollback, the old references are still live — nothing to do.
         }
+    }
+
+    private static void IgnoreUserGitConfig() {
+        GlobalSettings.SetConfigSearchPaths(ConfigurationLevel.Xdg, []);
+        GlobalSettings.SetConfigSearchPaths(ConfigurationLevel.Global, []);
     }
 
     private static void SyncRepository(string basePath) {
