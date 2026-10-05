@@ -45,12 +45,15 @@ using Imcodec.CoreObject;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
+using Imcodec.Types;
 using Imlight.Common;
 using Imlight.CoreLib.Game.CrownShop;
 using Imlight.CoreLib.Game.Packs;
 using Imlight.CoreLib.Shared.Networking;
+using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Collections;
+using Imlight.CoreLib.WizardData.Models.Misc;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System;
 using System.Linq;
@@ -123,23 +126,23 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
         });
     }
 
-    [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_PCS_UPDATEUSERWISHLIST))]
-    private void ReceiveWishlistUpdate(WIZARD_12_PROTOCOL.MSG_PCS_UPDATEUSERWISHLIST message) { }
-
     // Is this saleID still valid and actively running?
     // Does this saleID grant the price the client is asking to lock
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_PCS_PRICE_LOCK_REQUEST))]
     private void ReceivePriceLockReq(WIZARD_12_PROTOCOL.MSG_PCS_PRICE_LOCK_REQUEST message) {
         Logger.Information("Received MSG_PCS_PRICE_LOCK_REQUEST for item {0}", Logger.Args(message.Item));
 
+        if (message.SaleID != 0) {
+            Logger.Warning("SaleID {0} is not supported. Ignoring.", Logger.Args(message.SaleID));
+            SendToSocket(new WIZARD_12_PROTOCOL.MSG_PCS_PRICE_LOCK_RESPONSE {
+                Error = 1,
+            });
+        }
+
         if (!CrownShopHandler.TryGetCrownShopItem(message.Item, out var item)) {
             Logger.Warning("Item {0} not found in CrownShop.", Logger.Args(message.Item));
             SendToSocket(new WIZARD_12_PROTOCOL.MSG_PCS_PRICE_LOCK_RESPONSE {
-                CostCrowns = 0,
-                CostGold = 0,
-                CostTickets = 0,
                 Error = 1,
-                Item = message.Item
             });
             return;
         }
@@ -226,78 +229,134 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
         }
 
         var itemTemplate = CoreObjectFactory.GetCoreTemplate(message.Item);
-        switch(itemTemplate) {
-            case BoosterPackTemplate:
-                for (uint i = 0; i < message.Count; i++) {
-                    PackManager.OpenPack(SessionActor.ActorRef, wizard, message.Item);
-                }
-                return;
-            case GoldAmountTemplate goldItem:
-                wizard.AddGold(goldItem.m_goldAmount);
-                SendToSocket(new WIZARD_12_PROTOCOL.MSG_UPDATEGOLD {
-                    Gold = wizard.GameStats.m_currentGold,
-                    MaxGold = wizard.GameStats.m_baseGoldPouch
-                });
-                return;
-            case LunariAmountTemplate lunariTemplate:
-                wizard.AddLunari(lunariTemplate.m_lunariAmount);
-                SendToSocket(new WIZARD2_53_PROTOCOL.MSG_UPDATEEVENTCURRENCY1 {
-                    EventCurrency1 = wizard.GameStats.m_currentEventCurrency1,
-                    MaxEventCurrency1 = wizard.GameStats.m_baseEventCurrency1Pouch
-                });
-                return;
-            default:
-                // Check if the item is emote or teleport effect
-                var customEmote = itemTemplate?.m_behaviors?.OfType<CustomEmoteBehaviorTemplate>().FirstOrDefault();
-                if (customEmote != null && customEmote.m_bitFieldNumber >= 0) {
-                    if (customEmote.m_emoteType == CustomEmoteType.CE_Teleport) {
-                        wizard.UnlockCustomTeleportEffect(customEmote.m_bitFieldNumber);
+        if (message.Recipient == 0) {
+            switch (itemTemplate) {
+                case BoosterPackTemplate:
+                    for (uint i = 0; i < message.Count; i++) {
+                        PackManager.OpenPack(SessionActor.ActorRef, wizard, message.Item);
                     }
-                    else {
-                        wizard.UnlockCustomEmote(customEmote.m_bitFieldNumber);
+                    return;
+                case GoldAmountTemplate goldItem:
+                    wizard.AddGold(goldItem.m_goldAmount);
+                    SendToSocket(new WIZARD_12_PROTOCOL.MSG_UPDATEGOLD {
+                        Gold = wizard.GameStats.m_currentGold,
+                        MaxGold = wizard.GameStats.m_baseGoldPouch
+                    });
+                    return;
+                case LunariAmountTemplate lunariTemplate:
+                    wizard.AddLunari(lunariTemplate.m_lunariAmount);
+                    SendToSocket(new WIZARD2_53_PROTOCOL.MSG_UPDATEEVENTCURRENCY1 {
+                        EventCurrency1 = wizard.GameStats.m_currentEventCurrency1,
+                        MaxEventCurrency1 = wizard.GameStats.m_baseEventCurrency1Pouch
+                    });
+                    return;
+                default:
+                    // Check if the item is emote or teleport effect
+                    var customEmote = itemTemplate?.m_behaviors?.OfType<CustomEmoteBehaviorTemplate>().FirstOrDefault();
+                    if (customEmote != null && customEmote.m_bitFieldNumber >= 0) {
+                        if (customEmote.m_emoteType == CustomEmoteType.CE_Teleport) {
+                            wizard.UnlockCustomTeleportEffect(customEmote.m_bitFieldNumber);
+                        }
+                        else {
+                            wizard.UnlockCustomEmote(customEmote.m_bitFieldNumber);
+                        }
                     }
-                }
 
-                // todo: serialize the item only once
-                var coSerializer = new CoreObjectSerializer(
-                    behaviors: Imcodec.ObjectProperty.SerializerFlags.None
-                );
+                    // todo: serialize the item only once
+                    var coSerializer = new CoreObjectSerializer(
+                        behaviors: Imcodec.ObjectProperty.SerializerFlags.None
+                    );
 
-                for (uint i = 0; i < message.Count; i++) {
-                    if (!wizard.AddItemToInventory(message.Item, out WizClientObjectItem itemCoreObject)) {
-                        Logger.Warning("Could not add item to inventory.");
+                    for (uint i = 0; i < message.Count; i++) {
+                        if (!wizard.AddItemToInventory(message.Item, out WizClientObjectItem itemCoreObject)) {
+                            Logger.Warning("Could not add item to inventory.");
 
-                        SendToSocket(new WIZARD_12_PROTOCOL.MSG_PCS_PURCHASE_RESPONSE {
-                            Error = 1,
+                            SendToSocket(new WIZARD_12_PROTOCOL.MSG_PCS_PURCHASE_RESPONSE {
+                                Error = 1,
+                            });
+                            return;
+                        }
+
+                        if (!coSerializer.Serialize(itemCoreObject, 24, out var serializedItem)) {
+                            Logger.Warning("Failed to serialize core object.");
+                            return;
+                        }
+
+                        SendToSocket(new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_ADDITEM {
+                            GlobalID = wizard.GameObjectID,
+                            SerializedItem = serializedItem
                         });
-                        return;
+
+                        // This adds the item to 'REVIEW MY ORDER'
+                        SendToSocket(new WIZARD2_53_PROTOCOL.MSG_ITEMACQUISITION {
+                            ItemGlobalID = wizard.GameObjectID,
+                            ItemLocation = 1,
+                            ItemTemplateID = (uint) message.Item
+                        });
                     }
+                    break;
+            }
+        }else {
+            var targetCharacter = WizardCollection.GetCharacterUnloaded(message.Recipient);
+            if (targetCharacter is null) {
+                Logger.Error("Recipient with CharacterId {0} was not found.", Logger.Args(message.Recipient));
+                return;
+            }
 
-                    if (!coSerializer.Serialize(itemCoreObject, 24, out var serializedItem)) {
-                        Logger.Warning("Failed to serialize core object.");
-                        return;
-                    }
+            ulong recipientAccountId = targetCharacter.AccountId;
+            var targetAccount = AccountCollection.GetAccount(recipientAccountId);
+            if (targetAccount is null) {
+                Logger.Error("Account {0} for character was not found.", Logger.Args(recipientAccountId));
+                return;
+            }
 
-                    SendToSocket(new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_ADDITEM {
-                        GlobalID = wizard.GameObjectID,
-                        SerializedItem = serializedItem
-                    });
+            var giftRedemption = new CrownShopGiftRedemption {
+                m_giverAccountID = wizard.AccountId,
+                m_itemCount = message.Count,
+                m_itemId = message.Item,
+                m_itemTransactionId = Guid.NewGuid().ToString("N"),
+            };
 
-                    // This adds the item to 'REVIEW MY ORDER'
-                    SendToSocket(new WIZARD2_53_PROTOCOL.MSG_ITEMACQUISITION {
-                        ItemGlobalID = wizard.GameObjectID,
-                        ItemLocation = 1,
-                        ItemTemplateID = (uint) message.Item
-                    });
-                }
-                break;
+            var giftSerializer = new ObjectSerializer(Versionable: true, Behaviors: SerializerFlags.None);
+            if (!giftSerializer.Serialize(giftRedemption, 31, out var serializedItem)) {
+                Logger.Error("Failed to serialize CrownShopGiftRedemption.");
+                return;
+            }
+
+            var mail = new Mail {
+                m_recipientId = targetCharacter.AccountId,
+                m_senderId = (GID) wizard.CharId,
+                m_messageData = System.Text.Encoding.Latin1.GetString((byte[]) serializedItem),
+                m_expireDuration = 0,
+                m_messageType = 2,
+                m_timeStamp = (ulong) DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                m_mailId = (ulong) DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() // TODO: Don't do this.
+            };
+
+            targetAccount.AddMail(mail);
+
+            // Notify the player, if they're online
+            if (TryGetOnlinePlayer(message.Recipient, out OnlinePlayer onlinePlayer)) {
+                Context.ActorSelection(onlinePlayer.ActorPath).Tell(new SERVICE_101_PROTOCOL.MSG_DELIVER_GIFT {
+                    Mail = mail
+                });
+            }
         }
     }
+
+    [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_PCS_UPDATEUSERWISHLIST))]
+    private void ReceiveWishlistUpdate(WIZARD_12_PROTOCOL.MSG_PCS_UPDATEUSERWISHLIST message) { }
 
     [MessageHandler(typeof(WIZARD2_53_PROTOCOL.MSG_CrownShopLogging))]
     private void ReceiveCrownShopLogging(WIZARD2_53_PROTOCOL.MSG_CrownShopLogging message) {
         SendToSocket(new WIZARD2_53_PROTOCOL.MSG_CrownShopLogging {
             Enabled = 0
         });
+    }
+
+    [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_PCS_PATCH))]
+    private void ReceivePCsPatch(WIZARD_12_PROTOCOL.MSG_PCS_PATCH message) {
+        Logger.Warning("What is MSG_PCS_PATCH for? This is called when someone opens player gifts");
+
     }
 }
