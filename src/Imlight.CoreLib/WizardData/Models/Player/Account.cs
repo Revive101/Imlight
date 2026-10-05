@@ -16,15 +16,16 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
+using Imcodec.ObjectProperty.TypeCache;
+using Imlight.Common;
+using Imlight.CoreLib.Shared.Networking;
+using Imlight.CoreLib.Shared.Utilities;
+using Imlight.CoreLib.WizardData.Collections;
+using Imlight.CoreLib.WizardData.Models.Misc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json.Serialization;
-using Imlight.CoreLib.Shared.Networking;
-using Imlight.CoreLib.WizardData.Collections;
-using Imlight.CoreLib.WizardData.Models.Misc;
-using Imlight.CoreLib.Shared.Utilities;
-using Imlight.Common;
 
 namespace Imlight.CoreLib.WizardData.Models.Player;
 
@@ -96,6 +97,7 @@ public class Account {
     public bool IsLocked { get; set; }
     public int PurchasedCharacterSlots { get; set; }
     public int Crowns { get; set; }
+    public List<Mail> GiftMailbox { get; set; } = new();
 
     [JsonIgnore] public List<Wizard> Characters = new();
     [JsonIgnore] public InfractionHistory InfractionHistory { get; set; }
@@ -336,5 +338,21 @@ public class Account {
     public bool SetCrowns(int crownsAmount) {
         this.Crowns = crownsAmount;
         return AccountCollection.UpdateCrowns(this.AccountId, crownsAmount);
+    }
+
+    public bool AddMail(Mail mail) {
+        this.GiftMailbox ??= new();
+        this.GiftMailbox.Add(mail);
+        return AccountCollection.AddGiftMail(this.AccountId, mail);
+    }
+    public bool RemoveMail(ulong mailId) {
+        this.GiftMailbox ??= new();
+        var toRemove = this.GiftMailbox.SingleOrDefault(s => s.m_mailId == mailId, null);
+
+        if(toRemove != null) {
+            this.GiftMailbox.Remove(toRemove);
+        }
+
+        return AccountCollection.RemoveGiftMail(this.AccountId, mailId);
     }
 }
