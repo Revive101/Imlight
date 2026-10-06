@@ -84,9 +84,18 @@ public static class SpiralDB {
         var basePath = Path.GetFullPath(s_localPath);
 
         if (!s_disableRemote) {
-            IgnoreUserGitConfig();
+            string[] xdgPaths = null;
+            string[] globalPaths = null;
 
             try {
+                xdgPaths = [.. GlobalSettings.GetConfigSearchPaths(
+                    ConfigurationLevel.Xdg)];
+                globalPaths = [.. GlobalSettings.GetConfigSearchPaths(
+                    ConfigurationLevel.Global)];
+
+                GlobalSettings.SetConfigSearchPaths(ConfigurationLevel.Xdg, []);
+                GlobalSettings.SetConfigSearchPaths(ConfigurationLevel.Global, []);
+
                 SyncRepository(basePath);
             }
             catch (Exception ex) {
@@ -99,6 +108,16 @@ public static class SpiralDB {
                                  "SpiralDB will be empty.");
 
                     return;
+                }
+            }
+            finally {
+                if (xdgPaths != null) {
+                    GlobalSettings.SetConfigSearchPaths(
+                        ConfigurationLevel.Xdg, xdgPaths);
+                }
+                if (globalPaths != null) {
+                    GlobalSettings.SetConfigSearchPaths(
+                        ConfigurationLevel.Global, globalPaths);
                 }
             }
         }
@@ -181,11 +200,6 @@ public static class SpiralDB {
             }
             // On rollback, the old references are still live — nothing to do.
         }
-    }
-
-    private static void IgnoreUserGitConfig() {
-        GlobalSettings.SetConfigSearchPaths(ConfigurationLevel.Xdg, []);
-        GlobalSettings.SetConfigSearchPaths(ConfigurationLevel.Global, []);
     }
 
     private static void SyncRepository(string basePath) {
