@@ -1258,7 +1258,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         }
 
         // Serialize the client tags, if present.
-        var tagList = GetClientTagList(gTemplate.m_clientTags?.ToArray() ?? []);
+        var tagList = GetClientTagList(gTemplate.m_clientTags?.Select(t => (string)t).ToArray() ?? []);
         var newSerializer = new ObjectSerializer(false);
         if (!newSerializer.Serialize(tagList, 1, out var clientTagData)) {
             Logger.Error("Failed to serialize client tag data for goal '{0}' in quest '{1}'",
@@ -1276,7 +1276,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         // Determine the destination zone. Do not send it if the player is currently in that zone.
         var wizard = GetActiveWizard();
         var currentZone = wizard.Zone ?? "";
-        var destZone = gTemplate.m_destinationZone ?? "";
+        string destZone = gTemplate.m_destinationZone;
         if (!forceSendDestZone
             && !string.IsNullOrEmpty(destZone)
             && destZone.Equals(currentZone, StringComparison.OrdinalIgnoreCase)) {
@@ -1346,7 +1346,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
 
         // If there were, determine how many of the adjectives matched.
         // We'll increment by that amount.
-        var matchCount = defeatedMobAdjectives.Count(goalMobAdjectives.Contains);
+        var matchCount = defeatedMobAdjectives.Count(adjective => goalMobAdjectives.Contains(adjective));
 
         if (goalTemplate.m_goalType == GOAL_TYPE.GOAL_TYPE_BOUNTYCOLLECT) {
             var chance = goalTemplate.m_tallyCounter?.m_percentChance ?? DEFAULT_KILL_COLLECT_CHANCE;
@@ -1594,7 +1594,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
 
     private static AssociatedWorldsList GetAssociatedWorlds(QuestTemplate qTemplate) {
         var worlds = qTemplate.m_goals
-            .Select(g => g.m_destinationZone ?? "")
+            .Select(g => (string)g.m_destinationZone)
             .Where(z => !string.IsNullOrWhiteSpace(z))
             .Select(z => z.Split('/')[0])                 // "MyWorld/HubZone..." -> "MyWorld"
             .Where(root => !string.IsNullOrWhiteSpace(root))
@@ -1606,7 +1606,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         if (worlds.Length == 0) {
             worlds = [.. qTemplate.m_goals
                 .OfType<WaypointGoalTemplate>()
-                .Select(w => w.m_zoneTag ?? "")
+                .Select(w => (string)w.m_zoneTag)
                 .Where(z => !string.IsNullOrWhiteSpace(z))
                 .Select(z => z.Split('/')[0])
                 .Where(root => !string.IsNullOrWhiteSpace(root))
@@ -1681,7 +1681,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         }
 
         var keep = DungeonQuestIndex.GetQuestsForZones(progress.IsInstance ? progress.Zones : [wizard.Zone])
-            .Select(t => t.m_questName)
+            .Select(t => (string)t.m_questName)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         var stale = wizard.QuestBehavior.CurrentQuestInstances
@@ -1714,7 +1714,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         }
 
         var completedQuests = (progress?.CompletedQuests ?? []).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var zoneQuestNames = templates.Select(t => t.m_questName).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var zoneQuestNames = templates.Select(t => (string)t.m_questName).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         bool Eligible(QuestTemplate template) {
             // An instance runs each quest once, whatever the player completed in earlier runs.

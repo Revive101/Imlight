@@ -127,7 +127,7 @@ internal class CinematicService(SessionActor sessionActor) : MessageService(sess
             return;
         }
 
-        var category = StateFactory.GetStateSet(template.m_actorStateSet ?? "")?.m_categories?
+        var category = StateFactory.GetStateSet(template.m_actorStateSet)?.m_categories?
             .FirstOrDefault(c => c?.m_states is { Count: > 0 });
         if (category is null || string.IsNullOrEmpty(category.m_startState)) {
             Logger.Warning("Cinematic {Name} has no usable state set {Set}.",
@@ -157,7 +157,7 @@ internal class CinematicService(SessionActor sessionActor) : MessageService(sess
             Template = template,
             States = category.m_states
                 .Where(s => s is not null && !string.IsNullOrEmpty(s.m_stateName))
-                .GroupBy(s => s.m_stateName, StringComparer.Ordinal)
+                .GroupBy(s => (string)s.m_stateName, StringComparer.Ordinal)
                 .ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal),
             ActorId = actor.m_globalID,
             PlayerId = player.m_globalID,
@@ -255,7 +255,7 @@ internal class CinematicService(SessionActor sessionActor) : MessageService(sess
         }
 
         foreach (var interaction in run.Template.m_stateInteractions ?? []) {
-            if (interaction?.m_actorState != stateName || string.IsNullOrEmpty(interaction.m_playerCinematicState)) {
+            if (interaction is null || interaction.m_actorState != stateName || string.IsNullOrEmpty(interaction.m_playerCinematicState)) {
                 continue;
             }
 
@@ -264,13 +264,13 @@ internal class CinematicService(SessionActor sessionActor) : MessageService(sess
         }
 
         var dialog = (run.Template.m_dialogList as ActorDialogList)?.m_dialogs?
-            .FirstOrDefault(d => d?.m_dialogTag == stateName);
+            .FirstOrDefault(d => d is not null && d.m_dialogTag == stateName);
         if (dialog is not null) {
             for (var i = 0; i < dialogSends; i++) {
                 SendDialog(dialog);
             }
 
-            run.PendingDialogEvents = dialog.m_dialogEvents?.Where(e => !string.IsNullOrEmpty(e)).ToList() ?? [];
+            run.PendingDialogEvents = dialog.m_dialogEvents?.Select(e => (string)e).Where(e => !string.IsNullOrEmpty(e)).ToList() ?? [];
             if (run.PendingDialogEvents.Count > 0) {
                 Timers.StartSingleTimer(
                     $"cinematic-dialog-{run.RunId}",
@@ -382,13 +382,13 @@ internal class CinematicService(SessionActor sessionActor) : MessageService(sess
             m_templateID = templateId,
             m_location = start,
             m_fScale = 1,
-            m_debugName = actorTemplate.m_objectName ?? "",
+            m_debugName = actorTemplate.m_objectName,
         }, actorTemplate);
 
         // The actor plays the cinematic's state set, not the template's own (NPCMobileStates).
         if (CoreObjectFactory.FindBehaviorInstance<ObjectStateBehavior>(actor, out var stateBehavior)) {
             stateBehavior.m_stateList = [];
-            stateBehavior.m_stateSetOverride = cinematic.m_actorStateSet ?? "";
+            stateBehavior.m_stateSetOverride = cinematic.m_actorStateSet;
         }
 
         if (!CoreObjectFactory.FindBehaviorInstance<CinematicActorBehavior>(actor, out var actorBehavior)) {
@@ -399,7 +399,7 @@ internal class CinematicService(SessionActor sessionActor) : MessageService(sess
 
         actorBehavior.m_startLocation = start;
         actorBehavior.m_targetLocation = target;
-        actorBehavior.m_rootAsset = cinematic.m_rootAsset ?? "";
+        actorBehavior.m_rootAsset = cinematic.m_rootAsset;
 
         return actor;
     }

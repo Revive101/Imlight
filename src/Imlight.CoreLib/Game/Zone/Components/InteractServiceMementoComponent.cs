@@ -333,7 +333,7 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity)
         SetMadLibBlock();
 
         var npcIconOrDefault = string.IsNullOrEmpty(highestPriority?.NpcIcon)
-            ? gameObjTemplate?.m_sIcon
+            ? gameObjTemplate?.m_sIcon.ToString()
             : highestPriority.NpcIcon;
         var npcNameKeyOrDefault = string.IsNullOrEmpty(highestPriority?.NpcNameKey)
             ? DEFAULT_NAME_KEY

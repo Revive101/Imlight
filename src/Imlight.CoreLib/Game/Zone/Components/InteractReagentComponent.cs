@@ -102,8 +102,8 @@ internal sealed class InteractReagentComponent(ZoneEntity entity)
     public static bool ShouldAttachToEntity(CoreTemplate template)
         => template is GameObjectTemplate goTemplate
         && goTemplate.m_adjectiveList is not null
-        && goTemplate.m_adjectiveList.Any(a => a is not null
-            && string.Equals(a.Trim(), "Reagent", StringComparison.OrdinalIgnoreCase));
+        && goTemplate.m_adjectiveList.Any(a => !a.IsEmpty
+            && string.Equals(((string)a).Trim(), "Reagent", StringComparison.OrdinalIgnoreCase));
 
     public IEnumerable<ServiceOptionBase> GetServiceOptions(Wizard _)
         => [ new InteractableOption { m_serviceName = ServiceName }];

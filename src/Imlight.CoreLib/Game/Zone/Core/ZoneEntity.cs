@@ -393,7 +393,9 @@ public class ZoneEntity(
     }
 
     private string DescribeForLog()
-        => ActiveGameObject?.m_debugName?.ToString() ?? GetType().Name;
+        => ActiveGameObject is null || ActiveGameObject.m_debugName.IsEmpty
+            ? GetType().Name
+            : ActiveGameObject.m_debugName.ToString();
 
     private static bool IsValidActorName(string name) {
         foreach (char c in name) {

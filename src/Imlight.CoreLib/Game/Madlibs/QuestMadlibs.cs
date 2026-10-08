@@ -172,11 +172,11 @@ internal static class QuestMadlibs {
         => gTemplate.m_tallyCounter is null ? [] : [
             new MadlibArgT_ByteString {
                 m_madlibToken = "TALLYTEXT",
-                m_madlibArgument = gTemplate.m_tallyCounter.m_descriptor ?? string.Empty
+                m_madlibArgument = gTemplate.m_tallyCounter.m_descriptor
             },
             new MadlibArgT_ByteString {
                 m_madlibToken = "TALLYTEXT2",
-                m_madlibArgument = gTemplate.m_tallyCounter.m_descriptor2 ?? string.Empty
+                m_madlibArgument = gTemplate.m_tallyCounter.m_descriptor2
             },
         ];
 

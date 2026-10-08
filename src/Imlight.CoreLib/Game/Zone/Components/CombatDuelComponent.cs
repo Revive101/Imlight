@@ -1373,7 +1373,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
                 }
 
                 var mobAdjectives = gameObjectTemplate.m_adjectiveList;
-                adjectivesOfDefeatedMobs.AddRange(mobAdjectives);
+                adjectivesOfDefeatedMobs.AddRange(mobAdjectives.Select(a => (string)a));
                 adjectivesPerDefeatedMob.Add([.. mobAdjectives]);
                 templateIdsOfDefeatedMobs.Add(gameObjectTemplate.m_templateID);
             }

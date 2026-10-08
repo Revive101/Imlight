@@ -108,7 +108,7 @@ internal sealed class ZoneObjectSupervisor(Core.Zone zone) : ZoneEntitySuperviso
         // Check if the adjectives contain "Critical."
         var adjectives = goTemplate.m_adjectiveList;
         return adjectives is not null
-            && adjectives.Any(adj => adj.Equals("Critical", StringComparison.OrdinalIgnoreCase));
+            && adjectives.Any(adj => string.Equals(adj, "Critical", StringComparison.OrdinalIgnoreCase));
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_SPAWNENTITY))]

@@ -299,8 +299,8 @@ internal class ChatService(SessionActor sessionActor) : MessageService(sessionAc
     }
 
     private static string CleanMessageTrash(ByteString message) {
-        if (message == null) {
-            return null;
+        if (message.IsEmpty) {
+            return string.Empty;
         }
 
         // Remove the first byte, unless it's the command prefix.

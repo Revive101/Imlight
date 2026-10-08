@@ -138,15 +138,16 @@ public class ServerPetOwnerBehavior : IClientBehaviorProvider<ClientPetOwnerBeha
     /// </summary>
     public static bool TryGetPetTemplateFromEgg(CraftingSlot egg, out ulong petTemplateId) {
         petTemplateId = 0;
-        if (egg?.m_recipeName == null) {
+        if (egg is null || egg.m_recipeName.IsEmpty) {
             return false;
         }
 
-        if (!egg.m_recipeName.StartsWith("PetEgg:")) {
+        string recipeName = egg.m_recipeName;
+        if (!recipeName.StartsWith("PetEgg:")) {
             return false;
         }
 
-        return ulong.TryParse(egg.m_recipeName.AsSpan(7), out petTemplateId);
+        return ulong.TryParse(recipeName.AsSpan(7), out petTemplateId);
     }
 
     /// <summary>

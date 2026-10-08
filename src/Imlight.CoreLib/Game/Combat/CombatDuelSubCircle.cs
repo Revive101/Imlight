@@ -488,7 +488,7 @@ public class CombatDuelSubCircle {
             foreach (var spell in _wizard.SpellbookBehavior.SpellList) {
                 var template = CoreObjectFactory.GetCoreTemplate(spell.m_templateID);
                 var isTreasureCard = template is SpellTemplate spellTemplate
-                    && (spellTemplate.m_Treasure || spellTemplate.m_name.EndsWith(" TC"));
+                    && (spellTemplate.m_Treasure || ((string)spellTemplate.m_name).EndsWith(" TC"));
 
                 // A deck entry the player hasn't learned can only be a treasure card (item cards live in
                 // TemporarySpells). Guarded on a populated list so an empty list can't misclassify the deck.

@@ -72,7 +72,7 @@ internal sealed class InteractDoorTeleportComponent(ZoneEntity entity)
     public string DisplayKey => null;
 
     public static bool ShouldAttachToEntity(CoreTemplate template) {
-        if (template is not GameObjectTemplate go || go.m_objectName is null) {
+        if (template is not GameObjectTemplate go || go.m_objectName.IsEmpty) {
             return false;
         }
 
@@ -106,7 +106,7 @@ internal sealed class InteractDoorTeleportComponent(ZoneEntity entity)
     private bool TryResolveTeleport(out ResTeleport teleport) {
         teleport = null;
         var zonePath = Entity.Zone?.ZonePath;
-        var name = (Entity.Template as GameObjectTemplate)?.m_objectName?.ToString();
+        var name = (Entity.Template as GameObjectTemplate)?.m_objectName.ToString();
         if (string.IsNullOrEmpty(zonePath) || string.IsNullOrEmpty(name)) {
             return false;
         }

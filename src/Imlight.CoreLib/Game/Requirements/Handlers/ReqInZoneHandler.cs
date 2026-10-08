@@ -54,7 +54,7 @@ internal sealed class ReqInZoneHandler : BaseRequirementHandler<ReqInZone> {
             return false;
         }
 
-        var zoneName = Requirement.m_zoneName;
+        string zoneName = Requirement.m_zoneName;
         if (string.IsNullOrEmpty(zoneName)) {
             return false;
         }

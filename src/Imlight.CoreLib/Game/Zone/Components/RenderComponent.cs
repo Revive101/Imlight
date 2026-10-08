@@ -227,7 +227,7 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
 
         // If the tag matches, spawn or despawn the object for the sender.
         var zoneTag = msg.ObjectName;
-        if (Entity.Info is not null && Entity.Info.m_zoneTag.Equals(zoneTag, System.StringComparison.OrdinalIgnoreCase)) {
+        if (Entity.Info is not null && string.Equals(Entity.Info.m_zoneTag, zoneTag, System.StringComparison.OrdinalIgnoreCase)) {
             // A state for the whole zone (a trigger result) reaches every player, not just one.
             if (!msg.ExclusiveToSender && msg.Sender is null) {
                 Entity.ChangeState(msg.StateName);

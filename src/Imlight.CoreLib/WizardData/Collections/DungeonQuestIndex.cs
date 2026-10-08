@@ -146,7 +146,7 @@ internal static class DungeonQuestIndex {
                 continue;
             }
 
-            var zone = inZone.m_zoneName;
+            string zone = inZone.m_zoneName;
             if (!string.IsNullOrEmpty(zone) && !zones.Contains(zone, StringComparer.OrdinalIgnoreCase)) {
                 zones.Add(zone);
             }

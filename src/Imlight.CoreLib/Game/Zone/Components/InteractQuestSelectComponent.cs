@@ -231,7 +231,7 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
     private static bool DoesGoalMatchObject(GameObjectTemplate gameObjectTemplate, string questName, GoalTemplate goal) {
         var clientTags = goal.m_clientTags;
         if (clientTags is not null
-            && (clientTags.Contains(gameObjectTemplate.m_objectName) || InteractOptionGoalTags(gameObjectTemplate).Any(clientTags.Contains))) {
+            && (clientTags.Contains(gameObjectTemplate.m_objectName) || InteractOptionGoalTags(gameObjectTemplate).Any(tag => clientTags.Contains(tag)))) {
             return true;
         }
 
@@ -275,7 +275,7 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
 
         return (tags.Count > 0
                 && quests.SelectMany(q => q.m_goals)
-                    .Any(g => g is not null && g.m_goalType == GOAL_TYPE.GOAL_TYPE_USAGE && g.m_clientTags?.Any(tags.Contains) == true))
+                    .Any(g => g is not null && g.m_goalType == GOAL_TYPE.GOAL_TYPE_USAGE && g.m_clientTags?.Any(tag => tags.Contains(tag)) == true))
             || quests.Any(q => q.m_goals.Any(g => g is not null && g.m_goalType == GOAL_TYPE.GOAL_TYPE_USAGE && RequiresGoal(option, q.m_questName, g.m_goalName)));
     }
 
