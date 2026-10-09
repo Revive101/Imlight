@@ -55,6 +55,8 @@ public static class ResultDispatcher {
     /// <param name="questName">The quest name (if applicable)</param>
     /// <param name="goalName">The goal name (if applicable)</param>
     /// <param name="triggerName">The trigger name (if applicable)</param>
+    /// <param name="skipWorldEffects">Drops the results that change the zone itself (another player's step already ran them)</param>
+    /// <param name="xpScale">Multiplies the experience of drop tables among the results</param>
     public static void ExecuteResults(IActorContext actorContext,
                                      ResultList results,
                                      IActorRef playerRef,
@@ -63,16 +65,48 @@ public static class ResultDispatcher {
                                      IActorRef zoneActor = null,
                                      string questName = null,
                                      string goalName = null,
-                                     string triggerName = null) {
+                                     string triggerName = null,
+                                     Zone.Core.ZoneScriptState scriptState = null,
+                                     bool skipWorldEffects = false,
+                                     float xpScale = 1f,
+                                     bool playerSpawned = false) {
+        if (skipWorldEffects && results?.m_results is not null) {
+            results = new ResultList { m_results = results.m_results.Where(r => !ChangesZone(r)).ToList() };
+        }
+
         // Results carry their own requirements in the data; evaluate them here, before the executor
         // is created, so an executor actor only ever handles results whose requirements were met.
         var filteredResults = FilterResultsByRequirements(
-            results, playerRef, playerObj, zoneActor, questName, goalName, triggerName);
-        var context = new GenericResultContext(filteredResults, playerRef, playerObj, replyTo, zoneActor, questName, goalName, triggerName);
+            results, playerRef, playerObj, zoneActor, questName, goalName, triggerName, scriptState);
+        var context = new GenericResultContext(filteredResults, playerRef, playerObj, replyTo, zoneActor, questName, goalName, triggerName) {
+            XpScale = xpScale,
+            PlayerSpawned = playerSpawned,
+        };
         var executor = CreateExecutorInstance(actorContext, context);
 
         executor.Tell(new CHARACTER_103_PROTOCOL.MSG_EXECUTERESULTS());
     }
+
+    // The results that change the zone itself, as opposed to the ones that only affect the acting player.
+    private static readonly HashSet<Type> s_zoneEffectTypes = [
+        typeof(ResSpawn),
+        typeof(ResDespawn),
+        typeof(ResPostEvent),
+        typeof(ResModifyTriggerObject),
+        typeof(ResRemoveTriggerObject),
+        typeof(ResStartStagedCinematic),
+        typeof(ResZoneTokenEnable),
+        typeof(ResZoneTokenDisable),
+        typeof(ResZoneTokenModify),
+        typeof(ResZoneTokenReset),
+        typeof(ResZoneCounter),
+        typeof(ResEncounterSetVariable),
+        typeof(ResAddDynaMod),
+        typeof(ResRemoveDynaMod),
+    ];
+
+    private static bool ChangesZone(Result result)
+        => result is not null && s_zoneEffectTypes.Contains(result.GetType());
 
     private static ResultList FilterResultsByRequirements(ResultList results,
                                                            IActorRef playerRef,
@@ -80,7 +114,8 @@ public static class ResultDispatcher {
                                                            IActorRef zoneActor,
                                                            string questName,
                                                            string goalName,
-                                                           string triggerName) {
+                                                           string triggerName,
+                                                           Zone.Core.ZoneScriptState scriptState) {
         if (results?.m_results is null || results.m_results.Count == 0
             || !results.m_results.Any(r => r?.m_requirements is not null)) {
             return results;
@@ -118,7 +153,9 @@ public static class ResultDispatcher {
                     questName: questName,
                     goalName: goalName,
                     triggerName: triggerName
-                );
+                ) {
+                    ScriptState = scriptState,
+                };
                 if (!RequirementDispatcher.EvaluateRequirements(result.m_requirements, requirementContext)) {
                     continue;
                 }

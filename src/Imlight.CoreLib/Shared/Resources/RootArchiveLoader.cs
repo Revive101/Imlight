@@ -38,6 +38,7 @@ internal static class RootArchiveLoader {
     internal static Archive GetRootWad() => s_rootWad;
     private static readonly Lock s_lock = new();
     private static Archive s_rootWad;
+    private static readonly Dictionary<string, Archive> s_namedWads = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
     /// Reloads the Root.wad file into memory.
@@ -101,6 +102,62 @@ internal static class RootArchiveLoader {
 
             return file;
         }
+    }
+
+    /// <summary>
+    /// Retrieves a file of type T from a named archive (e.g. <c>&lt;Dir&gt;-WorldData.wad</c>).
+    /// The archive is opened once and cached by name.
+    /// </summary>
+    /// <typeparam name="T">The type of the file to retrieve.</typeparam>
+    /// <param name="wadName">The archive name, with or without the <c>.wad</c> extension.</param>
+    /// <param name="fileName">The name of the file inside the archive.</param>
+    /// <returns>The file of type T, or null if the archive or file is missing.</returns>
+    internal static T GetFileFromWad<T>(string wadName, string fileName) where T : PropertyClass {
+        lock (s_lock) {
+            if (!s_namedWads.TryGetValue(wadName, out var wad)) {
+                wad = LoadNamedWad(wadName);
+                s_namedWads[wadName] = wad;
+            }
+
+            if (wad is null || !wad.Files.ContainsKey(fileName)) {
+                return null;
+            }
+
+            var fileData = wad.OpenFile(fileName);
+            if (fileData is null) {
+                return null;
+            }
+
+            var serializer = new BindSerializer();
+
+            return serializer.Deserialize(fileData.Value.ToArray(), out T file) ? file : null;
+        }
+    }
+
+    private static Archive LoadNamedWad(string wadName) {
+        var cachedWad = LocalWadCache.GetCachedWad(wadName);
+        if (cachedWad is not null) {
+            return cachedWad;
+        }
+
+        if (!PatchServerFascade.EndpointReached) {
+            Logger.Error("Patch server is not reachable. Cannot load {WadName}.", Logger.Args(wadName));
+
+            return null;
+        }
+
+        var fullName = wadName.EndsWith(".wad", StringComparison.OrdinalIgnoreCase) ? wadName : wadName + ".wad";
+        if (!PatchServerFascade.DownloadWadFromPatchServer(fullName, out var stream)) {
+            Logger.Error("Failed to download wad {WadName} from patch server", Logger.Args(fullName));
+
+            return null;
+        }
+
+        stream.Seek(0, SeekOrigin.Begin);
+        var wad = ArchiveParser.Parse(stream);
+        LocalWadCache.CacheWad(fullName, wad);
+
+        return wad;
     }
 
     /// <summary>

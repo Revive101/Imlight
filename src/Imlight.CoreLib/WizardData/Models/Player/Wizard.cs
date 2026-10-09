@@ -376,7 +376,15 @@ public class Wizard {
     }
 
     public bool AddItemToInventory(ulong itemId, out WizClientObjectItem item) {
-        item = (WizClientObjectItem) CoreObjectFactory.FinalizeCoreObject(itemId);
+        // The template may be a spell, a missing template or anything else that is not an item.
+        item = CoreObjectFactory.FinalizeCoreObject(itemId) as WizClientObjectItem;
+        if (item is null) {
+            Logger.Warning("Cannot add template {0} to inventory because it is not an item.",
+                Logger.Args(itemId));
+
+            return false;
+        }
+
         item.m_characterId = (GID) CharId;
 
         return AddItemToInventory(item);
@@ -1177,6 +1185,36 @@ public class Wizard {
         return true;
     }
 
+    public bool RemoveRegistryValue(string key) {
+        if (!QuestBehavior.HasRegistryValue(key)) {
+            return true;
+        }
+
+        if (!QuestBehavior.RemoveRegistryValue(key)) {
+            return false;
+        }
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterQuestBehavior(this);
+
+        return true;
+    }
+
+    public bool RemoveQuestRegistryValue(string questName, string key) {
+        if (!QuestBehavior.HasQuestRegistryValue(questName, key)) {
+            return true;
+        }
+
+        if (!QuestBehavior.RemoveQuestRegistryValue(questName, key)) {
+            return false;
+        }
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterQuestBehavior(this);
+
+        return true;
+    }
+
     public bool HasRegistryValue(string key)
         => QuestBehavior.HasRegistryValue(key);
 
@@ -1563,7 +1601,7 @@ public class Wizard {
                     Logger.Args(quest.QuestName, PlayerNameBehavior.GetWizardName()));
 
                 QuestBehavior.CurrentQuestInstances.Remove(quest);
-                QuestInstanceCollection.RemoveQuestInstance(CharId, quest.QuestName);
+                QuestInstanceCollection.RemoveQuestInstance(quest.ID);
 
                 continue;
             }

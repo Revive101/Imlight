@@ -34,7 +34,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 09/27/2026
  */
 
 using Akka.Actor;
@@ -56,6 +56,7 @@ internal sealed class InstanceContainer(ulong instanceOwnerId) : ReceiveProtocol
     private readonly ulong _instanceOwnerId = instanceOwnerId;
     private readonly List<uint> _dynamicZoneIds = [];
     private readonly Dictionary<string, IActorRef> _zones = [];
+    private readonly Zone.Core.InstanceQuestProgress _questProgress = new();
 
     public static Props Props(ulong instanceOwnerId) 
         => Akka.Actor.Props.Create(() => new InstanceContainer(instanceOwnerId));
@@ -81,6 +82,7 @@ internal sealed class InstanceContainer(ulong instanceOwnerId) : ReceiveProtocol
         zoneActor.Tell(message);
 
         _zones[zoneName] = zoneActor;
+        _questProgress.AddZone(zoneName);
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_INSTANCECONTAINERHASZONE))]
@@ -89,11 +91,31 @@ internal sealed class InstanceContainer(ulong instanceOwnerId) : ReceiveProtocol
             HasZone = _zones.ContainsKey(message.ZoneName)
         });
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_MODIFYTRIGGEROBJECT))]
+    public void ReceiveModifyTriggerObject(ZONE_102_PROTOCOL.MSG_MODIFYTRIGGEROBJECT message) {
+        foreach (var zoneActor in _zones.Values) {
+            if (zoneActor.Equals(Sender)) {
+                continue;
+            }
+
+            zoneActor.Tell(new ZONE_102_PROTOCOL.MSG_MODIFYTRIGGEROBJECT {
+                ObjectName = message.ObjectName,
+                StateName = message.StateName,
+                PlayerActor = message.PlayerActor,
+                PlayerGameObject = message.PlayerGameObject,
+                PlayerSpawned = message.PlayerSpawned,
+                Relayed = true,
+            }, Self);
+        }
+    }
+
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_DROPINSTANCEZONE))]
     public void ReceiveDropInstanceZone(ZONE_102_PROTOCOL.MSG_DROPINSTANCEZONE message) {
         if (!_zones.Remove(message.ZoneName, out var zoneActor)) {
             return;
         }
+
+        _questProgress.RemoveZone(message.ZoneName);
 
         Logger.Information("Dropping instance zone {ZoneName} (owner {OwnerId})",
             Logger.Args(message.ZoneName, _instanceOwnerId));
@@ -104,7 +126,9 @@ internal sealed class InstanceContainer(ulong instanceOwnerId) : ReceiveProtocol
     private IActorRef CreateZone(string zoneName) {
         var zoneActorName = SanitizeZoneName(zoneName);
         var zoneId = GetNextDynamicZoneId();
-        var zone = Context.ActorOf(Zone.Core.Zone.Props(zoneName, zoneId), zoneActorName);
+
+        // Every zone created under an instance container is, by definition, instanced.
+        var zone = Context.ActorOf(Zone.Core.Zone.Props(zoneName, zoneId, true, _questProgress), zoneActorName);
 
         // Log the new zone creation.
         Logger.Information("Game world created new zone: {ZoneName}",

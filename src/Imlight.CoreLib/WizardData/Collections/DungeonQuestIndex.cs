@@ -34,6 +34,7 @@
  * purely a data change. Only TOP-LEVEL ReqInZone requirements are considered,
  * matching what RequirementDispatcher can evaluate; a NOT-inverted ReqInZone
  * is a zone gate, not a marker, and is skipped.
+ * A dungeon's quests apply in every zone of the player's instance container.
  * 
  * TODO:
  * 
@@ -63,11 +64,21 @@ internal static class DungeonQuestIndex {
     private static readonly object s_lock = new();
     private static bool s_built;
 
-    public static IReadOnlyList<QuestTemplate> GetQuestsForZone(string zonePath) {
+    /// <summary>
+    /// The dungeon quests of the zones, such as the zones of one instance container.
+    /// </summary>
+    public static IReadOnlyList<QuestTemplate> GetQuestsForZones(IEnumerable<string> zonePaths) {
         Build();
 
         lock (s_lock) {
-            return s_questsByZone.TryGetValue(zonePath ?? "", out var quests) ? quests : [];
+            var quests = new List<QuestTemplate>();
+            foreach (var zonePath in zonePaths ?? []) {
+                if (s_questsByZone.TryGetValue(zonePath ?? "", out var zoneQuests)) {
+                    quests.AddRange(zoneQuests.Where(q => !quests.Contains(q)));
+                }
+            }
+
+            return quests;
         }
     }
 
@@ -135,7 +146,7 @@ internal static class DungeonQuestIndex {
                 continue;
             }
 
-            var zone = inZone.m_zoneName;
+            string zone = inZone.m_zoneName;
             if (!string.IsNullOrEmpty(zone) && !zones.Contains(zone, StringComparer.OrdinalIgnoreCase)) {
                 zones.Add(zone);
             }

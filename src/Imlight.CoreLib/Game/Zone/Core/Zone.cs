@@ -24,7 +24,7 @@
  * and communication between zone supervisors.
  * 
  * USAGE EXAMPLE:
- * var zoneActor = Context.ActorOf(Zone.Props("MyWorld/Hub", 12345));
+ * var zoneActor = Context.ActorOf(Zone.Props("MyWorld/Hub", 12345, false));
  * 
  * NOTE:
  * Uses Akka actor model for asynchronous communication and supervisor pattern.
@@ -35,7 +35,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/26/2026
+ * Last Updated: 09/27/2026
  */
 
 using System;
@@ -54,6 +54,7 @@ using Imlight.CoreLib.Game.Zone.Supervisors;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Zone.Core;
 
@@ -69,6 +70,12 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     /// The zone data as loaded from game client data.
     /// </summary>
     public WizZoneData ZoneData { get; private set; }
+
+    /// <summary>
+    /// Whether this zone is a private, per-owner instance (a dungeon/raid loaded under an
+    /// <see cref="World.InstanceContainer"/>) rather than a shared public zone.
+    /// </summary>
+    public bool IsInstance { get; }
 
     /// <summary>
     /// The zone path, formatted as it would be in the access pass.
@@ -89,6 +96,15 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         }
     }
 
+    /// <summary>
+    /// The state of every named object in this zone instance, read by trigger requirements.
+    /// </summary>
+
+    /// <summary>
+    /// The tokens, counters and puzzle variables of this zone instance, read by trigger requirements.
+    /// </summary>
+    public ZoneScriptState ScriptState { get; }
+
     public ITimerScheduler Timers { get; set; }
 
     private readonly uint _dynamicZoneId;
@@ -107,6 +123,8 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     private readonly HashSet<GID> _criticalObjectIds = [];
     private bool _isLoading;
     private int _playerCount;
+    private const string IDLE_EXPIRE_TIMER = "instance-idle-expire";
+    private const int DEFAULT_INSTANCE_IDLE_MINUTES = 10;
     private readonly List<ZONE_102_PROTOCOL.MSG_PLAYERMOVE> _pendingPlayerMoves = [];
     private readonly List<ZONE_102_PROTOCOL.MSG_CREATUREMOVE> _pendingCreatureMoves = [];
 
@@ -115,9 +133,13 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     /// </summary>
     /// <param name="zonePath">The path of the zone, formatted as it would be in the access pass.</param>
     /// <param name="dynamicZoneId">The dynamic zone ID of the zone.</param>
-    public Zone(string zonePath, uint dynamicZoneId) {
+    /// <param name="isInstance">Whether this zone is a private, per-owner instance.</param>
+    /// <param name="questProgress">The quest progress shared by the zones of one instance container; null for a zone of its own.</param>
+    public Zone(string zonePath, uint dynamicZoneId, bool isInstance, InstanceQuestProgress questProgress = null) {
+        this.ScriptState = new ZoneScriptState(questProgress);
         this.ZonePath = zonePath;
         this._dynamicZoneId = dynamicZoneId;
+        this.IsInstance = isInstance;
         this._isLoading = true;
         this._zoneLoadTimer = new Stopwatch();
 
@@ -144,8 +166,8 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     // Props
-    public static Props Props(string zonePath, uint dynamicZoneId)
-        => Akka.Actor.Props.Create(() => new Zone(zonePath, dynamicZoneId))
+    public static Props Props(string zonePath, uint dynamicZoneId, bool isInstance, InstanceQuestProgress questProgress = null)
+        => Akka.Actor.Props.Create(() => new Zone(zonePath, dynamicZoneId, isInstance, questProgress))
             .WithMailbox("akka.actor.mailbox.zone-priority");
 
     protected override void PreRestart(Exception reason, object message) {
@@ -205,7 +227,9 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         }
 
         _playerCount++;
+        Timers.Cancel(IDLE_EXPIRE_TIMER);
         InformZoneSupervisors(message.PlayerActor, message);
+        RestoreRememberedSpawns(message.Wizard);
         
         // Send response to confirm player was added
         var response = new ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP {
@@ -229,6 +253,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
 
         InformZoneSupervisors(message.PlayerActor, message);
         ReleaseObjectIdentifier(message.MobileId);
+        ScheduleIdleExpiryIfEmpty();
         Sender.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYERRSP());
     }
 
@@ -322,6 +347,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
             _zoneLoadTimer.Stop();
             Logger.Information("Zone {ZoneName} loaded in {Time}ms.", Logger.Args(ZoneName, _zoneLoadTimer.ElapsedMilliseconds));
             _isLoading = false;
+            ScheduleIdleExpiryIfEmpty();
 
             var startMsg = new ZONE_102_PROTOCOL.MSG_ZONESTART();
 
@@ -365,7 +391,62 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         foreach (var supervisor in _supervisors) {
             supervisor.Tell(message);
         }
+
+        // Goals that list the event complete for every player in this zone instance.
+        DispatchBroadcast(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+            Messages = [new ZONE_102_PROTOCOL.MSG_ZONEEVENTFORQUESTS { EventName = message.EventName.ToString() }],
+            Targets = ZoneBroadcastTarget.Players,
+        });
     }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_MODIFYTRIGGEROBJECT))]
+    private void ReceiveModifyTriggerObject(ZONE_102_PROTOCOL.MSG_MODIFYTRIGGEROBJECT message)
+        => _triggerSupervisor.Forward(message);
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVETRIGGEROBJECT))]
+    private void ReceiveRemoveTriggerObject(ZONE_102_PROTOCOL.MSG_REMOVETRIGGEROBJECT message) {
+        _triggerSupervisor.Forward(message);
+        _objectSupervisor.Forward(message);
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDTRIGGEROBJECT))]
+    private void ReceiveAddTriggerObject(ZONE_102_PROTOCOL.MSG_ADDTRIGGEROBJECT message)
+        => _objectSupervisor.Forward(message);
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYINSTANCEQUESTS))]
+    private void ReceiveQueryInstanceQuests(ZONE_102_PROTOCOL.MSG_QUERYINSTANCEQUESTS message)
+        => Sender.Tell(IsInstance ? ScriptState.SnapshotQuestProgress() : new ZONE_102_PROTOCOL.MSG_QUERYINSTANCEQUESTSRSP());
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_CLAIMINSTANCEQUEST))]
+    private void ReceiveClaimInstanceQuest(ZONE_102_PROTOCOL.MSG_CLAIMINSTANCEQUEST message) {
+        if (!IsInstance) {
+            Sender.Tell(new ZONE_102_PROTOCOL.MSG_CLAIMINSTANCEQUESTRSP { First = true });
+
+            return;
+        }
+
+        var first = ScriptState.TryClaimQuestStep(message.Kind, message.QuestName, message.GoalName);
+        Sender.Tell(new ZONE_102_PROTOCOL.MSG_CLAIMINSTANCEQUESTRSP { First = first });
+
+        if (first && message.Kind == InstanceQuestClaimKind.GoalComplete) {
+            DispatchBroadcast(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+                Messages = [new ZONE_102_PROTOCOL.MSG_INSTANCEGOALCOMPLETED {
+                    Origin = message.Origin,
+                    QuestName = message.QuestName,
+                    GoalName = message.GoalName,
+                }],
+                Targets = ZoneBroadcastTarget.Players,
+            });
+        }
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONESCRIPTRESULT))]
+    private void ReceiveZoneScriptResult(ZONE_102_PROTOCOL.MSG_ZONESCRIPTRESULT message)
+        => ScriptState.Apply(message.Result, message.PlayerGameObject?.m_globalID.Full ?? 0);
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_STARTSTAGEDCINEMATIC))]
+    private void ReceiveStartStagedCinematic(ZONE_102_PROTOCOL.MSG_STARTSTAGEDCINEMATIC message)
+        => _triggerSupervisor.Forward(message);
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEENTITY))]
     private void ReceiveQueryEntityObject(ZONE_102_PROTOCOL.MSG_QUERYZONEENTITY message) {
@@ -411,6 +492,18 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         var props = Akka.Actor.Props.Create(() => (T) Activator.CreateInstance(typeof(T), this));
         
         return Context.ActorOf(props, typeof(T).Name);
+    }
+
+    private void RestoreRememberedSpawns(Wizard wizard) {
+        foreach (var spawnId in RememberedSpawns.Get(wizard, ZonePath)) {
+            DispatchBroadcast(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+                Messages = [new ZONE_102_PROTOCOL.MSG_ZONEPATHSPAWN {
+                    SpawnObjectID = (uint) spawnId,
+                    OnlyIfAbsent = true,
+                }],
+                Targets = ZoneBroadcastTarget.Paths,
+            });
+        }
     }
 
     private void InformZoneSupervisors(IActorRef player, IServerMessage message) {
@@ -473,7 +566,9 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
             }
             else if (pendingEvent is ZONE_102_PROTOCOL.MSG_ADDPLAYER addPlayer) {
                 _playerCount++;
+                Timers.Cancel(IDLE_EXPIRE_TIMER);
                 InformZoneSupervisors(playerActor, addPlayer);
+                RestoreRememberedSpawns(addPlayer.Wizard);
                 
                 // Send response to confirm player was added
                 var response = new ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP {
@@ -487,6 +582,31 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         }
         
         _pendingPlayerEvents.Clear();
+    }
+
+    private void ScheduleIdleExpiryIfEmpty() {
+        // Instance.IdleMinutes of 0 or less disables the expiry; a join cancels the timer.
+        if (!IsInstance || _playerCount > 0 || _isLoading) {
+            return;
+        }
+
+        var minutes = ConfigurationManager.GetValue("Instance.IdleMinutes", DEFAULT_INSTANCE_IDLE_MINUTES);
+        if (minutes <= 0) {
+            return;
+        }
+
+        Timers.StartSingleTimer(IDLE_EXPIRE_TIMER, new ZONE_102_PROTOCOL.MSG_INSTANCEIDLEEXPIRE(),
+            TimeSpan.FromMinutes(minutes));
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_INSTANCEIDLEEXPIRE))]
+    private void ReceiveInstanceIdleExpire(ZONE_102_PROTOCOL.MSG_INSTANCEIDLEEXPIRE message) {
+        if (!IsInstance || _playerCount > 0) {
+            return;
+        }
+
+        Logger.Information("Instance zone {ZoneName} idle with no players, dropping it.", Logger.Args(ZoneName));
+        Context.Parent.Tell(new ZONE_102_PROTOCOL.MSG_DROPINSTANCEZONE { ZoneName = ZonePath });
     }
 
     private ushort GenerateObjectIdentifier() {

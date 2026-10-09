@@ -40,6 +40,11 @@ internal sealed class ReqHasQuestHandler : BaseRequirementHandler<ReqHasQuest> {
             return false;
         }
 
+        if (context is IZoneStateContext { InstanceQuestCompleted: { } instanceCompleted }
+            && instanceCompleted(questName) is { } completed) {
+            return completed || wizard.QuestBehavior.CurrentQuestInstances.Any(q => q.QuestName == questName);
+        }
+
         return HasQuestActiveOrCompleted(wizard, questName);
     }
 

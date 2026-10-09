@@ -36,7 +36,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/26/2026
+ * Last Updated: 09/27/2026
  */
 
 using System;
@@ -329,7 +329,10 @@ public class GameWorld : ReceiveProtocolDispatcher, IWithTimers {
     private IActorRef CreateZone(string zoneName) {
         var zoneActorName = SanitizeZoneName(zoneName);
         var zoneId = GetNextDynamicZoneId();
-        var zone = Context.ActorOf(Zone.Core.Zone.Props(zoneName, zoneId), zoneActorName);
+
+        // Zones created here are always the shared public copy; see ReceiveZoneLoadResults for
+        // the isInstancedZone determination that routes instanced zones to an InstanceContainer instead.
+        var zone = Context.ActorOf(Zone.Core.Zone.Props(zoneName, zoneId, false), zoneActorName);
 
         // Log the new zone creation.
         Logger.Information("Game world created new zone: {ZoneName}",

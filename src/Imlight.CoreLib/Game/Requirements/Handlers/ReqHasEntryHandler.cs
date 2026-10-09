@@ -16,6 +16,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.WizardData.Models.Player;
 
@@ -37,6 +38,13 @@ internal sealed class ReqHasEntryHandler : BaseRequirementHandler<ReqHasEntry> {
         var entryName = Requirement.m_entryName;
         if (string.IsNullOrEmpty(entryName)) {
             return false;
+        }
+
+        if (Requirement.m_isQuestRegistry
+            && string.Equals(entryName, "Complete", StringComparison.OrdinalIgnoreCase)
+            && context is IZoneStateContext { InstanceQuestCompleted: { } instanceCompleted }
+            && instanceCompleted(questName) is { } completed) {
+            return completed;
         }
 
         return GetEntryValue(wizard, questName, entryName);

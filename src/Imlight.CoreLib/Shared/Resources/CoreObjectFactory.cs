@@ -176,14 +176,29 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
                 return null;
             }
 
-            var templateObj = RootArchiveLoader.GetFile<CoreTemplate>(templateLocation.m_filename);
+            var templateObj = LoadTemplateFile(templateLocation.m_filename);
             if (templateObj is null) {
-                Logger.Error("Could not load CoreTemplate from {Loc}. Could not get file from root archive.",
+                Logger.Error("Could not load CoreTemplate from {Loc}. Could not get file from its archive.",
                     Logger.Args(templateLocation.m_filename));
             }
 
             return templateObj;
         });
+    }
+
+    /// <summary>
+    /// Loads a template file. Names shaped <c>|&lt;Dir&gt;|WorldData|&lt;path&gt;</c> live in
+    /// the <c>&lt;Dir&gt;-WorldData</c> archive; everything else lives in Root.wad.
+    /// </summary>
+    internal static CoreTemplate LoadTemplateFile(string fileName) {
+        if (fileName is not null && fileName.StartsWith('|')) {
+            var parts = fileName.Split('|', 4);
+            if (parts.Length == 4 && parts[2] == "WorldData") {
+                return RootArchiveLoader.GetFileFromWad<CoreTemplate>($"{parts[1]}-WorldData", parts[3]);
+            }
+        }
+
+        return RootArchiveLoader.GetFile<CoreTemplate>(fileName);
     }
 
     private static Dictionary<ulong, TemplateLocation> TemplateLocations()
@@ -283,9 +298,9 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
         obj.m_orientation = objInfo.m_orientation;
         obj.m_fScale = objInfo.m_fScale;
         obj.m_globalID = RandomGen.GenerateGUID();
+        obj.m_zoneTagID = StringHash.Compute(objInfo.m_zoneTag);
         obj.m_permID = RandomGen.GenerateHash(string.Create(CultureInfo.InvariantCulture,
             $"{obj.m_zoneTagID}{obj.m_templateID}{obj.m_location.X}"));
-        obj.m_zoneTagID = StringHash.Compute(objInfo.m_zoneTag);
         obj.m_debugName = objInfo.m_zoneTag;
 
         // Check to see if the template has a field called "m_displayName."

@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty, Joji
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 09/27/2026
  */
 
 using System;
@@ -43,9 +43,11 @@ using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
+using Imlight.CoreLib.Game.Spells;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.Shared.Utilities;
+using Imlight.CoreLib.WizardData.Collections;
 
 namespace Imlight.CoreLib.Game.Services;
 
@@ -91,14 +93,18 @@ internal class InventoryService(SessionActor sessionActor) : MessageService(sess
 
     [MessageHandler(typeof(WIZARD2_53_PROTOCOL.MSG_QUICKSELLREQUEST))]
     private void ReceiveQuickSellRequest(WIZARD2_53_PROTOCOL.MSG_QUICKSELLREQUEST message) {
+        // Non-versionable: the client compact-encodes this Data blob, same as every other
+        // hand-defined message's embedded ObjectProperty payload (CombatDuelComponent, etc.).
         var serializer = new ObjectSerializer(
+            Versionable: false,
             Behaviors: SerializerFlags.None
         );
 
         var wizard = GetActiveWizard();
         int goldSum = 0;
 
-        if (!serializer.Deserialize<QuickSellItemList>(message.Data, 4, out var quickSellItemList)) {
+        if (!serializer.Deserialize<QuickSellItemList>(message.Data, 4, out var quickSellItemList)
+            || quickSellItemList.m_quickSellItemList is null) {
             Logger.Log.Error("Failed to deserialize quicksell item list.");
 
             return;
@@ -107,24 +113,55 @@ internal class InventoryService(SessionActor sessionActor) : MessageService(sess
         // Remove items from inventory and equipment, tally up gold sum.
         foreach (QuickSellItem quickSellItem in quickSellItemList.m_quickSellItemList) {
             var item = wizard.InventoryBehavior.GetItem(quickSellItem.m_sellItemGID);
-            var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID);
+            if (item is not null) {
+                var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID);
 
-            wizard.RemoveItemFromInventory(item.m_globalID);
+                wizard.RemoveItemFromInventory(item.m_globalID);
 
-            // Some items (snack, reagents) are stackable.
-            for (int i = 0; i < quickSellItem.m_quantity; i++) {
-                SendToSocket(new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_REMOVEITEM() {
-                    GlobalID = wizard.GameObjectID,
-                    ItemID = quickSellItem.m_sellItemGID
-                });
+                // Some items (snack, reagents) are stackable.
+                for (int i = 0; i < quickSellItem.m_quantity; i++) {
+                    SendToSocket(new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_REMOVEITEM() {
+                        GlobalID = wizard.GameObjectID,
+                        ItemID = quickSellItem.m_sellItemGID
+                    });
 
-                var value = (int) Math.Ceiling(template.m_baseCost * 0.05f);
-                if (template.m_numPrimaryColors != 1 && template.m_numSecondaryColors != 0) {
-                    value = (int) Math.Ceiling(value * 1.2275f); // Dyed items are more expensive.
+                    var value = (int) Math.Ceiling(template.m_baseCost * 0.05f);
+                    if (template.m_numPrimaryColors != 1 && template.m_numSecondaryColors != 0) {
+                        value = (int) Math.Ceiling(value * 1.2275f); // Dyed items are more expensive.
+                    }
+
+                    goldSum += value;
                 }
 
-                goldSum += value;
+                continue;
             }
+
+            // Treasure cards aren't in InventoryBehavior: the spellbook tracks them by
+            // spell hash (see SpellBookService's treasure handlers), not a GID.
+            var sellItemHash = (uint) (ulong) quickSellItem.m_sellItemGID;
+            var treasureCardTemplateId = SpellFactory.GetTemplateIdByHash(sellItemHash);
+            if (treasureCardTemplateId != 0
+                && CoreObjectFactory.GetCoreTemplate(treasureCardTemplateId) is SpellTemplate spellTemplate) {
+                for (int i = 0; i < quickSellItem.m_quantity; i++) {
+                    if (!wizard.SpellbookBehavior.RemoveTreasureCard(treasureCardTemplateId)) {
+                        break;
+                    }
+
+                    WizardCollection.RemoveTreasureCard(wizard, treasureCardTemplateId);
+
+                    SendToSocket(new WIZARD_12_PROTOCOL.MSG_REMOVETREASURESPELLFROMBOOK() {
+                        SpellID = (int) sellItemHash,
+                        EnchantmentID = 0
+                    });
+
+                    goldSum += (int) Math.Ceiling(spellTemplate.m_baseCost * 0.05f);
+                }
+
+                continue;
+            }
+
+            Logger.Log.Warning("Could not resolve quicksell item {0}; nothing was sold for it.",
+                Logger.Args(quickSellItem.m_sellItemGID));
         }
 
         // Update player with their new gold balance.

@@ -20,7 +20,7 @@
  * ========================================================================
  * 
  * PURPOSE:
- * Evaluates ReqInZone: the player must be in the required zone. Also the
+ * Evaluates ReqInZone: the player must be in the required zone, or in any zone of the instance when the check carries the instance's zones. Also the
  * dungeon-quest force-add marker: a quest whose m_requirements require being
  * in the dungeon zone is auto-granted on entry (see DungeonQuestIndex and
  * QuestService.TryGrantDungeonQuests).
@@ -40,7 +40,9 @@
  */
 
 using System;
+using System.Linq;
 using Imcodec.ObjectProperty.TypeCache;
+using Imlight.CoreLib.Game.Requirements.Contexts;
 
 namespace Imlight.CoreLib.Game.Requirements.Handlers;
 
@@ -52,9 +54,13 @@ internal sealed class ReqInZoneHandler : BaseRequirementHandler<ReqInZone> {
             return false;
         }
 
-        var zoneName = Requirement.m_zoneName;
+        string zoneName = Requirement.m_zoneName;
         if (string.IsNullOrEmpty(zoneName)) {
             return false;
+        }
+
+        if (context is GenericRequirementContext { InstanceZones: { } zones }) {
+            return zones.Contains(zoneName, StringComparer.OrdinalIgnoreCase);
         }
 
         return string.Equals(wizard.Zone, zoneName, StringComparison.OrdinalIgnoreCase);

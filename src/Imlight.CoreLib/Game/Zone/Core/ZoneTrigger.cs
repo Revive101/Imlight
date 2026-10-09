@@ -85,7 +85,8 @@ public sealed class ZoneTrigger(IActorRef zoneRef, Zone zone, Trigger trigger)
         }
 
         // Evaluate requirements when present.
-        if (   TriggerData.m_requirements is not null
+        if (!message.RequirementsChecked
+            && TriggerData.m_requirements is not null
             && TriggerData.m_requirements.m_requirements is not null
             && TriggerData.m_requirements.m_requirements.Count > 0) {
             var queryWizardMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
@@ -100,7 +101,10 @@ public sealed class ZoneTrigger(IActorRef zoneRef, Zone zone, Trigger trigger)
                     wizardResponse.Wizard,
                     ZoneRef,
                     TriggerData.m_triggerName
-                )
+                ) {
+                    ScriptState = Zone.ScriptState,
+                    EventAdjectives = message.Adjectives,
+                }
             );
 
             if (!requirementsMet) {
@@ -117,9 +121,29 @@ public sealed class ZoneTrigger(IActorRef zoneRef, Zone zone, Trigger trigger)
             };
         }
 
+        // A result that posts one of this trigger's own fire events would fire it again without end,
+        // and the event that fired it has already reached every trigger and quest goal.
+        if (results?.m_results is { Count: > 0 } && results.m_results.Any(IsSelfPost)) {
+            results = new ResultList {
+                m_results = results.m_results.Where(result => !IsSelfPost(result)).ToList()
+            };
+        }
+
         ResultDispatcher.ExecuteResults(Context, results, message.PlayerActor, message.PlayerGameObject,
-                                       Sender, ZoneRef, triggerName: TriggerData.m_triggerName);
+                                       Sender, ZoneRef, triggerName: TriggerData.m_triggerName,
+                                       scriptState: Zone.ScriptState, playerSpawned: message.PlayerSpawned);
     }
+
+    /// <summary>
+    /// True when a requirement class the client data uses failed to decode (it came back null). Such a trigger
+    /// must not fire: skipping the requirement would make it pass for every event.
+    /// </summary>
+    internal static bool HasUndecodableRequirement(RequirementList requirements)
+        => requirements?.m_requirements is { } list
+        && list.Any(r => r is null || r is RequirementList nested && HasUndecodableRequirement(nested));
+
+    private bool IsSelfPost(Result result)
+        => result is ResPostEvent post && TriggerData.m_fireEvents.Any(x => x == post.m_eventName);
 
     private bool CooldownCheck(IActorRef playerRef) {
         if (_cooldowns.TryGetValue(playerRef, out var lastTriggered)) {

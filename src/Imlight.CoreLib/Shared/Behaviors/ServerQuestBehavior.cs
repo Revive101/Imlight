@@ -230,6 +230,28 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
         return RemoveFromRegistry(fullEntryName);
     }
 
+    /// <summary>
+    /// Removes every registry entry of a quest (the "&lt;quest&gt;_&lt;entry&gt;" keys, including "Complete")
+    /// so the quest can be offered again. Returns the number of entries removed. With
+    /// <paramref name="keepComplete"/> the "Complete" entry stays.
+    /// </summary>
+    public int RemoveAllQuestRegistryEntries(string questName, bool keepComplete = false) {
+        if (string.IsNullOrWhiteSpace(questName)) {
+            return 0;
+        }
+
+        var prefix = $"{questName}_";
+        var keys = Registry.Keys
+            .Where(k => k.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+                && !(keepComplete && k.Equals($"{prefix}Complete", StringComparison.OrdinalIgnoreCase)))
+            .ToList();
+        foreach (var key in keys) {
+            Registry.Remove(key);
+        }
+
+        return keys.Count;
+    }
+
     public bool SetRegistryValue(string entryName, ulong value) {
         if (string.IsNullOrWhiteSpace(entryName)) {
             return false;
@@ -247,6 +269,26 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
 
         var fullEntryName = $"{questName}_{entryName}";
         Registry[fullEntryName] = value;
+
+        return true;
+    }
+
+    public bool RemoveRegistryValue(string entryName) {
+        if (string.IsNullOrWhiteSpace(entryName)) {
+            return false;
+        }
+
+        Registry.Remove(entryName);
+
+        return true;
+    }
+
+    public bool RemoveQuestRegistryValue(string questName, string entryName) {
+        if (string.IsNullOrWhiteSpace(questName) || string.IsNullOrWhiteSpace(entryName)) {
+            return false;
+        }
+
+        Registry.Remove($"{questName}_{entryName}");
 
         return true;
     }

@@ -35,13 +35,15 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/26/2026
+ * Last Updated: 09/27/2026
  */
 
 using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
 using Imcodec.CoreObject;
+using Imcodec.Cryptography;
+using Imcodec.IO;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
@@ -67,8 +69,8 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
     private readonly PropertyFlags _propertyFlags = PropertyFlags.Prop_Public
                                                   | PropertyFlags.Prop_Transmit
                                                   | PropertyFlags.Prop_AuthorityTransmit;
-    // Keyed by the player's object instance: CoreObject is a record, so its hash follows its location.
-    private readonly Dictionary<CoreObject, IActorRef> _playersInRange = new(ReferenceEqualityComparer.Instance);
+    // Keyed by the player's actor: CoreObject is a record, so its hash follows its location and a move replaces it.
+    private readonly HashSet<IActorRef> _playersInRange = [];
     private readonly Dictionary<Wizard, IActorRef> _playersWithRequirementsMet = [];
     private readonly Dictionary<IActorRef, Wizard> _playerIgnoreBecauseDynamod = [];
     private float _renderDistance;
@@ -89,6 +91,9 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
                 .Any(anim => anim.m_bFadesIn || anim.m_bFadesOut);
 
         _renderDistance = Entity.Zone.ZoneData.m_farClip;
+
+        // Trigger requirements on an object's state ("Snake obelisk is Idle_On") start from the state it is placed in.
+        Entity.Zone.ScriptState.SeedObjectDefault(Entity.Info?.m_zoneTag, Entity.Info?.m_startState);
 
         CreateObjectForAllPlayers();
     }
@@ -113,7 +118,7 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
         string persistedState = null;
         foreach (var mod in relevantDynaMods) {
             // If the player has a dynamod that disables this object, do not spawn it for them.
-            if (mod.ModState.Equals(DESPAWN_STATE_NAME, System.StringComparison.OrdinalIgnoreCase)) {
+            if (IsDespawnState(mod.ModState)) {
                 _playerIgnoreBecauseDynamod[suspect] = wizard;
 
                 return;
@@ -135,7 +140,7 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
         }
 
         if (requirementsMet) {
-            _playersWithRequirementsMet.Add(wizard, suspect);
+            _playersWithRequirementsMet[wizard] = suspect;
 
             // Always send MSG_NEWOBJECT so the client registers this object,
             // even if the player is outside the render distance. Without this,
@@ -155,7 +160,7 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
             // MSG_REMOVEOBJECT if the player is outside the render radius.
             // The client needs the ~250ms gap between MSG_NEWOBJECT and
             // any MSG_REMOVEOBJECT to register the object properly.
-            _playersInRange.Add(player, suspect);
+            _playersInRange.Add(suspect);
 
             return;
         }
@@ -169,8 +174,7 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
             DespawnObjectForPlayer(suspect);
         }
         else {
-            _playersInRange.Remove(player);
-            _playersInRange.Add(player, suspect);
+            _playersInRange.Add(suspect);
         }
     }
 
@@ -181,10 +185,7 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
         }
 
         // Remove the player from the list of players in range.
-        var player = _playersInRange.FirstOrDefault(x => x.Value == suspect).Key;
-        if (player != null) {
-            _playersInRange.Remove(player);
-        }
+        _playersInRange.Remove(suspect);
 
         if (_playerIgnoreBecauseDynamod.Remove(suspect)) {
             return;
@@ -204,29 +205,36 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
         }
 
         // Check if the player is now in range of the object.
-        if (IsInRadius(playerObj, _renderDistance) && !_playersInRange.ContainsKey(playerObj)) {
+        if (IsInRadius(playerObj, _renderDistance) && !_playersInRange.Contains(playerActor)) {
             // Respawn the object if the player is in range and we've determined they meet the requirements.
             if (playerWizard is not null && _playersWithRequirementsMet.ContainsKey(playerWizard)) {
                 CreateObjectForPlayer(playerActor);
             }
 
-            _playersInRange.Add(playerObj, playerActor);
+            _playersInRange.Add(playerActor);
         }
-        else if (!IsInRadius(playerObj, _renderDistance) && _playersInRange.ContainsKey(playerObj)) {
+        else if (!IsInRadius(playerObj, _renderDistance) && _playersInRange.Contains(playerActor)) {
             // If the player is out of range, despawn the object for them.
             DespawnObjectForPlayer(playerActor);
-            _playersInRange.Remove(playerObj);
+            _playersInRange.Remove(playerActor);
         }
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ENTERSTATE))]
     public void ReceiveEnterState(ZONE_102_PROTOCOL.MSG_ENTERSTATE msg) {
-        var isDespawn = msg.StateName.Equals(DESPAWN_STATE_NAME, System.StringComparison.OrdinalIgnoreCase);
-        var isSpawn = msg.StateName.Equals(SPAWN_STATE_NAME, System.StringComparison.OrdinalIgnoreCase);
+        var isDespawn = IsDespawnState(msg.StateName);
+        var isSpawn = string.Equals(msg.StateName, SPAWN_STATE_NAME, System.StringComparison.OrdinalIgnoreCase);
 
         // If the tag matches, spawn or despawn the object for the sender.
         var zoneTag = msg.ObjectName;
-        if (Entity.Info is not null && Entity.Info.m_zoneTag.Equals(zoneTag, System.StringComparison.OrdinalIgnoreCase)) {
+        if (Entity.Info is not null && string.Equals(Entity.Info.m_zoneTag, zoneTag, System.StringComparison.OrdinalIgnoreCase)) {
+            // A state for the whole zone (a trigger result) reaches every player, not just one.
+            if (!msg.ExclusiveToSender && msg.Sender is null) {
+                Entity.ChangeState(msg.StateName);
+
+                return;
+            }
+
             var player = msg.Sender;
             if (player is null) {
                 return;
@@ -279,6 +287,12 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
         }
     }
 
+    private static bool IsDespawnState(string stateName) {
+        // A dynamod with no state hides its object for the player, as "Off" does (client triggers use both).
+        return string.IsNullOrEmpty(stateName)
+            || stateName.Equals(DESPAWN_STATE_NAME, System.StringComparison.OrdinalIgnoreCase);
+    }
+
     private void CreateObjectForPlayer(IActorRef player) {
         // Serialize the client object.
         var clientObj = Entity.GetClientObject();
@@ -293,6 +307,10 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
             Data = serializedData
         };
         player.Tell(newObjectMsg);
+
+        if (CreateCurrentStateMessage() is { } stateMsg) {
+            player.Tell(stateMsg);
+        }
     }
 
     private void CreateObjectForAllPlayers() {
@@ -308,6 +326,25 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
         PlayerBroadcast(new GAME_5_PROTOCOL.MSG_NEWOBJECT {
             Data = serializedData
         });
+
+        if (CreateCurrentStateMessage() is { } stateMsg) {
+            PlayerBroadcast(stateMsg);
+        }
+    }
+
+    // The client builds an object in its template's default state, so the state the zone holds for it
+    // (the placement's start state, or what a player or trigger changed since) is sent right after it.
+    private GAME_5_PROTOCOL.MSG_ENTERSTATE CreateCurrentStateMessage() {
+        var state = Entity.Zone.ScriptState.GetObjectState(Entity.Info?.m_zoneTag);
+        if (IsDespawnState(state)) {
+            return null;
+        }
+
+        return new GAME_5_PROTOCOL.MSG_ENTERSTATE {
+            GameObjectID = Entity.ActiveGameObject.m_globalID,
+            State = StringHash.Compute(state),
+            Data = new ByteString(),
+        };
     }
 
     private void DespawnObjectForPlayer(IActorRef player) {

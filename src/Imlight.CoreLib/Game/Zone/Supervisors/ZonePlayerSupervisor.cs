@@ -104,6 +104,15 @@ internal sealed class ZonePlayerSupervisor(Core.Zone zone) : ZoneEntitySuperviso
         };
         message.PlayerActor.Tell(rsp);
 
+        // Objects only the client owns (doors, collision) keep the state a trigger gave them in this zone
+        // instance; a player who arrives later is told.
+        foreach (var (objectName, stateName) in _zone.ScriptState.SnapshotChangedObjects()) {
+            message.PlayerActor.Tell(new CHARACTER_103_PROTOCOL.MSG_SENDDYNAMODSTATE {
+                ObjectName = objectName,
+                StateName = stateName,
+            });
+        }
+
         Logger.Debug("{Name} added to zone {ZoneName}.",
             Logger.Args(message.ActualWizardName, _zone.ZoneName));
     }

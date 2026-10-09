@@ -59,6 +59,57 @@ internal class CommandQuest : CommandProtocol {
         SendQuestOfferCacheOption(quest);
     }
 
+    [Command("list")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void QuestListCommand()
+        => SendQuestAction("list", "");
+
+    [Command("info")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void QuestInfoCommand()
+        => SendQuestAction("info", "");
+
+    [Command("show")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void QuestShowCommand([Remainder] string questName)
+        => SendQuestAction("info", questName);
+
+    [Command("completegoal")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void QuestCompleteGoalCommand()
+        => SendQuestAction("completegoal", "");
+
+    [Command("completegoalfor")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void QuestCompleteGoalForCommand([Remainder] string questName)
+        => SendQuestAction("completegoal", questName);
+
+    [Command("complete")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void QuestCompleteCommand([Remainder] string questName)
+        => SendQuestAction("complete", questName);
+
+    [Command("grant")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void QuestGrantCommand([Remainder] string questName)
+        => SendQuestAction("grant", questName);
+
+    [Command("forcegrant")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void QuestForceGrantCommand([Remainder] string questName)
+        => SendQuestAction("forcegrant", questName);
+
+    [Command("remove")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void QuestRemoveCommand([Remainder] string questName)
+        => SendQuestAction("remove", questName);
+
+    private void SendQuestAction(string action, string questName)
+        => Context.SessionActor.Tell(new CHARACTER_103_PROTOCOL.MSG_QUESTCOMMAND {
+            Action = action,
+            QuestName = questName,
+        });
+
     private void ShowQuestInfoDialog(QuestTemplate quest) {
         var dialogList = quest.m_dialogList as ActorDialogList;
         var prepDialogList = dialogList?.m_dialogs.FirstOrDefault(de => de.m_dialogTag == "Prep");

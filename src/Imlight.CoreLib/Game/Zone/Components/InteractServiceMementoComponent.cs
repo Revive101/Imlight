@@ -89,6 +89,7 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity)
     private readonly Dictionary<ulong, IActorRef> _playersInRenderRange = [];
     private List<IServiceComponent> _serviceComponents = [];
     private Dictionary<int, IServiceComponent> _optionIndexToComponent = [];
+    private readonly Dictionary<IServiceComponent, int> _componentFirstOption = [];
     private ServiceMementoBase _serviceMemento;
     private MadlibBlock _madlibBlock;
     private float _renderDistance;
@@ -140,12 +141,12 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity)
             : _interactionRadius;
 
         // Handle interaction range (for service options).
-        if (IsInRadius(playerObj, interactionRadius)
+        if (IsInHorizontalRadius(playerObj, interactionRadius)
             && !_playersInInteractionRange.ContainsKey(playerId)) {
             _playersInInteractionRange.Add(playerId, playerActor);
             SendActorServiceOptions(playerActor);
         }
-        else if (!IsInRadius(playerObj, interactionRadius)
+        else if (!IsInHorizontalRadius(playerObj, interactionRadius)
                  && _playersInInteractionRange.ContainsKey(playerId)) {
             _playersInInteractionRange.Remove(playerId);
             SendLeaveServiceRange(playerActor);
@@ -197,8 +198,11 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity)
             return;
         }
 
-        // Call the service component's interaction method.
-        serviceComponent.OnServiceInteraction(playerActor, playerCharacter, playerObject, serviceIndex);
+        // Call the service component's interaction method with the index of its own option.
+        var localIndex = _componentFirstOption.TryGetValue(serviceComponent, out var first)
+            ? serviceIndex - (uint) first
+            : serviceIndex;
+        serviceComponent.OnServiceInteraction(playerActor, playerCharacter, playerObject, localIndex);
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_WIZBANGUPDATEINTERVAL))]
@@ -301,9 +305,19 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity)
 
         // Get all service options and track which component owns each flat index.
         _optionIndexToComponent.Clear();
+        _componentFirstOption.Clear();
         var allOptions = new List<ServiceOptionBase>();
+        var componentsWithOptions = new List<IServiceComponent>();
         foreach (var component in _serviceComponents) {
             var componentOptions = component.GetServiceOptions(playerCharacter).ToList();
+            if (componentOptions.Count > 0) {
+                componentsWithOptions.Add(component);
+            }
+
+            if (componentOptions.Count > 0) {
+                _componentFirstOption[component] = allOptions.Count;
+            }
+
             foreach (var option in componentOptions) {
                 _optionIndexToComponent[allOptions.Count] = component;
                 allOptions.Add(option);
@@ -311,13 +325,15 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity)
         }
 
         // Get UI overrides based on priority.
-        var sortedComponents = SortComponentsByPriority(_serviceComponents);
+        // A component with nothing to offer must not set the dialog's icon, name and text (a quest
+        // interactable that is currently unused would otherwise shadow an "Enter door" prompt).
+        var sortedComponents = SortComponentsByPriority(componentsWithOptions.Count > 0 ? componentsWithOptions : _serviceComponents);
         var highestPriority = sortedComponents.FirstOrDefault();
 
         SetMadLibBlock();
 
         var npcIconOrDefault = string.IsNullOrEmpty(highestPriority?.NpcIcon)
-            ? gameObjTemplate?.m_sIcon
+            ? gameObjTemplate?.m_sIcon.ToString()
             : highestPriority.NpcIcon;
         var npcNameKeyOrDefault = string.IsNullOrEmpty(highestPriority?.NpcNameKey)
             ? DEFAULT_NAME_KEY

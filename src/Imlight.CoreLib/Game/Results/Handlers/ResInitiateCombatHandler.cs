@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Akka.Actor;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
@@ -44,10 +45,9 @@ internal sealed class ResInitiateCombatHandler : BaseResultHandler<ResInitiateCo
 
         // Context does not ship with a wizard reference, so we need to query for it.
         var queryWizardMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
-        var queryTimeout = TimeSpan.FromSeconds(QUERY_WIZARD_TIMEOUT_SECONDS);
-        var queryResponse = context
-            .GetPlayerRef()
-            .Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(queryWizardMsg, queryTimeout).Result;
+        var queryWizardTimeout = TimeSpan.FromSeconds(QUERY_WIZARD_TIMEOUT_SECONDS);
+        var queryResponse = AskOrDefault(context.GetPlayerRef()
+            .Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(queryWizardMsg, queryWizardTimeout));
         if (queryResponse?.Wizard is not Wizard wizard) {
             Logger.Error("Handler failed to retrieve character data within {0} seconds.",
                 Logger.Args(QUERY_WIZARD_TIMEOUT_SECONDS));
@@ -60,19 +60,15 @@ internal sealed class ResInitiateCombatHandler : BaseResultHandler<ResInitiateCo
             return true;
         }
 
+        // Only a dueling creature with the player in its aggro radius replies, so no reply
+        // before the timeout means there is nothing to fight.
         var targetQuery = new ZONE_102_PROTOCOL.MSG_QUERYNEARESTDUELTARGET {
             PlayerGameObject = context.GetPlayerObj(),
         };
-        var targetResponse = zoneActor
-            .Ask<ZONE_102_PROTOCOL.MSG_QUERYNEARESTDUELTARGETRSP>(targetQuery, queryTimeout);
-        if (targetResponse is null) {
-            Logger.Error("Handler failed to retrieve nearest duel target within {0} seconds.",
-                Logger.Args(QUERY_TARGET_TIMEOUT_SECONDS));
-
-            return false;
-        }
-
-        if (targetResponse.Result.CreatureActor is null) {
+        var queryTargetTimeout = TimeSpan.FromSeconds(QUERY_TARGET_TIMEOUT_SECONDS);
+        var targetResponse = AskOrDefault(zoneActor
+            .Ask<ZONE_102_PROTOCOL.MSG_QUERYNEARESTDUELTARGETRSP>(targetQuery, queryTargetTimeout));
+        if (targetResponse?.CreatureActor is null) {
             Logger.Debug("No dueling creature in aggro range; skipping combat initiation.");
             return true;
         }
@@ -80,12 +76,21 @@ internal sealed class ResInitiateCombatHandler : BaseResultHandler<ResInitiateCo
         var startMsg = new ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL {
             StartingParticipants = new Dictionary<IActorRef, CoreObject> {
                 { context.GetPlayerRef(), context.GetPlayerObj() },
-                { targetResponse.Result.CreatureActor, targetResponse.Result.CreatureObject },
+                { targetResponse.CreatureActor, targetResponse.CreatureObject },
             },
         };
         zoneActor.Tell(startMsg);
 
         return true;
+    }
+
+    private static TResponse AskOrDefault<TResponse>(Task<TResponse> ask) where TResponse : class {
+        try {
+            return ask.Result;
+        }
+        catch (AggregateException ex) when (ex.InnerException is AskTimeoutException) {
+            return null;
+        }
     }
 
 }

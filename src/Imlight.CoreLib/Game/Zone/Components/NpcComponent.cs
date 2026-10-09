@@ -65,7 +65,8 @@ internal sealed class NpcComponent : ZoneEntityComponent, IComponentFactory, ICl
     public float Proximity { get; private set; }
     public string NameOverride { get; private set; }
 
-    private readonly Dictionary<CoreObject, IActorRef> _playersInRange = [];
+    // Keyed by the player's actor: a CoreObject is a record whose hash follows its location.
+    private readonly HashSet<IActorRef> _playersInRange = [];
     private readonly NPCBehaviorTemplate _npcBehaviorTemplate;
     private readonly DuelistBehaviorTemplate _duelistBehaviorTemplate;
 
@@ -140,15 +141,18 @@ internal sealed class NpcComponent : ZoneEntityComponent, IComponentFactory, ICl
 
     public override void OnPlayerMove(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) {
         // Check if the player is now in range of the object.
-        if (IsInRadius(playerObj, Proximity) && !_playersInRange.ContainsKey(playerObj)) {
+        if (IsInRadius(playerObj, Proximity) && !_playersInRange.Contains(playerActor)) {
             // If the player is in range, trigger the enter events.
             OnProximityEnter(playerObj, playerActor, playerWizard);
-            _playersInRange.Add(playerObj, playerActor);
+            _playersInRange.Add(playerActor);
         } 
-        else if (!IsInRadius(playerObj, Proximity) && _playersInRange.ContainsKey(playerObj)) {
-            _playersInRange.Remove(playerObj);
+        else if (!IsInRadius(playerObj, Proximity) && _playersInRange.Contains(playerActor)) {
+            _playersInRange.Remove(playerActor);
         }
     }
+
+    public override void OnPlayerLeave(IActorRef playerActor, ulong id)
+        => _playersInRange.Remove(playerActor);
 
     public NPCBehavior GetClientBehaviorInstance() => new() {
         m_isMonster = IsMonster,

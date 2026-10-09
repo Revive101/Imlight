@@ -28,12 +28,15 @@
  * NOTE:
  * Collection goals (tally count > 1) consume the object on use; single-use goals
  * leave the object in place and drive post-use state via completeResults.
+ * A usage goal's client tags name the object, or a goal tag of one of its interact
+ * options (Ddl_WC_DarkCave_Bubble1 on WC_DarkCave_Bubble1), or a global registry entry the option's
+ * results remove (a staff whose use removes the entry its goal names).
  *
  * TODO:
  *
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/26/2026
+ * Last Updated: 09/27/2026
  */
 
 using System.Collections.Generic;
@@ -64,8 +67,6 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
 
     private readonly Dictionary<string, List<GoalTemplate>> _usageGoalsByQuest = [];
 
-    // An InteractableBehavior template is not in the type registry and deserializes as null, so
-    // interactable-only objects (the alchemy table) are found by the usage goals that name them.
     public static bool ShouldAttachToEntity(CoreTemplate template)
         => template is GameObjectTemplate gameObjectTemplate
         && (HasBehavior(template, "WizardSelectBehavior") || IsNamedByAnyUsageGoal(gameObjectTemplate));
@@ -87,7 +88,8 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
         }
 
         // Only show interaction option if player has an active usage goal that matches this object.
-        if (HasActiveMatchingUsageGoal(playerCharacter)) {
+        if (HasActiveMatchingUsageGoal(playerCharacter)
+            && Entity.GetComponentOfType<InteractObjectStateComponent>()?.IsInGoalOptionState() != true) {
             yield return new InteractableOption { m_serviceName = ServiceName };
         }
     }
@@ -109,7 +111,7 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
             }
 
             foreach (var goal in qTemplate.m_goals) {
-                if (goal.m_goalType != GOAL_TYPE.GOAL_TYPE_USAGE || !DoesGoalMatchObject(gameObjectTemplate, goal)) {
+                if (goal.m_goalType != GOAL_TYPE.GOAL_TYPE_USAGE || !DoesGoalMatchObject(gameObjectTemplate, qTemplate.m_questName, goal)) {
                     continue;
                 }
 
@@ -123,30 +125,43 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
     }
 
     public void OnServiceInteraction(IActorRef playerActor, Wizard playerCharacter, CoreObject playerObject, uint serviceOptionIndex) {
-        // Find the first active goal that matches this object's client tags.
-        // This ensures we only complete one goal per interaction, even if multiple goals match.
-        var activeGoalData = FindActiveMatchingGoal(playerCharacter);
-        if (activeGoalData == null) {
+        // One use completes every active usage goal that matches this object, across all of the
+        // player's quests, each through the normal goal-completion path.
+        var activeGoals = FindActiveMatchingGoals(playerCharacter);
+        if (activeGoals.Count == 0) {
             return;
         }
 
-        var (quest, goal, goalProgress) = activeGoalData.Value;
+        var shownDialogs = new HashSet<string>();
+        foreach (var (quest, goal, goalProgress) in activeGoals) {
+            // Two goals that share a completion dialog show it once.
+            var suppressDialog = false;
+            var willComplete = goalProgress.CurrentProgress + 1 >= (goal.m_tallyCounter?.m_count ?? 1);
+            var dialogKey = CompletionDialogKey(goal);
+            if (willComplete && dialogKey is not null) {
+                suppressDialog = !shownDialogs.Add(dialogKey);
+            }
 
-        // Route the use through the quest service: it increments the tally, reports the
-        // new count to the client (progress SENDGOAL), and completes the goal at the cap.
-        var goalCompleteMsg = new CHARACTER_103_PROTOCOL.MSG_COMPLETEUSAGEGOAL {
-            QuestID = quest.ID,
-            GoalID = goalProgress.ID,
-        };
-        playerActor.Tell(goalCompleteMsg);
+            // Route the use through the quest service: it increments the tally, reports the
+            // new count to the client (progress SENDGOAL), and completes the goal at the cap.
+            playerActor.Tell(new CHARACTER_103_PROTOCOL.MSG_COMPLETEUSAGEGOAL {
+                QuestID = quest.ID,
+                GoalID = goalProgress.ID,
+                SuppressCompletionDialog = suppressDialog,
+            });
+        }
 
-        var goalMax = goal.m_tallyCounter?.m_count ?? 1;
+        // The object's own options (a state such as "RedDown", posted events such as "InsertCrystalRed")
+        // run when it is used for the goal.
+        Entity.GetComponentOfType<InteractObjectStateComponent>()?.ApplyGoalOptions(playerActor, playerObject);
+
+        var goalMax = activeGoals.Max(g => g.Goal.m_tallyCounter?.m_count ?? 1);
 
         // Collection goals (tally count > 1, e.g. the Triton cogs) consume the object:
         // each use removes that instance from the world. Single-use objects (levers,
         // fairy cages) persist and manage their own post-use state via the goal's
         // completeResults (dyna-mods).
-        if (goalMax > 1) {
+        if (goalMax > 1 && !InteractObjectStateComponent.KeepsStateAfterGoalUse(Entity.Template as GameObjectTemplate)) {
             var leaveServiceRangeMsg = new GAME_5_PROTOCOL.MSG_LEAVESERVICERANGE {
                 MobileID = Entity.ActiveGameObject.m_globalID.Full
             };
@@ -157,32 +172,39 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
     }
 
     private bool HasActiveMatchingUsageGoal(Wizard playerCharacter)
-        => FindActiveMatchingGoal(playerCharacter) != null;
+        => FindActiveMatchingGoals(playerCharacter).Count > 0;
 
-    private (QuestInstance Quest, GoalTemplate Goal, GoalInstance GoalProgress)? FindActiveMatchingGoal(Wizard playerCharacter) {
+    private List<(QuestInstance Quest, GoalTemplate Goal, GoalInstance GoalProgress)> FindActiveMatchingGoals(Wizard playerCharacter) {
+        var result = new List<(QuestInstance, GoalTemplate, GoalInstance)>();
         var questsWithActiveUsageGoals = GetQuestsWithActiveUsageGoals(playerCharacter);
         if (questsWithActiveUsageGoals == null) {
-            return null;
+            return result;
         }
 
-        foreach (var quest in questsWithActiveUsageGoals) {
+        // Stable order (quest id, then the goal's order in its template) so dialogs play in the same order every time.
+        foreach (var quest in questsWithActiveUsageGoals.OrderBy(q => q.ID)) {
             if (!_usageGoalsByQuest.TryGetValue(quest.QuestName, out var goals)) {
                 continue;
             }
 
-            // Check each matching goal for this quest.
-            // Return the first active goal found to ensure only one goal is processed per interaction.
             foreach (var goal in goals) {
                 var goalProgress = quest.GoalProgress.FirstOrDefault(gp =>
                     IsActiveUsageGoal(gp, goal.m_goalName));
 
                 if (goalProgress != null) {
-                    return (quest, goal, goalProgress);
+                    result.Add((quest, goal, goalProgress));
                 }
             }
         }
 
-        return null;
+        return result;
+    }
+
+    private static string CompletionDialogKey(GoalTemplate goal) {
+        var dialog = (goal.m_dialogList as ActorDialogList)?.m_dialogs?.FirstOrDefault(d => d.m_dialogTag == "Completion");
+        return dialog?.m_dialogEntries is null
+            ? null
+            : string.Join("|", dialog.m_dialogEntries.Select(e => e.m_dialog));
     }
 
     private static List<QuestInstance> GetQuestsWithActiveUsageGoals(Wizard playerCharacter)
@@ -203,11 +225,17 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
     private static bool IsNamedByAnyUsageGoal(GameObjectTemplate gameObjectTemplate)
         => QuestTemplateCollection.GetAllQuests()
             .Where(q => q is not null)
-            .SelectMany(q => q.m_goals)
-            .Any(g => g is not null && g.m_goalType == GOAL_TYPE.GOAL_TYPE_USAGE && DoesGoalMatchObject(gameObjectTemplate, g));
+            .SelectMany(q => q.m_goals.Where(g => g is not null).Select(g => (q.m_questName, Goal: g)))
+            .Any(x => x.Goal.m_goalType == GOAL_TYPE.GOAL_TYPE_USAGE && DoesGoalMatchObject(gameObjectTemplate, x.m_questName, x.Goal));
 
-    private static bool DoesGoalMatchObject(GameObjectTemplate gameObjectTemplate, GoalTemplate goal) {
-        if (goal.m_clientTags?.Contains(gameObjectTemplate.m_objectName) == true) {
+    private static bool DoesGoalMatchObject(GameObjectTemplate gameObjectTemplate, string questName, GoalTemplate goal) {
+        var clientTags = goal.m_clientTags;
+        if (clientTags is not null
+            && (clientTags.Contains(gameObjectTemplate.m_objectName) || InteractOptionGoalTags(gameObjectTemplate).Any(tag => clientTags.Contains(tag)))) {
+            return true;
+        }
+
+        if (InteractOptions(gameObjectTemplate).Any(option => RequiresGoal(option, questName, goal.m_goalName))) {
             return true;
         }
 
@@ -215,5 +243,55 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
             && gameObjectTemplate.m_adjectiveList is not null
             && scavengeGoal.m_itemAdjectives?.Any(gameObjectTemplate.m_adjectiveList.Contains) == true;
     }
+
+    /// <summary>
+    /// The tags a usage goal can name an interact option by: the option's goal tags, and the
+    /// global registry entries its results remove (a staff whose option removes the entry its goal's client tag names).
+    /// </summary>
+    internal static IEnumerable<string> OptionTags(InteractOptionTemplate option) {
+        if (option is null) {
+            yield break;
+        }
+
+        foreach (var tag in option.m_goalTags ?? []) {
+            yield return tag;
+        }
+
+        if (option is not InteractStateOptionTemplate { m_results.m_results: { } results }) {
+            yield break;
+        }
+
+        foreach (var removal in results.OfType<ResRemoveEntry>().Where(r => !r.m_isQuestRegistry && !string.IsNullOrEmpty(r.m_entryName))) {
+            yield return removal.m_entryName;
+        }
+    }
+
+    /// <summary>
+    /// True when some usage goal names this option by one of its tags, so using the option is using that goal.
+    /// </summary>
+    internal static bool IsNamedByUsageGoal(InteractOptionTemplate option) {
+        var tags = OptionTags(option).ToList();
+        var quests = QuestTemplateCollection.GetAllQuests().Where(q => q?.m_goals is not null).ToList();
+
+        return (tags.Count > 0
+                && quests.SelectMany(q => q.m_goals)
+                    .Any(g => g is not null && g.m_goalType == GOAL_TYPE.GOAL_TYPE_USAGE && g.m_clientTags?.Any(tag => tags.Contains(tag)) == true))
+            || quests.Any(q => q.m_goals.Any(g => g is not null && g.m_goalType == GOAL_TYPE.GOAL_TYPE_USAGE && RequiresGoal(option, q.m_questName, g.m_goalName)));
+    }
+
+    private static IEnumerable<string> InteractOptionGoalTags(GameObjectTemplate gameObjectTemplate)
+        => InteractOptions(gameObjectTemplate).SelectMany(OptionTags);
+
+    private static IEnumerable<InteractOptionTemplate> InteractOptions(GameObjectTemplate gameObjectTemplate)
+        => gameObjectTemplate.m_behaviors
+            .OfType<InteractableBehaviorTemplate>()
+            .SelectMany(behavior => behavior.m_interactOptions ?? []);
+
+    // An option that needs the goal already complete follows the goal's use; it is not the use itself.
+    private static bool RequiresGoal(InteractOptionTemplate option, string questName, string goalName)
+        => option is InteractStateOptionTemplate { m_requirements.m_requirements: { } requirements }
+            && requirements.OfType<ReqHasGoal>().Any(r => r.m_questName == questName
+                                                          && r.m_goalName == goalName
+                                                          && r.m_requiredStatus != GoalStatusRequirement.Complete);
 
 }

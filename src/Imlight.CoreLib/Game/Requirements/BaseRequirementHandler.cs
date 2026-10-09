@@ -16,6 +16,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System.Collections.Generic;
 using System.Linq;
 using Imcodec.ObjectProperty.TypeCache;
 
@@ -64,9 +65,11 @@ public abstract class BaseRequirementHandler<T> : IRequirementHandler, IRequirem
     protected T Requirement { get; private set; }
 
     public static bool ShouldAttachToContext(IRequirementContext context)
-        => context
-            .GetRequirements()?
-            .Any(x => x is not null && x.GetType() == typeof(T)) ?? false;
+        => ContainsRequirementOfType(context.GetRequirements());
+
+    private static bool ContainsRequirementOfType(List<Requirement> requirements)
+        => requirements?.Any(x => x is not null
+            && (x.GetType() == typeof(T) || x is RequirementList nested && ContainsRequirementOfType(nested.m_requirements))) ?? false;
 
     public abstract bool Evaluate(IRequirementContext context);
 

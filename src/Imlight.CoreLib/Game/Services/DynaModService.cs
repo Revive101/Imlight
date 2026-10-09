@@ -37,19 +37,42 @@
  * Last Updated: 3/18/2025
  */
 
+using System.Collections.Generic;
+using System.Linq;
 using Akka.Actor;
 using Imcodec.Cryptography;
+using Imcodec.IO;
 using Imcodec.MessageLayer.Generated;
+using Imcodec.ObjectProperty;
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Services;
 
 internal class DynaModService(SessionActor sessionActor) : MessageService(sessionActor) {
 
+    // Only the transmitted properties are on the wire (verified byte for byte against a live capture).
+    private const PropertyFlags WIRE_FLAGS = PropertyFlags.Prop_Transmit;
+
+    // Live opens the full list with an empty mod at index 1, then numbers the mods after it.
+    private const int SENTINEL_INDEX = 1;
+
+    private int _addIndex = 1;
+
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new DynaModService(parentActor));
+
+    [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE))]
+    private void ReceiveAttachComplete(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE message) {
+        var wizard = GetActiveWizard();
+        var dynamodsMsg = BuildUpdateAll(wizard.GameObjectID, wizard.DynamodSet?.Dynamods ?? []);
+        if (dynamodsMsg is not null) {
+            SendToSocket(dynamodsMsg);
+        }
+    }
 
     [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_ENTERSTATE))]
     private void ReceiveEnterState(CHARACTER_103_PROTOCOL.MSG_ENTERSTATE message) {
@@ -95,6 +118,18 @@ internal class DynaModService(SessionActor sessionActor) : MessageService(sessio
 
         wizard.AddDynamod(zoneName, dynaModClientTag, dynaModState);
 
+        // A mod added by a quest result (not echoed from the client) must reach the client as well: mods on
+        // client-only objects such as the arena gates are otherwise never applied. Live sends it to the owner.
+        if (message.ContextActor is not null) {
+            var addMsg = BuildAdd(
+                GetActiveGameObject().m_globalID.Full,
+                new Dynamod { ZoneName = zoneName, ClientTag = dynaModClientTag, ModState = dynaModState },
+                ++_addIndex);
+            if (addMsg is not null) {
+                SendToSocket(addMsg);
+            }
+        }
+
         // Broadcast the state change to the zone.
         // Objects that match the client tag will apply the state change.
         var stateChangeMsg = new ZONE_102_PROTOCOL.MSG_ENTERSTATE {
@@ -106,6 +141,19 @@ internal class DynaModService(SessionActor sessionActor) : MessageService(sessio
         ZoneBroadcastNoPlayers(stateChangeMsg);
     }
 
+    [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_SENDDYNAMODSTATE))]
+    private void ReceiveSendDynaModState(CHARACTER_103_PROTOCOL.MSG_SENDDYNAMODSTATE message) {
+        // A zone-wide state a trigger gave a named object: the client applies it to the object with that tag.
+        // It is not saved; it belongs to this zone instance.
+        var addMsg = BuildAdd(
+            GetActiveGameObject().m_globalID.Full,
+            new Dynamod { ClientTag = message.ObjectName, ModState = message.StateName },
+            ++_addIndex);
+        if (addMsg is not null) {
+            SendToSocket(addMsg);
+        }
+    }
+
     [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_REMOVEDYNAMOD))]
     private void ReceiveRemoveDynaMod(CHARACTER_103_PROTOCOL.MSG_REMOVEDYNAMOD message) {
         var wizard = GetActiveWizard();
@@ -113,5 +161,38 @@ internal class DynaModService(SessionActor sessionActor) : MessageService(sessio
 
         wizard.RemoveDynamod(dynaModClientTag);
     }
+
+    private static DynaMod ToWireMod(Dynamod mod, int index) {
+        if (string.IsNullOrEmpty(mod.ModState)) {
+            return new DynaMod { m_clientTag = mod.ClientTag ?? string.Empty, m_index = index };
+        }
+
+        return new DynaModDelta {
+            m_clientTag = mod.ClientTag ?? string.Empty,
+            m_index = index,
+            m_stateID = StringHash.Compute(mod.ModState),
+        };
+    }
+
+    private static bool TrySerialize(PropertyClass obj, out ByteString data)
+        => new ObjectSerializer(Versionable: false, Behaviors: SerializerFlags.None)
+            .Serialize(obj, WIRE_FLAGS, out data);
+
+    private static GAME_5_PROTOCOL.MSG_DYNAMODBEHAVIOR_UPDATEMODS BuildUpdateAll(ulong globalId, IEnumerable<Dynamod> mods) {
+        var list = new DynaModList { m_allMods = [new DynaMod { m_clientTag = string.Empty, m_index = SENTINEL_INDEX }] };
+        var index = SENTINEL_INDEX;
+        foreach (var mod in mods.Where(m => m is not null)) {
+            list.m_allMods.Add(ToWireMod(mod, ++index));
+        }
+
+        return TrySerialize(list, out var data)
+            ? new GAME_5_PROTOCOL.MSG_DYNAMODBEHAVIOR_UPDATEMODS { GlobalID = globalId, UpdateAll = 1, AllMods = data }
+            : null;
+    }
+
+    private static GAME_5_PROTOCOL.MSG_DYNAMODBEHAVIOR_UPDATEMODS BuildAdd(ulong globalId, Dynamod mod, int index)
+        => TrySerialize(ToWireMod(mod, index), out var data)
+            ? new GAME_5_PROTOCOL.MSG_DYNAMODBEHAVIOR_UPDATEMODS { GlobalID = globalId, Add = 1, NewMod = data, Index = 0 }
+            : null;
 
 }

@@ -482,6 +482,19 @@ public static class WizardCollection {
             .Any(e => i.m_globalID == e))
         ];
 
+        // `AlchemyBehavior` only keeps track of the reagent global IDs.
+        // The actual reagent items are stored in the `WizardReagents` collection.
+        var reagents = session.Query<ClientReagentItem>(collectionName: WizardReagentCollection.CollectionName)
+            .Where(x => x.m_characterId == wizard.CharId)
+            .ToList();
+
+        wizard.AlchemyBehavior ??= new();
+        wizard.AlchemyBehavior.ReagentItemIds ??= [];
+        wizard.AlchemyBehavior.Reagents = [.. reagents
+            .Where(r => wizard.AlchemyBehavior.ReagentItemIds
+            .Contains(r.m_globalID))
+        ];
+
         // The friends list is expanded to include a 'relationship' model
         // which helps keep track of the relationship between two players for moderation purposes.
         // `Wizard` only keeps track of the IDs of the relationships.

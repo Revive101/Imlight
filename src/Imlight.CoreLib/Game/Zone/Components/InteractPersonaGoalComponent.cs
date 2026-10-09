@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/22/2025
+ * Last Updated: 09/27/2026
  */
 
 using System;
@@ -110,6 +110,16 @@ internal sealed class InteractPersonaGoalComponent(ZoneEntity entity)
             .Any(goal => goal.m_personaName == npcName);
     }
 
+    /// <summary>
+    /// True when the wizard has an active quest goal whose persona is this entity. Such an NPC shows
+    /// the goal instead of his quest offers and underway entries.
+    /// </summary>
+    public static bool HasPendingGoalFor(ZoneEntity entity, Wizard wizard) {
+        var personaGoalComponent = entity.GetComponentOfType<InteractPersonaGoalComponent>();
+
+        return personaGoalComponent != null && personaGoalComponent.GetServiceOptions(wizard).Any();
+    }
+
     public IEnumerable<ServiceOptionBase> GetServiceOptions(Wizard wizard) {
         if (wizard is null) {
             yield break;
@@ -124,9 +134,9 @@ internal sealed class InteractPersonaGoalComponent(ZoneEntity entity)
             yield break;
         }
 
-        var qTemplate = QuestTemplateCollection.GetQuestByName(
-            wizard.QuestBehavior.CurrentQuestInstances
-                .FirstOrDefault(q => q.ID == state.ActiveQuestId)?.QuestName);
+        var questName = wizard.QuestBehavior.CurrentQuestInstances
+            .FirstOrDefault(q => q.ID == state.ActiveQuestId)?.QuestName;
+        var qTemplate = questName is null ? null : QuestTemplateCollection.GetQuestByName(questName);
 
         if (qTemplate == null) {
             yield break;
@@ -212,7 +222,8 @@ internal sealed class InteractPersonaGoalComponent(ZoneEntity entity)
         var now = DateTime.UtcNow;
 
         if (!forceUpdate && _cachedPlayerStates.TryGetValue(playerId, out var cachedState)) {
-            if ((now - cachedState.LastUpdated).TotalSeconds < WIZBANG_UPDATE_INTERVAL_SECONDS) {
+            if ((now - cachedState.LastUpdated).TotalSeconds < WIZBANG_UPDATE_INTERVAL_SECONDS
+                && IsCachedGoalStillActive(wizard, cachedState)) {
                 return cachedState;
             }
         }
@@ -230,6 +241,17 @@ internal sealed class InteractPersonaGoalComponent(ZoneEntity entity)
         _cachedPlayerStates[playerId] = state;
 
         return state;
+    }
+
+    private static bool IsCachedGoalStillActive(Wizard wizard, PlayerPersonaGoalState state) {
+        // The quest can end (completed, abandoned) inside the cache window, so the cached ids may be dead.
+        if (!state.HasActiveGoal) {
+            return true;
+        }
+
+        var quest = wizard.QuestBehavior.CurrentQuestInstances.FirstOrDefault(q => q.ID == state.ActiveQuestId);
+
+        return quest is not null && quest.IsGoalActive(state.ActiveGoal.m_goalName);
     }
 
     private (PersonaGoalTemplate Goal, ulong QuestId, ulong GoalId)? FindActivePersonaGoal(Wizard wizard) {
@@ -262,6 +284,19 @@ internal sealed class InteractPersonaGoalComponent(ZoneEntity entity)
             QuestID = state.ActiveQuestId,
             GoalID = state.ActiveGoalId,
         };
+
+        // Only trigger seamless transition if this persona goal completion will complete the quest.
+        // The QuestService starts it once the goal has really completed: with a completion dialog that
+        // is only after the player closes it, so a timer started here could re-offer mid-dialog.
+        if (WillPersonaGoalCompletionCompleteQuest(playerCharacter, state)) {
+            goalCompleteMsg.TransitionTarget = ActorRef;
+            goalCompleteMsg.TransitionMessage = new ZONE_102_PROTOCOL.MSG_STARTSEAMLESSTRANSITION {
+                PlayerActor = playerActor,
+                PlayerCharacter = playerCharacter,
+                PlayerObject = playerObject
+            };
+        }
+
         playerActor.Tell(goalCompleteMsg);
 
         // Invalidate cached state since quest status has changed after goal completion.
@@ -270,20 +305,6 @@ internal sealed class InteractPersonaGoalComponent(ZoneEntity entity)
         // Recalculate wizbang immediately to check for new available goals.
         var newState = GetOrUpdatePlayerState(playerCharacter, forceUpdate: true);
         WizBang = newState.HasActiveGoal ? WizBangs.CompleteQuestGoal : WizBangs.None;
-
-        // Only trigger seamless transition if this persona goal completion will complete the quest
-        if (WillPersonaGoalCompletionCompleteQuest(playerCharacter, state)) {
-            // Schedule the seamless transition after quest completion processing.
-            var startTransitionMsg = new ZONE_102_PROTOCOL.MSG_STARTSEAMLESSTRANSITION {
-                PlayerActor = playerActor,
-                PlayerCharacter = playerCharacter,
-                PlayerObject = playerObject
-            };
-            Timers.StartSingleTimer(
-                "start_transition",
-                startTransitionMsg,
-                TimeSpan.FromMilliseconds(QUEST_COMPLETION_TRANSITION_DELAY_MS));
-        }
     }
 
     private static bool WillPersonaGoalCompletionCompleteQuest(Wizard playerCharacter, PlayerPersonaGoalState state) {

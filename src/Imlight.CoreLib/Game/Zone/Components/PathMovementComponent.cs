@@ -165,6 +165,10 @@ internal sealed class PathMovementComponent(ZoneEntity entity) : ZoneEntityCompo
             return;
         }
 
+        if (_nodes.Count < 2) {
+            return;
+        }
+
         if (Stopped) {
             RestartMoveInterval(INITIAL_MOVEMENT_DELAY_MAXIMUM_IN_MS);
 

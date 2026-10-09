@@ -80,6 +80,14 @@ public static class DropTableConverter {
             }
         }
 
+        // Convert spells that were taught.
+        foreach (var spellId in dropResult.SpellIds) {
+            lootItems.Add(new AddSpellLootInfo {
+                m_lootType = LOOT_TYPE.LOOT_TYPE_ADD_SPELL,
+                m_spellID = spellId,
+            });
+        }
+
         lootList.m_loot = lootItems;
         
         return lootList;

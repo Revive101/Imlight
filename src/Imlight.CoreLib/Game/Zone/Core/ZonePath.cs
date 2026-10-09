@@ -34,13 +34,15 @@
  * NOTE:
  * Handles timed creature spawning based on configuration in SpawnObjects.
  * Enforces spawn limits and ensures proper creature distribution.
- * Uses timer-based respawn intervals for continuous population management.
+ * Uses timer-based respawn intervals for continuous population management,
+ * except in an instanced Zone, where a spawn point that has lost a creature
+ * is never repopulated.
  *
  * TODO:
- * 
+ *
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/26/2026
+ * Last Updated: 09/27/2026
  */
 
 using System;
@@ -75,11 +77,19 @@ public sealed class ZonePath : ZoneEntity {
     private readonly PathObjectTemplate _template;
     private readonly List<NodeObject> _nodes;
     private readonly List<SpawnObject> _creatures;
-    private readonly Dictionary<SpawnObject, byte> _creatureCount = [];
+    // SpawnObject is a record with value equality and m_active changes at runtime, so these are keyed by reference.
+    private readonly Dictionary<SpawnObject, byte> _creatureCount = new(ReferenceEqualityComparer.Instance);
     private readonly List<IActorRef> _creatureActors = [];
     private readonly Dictionary<ulong, SpawnObject> _spawnObjectInfo = [];
     private readonly Dictionary<IActorRef, (SpawnObject Spawner, GID ObjectId, string Name)> _loadingCreatures = [];
-    private readonly bool _randomizeCreatures 
+    private readonly HashSet<SpawnObject> _defeatedInInstance = new(ReferenceEqualityComparer.Instance);
+    // Spawners a ResSpawn switched off (m_activate false).
+    private readonly HashSet<SpawnObject> _deactivated = new(ReferenceEqualityComparer.Instance);
+    // Players that caused a spawn (quest or trigger result); the creature checks aggro against them once loaded.
+    private readonly Dictionary<IActorRef, ZONE_102_PROTOCOL.MSG_PLAYERMOVE> _aggroOnLoad = [];
+    // Players in the zone, so a creature spawned after they joined is told about them like one that was there.
+    private readonly Dictionary<IActorRef, ZONE_102_PROTOCOL.MSG_ADDPLAYER> _players = [];
+    private readonly bool _randomizeCreatures
         = ConfigurationManager.Settings["April Fools.RandomizeCreatures"].AsBool();
 
     // ctor
@@ -100,21 +110,29 @@ public sealed class ZonePath : ZoneEntity {
                 continue;
             }
 
-            var timerKey = SpawnTimerKey(spawnObject, i);
-            var msg = new ZONE_102_PROTOCOL.MSG_PATHSPAWNINTERVAL { SpawnObject = spawnObject };
-            var interval = TimeSpan.FromSeconds(spawnObject.m_spawnTime);
+            StartSpawnTimer(spawnObject, i);
+        }
+    }
 
-            // If the interval is 0 or below, this creature only spawns once.
-            if (interval <= TimeSpan.Zero) {
-                Timers.StartSingleTimer(timerKey, msg, TimeSpan.Zero);
+    private void StartSpawnTimer(SpawnObject spawnObject, int index) {
+        var timerKey = SpawnTimerKey(spawnObject, index);
+        var msg = new ZONE_102_PROTOCOL.MSG_PATHSPAWNINTERVAL { SpawnObject = spawnObject };
+        var interval = TimeSpan.FromSeconds(spawnObject.m_spawnTime);
 
-                continue;
+        // Without an interval the spawn point fills up to its maximum at once and never refills.
+        if (interval <= TimeSpan.Zero) {
+            for (var i = 0; i < Math.Max(1, (int) spawnObject.m_maxNumberOfSpawns); i++) {
+                Timers.StartSingleTimer($"{timerKey}_{i}", msg, TimeSpan.Zero);
             }
 
-            // Otherwise, start the interval.
-            var delay = TimeSpan.FromSeconds(INITIAL_SPAWN_DELAY_IN_SECONDS);
-            Timers.StartPeriodicTimer(timerKey, msg, delay, interval);
+            return;
         }
+
+        // Otherwise, start the interval. This still ticks in an instanced zone so a multi-creature
+        // spawn point can populate up to its max on load; CanSpawn is what stops a defeated spawn
+        // point from ever refilling there (see _defeatedInInstance).
+        var delay = TimeSpan.FromSeconds(INITIAL_SPAWN_DELAY_IN_SECONDS);
+        Timers.StartPeriodicTimer(timerKey, msg, delay, interval);
     }
 
     private static string SpawnTimerKey(SpawnObject spawnObject, int index) {
@@ -135,9 +153,24 @@ public sealed class ZonePath : ZoneEntity {
             return;
         }
 
+        if (message is ZONE_102_PROTOCOL.MSG_ADDPLAYER addPlayer) {
+            _players[addPlayer.PlayerActor] = addPlayer;
+        }
+        else if (message is ZONE_102_PROTOCOL.MSG_REMOVEPLAYER removePlayer) {
+            _players.Remove(removePlayer.PlayerActor);
+        }
+
         // ZonePath does not have any components. Instead, it manages the creatures that follow the path.
         // Dispatch the message to all of the creatures that follow the path.
+        var isPlayerMessage = message is ZONE_102_PROTOCOL.MSG_ADDPLAYER or ZONE_102_PROTOCOL.MSG_REMOVEPLAYER
+                                      or ZONE_102_PROTOCOL.MSG_PLAYERMOVE;
         foreach (var actor in _creatureActors) {
+            // A creature still loading gets the players from _players once it has loaded; a join sent now too would
+            // be processed twice, and a move ahead of that join would reach a creature that does not know the player.
+            if (isPlayerMessage && _loadingCreatures.ContainsKey(actor)) {
+                continue;
+            }
+
             actor.Forward(message);
         }
     }
@@ -146,6 +179,16 @@ public sealed class ZonePath : ZoneEntity {
     private void ReceiveCreatureLoaded() {
         if (_loadingCreatures.Remove(Sender)) {
             Timers.Cancel(Sender);
+
+            // The creature spawned after the players joined, so it never saw their join.
+            foreach (var player in _players.Values) {
+                Sender.Tell(player);
+            }
+        }
+
+        if (_aggroOnLoad.Remove(Sender, out var playerMove)) {
+            // Same check a player step would run: a monster whose aggro radius covers the player starts combat.
+            Sender.Tell(playerMove);
         }
     }
 
@@ -159,6 +202,7 @@ public sealed class ZonePath : ZoneEntity {
             Logger.Args(nameof(CoreTemplate), creature.Name, OBJECT_CREATION_TIMEOUT_IN_MS));
 
         _creatureActors.Remove(message.Entity);
+        _aggroOnLoad.Remove(message.Entity);
         _spawnObjectInfo.Remove(creature.ObjectId);
         SetCreatureCount(creature.Spawner, CreatureCount(creature.Spawner) - 1);
         Context.Stop(message.Entity);
@@ -170,6 +214,12 @@ public sealed class ZonePath : ZoneEntity {
             var count = CreatureCount(spawnObject);
             SetCreatureCount(spawnObject, count - 1);
 
+            // Live does not respawn a defeated mob inside an instance: once a spawn point has lost a
+            // creature here, CanSpawn refuses it for the rest of this instance's lifetime.
+            if (Zone.IsInstance) {
+                _defeatedInInstance.Add(spawnObject);
+            }
+
             _spawnObjectInfo.Remove(message.GameObjectID);
             _creatureActors.RemoveAll(x => x == Sender);
             if (_loadingCreatures.Remove(Sender)) {
@@ -180,17 +230,41 @@ public sealed class ZonePath : ZoneEntity {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PATHSPAWNINTERVAL))]
     private void ReceiveCreatureSpawnInterval(ZONE_102_PROTOCOL.MSG_PATHSPAWNINTERVAL message) 
-        => HandleCreatureSpawn(message.SpawnObject);
+        => HandleCreatureSpawn(message.SpawnObject, null);
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEPATHSPAWN))]
     private void ReceiveCreatureSpawn(ZONE_102_PROTOCOL.MSG_ZONEPATHSPAWN message) {
-        var spawnObject = _creatures.FirstOrDefault(x => x.m_id == message.SpawnObjectID);
-        if (spawnObject != null) {
-            HandleCreatureSpawn(spawnObject);
+        var index = _creatures.FindIndex(x => x.m_id == message.SpawnObjectID);
+        if (index < 0) {
+            return;
         }
+
+        var spawnObject = _creatures[index];
+        if (message.OnlyIfAbsent && CreatureCount(spawnObject) > 0) {
+            return;
+        }
+
+        if (!message.Activate) {
+            // ResSpawn with m_activate false switches the spawner off: stop its timer, spawn nothing more.
+            _deactivated.Add(spawnObject);
+            spawnObject.m_active = false;
+            Timers.Cancel(SpawnTimerKey(spawnObject, index));
+
+            return;
+        }
+
+        // Switching a spawner on starts its cycle if it was not running, then spawns now.
+        var wasRunning = spawnObject.m_active;
+        _deactivated.Remove(spawnObject);
+        spawnObject.m_active = true;
+        if (!wasRunning && spawnObject.m_spawnTime > 0) {
+            StartSpawnTimer(spawnObject, index);
+        }
+
+        HandleCreatureSpawn(spawnObject, message);
     }
 
-    private void HandleCreatureSpawn(SpawnObject spawnObject) {
+    private void HandleCreatureSpawn(SpawnObject spawnObject, ZONE_102_PROTOCOL.MSG_ZONEPATHSPAWN cause) {
         // Determine if the conditions match to spawn the objects.
         if (!CanSpawn(spawnObject)) {
             return;
@@ -239,6 +313,13 @@ public sealed class ZonePath : ZoneEntity {
 
         _creatureActors.Add(creatureActor);
         _spawnObjectInfo.Add(creatureObj.m_globalID, spawnObject);
+        if (cause?.PlayerObject is not null && cause.PlayerActor is not null) {
+            _aggroOnLoad[creatureActor] = new ZONE_102_PROTOCOL.MSG_PLAYERMOVE {
+                PlayerObject = cause.PlayerObject,
+                PlayerActor = cause.PlayerActor,
+                PlayerWizard = cause.PlayerWizard,
+            };
+        }
 
         // Inform the newly created creature actor about the nodes they must walk through,
         // if relevant.
@@ -254,7 +335,13 @@ public sealed class ZonePath : ZoneEntity {
             throw new Exception("Somehow, this SpawnObject was not found in the creature count dictionary?");
         }
 
-        if (count >= MAX_SPAWNS_ALLOWED) {
+        // Instanced zones never repopulate a spawn point once something from it has died, even the
+        // "at least one" guarantee below.
+        if (Zone.IsInstance && _defeatedInInstance.Contains(spawnObject)) {
+            return false;
+        }
+
+        if (_deactivated.Contains(spawnObject) || count >= MAX_SPAWNS_ALLOWED) {
             return false;
         }
 

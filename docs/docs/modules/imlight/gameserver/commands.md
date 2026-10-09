@@ -96,6 +96,16 @@ Commands are organized into logical groups based on functionality:
 - Deck manipulation
 - Magic school operations
 
+**Quest Commands (`quest`)**
+- `offer`, `grant`, `forcegrant` - show a quest's offer dialog, or start a quest through the normal accept path
+- `list`, `info`, `show` - list active quests and goals, or show one quest's goals and progress
+- `completegoal`, `completegoalfor`, `complete` - complete the current goal or a whole quest through `QuestService`
+- `remove` - remove a quest (active or completed) and clear its registry entries so it can be offered again
+- The commands only send a `MSG_QUESTCOMMAND` to the session; `QuestService` runs the action through its normal goal, quest and removal paths. The server does not know which quest the client tracks, so commands without a name use the only active quest.
+
+**DynaMod Commands (`dynamod`)**
+- Listing, setting, toggling and removing the character's dynamic mods
+
 **Debug Commands (`debug`)** 
 - System information retrieval
 - Position and state debugging

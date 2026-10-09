@@ -256,7 +256,7 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
         var fwdMsg = new CHARACTER_103_PROTOCOL.MSG_BUDDYREQUESTADDFWD {
             RequesterCharId = wizard.CharId,
             RecipientCharId = buddyCharID,
-            OwnerName = wizard.PlayerNameBehavior.GetWizardName(),
+            OwnerName = DataManipulation.SpacedHexStringToBytes(wizard.PlayerNameBehavior.GetWizardNameAsByteHexString()),
             OwnerLevel = (byte) wizard.MagicSchoolBehavior.Level,
             OwnerSchool = wizard.MagicSchoolBehavior.MagicSchool.ToString()
         };
@@ -722,6 +722,9 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
 
     private void InformBuddiesOfStatusChange(bool isOnline) {
         var ownerWizard = GetActiveWizard();
+        if (ownerWizard is null) {
+            return;
+        }
         var charID = ownerWizard.CharId;
 
         // Inform all buddies of the status change.

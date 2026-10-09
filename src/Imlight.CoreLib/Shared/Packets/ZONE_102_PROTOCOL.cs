@@ -34,6 +34,16 @@ using Imcodec.Types;
 namespace Imlight.CoreLib.Shared.Packets;
 
 /// <summary>
+/// What a session claims on the instance it is in; the zone answers whether it is the first to do it.
+/// </summary>
+public enum InstanceQuestClaimKind : byte {
+    QuestStart,
+    GoalStart,
+    GoalComplete,
+    QuestComplete,
+}
+
+/// <summary>
 /// Bitmask selecting which zone supervisors receive a broadcast.
 /// </summary>
 [Flags]
@@ -531,6 +541,113 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public CoreObject? PlayerGameObject;
         public bool SuppressTeleportResults;
 
+        /// <summary>
+        /// Set when a player spawned inside the volume that raised the event instead of walking into it.
+        /// </summary>
+        public bool PlayerSpawned;
+
+        /// <summary>
+        /// Set by the trigger supervisor once it has checked the trigger's requirements, so the trigger does not
+        /// check them again against state the same event has since changed.
+        /// </summary>
+        public bool RequirementsChecked;
+
+        /// <summary>
+        /// The adjectives of the monster a Monster_Killed event is about; requirements on the event read them.
+        /// </summary>
+        public IReadOnlyList<string> Adjectives;
+
+    }
+
+    /// <summary>
+    /// Sent to a <see cref="Zone"/> by a ResStartStagedCinematic result. Cutscenes are not played, so the zone
+    /// raises the end event the triggers wait for at once.
+    /// </summary>
+    public class MSG_STARTSTAGEDCINEMATIC : IServerMessage {
+
+        public byte MessageOrder { get; } = 69;
+        public byte ServiceID { get; } = 102;
+
+        public IActorRef PlayerActor;
+        public CoreObject PlayerGameObject;
+
+    }
+
+    /// <summary>
+    /// Sent to a player's session when an event was posted in the zone (or to the one player a quest result
+    /// posts it for): active quest goals that list the event in their generic events complete.
+    /// </summary>
+    public class MSG_ZONEEVENTFORQUESTS : IServerMessage {
+
+        public byte MessageOrder { get; } = 70;
+        public byte ServiceID { get; } = 102;
+
+        public string EventName;
+
+    }
+
+    /// <summary>
+    /// Sent to a <see cref="Zone"/> by a token, counter or puzzle-variable result: the zone keeps the change in its
+    /// script state for the player who triggered it.
+    /// </summary>
+    public class MSG_ZONESCRIPTRESULT : IServerMessage {
+
+        public byte MessageOrder { get; } = 71;
+        public byte ServiceID { get; } = 102;
+
+        public Imcodec.ObjectProperty.TypeCache.Result Result;
+        public CoreObject PlayerGameObject;
+
+    }
+
+    /// <summary>
+    /// Sent to a <see cref="Zone"/> by a ResModifyTriggerObject result: the named object enters the state
+    /// for every player in the zone, and the zone raises the object's EnterState event. A zone of an instance
+    /// hands the message on to the instance's other zones when it does not hold the object itself, since the player may not be in the zone that holds it.
+    /// </summary>
+    public class MSG_MODIFYTRIGGEROBJECT : IServerMessage {
+
+        public byte MessageOrder { get; } = 68;
+        public byte ServiceID { get; } = 102;
+
+        /// <summary>
+        /// Whether the instance container already handed this message on, so the zone applies it and does not hand it on again.
+        /// </summary>
+        public bool Relayed;
+
+        public string ObjectName;
+        public string StateName;
+        public IActorRef PlayerActor;
+        public CoreObject PlayerGameObject;
+        public bool PlayerSpawned;
+
+    }
+
+    /// <summary>
+    /// Sent to a <see cref="Zone"/> by a ResRemoveTriggerObject result: the object with that zone tag, trigger-owned
+    /// or placed in the zone, is removed for every player in the zone.
+    /// </summary>
+    public class MSG_REMOVETRIGGEROBJECT : IServerMessage {
+
+        public byte MessageOrder { get; } = 73;
+        public byte ServiceID { get; } = 102;
+
+        public string ObjectName;
+
+    }
+
+    /// <summary>
+    /// Sent to a <see cref="Zone"/> by a ResAddTriggerObject result: the placed object with that zone tag is
+    /// brought back in the given state if a ResRemoveTriggerObject removed it.
+    /// </summary>
+    public class MSG_ADDTRIGGEROBJECT : IServerMessage {
+
+        public byte MessageOrder { get; } = 79;
+        public byte ServiceID { get; } = 102;
+
+        public string ObjectName;
+        public string StateName;
+
     }
 
     /// <summary>
@@ -717,6 +834,18 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte ServiceID { get; } = 102;
 
         public uint SpawnObjectID;
+
+        // ResSpawn.m_activate: true switches the spawner on and spawns; false switches it off (no spawn).
+        public bool Activate = true;
+
+        // Spawn only when the spawner has nothing up (a character's remembered spawn coming back).
+        public bool OnlyIfAbsent;
+
+        // The player whose quest or trigger caused the spawn, if any. The spawned creature checks its
+        // aggro radius against this player at once instead of waiting for the player's next step.
+        public CoreObject PlayerObject;
+        public IActorRef PlayerActor;
+        public Wizard PlayerWizard;
     }
 
     public sealed class MSG_ENTERSTATE : IServerMessage {
@@ -1015,6 +1144,88 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte ServiceID { get; } = 102;
 
         public ulong PetGlobalId;
+
+    }
+
+    /// <summary>
+    /// Timer-fired message to an instanced <see cref="Zone"/>: it has had no players for the configured
+    /// idle time, so it asks its <see cref="InstanceContainer"/> to drop it.
+    /// </summary>
+    public sealed class MSG_INSTANCEIDLEEXPIRE : IServerMessage {
+
+        public byte MessageOrder { get; } = 72;
+        public byte ServiceID { get; } = 102;
+
+    }
+
+    /// <summary>
+    /// Sent to a <see cref="Zone"/> by a session that starts or completes a dungeon quest or goal. The zone records
+    /// it as the instance's progress and answers with <see cref="MSG_CLAIMINSTANCEQUESTRSP"/>. A goal completion
+    /// the zone has not seen yet is also told to every other player in the instance.
+    /// </summary>
+    public sealed class MSG_CLAIMINSTANCEQUEST : IServerMessage {
+
+        public byte MessageOrder { get; } = 74;
+        public byte ServiceID { get; } = 102;
+
+        public InstanceQuestClaimKind Kind;
+        public string QuestName;
+        public string GoalName;
+        public IActorRef Origin;
+
+    }
+
+    /// <summary>
+    /// The zone's answer to <see cref="MSG_CLAIMINSTANCEQUEST"/>: whether the claim was the first for this
+    /// instance, so the world effects of the quest step run only for it. Always true outside an instance.
+    /// </summary>
+    public sealed class MSG_CLAIMINSTANCEQUESTRSP : IServerMessage {
+
+        public byte MessageOrder { get; } = 75;
+        public byte ServiceID { get; } = 102;
+
+        public bool First;
+
+    }
+
+    /// <summary>
+    /// Sent to a <see cref="Zone"/> by a session that enters it, asking for the dungeon quest progress of the instance.
+    /// </summary>
+    public sealed class MSG_QUERYINSTANCEQUESTS : IServerMessage {
+
+        public byte MessageOrder { get; } = 76;
+        public byte ServiceID { get; } = 102;
+
+    }
+
+    /// <summary>
+    /// The dungeon quest progress of an instance: the quests it finished and, per quest, the goals it completed
+    /// in order.
+    /// </summary>
+    public sealed class MSG_QUERYINSTANCEQUESTSRSP : IServerMessage {
+
+        public byte MessageOrder { get; } = 77;
+        public byte ServiceID { get; } = 102;
+
+        public bool IsInstance;
+        public string[] CompletedQuests = [];
+        public Dictionary<string, string[]> CompletedGoals = [];
+        public string[] Zones = [];
+
+    }
+
+    /// <summary>
+    /// Sent to every other session in an instance when a player completes a dungeon quest goal: the same goal
+    /// completes for them.
+    /// </summary>
+    public sealed class MSG_INSTANCEGOALCOMPLETED : IServerMessage {
+
+        public byte MessageOrder { get; } = 78;
+        public byte ServiceID { get; } = 102;
+
+        public IActorRef Origin;
+        public string QuestName;
+        public string GoalName;
 
     }
 

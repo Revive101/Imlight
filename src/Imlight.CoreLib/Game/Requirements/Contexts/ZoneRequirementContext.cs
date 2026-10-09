@@ -28,7 +28,7 @@ public class ZoneRequirementContext(RequirementList requirements,
                             CoreObject playerObj,
                             Wizard wizard,
                             IActorRef zoneRef = null,
-                            string triggerName = null) : IRequirementContext {
+                            string triggerName = null) : IRequirementContext, IZoneStateContext {
 
     private readonly RequirementList _requirements = requirements;
     private readonly IActorRef _playerRef = playerRef;
@@ -46,5 +46,15 @@ public class ZoneRequirementContext(RequirementList requirements,
     public string GetQuestName() => null; // Not applicable for zone contexts
     public string GetGoalName() => null; // Not applicable for zone contexts
     public string GetTriggerName() => _triggerName;
+
+    /// <summary>
+    /// The tokens, counters and puzzle variables of the zone (null outside a zone).
+    /// </summary>
+    public Game.Zone.Core.ZoneScriptState ScriptState { get; init; }
+
+    /// <summary>
+    /// The adjectives of the monster a Monster_Killed event is about (null for other events).
+    /// </summary>
+    public IReadOnlyList<string> EventAdjectives { get; init; }
 
 }

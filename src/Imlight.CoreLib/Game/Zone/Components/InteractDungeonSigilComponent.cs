@@ -101,7 +101,7 @@ internal sealed partial class InteractDungeonSigilComponent(ZoneEntity entity)
 
         // Name-based catch for other sigil-pad templates; the available-gate below keeps anything
         // that isn't a resolvable dungeon entry inert.
-        if (go.m_objectName is null) {
+        if (go.m_objectName.IsEmpty) {
             return false;
         }
 

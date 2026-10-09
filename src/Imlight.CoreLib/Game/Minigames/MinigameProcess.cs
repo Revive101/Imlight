@@ -36,7 +36,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 09/27/2026
  */
 
 using System;
@@ -84,6 +84,7 @@ internal sealed class MinigameProcess : Process {
     private readonly byte _minigameIndex;
     private readonly MinigameInfo _minigameInfo;
     private readonly ObjectSerializer _serializer = new(
+        Versionable: false,
         Behaviors: SerializerFlags.None
     );
     private readonly byte[] _allowedProtocolIds = [25, 40, 41, 42, 43, 44, 45, 46, 47, 54];

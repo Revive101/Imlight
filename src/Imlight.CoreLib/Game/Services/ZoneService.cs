@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty, Jeff
  * Version: KALI 1.0
- * Last Updated: 08/14/2026
+ * Last Updated: 09/27/2026
  */
 
 using System;
@@ -65,6 +65,7 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
     private const int ZONE_HEAL_TICK_INTERVAL_IN_SECONDS = 5;
     private const float TELEPORT_EFFECTS_TIME = 2.0f;
     private const string ENTER_ZONE_EVENT_NAME = "EnterZone";
+    private const string DIALOG_ENTRY_EVENT_COMPLETION = "ENTRY";
 
     public IActorRef ZoneActor;
 
@@ -132,6 +133,38 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         ZoneActor.Tell(postEventMsg);
 
         return;
+    }
+
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_POSTZONEEVENTFROMCLIENT))]
+    private void ReceivePostZoneEventFromClient(GAME_5_PROTOCOL.MSG_POSTZONEEVENTFROMCLIENT message) {
+        // An event the client's own scripting posts (e.g. the end of a cutscene): quest goals that list it
+        // in their generic events complete for every player in the zone.
+        if (string.IsNullOrEmpty(message.EventName) || ZoneActor is null) {
+            return;
+        }
+
+        ZoneActor.Tell(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+            Messages = [new ZONE_102_PROTOCOL.MSG_ZONEEVENTFORQUESTS { EventName = message.EventName }],
+            Targets = ZoneBroadcastTarget.Players,
+        });
+    }
+
+    [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_COMPLETEDIALOG))]
+    private void ReceiveCompleteDialog(WIZARD_12_PROTOCOL.MSG_COMPLETEDIALOG message) {
+        // A dialog entry with an m_dialogEvent is reported as CompletionType "ENTRY" when the client reaches
+        // it. Live posts that event to the zone, where triggers act on it (e.g. Bartleby's mouth opening).
+        string completionType = message.CompletionType;
+        string entryEvent = message.EntryEvent;
+        if (!string.Equals(completionType, DIALOG_ENTRY_EVENT_COMPLETION, StringComparison.OrdinalIgnoreCase)
+            || string.IsNullOrEmpty(entryEvent) || ZoneActor is null) {
+            return;
+        }
+
+        ZoneActor.Tell(new ZONE_102_PROTOCOL.MSG_POSTEVENT {
+            EventName = entryEvent,
+            PlayerActor = SessionActor.ActorRef,
+            PlayerGameObject = GetActiveGameObject()
+        });
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONETRANSFER))]

@@ -115,6 +115,11 @@ internal sealed class InteractQuestOfferComponent(ZoneEntity entity)
             yield break;
         }
 
+        // Persona goals take priority over quest offers: offer nothing until the goal is done.
+        if (InteractPersonaGoalComponent.HasPendingGoalFor(Entity, wizard)) {
+            yield break;
+        }
+
         var state = GetOrUpdatePlayerState(wizard);
 
         // The memento wizbang tick reads this property; refresh it from live state.
@@ -205,6 +210,11 @@ internal sealed class InteractQuestOfferComponent(ZoneEntity entity)
 
         // Check if player has any available quests from this NPC.
         foreach (var quest in _givesQuests) {
+            // A dungeon quest is granted by the instance on entry, never offered by an NPC.
+            if (DungeonQuestIndex.IsDungeonQuest(quest.m_questName)) {
+                continue;
+            }
+
             var hasQuest = wizard.HasQuest(quest.m_questName);
             var hasCompleted = wizard.HasCompletedQuest(quest.m_questName);
 

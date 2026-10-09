@@ -151,7 +151,7 @@ public sealed class ServerObjectStateBehavior : IClientBehaviorProvider<Behavior
         => GetCategory(categoryName)?.m_states.FirstOrDefault(x => x.m_stateName == stateName);
 
     private ObjState GetCategoryState(string categoryName)
-        => GetCategory(categoryName)?.m_states.FirstOrDefault(x => x.m_stateName == GetCategory(categoryName)?.m_baseState);
+        => GetCategory(categoryName)?.m_states.FirstOrDefault(x => x.m_stateName == GetCategory(categoryName)?.m_baseState.ToString());
 
     private ObjStateTransition GetTransitionFromCurrentState(string categoryName, string stateName)
         => GetCategoryState(categoryName)?.m_transitions.FirstOrDefault(x => x.m_targetState == stateName);

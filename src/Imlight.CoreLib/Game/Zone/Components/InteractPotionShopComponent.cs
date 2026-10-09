@@ -69,7 +69,7 @@ internal sealed class InteractPotionShopComponent(ZoneEntity entity) : ZoneEntit
 
     public static bool ShouldAttachToEntity(CoreTemplate template)
         => template is GameObjectTemplate gameObjectTemplate
-        && gameObjectTemplate.m_objectName is not null // Some templates carry a null object name.
+        && !gameObjectTemplate.m_objectName.IsEmpty // Some templates carry a null object name.
         && gameObjectTemplate.m_objectName.ToString().Contains(POTION_SHOP_NPC_CONTAINS);
 
     public IEnumerable<ServiceOptionBase> GetServiceOptions(Wizard _)

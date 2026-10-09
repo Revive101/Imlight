@@ -51,7 +51,8 @@ namespace Imlight.CoreLib.Game.Zone.Components;
 
 internal sealed class VolumeComponent(ZoneEntity entity) : ZoneEntityComponent(entity), IComponentFactory {
 
-    private readonly Dictionary<CoreObject, IActorRef> _playersInRange = [];
+    // Keyed by the player's actor: a CoreObject is a record, so its hash changes with every move.
+    private readonly HashSet<IActorRef> _playersInRange = [];
     private readonly List<(string QuestName, string GoalName)> _volumeGoals = [];
     private Volume _volume;
 
@@ -59,38 +60,27 @@ internal sealed class VolumeComponent(ZoneEntity entity) : ZoneEntityComponent(e
         => template is GameObjectTemplate goT && goT.m_templateID == 1700;
 
     public override void OnPlayerJoin(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) {
-        // If the player spawned within the volume, add them to the list of players in range but
-        // do not send any events.
         var isInside = _volume != null && (IsBox ? IsInsideBox(playerObj) : IsInRadius(playerObj, _volume.m_radius));
-        if (isInside && !_playersInRange.ContainsKey(playerObj)) {
-            _playersInRange.Add(playerObj, playerActor);
-
-            // A player can log in standing inside a quest-proximity volume.
-            NotifyProximityGoals(playerObj, playerActor, playerWizard);
+        if (!isInside || !_playersInRange.Add(playerActor)) {
+            return;
         }
+
+        // A player who spawns inside a volume is treated as having walked in.
+        OnProximityEnter(playerObj, playerActor, playerWizard, playerSpawned: true);
     }
+
+    public override void OnPlayerLeave(IActorRef playerActor, ulong id) => _playersInRange.Remove(playerActor);
 
     public override void OnPlayerMove(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) {
         if (_volume == null) {
             return;
         }
 
-        // todo: a box volume only drives quest proximity goals here; should it post its enter/exit events too?
-        if (IsBox) {
-            UpdateBoxProximityGoals(playerObj, playerActor, playerWizard);
-
-            return;
-        }
-
-        // Check if the player is now in range of the object.
-        if (IsInRadius(playerObj, _volume.m_radius) && !_playersInRange.ContainsKey(playerObj)) {
-            // If the player is in range, trigger the enter events.
+        var isInside = IsBox ? IsInsideBox(playerObj) : IsInRadius(playerObj, _volume.m_radius);
+        if (isInside && _playersInRange.Add(playerActor)) {
             OnProximityEnter(playerObj, playerActor, playerWizard);
-            _playersInRange.Add(playerObj, playerActor);
-        } else if (!IsInRadius(playerObj, _volume.m_radius) && _playersInRange.ContainsKey(playerObj)) {
-            // If the player is out of range, trigger the exit events.
+        } else if (!isInside && _playersInRange.Remove(playerActor)) {
             OnProximityExit(playerObj, playerActor);
-            _playersInRange.Remove(playerObj);
         }
     }
 
@@ -140,24 +130,13 @@ internal sealed class VolumeComponent(ZoneEntity entity) : ZoneEntityComponent(e
         return MathF.Abs(localX) <= _volume.m_length / 2 && MathF.Abs(localY) <= _volume.m_width / 2;
     }
 
-    private void UpdateBoxProximityGoals(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) {
-        if (!IsInsideBox(playerObj)) {
-            _playersInRange.Remove(playerObj);
-
-            return;
-        }
-
-        if (_playersInRange.TryAdd(playerObj, playerActor)) {
-            NotifyProximityGoals(playerObj, playerActor, playerWizard);
-        }
-    }
-
-    private void OnProximityEnter(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) {
+    private void OnProximityEnter(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard, bool playerSpawned = false) {
         foreach (var enterEvent in _volume.m_enterEvents) {
             var postEventMsg = new ZONE_102_PROTOCOL.MSG_POSTEVENT {
                 EventName = enterEvent,
                 PlayerActor = playerActor,
-                PlayerGameObject = playerObj
+                PlayerGameObject = playerObj,
+                PlayerSpawned = playerSpawned
             };
 
             Entity.ZoneRef.Tell(postEventMsg);

@@ -71,8 +71,7 @@ internal class SpellFactory : RootDirectoryResourceSingleton<SpellFactory>, IMem
                 continue;
             }
 
-            if (   spellTemplate.m_name is null 
-                || spellTemplate.m_name.ToString().Length == 0) {
+            if (spellTemplate.m_name.IsEmpty) {
                 Logger.Error("Spell template {0} has an empty name.", 
                     Logger.Args(fileRecord.FileName));
 

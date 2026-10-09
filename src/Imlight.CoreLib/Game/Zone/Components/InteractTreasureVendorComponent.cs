@@ -31,6 +31,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
 using Imcodec.Cryptography;
+using Imcodec.IO;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
@@ -123,7 +124,7 @@ internal sealed class InteractTreasureVendorComponent(ZoneEntity entity) : ZoneE
     private void SendTreasureShopOfferings(IActorRef playerActor) {
         var shopOffering = new TreasureShopOffering() {
             m_treasureShopTitle = "Treasure Cards",
-            m_treasureSpellNames = _inventory.Select(x => x.SpellName).ToList(),
+            m_treasureSpellNames = _inventory.Select(x => (ByteString)x.SpellName).ToList(),
             m_crownShop = false,
             m_pvpCurrencyShop = false,
             m_pvpTourneyCurrencyShop = false,

@@ -121,7 +121,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         => (byte) SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Monster && x.IsAlive && x.AddedToDuel);
     public ulong SigilId => Entity.ActiveGameObject.m_globalID;
 
-    private readonly Dictionary<CoreObject, IActorRef> _entitiesInRange = [];
+    // Keyed by the actor: a CoreObject is a record whose hash follows its location.
+    private readonly HashSet<IActorRef> _entitiesInRange = [];
     private readonly CombatGroupReservations _groupReservations = new();
     private readonly ObjectSerializer _serializer = new(
         Versionable: false,
@@ -184,15 +185,15 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
         // Check if the player is now in range of the object.
         // If there's a slot available, add the player to the duel.
-        if (IsInRadius(playerObj, _combatSigilObjectInfo.m_radius) && !_entitiesInRange.ContainsKey(playerObj)) {
-            _entitiesInRange.Add(playerObj, playerActor);
+        if (IsInRadius(playerObj, _combatSigilObjectInfo.m_radius) && !_entitiesInRange.Contains(playerActor)) {
+            _entitiesInRange.Add(playerActor);
 
             if (IsSlotAvailable(CombatTeam.Player)) {
                 AddParticipant(playerObj, playerActor);
             }
         }
-        else if (!IsInRadius(playerObj, _combatSigilObjectInfo.m_radius) && _entitiesInRange.ContainsKey(playerObj)) {
-            _entitiesInRange.Remove(playerObj);
+        else if (!IsInRadius(playerObj, _combatSigilObjectInfo.m_radius) && _entitiesInRange.Contains(playerActor)) {
+            _entitiesInRange.Remove(playerActor);
         }
     }
 
@@ -203,8 +204,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
         // Check if the creature is now in range of the object.
         // If there's a slot available, add the creature to the duel.
-        if (IsInRadius(creature, _combatSigilObjectInfo.m_radius) && !_entitiesInRange.ContainsKey(creature)) {
-            _entitiesInRange.Add(creature, suspect);
+        if (IsInRadius(creature, _combatSigilObjectInfo.m_radius) && !_entitiesInRange.Contains(suspect)) {
+            _entitiesInRange.Add(suspect);
 
             var npcComponent = entity.GetComponentOfType<NpcComponent>();
             if (npcComponent != null && !npcComponent.IsMonster) {
@@ -220,10 +221,12 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
                 suspect.Tell(deleteMsg);
             }
         }
-        else if (!IsInRadius(creature, _combatSigilObjectInfo.m_radius) && _entitiesInRange.ContainsKey(creature)) {
-            _entitiesInRange.Remove(creature);
+        else if (!IsInRadius(creature, _combatSigilObjectInfo.m_radius) && _entitiesInRange.Contains(suspect)) {
+            _entitiesInRange.Remove(suspect);
         }
     }
+
+    private const string MONSTER_KILLED_EVENT = "Monster_Killed";
 
     internal void ZoneBroadcast(IMessage message) => Entity.ZoneRef.Tell(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
         Selfless = false,
@@ -1355,6 +1358,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         SendCombatPhase((byte) Duel.m_duelPhase);
 
         var adjectivesOfDefeatedMobs = new List<string>();
+        var adjectivesPerDefeatedMob = new List<List<string>>();
         var templateIdsOfDefeatedMobs = new List<ulong>();
         EnactActionOnSubCircles(circle => {
             if (circle.OccupiedTeam == CombatTeam.Monster) {
@@ -1369,7 +1373,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
                 }
 
                 var mobAdjectives = gameObjectTemplate.m_adjectiveList;
-                adjectivesOfDefeatedMobs.AddRange(mobAdjectives);
+                adjectivesOfDefeatedMobs.AddRange(mobAdjectives.Select(a => (string)a));
+                adjectivesPerDefeatedMob.Add([.. mobAdjectives]);
                 templateIdsOfDefeatedMobs.Add(gameObjectTemplate.m_templateID);
             }
         });
@@ -1398,6 +1403,34 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
             };
             circle.ParticipantActor.Tell(victoryMsg);
         });
+
+        PostMonsterKilledEvents(adjectivesPerDefeatedMob);
+    }
+
+    private void PostMonsterKilledEvents(List<List<string>> adjectivesPerDefeatedMob) {
+        // Triggers match the killed monster's adjectives (a boss's ".AdjRef") and act for the first winning player.
+        IActorRef winnerActor = null;
+        CoreObject winnerObject = null;
+        EnactActionOnSubCircles(circle => {
+            if (winnerActor is null && circle.OccupiedTeam == CombatTeam.Player && !circle.IsSummonedMinion
+                && circle.ParticipantActor is not null) {
+                winnerActor = circle.ParticipantActor;
+                winnerObject = circle.ParticipantObject;
+            }
+        });
+
+        if (winnerActor is null) {
+            return;
+        }
+
+        foreach (var adjectives in adjectivesPerDefeatedMob) {
+            Entity.ZoneRef.Tell(new ZONE_102_PROTOCOL.MSG_POSTEVENT {
+                EventName = MONSTER_KILLED_EVENT,
+                PlayerActor = winnerActor,
+                PlayerGameObject = winnerObject,
+                Adjectives = adjectives,
+            });
+        }
     }
 
     private void CreatureWin() {

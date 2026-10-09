@@ -30,7 +30,7 @@ public class GenericRequirementContext(RequirementList requirements,
                                IActorRef zoneRef = null,
                                string questName = null,
                                string goalName = null,
-                               string triggerName = null) : IRequirementContext {
+                               string triggerName = null) : IRequirementContext, IZoneStateContext {
 
     private readonly RequirementList _requirements = requirements;
     private readonly IActorRef _playerRef = playerRef;
@@ -50,5 +50,20 @@ public class GenericRequirementContext(RequirementList requirements,
     public string GetQuestName() => _questName;
     public string GetGoalName() => _goalName;
     public string GetTriggerName() => _triggerName;
+
+    /// <summary>
+    /// The tokens, counters and trigger states of the zone, when the check runs for a zone trigger.
+    /// </summary>
+    public Game.Zone.Core.ZoneScriptState ScriptState { get; init; }
+
+    /// <summary>
+    /// Judges the completion of dungeon quests by the instance, when a player's entry grants them.
+    /// </summary>
+    public System.Func<string, bool?> InstanceQuestCompleted { get; init; }
+
+    /// <summary>
+    /// The zones of the player's instance container, when the player is in an instance; ReqInZone then holds for any of them.
+    /// </summary>
+    public System.Collections.Generic.IReadOnlyCollection<string> InstanceZones { get; init; }
 
 }

@@ -57,4 +57,21 @@ public interface IResultContext {
     /// <returns>Reply-to actor reference or null if no reply needed</returns>
     IActorRef GetReplyTo();
 
+    /// <summary>
+    /// Gets the multiplier for the experience of drop tables among the results
+    /// </summary>
+    /// <returns>1 unless the results belong to a repeated run of a dungeon quest</returns>
+    float GetXpScale() => 1f;
+
+    /// <summary>
+    /// Gets whether the results run for a player who spawned inside the volume that raised the event.
+    /// </summary>
+    /// <returns>True until the results first wait</returns>
+    bool IsPlayerSpawn() => false;
+
+    /// <summary>
+    /// Ends the spawn state once the results have waited.
+    /// </summary>
+    void EndPlayerSpawn() { }
+
 }
