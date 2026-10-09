@@ -65,13 +65,8 @@ internal sealed class VolumeComponent(ZoneEntity entity) : ZoneEntityComponent(e
             return;
         }
 
-        // A player who spawns inside a volume is treated as having walked in. A box volume only
-        // drives quest proximity goals (see OnPlayerMove).
-        if (IsBox) {
-            NotifyProximityGoals(playerObj, playerActor, playerWizard);
-        } else {
-            OnProximityEnter(playerObj, playerActor, playerWizard, playerSpawned: true);
-        }
+        // A player who spawns inside a volume is treated as having walked in.
+        OnProximityEnter(playerObj, playerActor, playerWizard, playerSpawned: true);
     }
 
     public override void OnPlayerLeave(IActorRef playerActor, ulong id) => _playersInRange.Remove(playerActor);
@@ -81,22 +76,11 @@ internal sealed class VolumeComponent(ZoneEntity entity) : ZoneEntityComponent(e
             return;
         }
 
-        // todo: a box volume only drives quest proximity goals here; should it post its enter/exit events too?
-        if (IsBox) {
-            UpdateBoxProximityGoals(playerObj, playerActor, playerWizard);
-
-            return;
-        }
-
-        // Check if the player is now in range of the object.
-        if (IsInRadius(playerObj, _volume.m_radius) && !_playersInRange.Contains(playerActor)) {
-            // If the player is in range, trigger the enter events.
+        var isInside = IsBox ? IsInsideBox(playerObj) : IsInRadius(playerObj, _volume.m_radius);
+        if (isInside && _playersInRange.Add(playerActor)) {
             OnProximityEnter(playerObj, playerActor, playerWizard);
-            _playersInRange.Add(playerActor);
-        } else if (!IsInRadius(playerObj, _volume.m_radius) && _playersInRange.Contains(playerActor)) {
-            // If the player is out of range, trigger the exit events.
+        } else if (!isInside && _playersInRange.Remove(playerActor)) {
             OnProximityExit(playerObj, playerActor);
-            _playersInRange.Remove(playerActor);
         }
     }
 
@@ -144,18 +128,6 @@ internal sealed class VolumeComponent(ZoneEntity entity) : ZoneEntityComponent(e
         var localY = (dy * MathF.Cos(yaw)) - (dx * MathF.Sin(yaw));
 
         return MathF.Abs(localX) <= _volume.m_length / 2 && MathF.Abs(localY) <= _volume.m_width / 2;
-    }
-
-    private void UpdateBoxProximityGoals(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) {
-        if (!IsInsideBox(playerObj)) {
-            _playersInRange.Remove(playerActor);
-
-            return;
-        }
-
-        if (_playersInRange.Add(playerActor)) {
-            NotifyProximityGoals(playerObj, playerActor, playerWizard);
-        }
     }
 
     private void OnProximityEnter(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard, bool playerSpawned = false) {
