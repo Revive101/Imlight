@@ -84,7 +84,18 @@ public static class SpiralDB {
         var basePath = Path.GetFullPath(s_localPath);
 
         if (!s_disableRemote) {
+            string[] xdgPaths = null;
+            string[] globalPaths = null;
+
             try {
+                xdgPaths = [.. GlobalSettings.GetConfigSearchPaths(
+                    ConfigurationLevel.Xdg)];
+                globalPaths = [.. GlobalSettings.GetConfigSearchPaths(
+                    ConfigurationLevel.Global)];
+
+                GlobalSettings.SetConfigSearchPaths(ConfigurationLevel.Xdg, []);
+                GlobalSettings.SetConfigSearchPaths(ConfigurationLevel.Global, []);
+
                 SyncRepository(basePath);
             }
             catch (Exception ex) {
@@ -97,6 +108,16 @@ public static class SpiralDB {
                                  "SpiralDB will be empty.");
 
                     return;
+                }
+            }
+            finally {
+                if (xdgPaths != null) {
+                    GlobalSettings.SetConfigSearchPaths(
+                        ConfigurationLevel.Xdg, xdgPaths);
+                }
+                if (globalPaths != null) {
+                    GlobalSettings.SetConfigSearchPaths(
+                        ConfigurationLevel.Global, globalPaths);
                 }
             }
         }
