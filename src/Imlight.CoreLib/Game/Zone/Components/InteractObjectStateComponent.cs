@@ -211,10 +211,10 @@ internal sealed class InteractObjectStateComponent(ZoneEntity entity)
     }
 
     /// <summary>
-    /// True when the object is already in the state one of its quest-goal options puts it in.
+    /// True when a use already put the object into the state one of its quest-goal options puts it in.
     /// </summary>
     internal bool IsInGoalOptionState() {
-        var current = CurrentState();
+        var current = Zone.ScriptState.GetObjectStateIfChanged(ObjectName);
 
         return !string.IsNullOrEmpty(current)
             && GetStateOptions(Entity.Template as GameObjectTemplate)
