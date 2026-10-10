@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty, Jeff
  * Version: KALI 1.0
- * Last Updated: 10/09/2026
+ * Last Updated: 10/10/2026
  */
 
 using System;
@@ -513,7 +513,11 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST))]
     private void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message) {
         if (ZoneActor is null) {
-            throw new Exception("Zone Reference was null.");
+            var messageType = message.Message?.GetType() ?? message.Messages?.FirstOrDefault()?.GetType();
+            Logger.Debug("Session {SessionId} dropped a zone broadcast of {MessageType}: it has no zone.",
+                Logger.Args(SessionActor.SessionID, messageType?.Name));
+
+            return;
         }
 
         ZoneActor.Tell(message);
@@ -532,7 +536,11 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEENTITY))]
     private void ReceiveQueryZoneObject(ZONE_102_PROTOCOL.MSG_QUERYZONEENTITY message) {
         if (ZoneActor is null) {
-            throw new Exception("Zone Reference was null.");
+            Logger.Debug("Session {SessionId} answered a zone entity query with nothing: it has no zone.",
+                Logger.Args(SessionActor.SessionID));
+            Sender.Tell(new ZONE_102_PROTOCOL.MSG_QUERYZONEENTITYRSP { Found = false });
+
+            return;
         }
 
         ZoneActor.Forward(message);

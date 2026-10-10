@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/26/2026
+ * Last Updated: 10/10/2026
  */
 
 using System;
@@ -58,6 +58,7 @@ internal class MoveService : MessageService {
     private const uint MARK_MANA_COST_ELSE = 10; 
     private const int FISH_INTERACTION_INTERVAL_IN_MILLI = 250;
     private const int MOVE_THRESHOLD_IN_MILLI = FISH_INTERACTION_INTERVAL_IN_MILLI * 2;
+    private const string InteractionTimerKey = "interaction";
 
     private readonly TimeSpan _fishInteractionInterval
         = TimeSpan.FromMilliseconds(FISH_INTERACTION_INTERVAL_IN_MILLI);
@@ -73,11 +74,17 @@ internal class MoveService : MessageService {
         // to check for zone interactions. This will enable the player to interact with the zone
         // even if they aren't moving.
         var intervalMsg = new ZONE_102_PROTOCOL.MSG_PLAYERMOVEINTERVAL();
-        Timers.StartPeriodicTimer("interaction", intervalMsg, _fishInteractionInterval, _fishInteractionInterval);
+        Timers.StartPeriodicTimer(InteractionTimerKey, intervalMsg, _fishInteractionInterval, _fishInteractionInterval);
     }
 
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new MoveService(parentActor));
+
+    protected override void OnPreDispose() {
+        Timers.Cancel(InteractionTimerKey);
+
+        base.OnPreDispose();
+    }
 
     [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE))]
     private void ReceivePostAttach(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE message) {
