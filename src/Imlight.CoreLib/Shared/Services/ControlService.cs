@@ -60,7 +60,7 @@ internal class ControlService : MessageService, IHandshakeService {
     private void SendSessionOffer() {
         // Ask the game client for a session.
         var currentUnixTimestamp = (uint) (DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
-        var timestampUpper = (int) (currentUnixTimestamp >> 32);
+        var timestampUpper = 0;
         var timestampLower = (int) (currentUnixTimestamp & uint.MaxValue);
         var millisecondsIntoCurrentSecond = (uint) (DateTime.UtcNow.TimeOfDay.TotalMilliseconds % 1000);
 
