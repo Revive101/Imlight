@@ -33,9 +33,10 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/27/2026
+ * Last Updated: 10/09/2026
  */
 
+using System;
 using Akka.Actor;
 using Imcodec.IO;
 using Imcodec.Math;
@@ -52,6 +53,11 @@ namespace Imlight.CoreLib.Login.Services;
 internal class GameTransitionService(SessionActor sessionActor) : MessageService(sessionActor) {
 
     private const string MinigameWorldPrefix = "ThePhantomZoneWorld/";
+
+    private const int GetZoneForCharacterFailed = 358102972;
+    private const int NoZonesAvailable = 2045324626;
+
+    private static readonly TimeSpan s_gameServerAskTimeout = TimeSpan.FromSeconds(15);
 
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new GameTransitionService(parentActor));
@@ -81,14 +87,23 @@ internal class GameTransitionService(SessionActor sessionActor) : MessageService
         // If the given character does not exist on this account, send the client an error.
         var character = account.GetCharacter(message.CharID);
         if (character is null) {
-            Logger.Warning("Account {Id} attempted to get a character it didn't have.", Logger.Args(account.AccountId));
-            SendErrorToSocket();
+            Logger.Warning("SessionActor {SessionId} account {Id} attempted to get character {CharId} it didn't have.",
+                Logger.Args(SessionActor.SessionID, account.AccountId, message.CharID));
+            SendErrorToSocket(GetZoneForCharacterFailed);
             
             return;
         }
 
         // Enqueue the session actor onto the game server and create a session key.
         var gameServer = GetGameServer();
+        if (gameServer?.ActorRef is null) {
+            Logger.Error("SessionActor {SessionId} found no game server for character {CharId}.",
+                Logger.Args(SessionActor.SessionID, character.CharId));
+            SendErrorToSocket(NoZonesAvailable);
+
+            return;
+        }
+
         var serverEnqueueResult = (LOGIN_7_PROTOCOL.MSG_CHARACTERSELECTED) SessionActor.EnqueueToServer(gameServer.ActorRef);
         var allocatedKey = CreateSessionKey(gameServer.ActorRef, account);
 
@@ -130,8 +145,19 @@ internal class GameTransitionService(SessionActor sessionActor) : MessageService
 
     private SERVER_100_PROTOCOL.MSG_SERVERINFO GetGameServer() {
         var msg = new SERVER_100_PROTOCOL.MSG_GETBESTSERVER();
-        
-        return AskServer<SERVER_100_PROTOCOL.MSG_SERVERINFO>(msg);
+
+        try {
+            // The pool queries every game server for up to 10 s before it answers.
+            return SessionActor.ServerRef
+                .Ask<SERVER_100_PROTOCOL.MSG_SERVERINFO>(msg, s_gameServerAskTimeout)
+                .Result;
+        }
+        catch (Exception e) {
+            Logger.Error("SessionActor {SessionId} could not get a game server. {Exception}",
+                Logger.Args(SessionActor.SessionID, e.GetBaseException().Message));
+
+            return null;
+        }
     }
 
     private ByteString CreateSessionKey(ICanTell gameServerRef, Account account) {
@@ -147,8 +173,6 @@ internal class GameTransitionService(SessionActor sessionActor) : MessageService
     private void SendErrorToSocket(int errorCode = 1) {
         var msg = new LOGIN_7_PROTOCOL.MSG_CHARACTERSELECTED() { Error = errorCode };
         SendToSocket(msg);
-
-        CloseSession();
     }
 
     private string DetermineZone(Wizard wizard) {

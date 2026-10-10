@@ -139,18 +139,18 @@ public class Account {
         // Change the character account ID to this account's ID.
         character.AccountId = this.AccountId;
 
-        this.CharacterIds.Add(character.CharId);
-        this.Characters.Add(character);
-
         // Save the character persistently.
         var savedCharacterToCollection = WizardCollection
             .AddCharacter(character);
-        var savedCharacterToAccount = AccountCollection
-            .AddCharacterToAccount(AccountId, character.CharId);
+        var savedCharacterToAccount = savedCharacterToCollection
+            && AccountCollection.AddCharacterToAccount(AccountId, character.CharId);
 
         if (!savedCharacterToCollection || !savedCharacterToAccount) {
             return false;
         }
+
+        this.CharacterIds.Add(character.CharId);
+        this.Characters.Add(character);
 
         return true;
     }
@@ -176,9 +176,9 @@ public class Account {
     /// Retrieves a character with the specified ID.
     /// </summary>
     /// <param name="id">The ID of the character to retrieve.</param>
-    /// <returns>The character with the specified ID.</returns>
+    /// <returns>The character with the specified ID, or null if the account has none.</returns>
     public Wizard GetCharacter(ulong id)
-        => this.Characters.First(c => c.CharId == id);
+        => this.Characters.FirstOrDefault(c => c.CharId == id);
 
     /// <summary>
     /// Adds an infraction to the account.

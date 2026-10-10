@@ -25,16 +25,16 @@
  * USAGE EXAMPLE:
  * 
  * NOTE:
- * This service relies on ObjectSerializer for character data serialization/deserialization
- * and may throw SessionFatalException if serialization fails.
+ * This service relies on ObjectSerializer for character data serialization/deserialization.
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 10/09/2026
  */
 
 using System;
 using Akka.Actor;
+using Imcodec.IO;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
@@ -45,11 +45,14 @@ using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Implementations;
+using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Login.Services;
 
 internal class CharacterService(SessionActor parentActor) : MessageService(parentActor) {
-    
+
+    private const int CharacterFailure = 0x67BAA130;
+
     private uint _characterCreationStage;
     private uint _characterCreationParameter;
 
@@ -77,7 +80,11 @@ internal class CharacterService(SessionActor parentActor) : MessageService(paren
         try {
             var flags = PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit;
             if (!serializer.Deserialize(message.CreationInfo, flags, out WizardCharacterCreationInfo charData)) {
-                throw new SessionFatalException("Failed to deserialize character creation data.");
+                Logger.Error("SessionActor {SessionId} account {accountUsername} sent character creation data that could not be deserialized.",
+                    Logger.Args(SessionActor.SessionID, account.Username));
+                SendToSocket(new LOGIN_7_PROTOCOL.MSG_CREATECHARACTERRESPONSE { ErrorCode = 1 });
+
+                return;
             }
 
             var newCharacter = CharacterHelper.CreateCharacterFromCreationInfo(charData);
@@ -101,12 +108,10 @@ internal class CharacterService(SessionActor parentActor) : MessageService(paren
             }
         }
         catch (Exception e) {
-            Logger.Error("Account {accountUsername} failed to deserialize character creation data. {Exception}", 
-                Logger.Args(account.Username, e.Message));
+            Logger.Error("SessionActor {SessionId} account {accountUsername} failed to create a character. {Exception}",
+                Logger.Args(SessionActor.SessionID, account.Username, e.Message));
 
             SendToSocket(new LOGIN_7_PROTOCOL.MSG_CREATECHARACTERRESPONSE { ErrorCode = 1 });
-
-            throw new SessionFatalException("Failed to deserialize character creation data.");
         }
     }
 
@@ -124,18 +129,25 @@ internal class CharacterService(SessionActor parentActor) : MessageService(paren
 
         // If we had no problems deleting the character from the account, delete the character from the database.
         if (characterWasSuccessfullyDeleted) {
-            // Delete the character from the database.
-            var deletedCharacterFromCollection = WizardCollection
-                .DeleteCharacter(message.CharID);
+            try {
+                // Delete the character from the database.
+                var deletedCharacterFromCollection = WizardCollection
+                    .DeleteCharacter(message.CharID);
 
-            // Delete the character's reference from the account.
-            var deletedCharacterFromAccount = AccountCollection
-                .DeleteCharacterFromAccount(account.AccountId, message.CharID);
+                // Delete the character's reference from the account.
+                var deletedCharacterFromAccount = AccountCollection
+                    .DeleteCharacterFromAccount(account.AccountId, message.CharID);
 
-            if (!deletedCharacterFromCollection || !deletedCharacterFromAccount) {
-                Logger.Error("Account {accountUsername} failed to delete character {characterId} from database.",
-                    Logger.Args(account.Username, message.CharID));
-                errorCode = 1;
+                if (!deletedCharacterFromCollection || !deletedCharacterFromAccount) {
+                    Logger.Error("Account {accountUsername} failed to delete character {characterId} from database.",
+                        Logger.Args(account.Username, message.CharID));
+                    errorCode = CharacterFailure;
+                }
+            }
+            catch (Exception e) {
+                Logger.Error("Account {accountUsername} failed to delete character {characterId} from database. {Exception}",
+                    Logger.Args(account.Username, message.CharID, e.Message));
+                errorCode = CharacterFailure;
             }
         }
         else {
@@ -155,11 +167,6 @@ internal class CharacterService(SessionActor parentActor) : MessageService(paren
     [MessageHandler(typeof(LOGIN_108_PROTOCOL.MSG_REQUESTCHARACTERLIST))]
     private void ReceiveRequestCharacterList(LOGIN_108_PROTOCOL.MSG_REQUESTCHARACTERLIST message) {
         var account = GetSocketAccount();
-        if (account is null) {
-            SendToSocket(new LOGIN_7_PROTOCOL.MSG_CHARACTERLIST() { Error = 1 });
-
-            return;
-        }
 
         // Tell the client we're going to start sending the character list.
         SendToSocket(new LOGIN_7_PROTOCOL.MSG_STARTCHARACTERLIST() {
@@ -175,18 +182,8 @@ internal class CharacterService(SessionActor parentActor) : MessageService(paren
             );
 
             for (int i = 0; i < account.Characters.Count; i++) {
-                // Characters in the login screen are stripped down to the bare minimum,
-                // only the information needed to display the character.
-                var character = account.Characters[i];
-                var loginScreenInfo = CharacterHelper.GetLoginScreenInfo(character);
-
-                // Serialize the character info to send to the client.
-                var flags = PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit;
-                if (!serializer.Serialize(loginScreenInfo, flags, out var data)) {
-                    Logger.Error("Account {accountUsername} failed to serialize character {characterId} for login screen.",
-                        Logger.Args(account.Username, character.CharId));
-
-                    return;
+                if (!TrySerializeLoginScreenInfo(serializer, account, account.Characters[i], out var data)) {
+                    continue;
                 }
 
                 SendToSocket(new LOGIN_7_PROTOCOL.MSG_CHARACTERINFO() { CharacterInfo = data });
@@ -195,6 +192,31 @@ internal class CharacterService(SessionActor parentActor) : MessageService(paren
 
         // Tell the client we've finished sending the character list.
         SendToSocket(new LOGIN_7_PROTOCOL.MSG_CHARACTERLIST());
+    }
+
+    private bool TrySerializeLoginScreenInfo(ObjectSerializer serializer, Account account, Wizard character, out ByteString data) {
+        try {
+            // Characters in the login screen are stripped down to the bare minimum,
+            // only the information needed to display the character.
+            var loginScreenInfo = CharacterHelper.GetLoginScreenInfo(character);
+
+            // Serialize the character info to send to the client.
+            var flags = PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit;
+            if (serializer.Serialize(loginScreenInfo, flags, out data)) {
+                return true;
+            }
+
+            Logger.Error("SessionActor {SessionId} account {accountUsername} failed to serialize character {characterId} for login screen.",
+                Logger.Args(SessionActor.SessionID, account.Username, character.CharId));
+        }
+        catch (Exception e) {
+            Logger.Error("SessionActor {SessionId} account {accountUsername} failed to build the login screen info for character {characterId}. {Exception}",
+                Logger.Args(SessionActor.SessionID, account.Username, character.CharId, e.Message));
+        }
+
+        data = default;
+
+        return false;
     }
 
     [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_LOGINLOGCHARACTERCREATION))]
