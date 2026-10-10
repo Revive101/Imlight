@@ -61,11 +61,13 @@ namespace Imlight.CoreLib.Game.Services;
 internal class ZoneService(SessionActor sessionActor) : MessageService(sessionActor) {
 
     private const int ZONE_REMOVAL_WAIT_TIME_IN_SECONDS = 8;
-    private const int ZONE_TRANSFER_CLEANUP_WAIT_TIME_IN_SECONDS = 1;
     private const int ZONE_HEAL_TICK_INTERVAL_IN_SECONDS = 5;
     private const float TELEPORT_EFFECTS_TIME = 2.0f;
     private const string ENTER_ZONE_EVENT_NAME = "EnterZone";
     private const string DIALOG_ENTRY_EVENT_COMPLETION = "ENTRY";
+
+    // The official server sends MSG_SERVERTRANSFER about 400 ms after the ACK; saving the wizard adds about 50 ms.
+    private const int ZoneTransferDelayMs = 350;
 
     public IActorRef ZoneActor;
 
@@ -797,10 +799,9 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
             Logger.Warning("Zone removal timeout of {0} seconds exceeded.", Logger.Args(ZONE_REMOVAL_WAIT_TIME_IN_SECONDS));
         }
 
-        // Defer the server transfer by the cleanup wait time so the client can
-        // finish tearing down zone objects.
+        // Defer the server transfer so the client can finish tearing down zone objects.
         Timers.StartSingleTimer("zone-transfer-delay", new SERVICE_101_PROTOCOL.MSG_ZONETRANSFER_DELAY(),
-                                TimeSpan.FromSeconds(ZONE_TRANSFER_CLEANUP_WAIT_TIME_IN_SECONDS));
+                                TimeSpan.FromMilliseconds(ZoneTransferDelayMs));
     }
 
     [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_ZONETRANSFER_DELAY))]

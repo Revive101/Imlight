@@ -36,7 +36,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/09/2026
+ * Last Updated: 10/10/2026
  */
 
 using System;
@@ -63,7 +63,11 @@ namespace Imlight.CoreLib.Game.Services;
 
 internal class AttachService(SessionActor sessionActor) : MessageService(sessionActor) {
 
-    private const float PRELOGIN_DELAY_MS = 500.0f;
+    // The official server sends MSG_LOGINCOMPLETE a median 390 ms after MSG_ATTACH.
+    private const int PreLoginGapMs = 390;
+
+    // The services that answer MSG_PRELOGIN are other actors, and their messages have to reach the socket first.
+    private const int PreLoginMinimumDelayMs = 100;
     private const float ATTACH_TIMEOUT_SECONDS = 15.0f;
 
     private Account _account;
@@ -77,6 +81,7 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ATTACH))]
     private void ReceiveAttach(GAME_5_PROTOCOL.MSG_ATTACH message) {
+        var attachReceivedAt = Stopwatch.GetTimestamp();
         _attachReceived = true;
         Timers.Cancel("attach-timeout");
 
@@ -185,14 +190,17 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
         TellOtherServices(preLoginMsg);
 
         // Send the same message to ourselves after a short delay to allow other services to prepare.
+        var preLoginDelay = TimeSpan.FromMilliseconds(Math.Max(
+            PreLoginMinimumDelayMs,
+            PreLoginGapMs - Stopwatch.GetElapsedTime(attachReceivedAt).TotalMilliseconds));
         Timers.StartSingleTimer(
             "PreLoginDelay",
             preLoginMsg,
-            TimeSpan.FromMilliseconds(PRELOGIN_DELAY_MS)
+            preLoginDelay
         );
 
         Logger.Information("Session {SessionId} MSG_ATTACH accepted: zone {Zone}, character {CharId}, PRELOGIN in {Delay}ms",
-            Logger.Args(SessionActor.SessionID, zoneName, _wizard.CharId, PRELOGIN_DELAY_MS));
+            Logger.Args(SessionActor.SessionID, zoneName, _wizard.CharId, (int) preLoginDelay.TotalMilliseconds));
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PRELOGIN))]
