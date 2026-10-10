@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 10/09/2026
  */
 
 using System;
@@ -93,8 +93,11 @@ internal sealed class SocketSender : ReceiveActor, IDisposable {
     }
 
     private void SendToSocket(IMessage message) {
-        if (!_socket.Connected) {
+        if (_isDisposed || !_socket.Connected) {
+            LogDroppedPacket(message, _isDisposed ? "disposed" : "not connected");
             Dispose();
+
+            return;
         }
         if (_isSending) {
             Logger.Error("SessionActor {SessionId} send failure: " +
@@ -102,14 +105,11 @@ internal sealed class SocketSender : ReceiveActor, IDisposable {
                          
             return;
         }
-        if (_isDisposed) {
-            return;
-        }
 
-        var data = MessageEncoder.Encode(message);
         _isSending = true;
 
         try {
+            var data = MessageEncoder.Encode(message);
             var bytesSent = _socket.Send(data);
             if (bytesSent != data.Length) {
                 throw new SessionFatalException(
@@ -120,6 +120,13 @@ internal sealed class SocketSender : ReceiveActor, IDisposable {
         catch (SocketException ex) {
             throw new SessionFatalException($"SessionActor [{_sessionid}] send failure: {ex.SocketErrorCode}");
         }
+        catch (InvalidOperationException ex) {
+            // Includes ObjectDisposedException, thrown when the listener side closed the shared socket.
+            LogDroppedPacket(message, ex.GetType().Name);
+            Dispose();
+
+            return;
+        }
         finally {
             _isSending = false;
         }
@@ -128,15 +135,20 @@ internal sealed class SocketSender : ReceiveActor, IDisposable {
     }
 
     private void LogSentPacket(IMessage packet) {
-        var scopedMessageName = packet
-            .GetType()
-            .ToString()
-            .Split('.')[^1]
-            .Replace('+', '.');
         if (!_suppressedPackets.Contains(packet.GetType())) {
             Logger.Verbose("SessionActor {SessionId} sent KiNP packet {ScopedMessageName}",
-                Logger.Args(_sessionid, scopedMessageName));
+                Logger.Args(_sessionid, GetScopedMessageName(packet)));
         }
     }
+
+    private void LogDroppedPacket(IMessage packet, string detail) =>
+        Logger.Debug("SessionActor {SessionId} dropped {ScopedMessageName}: socket closed / disposed ({Detail})",
+            Logger.Args(_sessionid, GetScopedMessageName(packet), detail));
+
+    private static string GetScopedMessageName(IMessage packet) => packet
+        .GetType()
+        .ToString()
+        .Split('.')[^1]
+        .Replace('+', '.');
 
 }
