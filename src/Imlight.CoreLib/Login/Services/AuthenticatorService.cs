@@ -30,7 +30,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 10/09/2026
  */
 
 using System;
@@ -51,6 +51,7 @@ internal class AuthenticatorService(SessionActor parentActor) : MessageService(p
         => Akka.Actor.Props.Create(() => new AuthenticatorService(parentActor));
 
     private Account? _validatedAccount;
+    private LOGIN_7_PROTOCOL.MSG_USER_ADMIT_IND _admission;
 
     // Received when a user is trying to authenticate.
     [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_V3))]
@@ -151,6 +152,13 @@ internal class AuthenticatorService(SessionActor parentActor) : MessageService(p
     }
 
     private bool AdmitClientToLogin(Account account) {
+        // The client asks for the list again after every character create or delete.
+        if (_admission is not null) {
+            SendToSocket(_admission);
+
+            return true;
+        }
+
         // Enqueue ourselves to the connected server. Inform the socket if its been placed into a queue and
         // what position it could potentially be in.
         var serverEnqueueResult = SessionActor.EnqueueToServer();
@@ -175,6 +183,7 @@ internal class AuthenticatorService(SessionActor parentActor) : MessageService(p
             Status = serverEnqueueResult.Status,
         };
         SendToSocket(clientResponse);
+        _admission = clientResponse;
 
         // Add the player to the online player collection.
         AddToOnlineCollection(account);
