@@ -29,6 +29,7 @@ namespace Imlight.CoreLib.WizardData.Collections;
 public static class AccountCollection {
     
     public const string CollectionName = "Accounts";
+    private const int LoginWarmupAccountSample = 5;
     private static readonly IDocumentStore s_store;
 
     static AccountCollection() {
@@ -252,6 +253,23 @@ public static class AccountCollection {
         return account is null
             ? null
             : LoadAccountDetails(session, account, characterListOnly: true);
+    }
+
+    /// <summary>
+    /// Runs the queries of a character list login without writing anything. It uses the stored account with
+    /// the most characters, or an account that matches nothing when none is stored.
+    /// </summary>
+    /// <returns></returns>
+    internal static Account GetAccountForLoginWarmup() {
+        using var session = s_store.OpenSession();
+
+        var account = session.Query<Account>(collectionName: CollectionName)
+            .Take(LoginWarmupAccountSample)
+            .ToList()
+            .OrderByDescending(a => a.CharacterIds.Count)
+            .FirstOrDefault() ?? new Account();
+
+        return LoadAccountDetails(session, account, characterListOnly: true);
     }
 
     /// <summary>

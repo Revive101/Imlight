@@ -20,7 +20,7 @@
  * ========================================================================
  *
  * PURPOSE:
- * Runs the authentication and character list work once at boot, on a throwaway account,
+ * Runs the authentication, validation and character list work once at boot, with reads only,
  * so the first real login does not pay for first-use compilation and index creation.
  *
  * USAGE EXAMPLE:
@@ -28,8 +28,8 @@
  * Imlight may be connected to.
  *
  * NOTE:
- * Never throws and never waits longer than the timeout. The throwaway account is deleted
- * again, including one left behind by a boot that was killed halfway.
+ * Never throws and never waits longer than the timeout. It writes nothing, apart from deleting
+ * the throwaway account that earlier versions left behind.
  *
  * TODO:
  *
@@ -41,7 +41,6 @@
 using System;
 using System.Diagnostics;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Imcodec.IO;
 using Imcodec.ObjectProperty;
@@ -53,7 +52,6 @@ using Imlight.CoreLib.Shared.Cryptography;
 using Imlight.CoreLib.Shared.Utilities;
 using Imlight.CoreLib.WizardData;
 using Imlight.CoreLib.WizardData.Collections;
-using Imlight.CoreLib.WizardData.Models.Misc;
 using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Auth;
@@ -62,12 +60,11 @@ public static class LoginWarmup {
 
     private const string WarmupUsername = "login-warmup";
     private const string WarmupIp = "127.0.0.1";
+    private const ulong WarmupAccountId = 0;
     private const ulong WarmupMachineId = 1;
     private const ushort WarmupSessionId = 1;
     private const uint WarmupOfferSeconds = 1;
     private const uint WarmupOfferMilliseconds = 1;
-    private const int IndexRetryCount = 50;
-    private const int IndexRetryDelayMilliseconds = 100;
 
     private static readonly TimeSpan s_timeout = TimeSpan.FromSeconds(30);
 
@@ -94,26 +91,12 @@ public static class LoginWarmup {
     }
 
     private static void Warm() {
-        DeleteWarmupAccount(attempts: 1);
+        RemoveLeftoverWarmupAccount();
 
         var password = Guid.NewGuid().ToString("N");
-        var wizard = CreateWarmupWizard();
-        var account = new Account(WarmupUsername, "login-warmup@invalid", DatabaseUtilities.CreateHashedPassword(password));
-        wizard.AccountId = account.AccountId;
-        account.CharacterIds.Add(wizard.CharId);
-        account.Characters.Add(wizard);
-        if (!AccountCollection.CreateAccount(account)) {
-            return;
-        }
-
-        try {
-            var loadedAccount = WarmAuthenticate(password);
-            WarmCharacterList(loadedAccount);
-        } finally {
-            ClientKeyCollection.RemoveSessionKeys(account.AccountId);
-            OnlinePlayerCollection.RemoveOnlinePlayer(account.AccountId);
-            DeleteWarmupAccount(IndexRetryCount);
-        }
+        var account = WarmAuthenticate(password);
+        WarmValidate();
+        WarmCharacterList(account);
     }
 
     private static Account WarmAuthenticate(string password) {
@@ -122,36 +105,23 @@ public static class LoginWarmup {
             WarmupSessionId, WarmupOfferSeconds, WarmupOfferMilliseconds);
         _ = Rec1.Decode(rec1, WarmupSessionId, WarmupOfferSeconds, WarmupOfferMilliseconds);
 
-        // The account was written a moment ago, so its index may not list it yet.
-        Account account = null;
-        for (var attempt = 0; account is null && attempt < IndexRetryCount; attempt++) {
-            account = AccountCollection.GetAccountForCharacterList(WarmupUsername);
-            if (account is null) {
-                Thread.Sleep(IndexRetryDelayMilliseconds);
-            }
-        }
-
-        if (account is null) {
-            throw new InvalidOperationException("The warmup account never became visible.");
-        }
-
+        var account = AccountCollection.GetAccountForLoginWarmup();
         _ = InfractionCollection.IsMachineBanned(WarmupMachineId);
         _ = InfractionCollection.IsIpBanned(WarmupIp);
         _ = account.InfractionHistory.IsCurrentlyBanned;
-        _ = ClientKey.VerifyCK1(account.PasswordHash, WarmupSessionId, WarmupOfferSeconds, WarmupOfferMilliseconds, clientKey);
+        _ = ClientKey.VerifyCK1(DatabaseUtilities.CreateHashedPassword(password), WarmupSessionId,
+            WarmupOfferSeconds, WarmupOfferMilliseconds, clientKey);
 
         var sessionKey = ClientKey.HashSessionKey(WarmupSessionId, WarmupOfferSeconds, WarmupOfferMilliseconds);
-        ClientKeyCollection.AddSessionKey(account.AccountId, WarmupMachineId, sessionKey);
         _ = Rec1.Encode(sessionKey, WarmupSessionId, WarmupOfferSeconds, WarmupOfferMilliseconds);
 
-        OnlinePlayerCollection.AddOnlinePlayer(new OnlinePlayer {
-            SessionId = WarmupSessionId,
-            AccountId = account.AccountId,
-            CurrentRealm = "LoginServer",
-            ActorPath = "warmup",
-        });
-
         return account;
+    }
+
+    private static void WarmValidate() {
+        _ = AccountCollection.GetAccountForCharacterList(WarmupAccountId);
+        _ = ClientKeyCollection.GetSessionKey(WarmupAccountId, WarmupMachineId);
+        _ = PassKey3.VerifyPK3(WarmupUsername, WarmupSessionId, WarmupOfferSeconds, WarmupOfferMilliseconds, WarmupUsername);
     }
 
     private static void WarmCharacterList(Account account) {
@@ -161,18 +131,20 @@ public static class LoginWarmup {
             _ = serializer.Serialize(CharacterHelper.GetLoginScreenInfo(character), flags, out ByteString _);
         }
 
+        _ = serializer.Serialize(CharacterHelper.GetLoginScreenInfo(CreateWarmupWizard()), flags, out ByteString _);
         _ = WizardItemCollection.TryGetWizardInventory(0, out _);
     }
 
-    private static void DeleteWarmupAccount(int attempts) {
-        // The delete looks the account up through an index that may lag behind the write.
-        for (var attempt = 0; attempt < attempts; attempt++) {
-            if (AccountCollection.DeleteAccount(WarmupUsername)) {
-                return;
-            }
-
-            Thread.Sleep(IndexRetryDelayMilliseconds);
+    private static void RemoveLeftoverWarmupAccount() {
+        // Earlier versions logged in as this account and deleted it again, which a killed boot could leave behind.
+        var leftover = AccountCollection.GetAccountForCharacterList(WarmupUsername);
+        if (leftover is null) {
+            return;
         }
+
+        Logger.Information("Deleting the {Username} account that an earlier boot left behind.", Logger.Args(WarmupUsername));
+        ClientKeyCollection.RemoveSessionKeys(leftover.AccountId);
+        AccountCollection.DeleteAccount(WarmupUsername);
     }
 
     private static Wizard CreateWarmupWizard()
