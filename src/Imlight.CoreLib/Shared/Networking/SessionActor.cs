@@ -37,13 +37,14 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 06/27/2026
+ * Last Updated: 10/09/2026
  */
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
+using System.Threading.Tasks;
 using Akka.Actor;
 using Imcodec.MessageLayer;
 using Imlight.Common;
@@ -438,19 +439,22 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
     private void SendPreDisposeToServices() {
         // Iterate through each service and send them a pre-dispose message. This lets a service gracefully handle
         // the dispose in the case that it requires another service to still be active.
+        var pendingReplies = new List<Task>();
         foreach (var (actorRef, type) in _services) {
             // If the service doesn't have a pre-dispose message handler, we'll just skip it.
             if (!type.MessageHandlers.ContainsKey(typeof(SERVICE_101_PROTOCOL.MSG_PREDISPOSE))) {
                 continue;
             }
 
-            // Await a reply. This is a blocking call to ensure that the service gracefully disposes.
-            try {
-                actorRef.Ask(new SERVICE_101_PROTOCOL.MSG_PREDISPOSE(), timeout: TimeSpan.FromSeconds(2)).Wait();
-            }
-            catch {
-                continue;
-            }
+            pendingReplies.Add(actorRef.Ask(new SERVICE_101_PROTOCOL.MSG_PREDISPOSE(), timeout: TimeSpan.FromSeconds(2)));
+        }
+
+        // Await the replies under one shared deadline. This is a blocking call so the services dispose gracefully.
+        try {
+            Task.WaitAll(pendingReplies.ToArray(), 2000);
+        }
+        catch (AggregateException) {
+            // A service that failed or timed out must not keep the others from being disposed.
         }
     }
 
