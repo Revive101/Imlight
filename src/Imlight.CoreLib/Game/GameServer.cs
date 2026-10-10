@@ -32,7 +32,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/09/2026
+ * Last Updated: 10/10/2026
  */
 
 using System;
@@ -70,7 +70,7 @@ public class GameServer : Server {
 
     public GameServer(string serverName, ushort serverPort, string realmName = null)
         : base(serverName, serverPort, GameServiceFactory.Props(),
-              ConfigurationManager.Settings["Game Server.GameServerIP"].AsString()) {
+              ConfigurationManager.Settings["Game Server.GameServerIP"].AsString(), deferListening: true) {
         RealmName = realmName ?? serverName;
         this._playerQueue = new ListQueue<SessionActor>();
         this._sessionKeys = new Cache<ByteString, ulong>();

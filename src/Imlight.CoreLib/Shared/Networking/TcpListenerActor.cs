@@ -57,20 +57,31 @@ public class TcpListenerActor : ReceiveActor {
     private readonly CancellationTokenSource _tokenSource;
     private readonly IActorRef _serverRef;
 
-    public TcpListenerActor(string name, int port, IActorRef serverRef) {
+    public TcpListenerActor(string name, int port, IActorRef serverRef, bool startListening = true) {
         this.Name = name;
         this.Port = port;
         this.Listener = new TcpListener(IPAddress.Parse("0.0.0.0"), port);
         this._tokenSource = CancellationTokenSource.CreateLinkedTokenSource(new CancellationToken());
         this._serverRef = serverRef;
 
-        Start();
+        Receive<SERVER_100_PROTOCOL.MSG_STARTLISTENING>(_ => {
+            Start();
+            Sender.Tell(new SERVER_100_PROTOCOL.MSG_STARTLISTENING_COMPLETE());
+        });
+
+        if (startListening) {
+            Start();
+        }
     }
 
-    public static Props Props(string name, int port, IActorRef serverRef) 
-        => Akka.Actor.Props.Create(() => new TcpListenerActor(name, port, serverRef));
+    public static Props Props(string name, int port, IActorRef serverRef, bool startListening = true) 
+        => Akka.Actor.Props.Create(() => new TcpListenerActor(name, port, serverRef, startListening));
 
     public async void Start() {
+        if (Listening) {
+            return;
+        }
+
         try {
             this.Listener.Start();
             this.Listening = true;

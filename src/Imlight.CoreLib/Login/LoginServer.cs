@@ -33,9 +33,10 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 10/10/2026
  */
 
+using System.Threading.Tasks;
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.CoreLib.Shared.Networking;
@@ -49,7 +50,7 @@ public class LoginServer : Server {
     private const string GameServerPoolName = "GameServerPool";
 
     public LoginServer(string serverName, ushort serverPort)
-        : base(serverName, serverPort, LoginServiceFactory.Props()) {
+        : base(serverName, serverPort, LoginServiceFactory.Props(), deferListening: true) {
         this._gamePoolServer = CreateGameServerPool();
 
         Logger.Information("Login server created with name {Name} under port {Port}.",
@@ -58,6 +59,15 @@ public class LoginServer : Server {
 
     public static Props Props(string serverName, ushort serverPort) 
         => Akka.Actor.Props.Create(() => new LoginServer(serverName, serverPort));
+
+    protected override async Task<SERVER_100_PROTOCOL.MSG_STARTLISTENING_COMPLETE> StartListeningAsync(
+        SERVER_100_PROTOCOL.MSG_STARTLISTENING message) {
+        _ = await Task.WhenAll(
+            base.StartListeningAsync(message),
+            _gamePoolServer.Ask<SERVER_100_PROTOCOL.MSG_STARTLISTENING_COMPLETE>(message, StartListeningTimeout));
+
+        return new SERVER_100_PROTOCOL.MSG_STARTLISTENING_COMPLETE();
+    }
 
     [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_GETBESTSERVER))]
     private void ReceiveQueryGameServer(SERVER_100_PROTOCOL.MSG_GETBESTSERVER message) {

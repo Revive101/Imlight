@@ -372,5 +372,22 @@ public sealed class SERVER_100_PROTOCOL : IServerProtocol {
         public ushort SessionID;
 
     }
+
+    /// <summary>
+    /// Tells a server, and the servers it owns, to bind their TCP listeners and start accepting connections.
+    /// </summary>
+    public class MSG_STARTLISTENING : IServerMessage {
+
+        public byte MessageOrder { get; } = 32;
+        public byte ServiceID { get; } = 100;
+
+    }
+
+    public class MSG_STARTLISTENING_COMPLETE : IServerMessage {
+
+        public byte MessageOrder { get; } = 33;
+        public byte ServiceID { get; } = 100;
+
+    }
     
 }

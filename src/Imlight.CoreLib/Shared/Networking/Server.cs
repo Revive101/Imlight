@@ -39,12 +39,13 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 10/10/2026
  */
 
 using System;
 using System.Linq;
 using System.Net.Http;
+using System.Threading.Tasks;
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.CoreLib.Shared.Packets;
@@ -61,11 +62,14 @@ public abstract class Server : ReceiveProtocolDispatcher {
 
     protected readonly ObservableHashSet<SessionActor> ActiveSessions;
 
+    public static readonly TimeSpan StartListeningTimeout = TimeSpan.FromSeconds(30);
+
     private readonly IActorRef _actorFactoryRef;
+    private readonly IActorRef _tcpListenerRef;
     private readonly long _serverStartTime;
     private readonly Props _factoryProps;
 
-    public Server(string name, int port, Props factoryProps, string ip = null) {
+    public Server(string name, int port, Props factoryProps, string ip = null, bool deferListening = false) {
         this.Name = name;
         this.Port = port;
         this.ActiveSessions = new ObservableHashSet<SessionActor>();
@@ -95,7 +99,7 @@ public abstract class Server : ReceiveProtocolDispatcher {
 #endif
         }
 
-        CreateTcpListener();
+        _tcpListenerRef = CreateTcpListener(deferListening);
         _actorFactoryRef = CreateActorFactory();
     }
 
@@ -119,6 +123,11 @@ public abstract class Server : ReceiveProtocolDispatcher {
         else {
             Logger.Information("{Name} lost connection to {Ip}", Logger.Args(Name, message.Ip, message.Id));
         }
+    }
+
+    [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_STARTLISTENING))]
+    protected void ReceiveStartListening(SERVER_100_PROTOCOL.MSG_STARTLISTENING message) {
+        StartListeningAsync(message).PipeTo(Sender);
     }
 
     [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_QUERYACTORFACTORY))]
@@ -181,12 +190,21 @@ public abstract class Server : ReceiveProtocolDispatcher {
         return newId;
     }
 
-    private void CreateTcpListener() {
+    /// <summary>
+    /// Starts this server's TCP listener. Servers that own other servers also start those.
+    /// </summary>
+    protected virtual Task<SERVER_100_PROTOCOL.MSG_STARTLISTENING_COMPLETE> StartListeningAsync(
+        SERVER_100_PROTOCOL.MSG_STARTLISTENING message)
+        => _tcpListenerRef.Ask<SERVER_100_PROTOCOL.MSG_STARTLISTENING_COMPLETE>(message, StartListeningTimeout);
+
+    private IActorRef CreateTcpListener(bool deferListening) {
         var actorName = $"{Name}.TcpListener.{Port}";
-        var tcpProps = TcpListenerActor.Props(Name, Port, Context.Self);
-        Context.ActorOf(tcpProps, actorName);
+        var tcpProps = TcpListenerActor.Props(Name, Port, Context.Self, !deferListening);
+        var tcpListenerRef = Context.ActorOf(tcpProps, actorName);
 
         Logger.Verbose("New actor created under {Path}: {ActorName}", Logger.Args(Context.Self.Path, actorName));
+
+        return tcpListenerRef;
     }
 
     private IActorRef CreateActorFactory() {
