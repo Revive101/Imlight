@@ -36,11 +36,12 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/26/2026
+ * Last Updated: 10/09/2026
  */
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Imcodec.CoreObject;
@@ -53,6 +54,7 @@ using Imlight.Common;
 using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Misc;
 using Imlight.CoreLib.WizardData.Models.Player;
@@ -68,6 +70,7 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
     private Wizard _wizard;
     private GAME_5_PROTOCOL.MSG_LOGINCOMPLETE _loginCompleteMessage;
     private bool _attachReceived;
+    private readonly Stopwatch _sessionAge = Stopwatch.StartNew();
 
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new AttachService(parentActor));
@@ -77,14 +80,29 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
         _attachReceived = true;
         Timers.Cancel("attach-timeout");
 
+        Logger.Information("Session {SessionId} MSG_ATTACH received: zone {Zone}, Reattach={Reattach}, Retry={Retry}, {Elapsed}ms",
+            Logger.Args(SessionActor.SessionID, (string) message.ZoneName, message.Reattach, message.Retry,
+                        _sessionAge.ElapsedMilliseconds));
+
         // Use the session key given in the message to ensure that the user didn't bypass our login server.
         // The key will be associated with the account they're trying to log into.
         ValidateAttach(message);
 
+        // A reattach means the client's earlier connection dropped, so the saved position is the truth.
+        var zoneName = (string) message.ZoneName;
+        var location = (string) message.Location;
+        if (message.Reattach == 1) {
+            (zoneName, location) = GetReattachDestination(zoneName, location);
+            CloseStaleSession();
+        }
+
         // Tell the game server that the user has attached, and now we need to find a zone process for their
         // zone, or create a new one. This is an internal zone transfer that does not involve the client.
-        var zoneDetails = InternalZoneTransfer(message.ZoneName, message.Location);
+        var zoneDetails = InternalZoneTransfer(zoneName, location);
         if (zoneDetails is null || zoneDetails.ErrorCode != 0) {
+            Logger.Information("Session {SessionId} MSG_ATTACH failed: zone {Zone} transfer error {ErrorCode}",
+                Logger.Args(SessionActor.SessionID, zoneName, zoneDetails?.ErrorCode ?? 1));
+
             SendToSocket(new GAME_5_PROTOCOL.MSG_ATTACHFAILED {
                 Error = zoneDetails?.ErrorCode ?? 1
             });
@@ -93,7 +111,7 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
         }
 
         // Set the character's location and zone to the ones given in the message.
-        _wizard.SetZone(message.ZoneName, zoneDetails.ZoneDisplayName);
+        _wizard.SetZone(zoneName, zoneDetails.ZoneDisplayName);
         _wizard.SetPersistentLocation(zoneDetails.Location);
         _wizard.SetPersistentOrientation(zoneDetails.Orientation);
 
@@ -151,7 +169,7 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
             Permissions = 0b1100_1111,
 
             // Set zone data.
-            ZoneName = message.ZoneName,
+            ZoneName = zoneName,
             ZoneID = message.ZoneID,
             DynamicZoneID = zoneDetails.DynamicZoneId,
             DynamicServerProcID = zoneDetails.DynamicZoneId,
@@ -172,6 +190,9 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
             preLoginMsg,
             TimeSpan.FromMilliseconds(PRELOGIN_DELAY_MS)
         );
+
+        Logger.Information("Session {SessionId} MSG_ATTACH accepted: zone {Zone}, character {CharId}, PRELOGIN in {Delay}ms",
+            Logger.Args(SessionActor.SessionID, zoneName, _wizard.CharId, PRELOGIN_DELAY_MS));
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PRELOGIN))]
@@ -212,6 +233,34 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
         SendToSocket(new WIZARD_12_PROTOCOL.MSG_UPDATEMANA {
             Mana = _wizard.GameStats.m_currentMana,
             MaxMana = _wizard.GameStats.GetClientTypeAlternative().m_baseMana,
+        });
+    }
+
+    private (string ZoneName, string Location) GetReattachDestination(string zoneName, string location) {
+        if (string.IsNullOrEmpty(_wizard.Zone)) {
+            Logger.Information("Session {SessionId} Reattach=1: no saved zone for {CharId}, keeping {Zone}",
+                Logger.Args(SessionActor.SessionID, _wizard.CharId, zoneName));
+
+            return (zoneName, location);
+        }
+
+        Logger.Information("Session {SessionId} Reattach=1: using saved zone {SavedZone} instead of {Zone}",
+            Logger.Args(SessionActor.SessionID, _wizard.Zone, zoneName));
+
+        return (_wizard.Zone, Util.GetCompactStringFromVector(_wizard.Location, _wizard.Orientation));
+    }
+
+    private void CloseStaleSession() {
+        if (!TryGetOnlinePlayer(_wizard.CharId, out var onlinePlayer)
+            || onlinePlayer.SessionId == SessionActor.SessionID) {
+            return;
+        }
+
+        Logger.Information("Session {SessionId} Reattach=1: closing session {StaleSessionId} of {CharId}",
+            Logger.Args(SessionActor.SessionID, onlinePlayer.SessionId, _wizard.CharId));
+
+        SessionActor.ServerRef.Tell(new SERVER_100_PROTOCOL.MSG_KICKSESSION {
+            SessionID = onlinePlayer.SessionId
         });
     }
 
@@ -343,8 +392,8 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
             return;
         }
 
-        Logger.Warning("Attach timeout for session {SessionId} — attempting fallback zone transfer.",
-            Logger.Args(SessionActor.SessionID));
+        Logger.Warning("Attach timeout for session {SessionId}: sessionValid={SessionValid}, elapsed={Elapsed}ms, trying fallback",
+            Logger.Args(SessionActor.SessionID, SessionActor.SessionValid, _sessionAge.ElapsedMilliseconds));
 
         // Query the GameServer for fallback data registered by the old session.
         var query = new SERVICE_101_PROTOCOL.MSG_QUERY_FALLBACK {

@@ -32,7 +32,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 10/09/2026
  */
 
 using System;
@@ -216,6 +216,18 @@ public class GameServer : Server {
         session.ActorRef.Tell(kickedMsg);
 
         session.Dispose();
+    }
+
+    [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_KICKSESSION))]
+    private void ReceiveKickSession(SERVER_100_PROTOCOL.MSG_KICKSESSION message) {
+        var session = ActiveSessions.FirstOrDefault(s => s.SessionID == message.SessionID);
+        if (session is null) {
+            return;
+        }
+
+        Logger.Information("Closing session {SessionId}: its character attached on a newer session.",
+            Logger.Args(message.SessionID));
+        session.ActorRef.Tell("Close");
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONETRANSFER))]
