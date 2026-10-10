@@ -32,11 +32,10 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 10/09/2026
  */
 
 using System;
-using System.Timers;
 using Akka.Actor;
 using Imcodec.MessageLayer.Generated;
 using Imlight.Common;
@@ -52,22 +51,32 @@ internal class LoginAFKService : MessageService {
     private readonly ushort _afkCheckInterval 
         = ConfigurationManager.Settings["Login Server.LoginAfkCheckInterval"].AsUShort();
 
+    private const string AfkCheckTimerKey = "AfkCheck";
+
     private bool _halted;
-    private long _lastReceivedSeconds;
-    private readonly Timer _timer;
+    private bool _disposed;
+    private long _lastReceivedSeconds = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
     public LoginAFKService(SessionActor parentActor) : base(parentActor) {
-        _timer = new Timer(_afkCheckInterval * 1000);
-        _timer.Elapsed += CheckAfk;
-        _timer.AutoReset = true;
-        _timer.Enabled = true;
+        var checkInterval = TimeSpan.FromSeconds(_afkCheckInterval);
+        Timers.StartPeriodicTimer(AfkCheckTimerKey, AfkCheckTimerKey, checkInterval, checkInterval);
     }
 
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new LoginAFKService(parentActor));
 
+    protected override void ConfigureReceivers() {
+        // Sent from self on interval to look at how long the client has been quiet.
+        Receive<string>(s => s == AfkCheckTimerKey, x => CheckAfk());
+
+        base.ConfigureReceivers();
+    }
+
     protected override void OnDispose() {
         base.OnDispose();
+
+        _disposed = true;
+        Timers.CancelAll();
 
         CloseSession();
     }
@@ -87,8 +96,8 @@ internal class LoginAFKService : MessageService {
         _halted = false;
     }
 
-    private void CheckAfk(object sender, ElapsedEventArgs e) {
-        if (_halted) {
+    private void CheckAfk() {
+        if (_disposed || _halted) {
             return;
         }
 
@@ -100,6 +109,7 @@ internal class LoginAFKService : MessageService {
                 Warning = 1 // ???
             });
 
+            Timers.CancelAll();
             CloseSession();
         }
     }
