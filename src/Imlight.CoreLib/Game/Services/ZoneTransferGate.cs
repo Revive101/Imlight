@@ -42,6 +42,7 @@ namespace Imlight.CoreLib.Game.Services;
 internal enum ZoneTransferState {
     None,
     Requested,
+    Nacked,
     Acked,
     Sent,
 }
@@ -50,7 +51,7 @@ internal sealed class ZoneTransferGate {
 
     public ZoneTransferState State { get; private set; } = ZoneTransferState.None;
 
-    public bool IsQueued => State != ZoneTransferState.None;
+    public bool IsQueued => State is ZoneTransferState.Requested or ZoneTransferState.Acked or ZoneTransferState.Sent;
 
     public bool TryRequest() {
         if (State is ZoneTransferState.Acked or ZoneTransferState.Sent) {
@@ -62,16 +63,16 @@ internal sealed class ZoneTransferGate {
         return true;
     }
 
-    public bool TryAck() => TryAdvanceFromRequested();
+    public bool TryAck() => TryAdvanceToAcked();
 
-    public bool TryRetry() => TryAdvanceFromRequested();
+    public bool TryRetry() => TryAdvanceToAcked();
 
     public bool TryNack() {
         if (State != ZoneTransferState.Requested) {
             return false;
         }
 
-        State = ZoneTransferState.None;
+        State = ZoneTransferState.Nacked;
 
         return true;
     }
@@ -86,8 +87,8 @@ internal sealed class ZoneTransferGate {
         return true;
     }
 
-    private bool TryAdvanceFromRequested() {
-        if (State != ZoneTransferState.Requested) {
+    private bool TryAdvanceToAcked() {
+        if (State is not (ZoneTransferState.Requested or ZoneTransferState.Nacked)) {
             return false;
         }
 
