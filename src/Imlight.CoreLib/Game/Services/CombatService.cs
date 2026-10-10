@@ -37,7 +37,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 08/19/2026
+ * Last Updated: 10/09/2026
  */
 
 using System;
@@ -118,6 +118,7 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_COMBATDEFEAT))]
     private void ReceiveCombatDefeat(COMBAT_106_PROTOCOL.MSG_COMBATDEFEAT message) {
         GetActiveWizard().IsInDuel = false;
+        _currentDuelActor = null;
         EquipMountSubtle();
 
         // We've fled or have been defeated in this duel. Send us back to the world hub.
@@ -128,6 +129,7 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_COMBATWIN))]
     private void ReceiveCombatVictory(COMBAT_106_PROTOCOL.MSG_COMBATWIN message) {
         GetActiveWizard().IsInDuel = false;
+        _currentDuelActor = null;
         EquipMount();
         SetNoAggroGrace();
 

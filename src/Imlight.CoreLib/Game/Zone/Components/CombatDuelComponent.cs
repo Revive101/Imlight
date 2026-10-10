@@ -42,7 +42,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/26/2026
+ * Last Updated: 10/09/2026
  */
 
 using System;
@@ -390,6 +390,10 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ACTORCOMBATMOVE))]
     private void ReceiveCombatMove(COMBAT_106_PROTOCOL.MSG_ACTORCOMBATMOVE message) {
+        if (!_isActive) {
+            return;
+        }
+
         // Find which sub circle this is.
         var caster = SubCircles.FirstOrDefault(x => x.ParticipantActor == message.Actor)
             ?? throw new Exception("Combat move received from an actor that is not in the duel.");
@@ -532,6 +536,10 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT))]
     private void ReceiveClientDisconnect(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT message) {
+        if (!_isActive) {
+            return;
+        }
+
         // Find the sub circle that the client was in and remove them from the duel.
         var subCircle = SubCircles.FirstOrDefault(x => x.ParticipantActor == Sender);
         if (subCircle is null) {
@@ -544,6 +552,10 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_QUERY_LOGOUT))]
     private void ReceiveQueryLogout(GAME_5_PROTOCOL.MSG_QUERY_LOGOUT message) {
+        if (!_isActive) {
+            return;
+        }
+
         // Find the sub circle that the client was in and remove them from the duel.
         var subCircle = SubCircles.FirstOrDefault(x => x.ParticipantActor == Sender);
         if (subCircle is null) {
@@ -1196,6 +1208,10 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     }
 
     private void HandleFleeAction(CombatDuelSubCircle caster) {
+        if (!_isActive) {
+            return;
+        }
+
         var actor = caster.ParticipantActor;
         var participantObjId = caster.ParticipantObject.m_globalID;
 
@@ -1349,6 +1365,9 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
         DespawnDuel();
         _isActive = false;
+
+        // Nobody is in this duel any more; a later disconnect or logout must not find a circle.
+        EnactActionOnSubCircles(circle => circle.RemoveParticipant());
     }
 
     private void PlayerWin() {
