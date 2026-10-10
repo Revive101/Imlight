@@ -136,7 +136,7 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
     /// </summary>
     public void Dequeue() {
         // Send the dequeue message to the socket.
-        _socketListenerRef.Tell(CachedDequeueMessage);
+        ActorRef.Tell(CachedDequeueMessage);
     }
 
     /// <summary>
