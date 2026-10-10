@@ -35,9 +35,12 @@ internal class ControlService : MessageService, IHandshakeService {
     private readonly Stopwatch _responseStopwatch;
     private bool _isWaitingForHeartbeatResponse;
     private bool _isInGameServer;
+    private readonly bool _isLoginServer;
 
     public ControlService(SessionActor parentActor) : base(parentActor) {
         this._responseStopwatch = new Stopwatch();
+        this._isLoginServer = SessionActor.ServerRef?.Path.Name
+            == ConfigurationManager.Settings["Login Server.LoginServerName"].AsString();
 
         SendSessionOffer();
     }
@@ -189,6 +192,16 @@ internal class ControlService : MessageService, IHandshakeService {
 
     private void SessionAcceptTimer() {
         if (_sessionValid) {
+            return;
+        }
+
+        if (_isLoginServer) {
+            // The login client abandons its first socket and retries on a new one, so a timeout here is expected.
+            Logger.Information("SessionActor {SessionID} from {RemoteEndPoint} did not return a SessionAccept within " +
+                "{Wait}s; closing session (initial-handshake timeout).",
+                Logger.Args(SessionActor.SessionID, SessionActor.Ip, _keepAliveRspWaitTime));
+            CloseSession();
+
             return;
         }
 

@@ -38,6 +38,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net.Sockets;
 using Akka.Actor;
 using Imcodec.MessageLayer;
@@ -51,6 +52,7 @@ internal sealed class SocketSender : ReceiveActor, IDisposable {
     private readonly IActorRef _sessionActorRef;
     private readonly Socket _socket;
     private readonly ushort _sessionid;
+    private readonly long _startTimestamp = Stopwatch.GetTimestamp();
     private readonly List<Type> _suppressedPackets = new() {
             typeof(GAME_5_PROTOCOL.MSG_CLIENTMOVE),
             typeof(GAME_5_PROTOCOL.MSG_CLIENTMOVESTATE),
@@ -135,6 +137,11 @@ internal sealed class SocketSender : ReceiveActor, IDisposable {
     }
 
     private void LogSentPacket(IMessage packet) {
+        if (packet is ControlMessageProtocol.SessionOffer) {
+            Logger.Debug("SessionActor {SessionId} SessionOffer handed to the socket {Milliseconds:F1} ms after the session started.",
+                Logger.Args(_sessionid, Stopwatch.GetElapsedTime(_startTimestamp).TotalMilliseconds));
+        }
+
         if (!_suppressedPackets.Contains(packet.GetType())) {
             Logger.Verbose("SessionActor {SessionId} sent KiNP packet {ScopedMessageName}",
                 Logger.Args(_sessionid, GetScopedMessageName(packet)));
