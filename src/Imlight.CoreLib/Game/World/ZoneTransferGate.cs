@@ -37,7 +37,7 @@
  * Last Updated: 10/09/2026
  */
 
-namespace Imlight.CoreLib.Game.Services;
+namespace Imlight.CoreLib.Game.World;
 
 internal enum ZoneTransferState {
     None,

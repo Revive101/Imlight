@@ -36,7 +36,7 @@
  * Last Updated: 10/09/2026
  */
 
-namespace Imlight.CoreLib.Game.Services;
+namespace Imlight.CoreLib.Shared.Networking;
 
 internal enum AttachTimeoutAction {
     Close,
