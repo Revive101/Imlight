@@ -259,8 +259,14 @@ public class GameServer : Server {
     [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_QUERY_FALLBACK))]
     private void ReceiveQueryFallback(SERVICE_101_PROTOCOL.MSG_QUERY_FALLBACK message) {
         if (_fallbackEntries.TryGetValue(message.RemoteIp, out var entry)) {
+            var priorTimeouts = entry.TimeoutCount;
+            if (message.CountTimeout) {
+                entry.TimeoutCount++;
+            }
+
             Sender.Tell(new SERVICE_101_PROTOCOL.MSG_QUERY_FALLBACK_RSP {
                 Found = true,
+                PriorTimeouts = priorTimeouts,
                 UserId = entry.UserId,
                 CharId = entry.CharId,
                 FallbackZone = entry.FallbackZone,
@@ -350,6 +356,7 @@ public class GameServer : Server {
         public string GameServerIp;
         public ushort GameServerPort;
         public DateTime RegisteredAt;
+        public int TimeoutCount;
 
     }
 

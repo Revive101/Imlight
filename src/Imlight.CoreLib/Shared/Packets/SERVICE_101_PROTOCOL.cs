@@ -184,6 +184,7 @@ internal sealed class SERVICE_101_PROTOCOL : IServerProtocol {
         public byte ServiceID { get; } = 101;
 
         public string RemoteIp;
+        public bool CountTimeout;
 
     }
 
@@ -197,6 +198,7 @@ internal sealed class SERVICE_101_PROTOCOL : IServerProtocol {
         public byte ServiceID { get; } = 101;
 
         public bool Found;
+        public int PriorTimeouts;
         public ulong UserId;
         public ulong CharId;
         public string FallbackZone;
