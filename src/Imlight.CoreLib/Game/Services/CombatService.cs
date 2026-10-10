@@ -227,7 +227,11 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
     [MessageHandler(typeof(DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATMOVE))]
     private void ReceiveCombatMove(DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATMOVE message) {
         if (_currentDuelActor == null) {
-            throw new Exception("Combat move received without a duel actor.");
+            // A move can arrive after the duel has ended (e.g. COMBATWIN or COMBATDEFEAT already cleared it).
+            Logger.Debug("Session {SessionId} sent a combat move with no active duel; dropping it.",
+                Logger.Args(SessionActor.SessionID));
+
+            return;
         }
 
         // The spell target given by the client is logarithmic. We need to convert it to a linear scale.
