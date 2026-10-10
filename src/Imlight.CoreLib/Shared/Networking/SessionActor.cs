@@ -89,6 +89,7 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
     private IActorRef _socketSenderRef;
     private bool _isDisposed;
     private bool _stoppedByStrategy;
+    private bool _isDeallocated;
     private ICancelable _clientCloseTimer;
 
     // ctor
@@ -285,14 +286,6 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
         Logger.Debug("SessionActor {Id} disposing, reason={Reason}.", Logger.Args(SessionID, reason));
         _isDisposed = true;
 
-        // Send a message to the server to deallocate this SessionActor.
-        var msg = new SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET() {
-            Id = SessionID,
-            Socket = this._socket,
-            Ip = this.RemoteIp
-        };
-        ServerRef.Tell(msg);
-
         // Don't preemptively close the socket; the client disconnects itself
         // after receiving the final message (e.g. MSG_CHARACTERSELECTED).
         // Closing it here races with any pending SocketSender messages.
@@ -355,6 +348,21 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
                 }
             }
         );
+
+    protected override void PostStop() {
+        // The server frees the session id on this message, so it goes out only once the actor is gone.
+        if (!_isDeallocated) {
+            _isDeallocated = true;
+
+            ServerRef.Tell(new SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET() {
+                Id = SessionID,
+                Socket = this._socket,
+                Ip = this.RemoteIp
+            });
+        }
+
+        base.PostStop();
+    }
 
     protected override void PreStart() {
         // Ask the ActorFactory for this actor's message services.
