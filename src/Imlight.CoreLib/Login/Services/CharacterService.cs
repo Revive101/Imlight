@@ -34,6 +34,7 @@
 
 using System;
 using Akka.Actor;
+using Imcodec.IO;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
@@ -44,6 +45,7 @@ using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Implementations;
+using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Login.Services;
 
@@ -165,11 +167,6 @@ internal class CharacterService(SessionActor parentActor) : MessageService(paren
     [MessageHandler(typeof(LOGIN_108_PROTOCOL.MSG_REQUESTCHARACTERLIST))]
     private void ReceiveRequestCharacterList(LOGIN_108_PROTOCOL.MSG_REQUESTCHARACTERLIST message) {
         var account = GetSocketAccount();
-        if (account is null) {
-            SendToSocket(new LOGIN_7_PROTOCOL.MSG_CHARACTERLIST() { Error = 1 });
-
-            return;
-        }
 
         // Tell the client we're going to start sending the character list.
         SendToSocket(new LOGIN_7_PROTOCOL.MSG_STARTCHARACTERLIST() {
@@ -185,18 +182,8 @@ internal class CharacterService(SessionActor parentActor) : MessageService(paren
             );
 
             for (int i = 0; i < account.Characters.Count; i++) {
-                // Characters in the login screen are stripped down to the bare minimum,
-                // only the information needed to display the character.
-                var character = account.Characters[i];
-                var loginScreenInfo = CharacterHelper.GetLoginScreenInfo(character);
-
-                // Serialize the character info to send to the client.
-                var flags = PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit;
-                if (!serializer.Serialize(loginScreenInfo, flags, out var data)) {
-                    Logger.Error("Account {accountUsername} failed to serialize character {characterId} for login screen.",
-                        Logger.Args(account.Username, character.CharId));
-
-                    return;
+                if (!TrySerializeLoginScreenInfo(serializer, account, account.Characters[i], out var data)) {
+                    continue;
                 }
 
                 SendToSocket(new LOGIN_7_PROTOCOL.MSG_CHARACTERINFO() { CharacterInfo = data });
@@ -205,6 +192,31 @@ internal class CharacterService(SessionActor parentActor) : MessageService(paren
 
         // Tell the client we've finished sending the character list.
         SendToSocket(new LOGIN_7_PROTOCOL.MSG_CHARACTERLIST());
+    }
+
+    private bool TrySerializeLoginScreenInfo(ObjectSerializer serializer, Account account, Wizard character, out ByteString data) {
+        try {
+            // Characters in the login screen are stripped down to the bare minimum,
+            // only the information needed to display the character.
+            var loginScreenInfo = CharacterHelper.GetLoginScreenInfo(character);
+
+            // Serialize the character info to send to the client.
+            var flags = PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit;
+            if (serializer.Serialize(loginScreenInfo, flags, out data)) {
+                return true;
+            }
+
+            Logger.Error("SessionActor {SessionId} account {accountUsername} failed to serialize character {characterId} for login screen.",
+                Logger.Args(SessionActor.SessionID, account.Username, character.CharId));
+        }
+        catch (Exception e) {
+            Logger.Error("SessionActor {SessionId} account {accountUsername} failed to build the login screen info for character {characterId}. {Exception}",
+                Logger.Args(SessionActor.SessionID, account.Username, character.CharId, e.Message));
+        }
+
+        data = default;
+
+        return false;
     }
 
     [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_LOGINLOGCHARACTERCREATION))]
