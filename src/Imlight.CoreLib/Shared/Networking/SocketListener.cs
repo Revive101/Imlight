@@ -41,7 +41,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using Akka.Actor;
@@ -170,32 +169,8 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
                 
                 return;
             }
-            if (!_tokenBucket.TryAcquire()) {
-                Logger.Warning("SessionActor {SessionId} failed to acquire token.", Logger.Args(_sessionid));
-
-                // The rate limit was reached.
-                var failedAcquisitionCount = _tokenBucket.GetFailedAcquisitionCount();
-                if (failedAcquisitionCount >= _tokenBucketFailedAcquisitionLimit) {
-                    // Log warning.
-                    Logger.Warning("SessionActor {SessionId} failed to acquire token {FailedAcquisitionCount} times.",
-                        Logger.Args(_sessionid, failedAcquisitionCount));
-
-                    // The session has exceeded the failed acquisition limit. We'll dispose of the session.
-                    this.Dispose();
-
-                    return;
-                }
-
-                return;
-            }
 
             var packets = GetPacketsFromBuffer(buffer, bytesReceived);
-            if (packets is null) {
-                Logger.Verbose("SessionActor {Id} received invalid packet.", Logger.Args(_sessionid));
-                
-                return;
-            }
-
             if (packets.Count > MaxFramesPerRead || _decoder.PendingBytes > MaxPendingBytes) {
                 Logger.Warning("SessionActor {SessionId} exceeded the receive limits: {FrameCount} frames, {PendingBytes} pending bytes.",
                     Logger.Args(_sessionid, packets.Count, _decoder.PendingBytes));
@@ -205,6 +180,26 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
             }
 
             foreach (var packet in packets) {
+                if (!_tokenBucket.TryAcquire()) {
+                    Logger.Warning("SessionActor {SessionId} failed to acquire token.", Logger.Args(_sessionid));
+
+                    // The rate limit was reached.
+                    var failedAcquisitionCount = _tokenBucket.GetFailedAcquisitionCount();
+                    if (failedAcquisitionCount >= _tokenBucketFailedAcquisitionLimit) {
+                        // Log warning.
+                        Logger.Warning("SessionActor {SessionId} failed to acquire token {FailedAcquisitionCount} times.",
+                            Logger.Args(_sessionid, failedAcquisitionCount));
+
+                        // The session has exceeded the failed acquisition limit. We'll dispose of the session.
+                        this.Dispose();
+
+                        return;
+                    }
+
+                    // Whole messages are dropped, never raw bytes, so the framing stays intact.
+                    continue;
+                }
+
                 LogReceivedPacket(packet);
 
                 var msgPacket = new SERVER_100_PROTOCOL.MSG_RECEIVEDPACKET { Packet = packet };
@@ -222,19 +217,17 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
 
     private IReadOnlyList<IMessage> GetPacketsFromBuffer(byte[] buffer, int bytesReceived) {
         var pendingBefore = _decoder.PendingBytes;
-        try {
-            var packets = _decoder.Feed(new ReadOnlySpan<byte>(buffer, 0, bytesReceived));
-            LogRead(bytesReceived, pendingBefore, packets);
+        var packets = _decoder.Feed(new ReadOnlySpan<byte>(buffer, 0, bytesReceived));
 
-            return packets;
-        }
-        catch (InvalidDataException ex) {
+        if (_decoder.SkippedBytes > 0) {
             var firstBytes = Convert.ToHexString(buffer, 0, int.Min(HexPreviewBytes, bytesReceived));
-            Logger.Warning("SessionActor {SessionId} discarded unframed data: {Reason} ({ByteCount}B, first bytes {FirstBytes}, pending before {PendingBytes}).",
-                Logger.Args(_sessionid, ex.Message, bytesReceived, firstBytes, pendingBefore));
-
-            return null;
+            Logger.Warning("SessionActor {SessionId} skipped {SkippedBytes}B of unframed data ({ByteCount}B read, first bytes {FirstBytes}, pending before {PendingBytes}).",
+                Logger.Args(_sessionid, _decoder.SkippedBytes, bytesReceived, firstBytes, pendingBefore));
         }
+
+        LogRead(bytesReceived, pendingBefore, packets);
+
+        return packets;
     }
 
     private void OnDecodeFailure(byte serviceId, byte messageId, Exception error) {
