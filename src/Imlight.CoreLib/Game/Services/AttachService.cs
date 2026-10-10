@@ -237,6 +237,15 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
     }
 
     private (string ZoneName, string Location) GetReattachDestination(string zoneName, string location) {
+        // A pending transfer saves the source zone until its attach succeeds, so the message names the truth.
+        var pendingTransfer = QueryFallback(countTimeout: false);
+        if (pendingTransfer is not null && pendingTransfer.Found) {
+            Logger.Information("Session {SessionId} Reattach=1: transfer from {SourceZone} is pending, keeping destination {Zone}",
+                Logger.Args(SessionActor.SessionID, pendingTransfer.FallbackZone, zoneName));
+
+            return (zoneName, location);
+        }
+
         if (string.IsNullOrEmpty(_wizard.Zone)) {
             Logger.Information("Session {SessionId} Reattach=1: no saved zone for {CharId}, keeping {Zone}",
                 Logger.Args(SessionActor.SessionID, _wizard.CharId, zoneName));
@@ -392,18 +401,21 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
             return;
         }
 
-        Logger.Warning("Attach timeout for session {SessionId}: sessionValid={SessionValid}, elapsed={Elapsed}ms, trying fallback",
+        Logger.Warning("Attach timeout for session {SessionId}: sessionValid={SessionValid}, elapsed={Elapsed}ms",
             Logger.Args(SessionActor.SessionID, SessionActor.SessionValid, _sessionAge.ElapsedMilliseconds));
 
         // Query the GameServer for fallback data registered by the old session.
-        var query = new SERVICE_101_PROTOCOL.MSG_QUERY_FALLBACK {
-            RemoteIp = SessionActor.RemoteIp
-        };
-        var rsp = AskServer<SERVICE_101_PROTOCOL.MSG_QUERY_FALLBACK_RSP>(query);
+        var rsp = QueryFallback(countTimeout: true);
+        var hasFallback = rsp is not null && rsp.Found;
+        var priorTimeouts = rsp?.PriorTimeouts ?? 0;
 
-        if (rsp is not null && rsp.Found) {
-            Logger.Information("Fallback found for {RemoteIp} — redirecting to zone {Zone}.",
-                Logger.Args(SessionActor.RemoteIp, rsp.FallbackZone));
+        var action = AttachTimeoutPolicy.Decide(SessionActor.SessionValid, priorTimeouts, hasFallback);
+        Logger.Information("Session {SessionId} attach timeout decision: {Action}, priorTimeouts={PriorTimeouts}, hasFallback={HasFallback}",
+            Logger.Args(SessionActor.SessionID, action, priorTimeouts, hasFallback));
+
+        if (action == AttachTimeoutAction.Redirect) {
+            Logger.Information("Session {SessionId} fallback found for {RemoteIp}, redirecting to zone {Zone}.",
+                Logger.Args(SessionActor.SessionID, SessionActor.RemoteIp, rsp.FallbackZone));
 
             var serverTransfer = new GAME_5_PROTOCOL.MSG_SERVERTRANSFER {
                 IP = rsp.GameServerIp,
@@ -435,9 +447,19 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
             return;
         }
 
-        Logger.Warning("No fallback found for {RemoteIp} — closing session.",
-            Logger.Args(SessionActor.RemoteIp));
+        // The client resends its saved ATTACH on a new socket when this one closes after its handshake.
+        Logger.Warning("Session {SessionId} closing after attach timeout for {RemoteIp}.",
+            Logger.Args(SessionActor.SessionID, SessionActor.RemoteIp));
         CloseSession();
+    }
+
+    private SERVICE_101_PROTOCOL.MSG_QUERY_FALLBACK_RSP QueryFallback(bool countTimeout) {
+        var query = new SERVICE_101_PROTOCOL.MSG_QUERY_FALLBACK {
+            RemoteIp = SessionActor.RemoteIp,
+            CountTimeout = countTimeout
+        };
+
+        return AskServer<SERVICE_101_PROTOCOL.MSG_QUERY_FALLBACK_RSP>(query);
     }
 
     private static CriticalObjectList GetCriticalObjects(List<GID> objectIDs) => new() { m_objList = objectIDs };
