@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty, Jeff
  * Version: KALI 1.0
- * Last Updated: 09/27/2026
+ * Last Updated: 10/09/2026
  */
 
 using System;
@@ -72,7 +72,7 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
     private readonly TimeSpan _zoneRemovalWaitTime = TimeSpan.FromSeconds(ZONE_REMOVAL_WAIT_TIME_IN_SECONDS);
     private readonly bool _randomBackflips
         = ConfigurationManager.Settings["April Fools.RandomBackFlips"].AsBool();
-    private bool _isTransferQueued;
+    private readonly ZoneTransferGate _transferGate = new();
     private uint _currentDynamicZoneId;
 
     private const string SIGIL_ENTER_TIMER_KEY = "sigilenter";
@@ -169,7 +169,7 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONETRANSFER))]
     private void ReceiveZoneTransferRequest(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message) {
-        if (_isTransferQueued) {
+        if (_transferGate.IsQueued) {
             return;
         }
 
@@ -202,19 +202,26 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK))]
     private void ReceiveZoneTransferAck(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK message) {
         // The client has accepted the zone transfer. We can now send the server transfer message.
-        DoZoneTransfer();
+        var previous = _transferGate.State;
+        var accepted = _transferGate.TryAck();
+        LogTransferStep("ZONETRANSFERACK received", previous, accepted);
+        if (accepted) {
+            DoZoneTransfer();
+        }
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ZONETRANSFERNACK))]
     private void ReceiveZoneTransferNack(GAME_5_PROTOCOL.MSG_ZONETRANSFERNACK message) {
         // The client has denied the zone transfer.
         Logger.Debug("Client was not OK with zone transfer!");
-        _isTransferQueued = false;
+        var previous = _transferGate.State;
+        var accepted = _transferGate.TryNack();
+        LogTransferStep("ZONETRANSFERNACK received", previous, accepted);
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_STARTSIGILENTRY))]
     private void ReceiveStartSigilEntry(ZONE_102_PROTOCOL.MSG_STARTSIGILENTRY message) {
-        if (_isTransferQueued || _activeSigilEntry is not null) {
+        if (_transferGate.IsQueued || _activeSigilEntry is not null) {
             return;
         }
 
@@ -303,12 +310,19 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
 
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_PATCHINGBLOCKED))]
     private void ReceivePatchingBlocked(WIZARD_12_PROTOCOL.MSG_PATCHINGBLOCKED message) {
-        _isTransferQueued = false;
+        var previous = _transferGate.State;
+        var accepted = _transferGate.TryNack();
+        LogTransferStep("PATCHINGBLOCKED received", previous, accepted);
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_RETRYTELEPORT))]
     private void ReceiveRetryTeleport(GAME_5_PROTOCOL.MSG_RETRYTELEPORT message) {
-        DoZoneTransfer();
+        var previous = _transferGate.State;
+        var accepted = _transferGate.TryRetry();
+        LogTransferStep("RETRYTELEPORT received", previous, accepted);
+        if (accepted) {
+            DoZoneTransfer();
+        }
     }
 
     [MessageHandler(typeof(WIZARD2_53_PROTOCOL.MSG_ZONEHOP))]
@@ -316,7 +330,13 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         // This message is sent when the client has enabled classic mode and wants to reload their current zone.
         var character = GetActiveWizard();
 
-        _isTransferQueued = true;
+        var previous = _transferGate.State;
+        if (!_transferGate.TryRequest()) {
+            LogTransferStep("ZONEHOP ignored", previous, false);
+
+            return;
+        }
+
         var zoneTransferRequestMessage = new GAME_5_PROTOCOL.MSG_ZONETRANSFERREQUEST {
             ZoneName = character.Zone,
             SendAck = 0
@@ -325,6 +345,7 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
 
         character.QueuedZoneName = character.Zone;
         character.QueuedZoneLocation = Util.GetCompactStringFromVector(character.Location, character.Orientation);
+        LogTransferStep("ZONETRANSFERREQUEST sent", previous, true);
     }
 
     // This button and the GotoDorm button are locked client-side until level 2.
@@ -725,7 +746,12 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
 
     private void ReadyClientForZoneTransfer(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message) {
         var character = GetActiveWizard();
-        _isTransferQueued = true;
+        var previous = _transferGate.State;
+        if (!_transferGate.TryRequest()) {
+            LogTransferStep("ZONETRANSFERREQUEST not sent", previous, false);
+
+            return;
+        }
 
         // Ask the client if it's okay with being transferred.
         var msg = new GAME_5_PROTOCOL.MSG_ZONETRANSFERREQUEST {
@@ -736,6 +762,12 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
 
         character.QueuedZoneName = message.DestinationZone;
         character.QueuedZoneLocation = message.DestinationLocation;
+        LogTransferStep("ZONETRANSFERREQUEST sent", previous, true);
+    }
+
+    private void LogTransferStep(string step, ZoneTransferState previous, bool accepted) {
+        Logger.Information("Session {SessionId} {Step} -> {Zone}, gate {Previous} -> {Current}, accepted={Accepted}",
+            Logger.Args(SessionActor.SessionID, step, GetActiveWizard()?.QueuedZoneName, previous, _transferGate.State, accepted));
     }
 
     private void DoZoneTransfer() {
@@ -765,8 +797,21 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
 
     [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_ZONETRANSFER_DELAY))]
     private void OnZoneTransferDelay(SERVICE_101_PROTOCOL.MSG_ZONETRANSFER_DELAY _) {
-        var account = GetSocketAccount();
         var character = GetActiveWizard();
+        if (character.QueuedZoneName is null) {
+            LogTransferStep("transfer delay elapsed with no queued zone", _transferGate.State, false);
+
+            return;
+        }
+
+        var previous = _transferGate.State;
+        var accepted = _transferGate.TrySend();
+        LogTransferStep("transfer delay elapsed", previous, accepted);
+        if (!accepted) {
+            return;
+        }
+
+        var account = GetSocketAccount();
 
         // Persist the current zone and location as explicit fallback data so the
         // Wizard record reflects where the player should return if the new attach fails.
@@ -793,6 +838,8 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
             FallbackZoneID = _currentDynamicZoneId
         };
         SendToSocket(serverTransfer);
+        Logger.Information("Session {SessionId} SERVERTRANSFER sent -> {Zone} {Ip}:{Port}",
+            Logger.Args(SessionActor.SessionID, character.QueuedZoneName, character.GameServerIp, character.GameServerPort));
 
         // Register fallback data on the GameServer so the new session can
         // proactively recover if MSG_ATTACH never arrives.
