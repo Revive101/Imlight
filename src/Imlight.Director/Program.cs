@@ -37,7 +37,7 @@
  *
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 10/09/2026
 */
 
 using System;
@@ -98,6 +98,13 @@ internal static class Program {
         ConfigurationManager.Settings["Database.AdminAccountPassword"].AsString();
 
     private static void Main() {
+        // =============================================================
+        // THREAD POOL
+        // =============================================================
+        // Sessions block threads on actor asks while connecting and disconnecting, so a burst of
+        // zone changes must not wait on the pool's slow ramp-up.
+        _ = ThreadPool.SetMinThreads(workerThreads: 200, completionPortThreads: 200);
+
         // =============================================================
         // TIDBITS
         // =============================================================
