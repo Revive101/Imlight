@@ -33,36 +33,71 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 10/09/2026
  */
 
 using System;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Imcodec.MessageLayer.Generated;
+using Imlight.Common;
 using Imlight.CoreLib.Shared.Networking;
+using Imlight.CoreLib.Shared.Packets;
 
 namespace Imlight.CoreLib.Game.Services;
 
 internal class ClientService(SessionActor sessionActor) : MessageService(sessionActor) {
     
+    private static readonly TimeSpan s_instanceQueryTimeout = TimeSpan.FromSeconds(2);
+
     protected static Props Props(SessionActor parentActor) 
         => Akka.Actor.Props.Create(() => new ClientService(parentActor));
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT))]
     private void ReceiveClientDisconnect() {
+        Logger.Information("SessionActor {SessionId} CLIENT_DISCONNECT received.", Logger.Args(SessionActor.SessionID));
+
         SendToSocket(new GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT());
-        CloseSession();
+
+        Logger.Information("SessionActor {SessionId} CLIENT_DISCONNECT echoed.", Logger.Args(SessionActor.SessionID));
+
+        // The client closes its end of the connection after the echo, so the server does not close first.
+        CloseSessionAfterClient();
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_QUERY_LOGOUT))]
-    private void ReceiveQueryLogout(GAME_5_PROTOCOL.MSG_QUERY_LOGOUT message) =>
-        SendToSocket(new GAME_5_PROTOCOL.MSG_QUERY_LOGOUT());
+    private void ReceiveQueryLogout(GAME_5_PROTOCOL.MSG_QUERY_LOGOUT message) {
+        Logger.Information("SessionActor {SessionId} QUERY_LOGOUT received.", Logger.Args(SessionActor.SessionID));
+
+        var isInstance = QueryIsInstance(SessionActor.GetZoneActor(), SessionActor.SessionID);
+        SendToSocket(new GAME_5_PROTOCOL.MSG_QUERY_LOGOUT { IsInstance = isInstance });
+
+        Logger.Information("SessionActor {SessionId} QUERY_LOGOUT replied (IsInstance={IsInstance}).",
+            Logger.Args(SessionActor.SessionID, isInstance));
+    }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_REQASKSERVER))]
     private void ReceiveReqServer(GAME_5_PROTOCOL.MSG_REQASKSERVER message) {
         // TODO: Implement this message handler. This is here just so we don't get
         // a ton of unhandled message exceptions in the logs.
+    }
+
+    private static byte QueryIsInstance(IActorRef zoneActor, ushort sessionId) {
+        if (zoneActor is null) {
+            return 0;
+        }
+
+        try {
+            var rsp = zoneActor.Ask<ZONE_102_PROTOCOL.MSG_QUERYINSTANCEQUESTSRSP>(
+                new ZONE_102_PROTOCOL.MSG_QUERYINSTANCEQUESTS(), s_instanceQueryTimeout).Result;
+
+            return (byte) (rsp.IsInstance ? 1 : 0);
+        }
+        catch (Exception ex) {
+            Logger.Error("SessionActor {SessionId} instance query failed: {Message}", Logger.Args(sessionId, ex.Message));
+
+            return 0;
+        }
     }
 
 }

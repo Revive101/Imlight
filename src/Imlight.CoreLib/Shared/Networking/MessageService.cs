@@ -38,7 +38,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 10/09/2026
  */
 
 using System;
@@ -212,6 +212,17 @@ internal abstract class MessageService(SessionActor sessionActor) : ReceiveProto
     /// </summary>
     protected void CloseSession() {
         SessionActor.ActorRef.Tell("Close");
+
+        // Remove the player from the online collection.
+        OnlinePlayerCollection.RemoveOnlinePlayer(SessionActor.SessionID);
+    }
+
+    /// <summary>
+    /// Sends the SessionActor a close message for a logout the client started. The session cleans up its
+    /// services now, but keeps the socket open until the client closes it.
+    /// </summary>
+    protected void CloseSessionAfterClient() {
+        SessionActor.ActorRef.Tell("CloseAfterClient");
 
         // Remove the player from the online collection.
         OnlinePlayerCollection.RemoveOnlinePlayer(SessionActor.SessionID);
