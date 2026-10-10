@@ -35,7 +35,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/27/2026
+ * Last Updated: 10/09/2026
  */
 
 using System;
@@ -122,7 +122,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     private readonly Dictionary<IActorRef, bool> _supervisorLoadResults = [];
     private readonly HashSet<GID> _criticalObjectIds = [];
     private bool _isLoading;
-    private int _playerCount;
+    private readonly HashSet<IActorRef> _players = [];
     private const string IDLE_EXPIRE_TIMER = "instance-idle-expire";
     private const int DEFAULT_INSTANCE_IDLE_MINUTES = 10;
     private readonly List<ZONE_102_PROTOCOL.MSG_PLAYERMOVE> _pendingPlayerMoves = [];
@@ -226,7 +226,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
             return;
         }
 
-        _playerCount++;
+        _players.Add(message.PlayerActor);
         Timers.Cancel(IDLE_EXPIRE_TIMER);
         InformZoneSupervisors(message.PlayerActor, message);
         RestoreRememberedSpawns(message.Wizard);
@@ -247,11 +247,15 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
             return;
         }
 
-        if (_playerCount > 0) {
-            _playerCount--;
+        if (!_players.Contains(message.PlayerActor)) {
+            Sender.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYERRSP());
+
+            return;
         }
 
+        // The leaver is counted until the supervisors are told: the Players target is gated on a non-empty set.
         InformZoneSupervisors(message.PlayerActor, message);
+        _players.Remove(message.PlayerActor);
         ReleaseObjectIdentifier(message.MobileId);
         ScheduleIdleExpiryIfEmpty();
         Sender.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYERRSP());
@@ -273,7 +277,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_CREATUREMOVE))]
     protected virtual void ReceiveCreatureMove(ZONE_102_PROTOCOL.MSG_CREATUREMOVE message) {
-        if (_playerCount <= 0) {
+        if (_players.Count == 0) {
             return;
         }
 
@@ -479,7 +483,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
 
     private void DispatchBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message) {
         if ((message.Targets & ZoneBroadcastTarget.Players) != 0) {
-            if (_playerCount > 0) _playerSupervisor.Forward(message);
+            if (_players.Count > 0) _playerSupervisor.Forward(message);
         }
         if ((message.Targets & ZoneBroadcastTarget.Objects)  != 0) _objectSupervisor.Forward(message);
         if ((message.Targets & ZoneBroadcastTarget.Volumes)  != 0) _volumeSupervisor.Forward(message);
@@ -565,7 +569,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
                 ProcessZoneTransfer(transfer, playerActor);
             }
             else if (pendingEvent is ZONE_102_PROTOCOL.MSG_ADDPLAYER addPlayer) {
-                _playerCount++;
+                _players.Add(playerActor);
                 Timers.Cancel(IDLE_EXPIRE_TIMER);
                 InformZoneSupervisors(playerActor, addPlayer);
                 RestoreRememberedSpawns(addPlayer.Wizard);
@@ -586,7 +590,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
 
     private void ScheduleIdleExpiryIfEmpty() {
         // Instance.IdleMinutes of 0 or less disables the expiry; a join cancels the timer.
-        if (!IsInstance || _playerCount > 0 || _isLoading) {
+        if (!IsInstance || _players.Count > 0 || _isLoading) {
             return;
         }
 
@@ -601,7 +605,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_INSTANCEIDLEEXPIRE))]
     private void ReceiveInstanceIdleExpire(ZONE_102_PROTOCOL.MSG_INSTANCEIDLEEXPIRE message) {
-        if (!IsInstance || _playerCount > 0) {
+        if (!IsInstance || _players.Count > 0) {
             return;
         }
 
