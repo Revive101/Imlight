@@ -17,6 +17,7 @@
 */
 
 using System;
+using System.Collections.Concurrent;
 using System.Linq;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Linq;
@@ -50,6 +51,8 @@ public static class WizardCollection {
     private static readonly TimeSpan s_nonStaleWaitTimeout
         = TimeSpan.FromSeconds(ConfigurationManager.Settings["Database.DatabaseWaitForNonStaleResultsTimeout"].AsByte(5));
 
+    private static readonly ConcurrentDictionary<ulong, string> s_documentIdByCharId = new();
+
     static WizardCollection()
         => s_store = PlayerDatabase.Instance.Store;
 
@@ -76,7 +79,8 @@ public static class WizardCollection {
     private static bool UpdateCharacter(ulong charId, Action<Wizard> update) {
         return WithWriteLane(charId, () => {
             using var session = s_store.OpenSession();
-            var existingCharacter = GetCharacterByCharId(session, charId);
+            var existingCharacter = LoadCharacterByDocumentId(session, charId)
+                ?? GetCharacterByCharId(session, charId);
             if (existingCharacter is null) {
                 return false;
             }
@@ -106,6 +110,7 @@ public static class WizardCollection {
             metadata[Raven.Client.Constants.Documents.Metadata.Collection] = CollectionName;
 
             session.SaveChanges();
+            s_documentIdByCharId[character.CharId] = session.Advanced.GetDocumentId(character);
 
             return true;
         });
@@ -132,6 +137,7 @@ public static class WizardCollection {
 
             session.Delete(character);
             session.SaveChanges();
+            s_documentIdByCharId.TryRemove(id, out _);
 
             return true;
         });
@@ -185,6 +191,7 @@ public static class WizardCollection {
         for (var i = 0; i < characters.Count; i++) {
             characters[i].Account = account;
             account.Characters.Add(characters[i]);
+            s_documentIdByCharId[characters[i].CharId] = session.Advanced.GetDocumentId(characters[i]);
         }
 
         // Load all of the characters. We must do this here because
@@ -531,9 +538,28 @@ public static class WizardCollection {
         return wizard;
     }
 
-    private static Wizard GetCharacterByCharId(IDocumentSession session, ulong charId)
-        => session.Query<Wizard>(collectionName: CollectionName)
+    private static Wizard GetCharacterByCharId(IDocumentSession session, ulong charId) {
+        var character = session.Query<Wizard>(collectionName: CollectionName)
             .Customize(query => query.WaitForNonStaleResults(s_nonStaleWaitTimeout))
-            .FirstOrDefault(character => character.CharId == charId);
+            .FirstOrDefault(c => c.CharId == charId);
+        if (character is not null) {
+            s_documentIdByCharId[charId] = session.Advanced.GetDocumentId(character);
+        }
+
+        return character;
+    }
+
+    private static Wizard LoadCharacterByDocumentId(IDocumentSession session, ulong charId) {
+        if (!s_documentIdByCharId.TryGetValue(charId, out var documentId)) {
+            return null;
+        }
+
+        var character = session.Load<Wizard>(documentId);
+        if (character is null) {
+            s_documentIdByCharId.TryRemove(charId, out _);
+        }
+
+        return character;
+    }
 
 }

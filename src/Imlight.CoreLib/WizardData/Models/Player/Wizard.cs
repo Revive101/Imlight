@@ -1563,12 +1563,16 @@ public class Wizard {
         var energyRegained = timeDifference / energyTickIntervalInSeconds;
 
         // If the player has regained more energy than their max, set it to the max.
-        if (PetOwnerBehavior.Energy + energyRegained > normMaxEnergy) {
-            UpdateEnergy(normMaxEnergy);
+        var newEnergy = PetOwnerBehavior.Energy + energyRegained > normMaxEnergy
+            ? normMaxEnergy
+            : (int) (PetOwnerBehavior.Energy + energyRegained);
+        if (newEnergy == PetOwnerBehavior.Energy) {
+            PetOwnerBehavior.SetEnergy(newEnergy);
+
+            return;
         }
-        else {
-            UpdateEnergy((int) (PetOwnerBehavior.Energy + energyRegained));
-        }
+
+        UpdateEnergy(newEnergy);
     }
 
     private void AfterDatabaseLoadWizardGameStats() {
@@ -1620,8 +1624,13 @@ public class Wizard {
         QuestBehavior.CurrentQuestInstances = uniqueQuests;
 
         // Prune stale quest IDs whose instance docs were removed above, and persist.
+        var questIdsBefore = QuestBehavior.CurrentQuestIDs.ToList();
         QuestBehavior.CurrentQuestIDs.Clear();
         QuestBehavior.CurrentQuestIDs.AddRange(uniqueQuests.Select(q => q.ID));
+        if (questIdsBefore.SequenceEqual(QuestBehavior.CurrentQuestIDs)) {
+            return;
+        }
+
         WizardCollection.UpdateCharacterQuestBehavior(this);
     }
 
