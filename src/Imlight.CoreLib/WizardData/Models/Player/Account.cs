@@ -139,18 +139,18 @@ public class Account {
         // Change the character account ID to this account's ID.
         character.AccountId = this.AccountId;
 
-        this.CharacterIds.Add(character.CharId);
-        this.Characters.Add(character);
-
         // Save the character persistently.
         var savedCharacterToCollection = WizardCollection
             .AddCharacter(character);
-        var savedCharacterToAccount = AccountCollection
-            .AddCharacterToAccount(AccountId, character.CharId);
+        var savedCharacterToAccount = savedCharacterToCollection
+            && AccountCollection.AddCharacterToAccount(AccountId, character.CharId);
 
         if (!savedCharacterToCollection || !savedCharacterToAccount) {
             return false;
         }
+
+        this.CharacterIds.Add(character.CharId);
+        this.Characters.Add(character);
 
         return true;
     }

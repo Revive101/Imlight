@@ -25,12 +25,11 @@
  * USAGE EXAMPLE:
  * 
  * NOTE:
- * This service relies on ObjectSerializer for character data serialization/deserialization
- * and may throw SessionFatalException if serialization fails.
+ * This service relies on ObjectSerializer for character data serialization/deserialization.
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 10/09/2026
  */
 
 using System;
@@ -49,7 +48,9 @@ using Imlight.CoreLib.WizardData.Implementations;
 namespace Imlight.CoreLib.Login.Services;
 
 internal class CharacterService(SessionActor parentActor) : MessageService(parentActor) {
-    
+
+    private const int CharacterFailure = 0x67BAA130;
+
     private uint _characterCreationStage;
     private uint _characterCreationParameter;
 
@@ -77,7 +78,11 @@ internal class CharacterService(SessionActor parentActor) : MessageService(paren
         try {
             var flags = PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit;
             if (!serializer.Deserialize(message.CreationInfo, flags, out WizardCharacterCreationInfo charData)) {
-                throw new SessionFatalException("Failed to deserialize character creation data.");
+                Logger.Error("SessionActor {SessionId} account {accountUsername} sent character creation data that could not be deserialized.",
+                    Logger.Args(SessionActor.SessionID, account.Username));
+                SendToSocket(new LOGIN_7_PROTOCOL.MSG_CREATECHARACTERRESPONSE { ErrorCode = 1 });
+
+                return;
             }
 
             var newCharacter = CharacterHelper.CreateCharacterFromCreationInfo(charData);
@@ -101,12 +106,10 @@ internal class CharacterService(SessionActor parentActor) : MessageService(paren
             }
         }
         catch (Exception e) {
-            Logger.Error("Account {accountUsername} failed to deserialize character creation data. {Exception}", 
-                Logger.Args(account.Username, e.Message));
+            Logger.Error("SessionActor {SessionId} account {accountUsername} failed to create a character. {Exception}",
+                Logger.Args(SessionActor.SessionID, account.Username, e.Message));
 
             SendToSocket(new LOGIN_7_PROTOCOL.MSG_CREATECHARACTERRESPONSE { ErrorCode = 1 });
-
-            throw new SessionFatalException("Failed to deserialize character creation data.");
         }
     }
 
@@ -124,18 +127,25 @@ internal class CharacterService(SessionActor parentActor) : MessageService(paren
 
         // If we had no problems deleting the character from the account, delete the character from the database.
         if (characterWasSuccessfullyDeleted) {
-            // Delete the character from the database.
-            var deletedCharacterFromCollection = WizardCollection
-                .DeleteCharacter(message.CharID);
+            try {
+                // Delete the character from the database.
+                var deletedCharacterFromCollection = WizardCollection
+                    .DeleteCharacter(message.CharID);
 
-            // Delete the character's reference from the account.
-            var deletedCharacterFromAccount = AccountCollection
-                .DeleteCharacterFromAccount(account.AccountId, message.CharID);
+                // Delete the character's reference from the account.
+                var deletedCharacterFromAccount = AccountCollection
+                    .DeleteCharacterFromAccount(account.AccountId, message.CharID);
 
-            if (!deletedCharacterFromCollection || !deletedCharacterFromAccount) {
-                Logger.Error("Account {accountUsername} failed to delete character {characterId} from database.",
-                    Logger.Args(account.Username, message.CharID));
-                errorCode = 1;
+                if (!deletedCharacterFromCollection || !deletedCharacterFromAccount) {
+                    Logger.Error("Account {accountUsername} failed to delete character {characterId} from database.",
+                        Logger.Args(account.Username, message.CharID));
+                    errorCode = CharacterFailure;
+                }
+            }
+            catch (Exception e) {
+                Logger.Error("Account {accountUsername} failed to delete character {characterId} from database. {Exception}",
+                    Logger.Args(account.Username, message.CharID, e.Message));
+                errorCode = CharacterFailure;
             }
         }
         else {
