@@ -237,6 +237,15 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
     }
 
     private (string ZoneName, string Location) GetReattachDestination(string zoneName, string location) {
+        // A pending transfer saves the source zone until its attach succeeds, so the message names the truth.
+        var pendingTransfer = QueryFallback(countTimeout: false);
+        if (pendingTransfer is not null && pendingTransfer.Found) {
+            Logger.Information("Session {SessionId} Reattach=1: transfer from {SourceZone} is pending, keeping destination {Zone}",
+                Logger.Args(SessionActor.SessionID, pendingTransfer.FallbackZone, zoneName));
+
+            return (zoneName, location);
+        }
+
         if (string.IsNullOrEmpty(_wizard.Zone)) {
             Logger.Information("Session {SessionId} Reattach=1: no saved zone for {CharId}, keeping {Zone}",
                 Logger.Args(SessionActor.SessionID, _wizard.CharId, zoneName));
