@@ -360,5 +360,17 @@ public sealed class SERVER_100_PROTOCOL : IServerProtocol {
         public ushort[] PlayerCounts;
 
     }
+
+    /// <summary>
+    /// Asks the game server to close a stale session, such as the one a reattaching client left behind.
+    /// </summary>
+    public class MSG_KICKSESSION : IServerMessage {
+
+        public byte MessageOrder { get; } = 31;
+        public byte ServiceID { get; } = 100;
+
+        public ushort SessionID;
+
+    }
     
 }
