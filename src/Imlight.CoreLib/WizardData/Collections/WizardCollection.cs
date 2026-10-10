@@ -19,6 +19,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Raven.Client.Documents;
 using Raven.Client.Exceptions;
@@ -186,6 +187,7 @@ public static class WizardCollection {
     /// to the account.</param>
     /// <returns>The character with the specified account ID, or null if not found.</returns>
     public static Wizard[] LoadWizardsOntoAccount(ulong accountId, ref Account account) {
+        var stopwatch = Stopwatch.StartNew();
         using var session = s_store.OpenSession();
 
         var characters = QueryWizardsOfAccount(session, accountId);
@@ -203,6 +205,9 @@ public static class WizardCollection {
             characters[i] = LoadWizard(characters[i]);
         }
 
+        Logger.Debug("Loaded {Count} characters of account {AccountId} in {Elapsed} ms.",
+            Logger.Args(characters.Count, accountId, stopwatch.ElapsedMilliseconds));
+
         return [.. characters];
     }
 
@@ -215,6 +220,7 @@ public static class WizardCollection {
     /// <param name="account">The account the characters are added to.</param>
     /// <returns>The characters that were added to the account.</returns>
     public static Wizard[] LoadWizardsForCharacterList(ulong accountId, ref Account account) {
+        var stopwatch = Stopwatch.StartNew();
         using var session = s_store.OpenSession();
 
         var characters = QueryWizardsOfAccount(session, accountId);
@@ -225,6 +231,9 @@ public static class WizardCollection {
             s_documentIdByCharId[characters[i].CharId] = session.Advanced.GetDocumentId(characters[i]);
             LoadEquippedItems(session, characters[i]);
         }
+
+        Logger.Debug("Loaded {Count} characters of account {AccountId} for the character list in {Elapsed} ms.",
+            Logger.Args(characters.Count, accountId, stopwatch.ElapsedMilliseconds));
 
         return [.. characters];
     }

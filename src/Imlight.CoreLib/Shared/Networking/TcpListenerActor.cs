@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 10/10/2026
  */
 
 using System;
@@ -123,6 +123,13 @@ public class TcpListenerActor : ReceiveActor {
     private void AllocateNewSocket(Socket socket) {
         Logger.Debug("TcpListener for {Name} accepted connection from {RemoteEndPoint}.",
             Logger.Args(Name, socket.RemoteEndPoint?.ToString()));
+
+        try {
+            socket.NoDelay = true;
+        } catch (Exception ex) when (ex is SocketException or ObjectDisposedException) {
+            Logger.Debug("TcpListener for {Name} could not set NoDelay on a socket. {Exception}",
+                Logger.Args(Name, ex.Message));
+        }
 
         var msg = new SERVER_100_PROTOCOL.MSG_ALLOCATESOCKET() { Socket = socket };
         _serverRef.Tell(msg);

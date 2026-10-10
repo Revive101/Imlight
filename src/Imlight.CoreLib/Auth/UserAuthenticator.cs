@@ -96,6 +96,15 @@ internal static class UserAuthenticator {
     /// <param name="authMessage">The authentication message.</param>
     /// <returns>The authentication details.</returns>
     internal static AuthenticationDetails Authenticate(SessionActor sessionActor, MSG_USER_AUTHEN_V3 authMessage) {
+        var stopwatch = Stopwatch.StartNew();
+        var details = AuthenticateUser(sessionActor, authMessage);
+        Logger.Debug("SessionActor {Id} authentication finished in {Elapsed} ms with {Result}.",
+            Logger.Args(sessionActor.SessionID, stopwatch.ElapsedMilliseconds, details._result));
+
+        return details;
+    }
+
+    private static AuthenticationDetails AuthenticateUser(SessionActor sessionActor, MSG_USER_AUTHEN_V3 authMessage) {
         var sessionId  = sessionActor.SessionID;
         var offerTime  = sessionActor.OfferTime;
         var offerMilli = sessionActor.OfferMillisecondsIntoSecond;
