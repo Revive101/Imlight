@@ -238,6 +238,23 @@ public static class AccountCollection {
     }
 
     /// <summary>
+    /// Gets an account from the database by its ID, with only the character data the character list needs.
+    /// Use <see cref="GetAccount(ulong)"/> when the characters are going to be played.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+    public static Account GetAccountForCharacterList(ulong id) {
+        using var session = s_store.OpenSession();
+
+        var account = session.Query<Account>(collectionName: CollectionName)
+            .FirstOrDefault(a => a.AccountId == id);
+
+        return account is null
+            ? null
+            : LoadAccountDetails(session, account, characterListOnly: true);
+    }
+
+    /// <summary>
     /// Locks the specified account by setting its IsLocked property to true.
     /// </summary>
     /// <param name="account">The account to be locked.</param>

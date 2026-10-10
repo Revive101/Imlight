@@ -86,7 +86,7 @@ internal static class UserValidator {
         var details = new ValidationDetails();
 
         // Try getting the account from the message's UserID.
-        var matchedAccount = AccountCollection.GetAccount(validateMessage.UserID);
+        var matchedAccount = AccountCollection.GetAccountForCharacterList(validateMessage.UserID);
         if (matchedAccount is null) {
             details._result = UserValidateResult.ValidateFailed;
 
