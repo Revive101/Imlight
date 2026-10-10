@@ -205,6 +205,32 @@ public static class WizardCollection {
     }
 
     /// <summary>
+    /// Loads all characters of an account with only what the character list shows: the character document
+    /// and its equipped items. Reagents, relationships, dynamods and quests stay unloaded, and
+    /// <c>AfterDatabaseLoad</c> does not run.
+    /// </summary>
+    /// <param name="accountId">The account ID of the characters to retrieve.</param>
+    /// <param name="account">The account the characters are added to.</param>
+    /// <returns>The characters that were added to the account.</returns>
+    public static Wizard[] LoadWizardsForCharacterList(ulong accountId, ref Account account) {
+        using var session = s_store.OpenSession();
+
+        var characters = session.Query<Wizard>(collectionName: CollectionName)
+            .Customize(query => query.WaitForNonStaleResults(s_nonStaleWaitTimeout))
+            .Where(x => x.AccountId == accountId)
+            .ToList();
+
+        for (var i = 0; i < characters.Count; i++) {
+            characters[i].Account = account;
+            account.Characters.Add(characters[i]);
+            s_documentIdByCharId[characters[i].CharId] = session.Advanced.GetDocumentId(characters[i]);
+            LoadEquippedItems(session, characters[i]);
+        }
+
+        return [.. characters];
+    }
+
+    /// <summary>
     /// Retrieves all characters based on the specified account ID. Returns the characters unloaded, so no
     /// additional queries are made to load the character's inventory, equipment, etc.
     /// </summary>
@@ -464,6 +490,22 @@ public static class WizardCollection {
 
         return UpdateCharacter(wizard.CharId, dbWizard =>
             dbWizard.QuestBehavior = wizard.QuestBehavior);
+    }
+
+    private static void LoadEquippedItems(IDocumentSession session, Wizard wizard) {
+        if (wizard.EquipmentBehavior.EquippedItemIds is not { Count: > 0 }) {
+            wizard.EquipmentBehavior.EquippedItems = [];
+
+            return;
+        }
+
+        var items = session.Query<WizClientObjectItem>(collectionName: WizardItemCollection.CollectionName)
+            .Where(x => x.m_characterId == wizard.CharId)
+            .ToList();
+        wizard.EquipmentBehavior.EquippedItems = [.. items
+            .Where(i => wizard.EquipmentBehavior.EquippedItemIds
+            .Any(e => i.m_globalID == e))
+        ];
     }
 
     private static Wizard LoadWizard(Wizard wizard) {

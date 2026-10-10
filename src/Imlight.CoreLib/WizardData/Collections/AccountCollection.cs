@@ -107,8 +107,12 @@ public static class AccountCollection {
         return UpdateAccount(accountId.Value, update);
     }
 
-    private static Account LoadAccountDetails(IDocumentSession session, Account account) {
-        WizardCollection.LoadWizardsOntoAccount(account.AccountId, ref account);
+    private static Account LoadAccountDetails(IDocumentSession session, Account account, bool characterListOnly = false) {
+        if (characterListOnly) {
+            WizardCollection.LoadWizardsForCharacterList(account.AccountId, ref account);
+        } else {
+            WizardCollection.LoadWizardsOntoAccount(account.AccountId, ref account);
+        }
 
         var infractions = session.Query<Infraction>(collectionName: InfractionCollection.CollectionName)
             .Where(i => i.AccountId == account.AccountId)
@@ -214,6 +218,23 @@ public static class AccountCollection {
         return account is null
             ? null
             : LoadAccountDetails(session, account);
+    }
+
+    /// <summary>
+    /// Gets an account from the database by its username, with only the character data the character
+    /// list needs. Use <see cref="GetAccount(string)"/> when the characters are going to be played.
+    /// </summary>
+    /// <param name="username"></param>
+    /// <returns></returns>
+    public static Account GetAccountForCharacterList(string username) {
+        using var session = s_store.OpenSession();
+
+        var account = session.Query<Account>(collectionName: CollectionName)
+            .FirstOrDefault(a => a.Username == username);
+
+        return account is null
+            ? null
+            : LoadAccountDetails(session, account, characterListOnly: true);
     }
 
     /// <summary>

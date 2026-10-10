@@ -94,7 +94,7 @@ public static class LoginWarmup {
     }
 
     private static void Warm() {
-        DeleteWarmupAccount();
+        DeleteWarmupAccount(attempts: 1);
 
         var password = Guid.NewGuid().ToString("N");
         var wizard = CreateWarmupWizard();
@@ -112,7 +112,7 @@ public static class LoginWarmup {
         } finally {
             ClientKeyCollection.RemoveSessionKeys(account.AccountId);
             OnlinePlayerCollection.RemoveOnlinePlayer(account.AccountId);
-            DeleteWarmupAccount();
+            DeleteWarmupAccount(IndexRetryCount);
         }
     }
 
@@ -125,7 +125,7 @@ public static class LoginWarmup {
         // The account was written a moment ago, so its index may not list it yet.
         Account account = null;
         for (var attempt = 0; account is null && attempt < IndexRetryCount; attempt++) {
-            account = AccountCollection.GetAccount(WarmupUsername);
+            account = AccountCollection.GetAccountForCharacterList(WarmupUsername);
             if (account is null) {
                 Thread.Sleep(IndexRetryDelayMilliseconds);
             }
@@ -164,9 +164,9 @@ public static class LoginWarmup {
         _ = WizardItemCollection.TryGetWizardInventory(0, out _);
     }
 
-    private static void DeleteWarmupAccount() {
+    private static void DeleteWarmupAccount(int attempts) {
         // The delete looks the account up through an index that may lag behind the write.
-        for (var attempt = 0; attempt < IndexRetryCount; attempt++) {
+        for (var attempt = 0; attempt < attempts; attempt++) {
             if (AccountCollection.DeleteAccount(WarmupUsername)) {
                 return;
             }

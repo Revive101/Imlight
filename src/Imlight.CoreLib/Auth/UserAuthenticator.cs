@@ -121,7 +121,7 @@ internal static class UserAuthenticator {
         }
 
         // Check if we can find the account.
-        var matchedAccount = AccountCollection.GetAccount(username);
+        var matchedAccount = AccountCollection.GetAccountForCharacterList(username);
         if (matchedAccount is null) {
             details._result = UserAuthenResult.AuthenFailed;
 
