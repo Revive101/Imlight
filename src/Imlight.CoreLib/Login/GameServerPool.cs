@@ -35,7 +35,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/26/2026
+ * Last Updated: 10/09/2026
  */
 
 using System;
@@ -136,6 +136,8 @@ internal class GameServerPool : ReceiveProtocolDispatcher {
 
         if (gameServerInfos.Length <= 0) {
             Logger.Error("No game servers were available to query.");
+            result.OriginalSender.Tell(new SERVER_100_PROTOCOL.MSG_SERVERINFO());
+
             return;
         }
 

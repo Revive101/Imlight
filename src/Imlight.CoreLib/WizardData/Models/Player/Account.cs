@@ -176,9 +176,9 @@ public class Account {
     /// Retrieves a character with the specified ID.
     /// </summary>
     /// <param name="id">The ID of the character to retrieve.</param>
-    /// <returns>The character with the specified ID.</returns>
+    /// <returns>The character with the specified ID, or null if the account has none.</returns>
     public Wizard GetCharacter(ulong id)
-        => this.Characters.First(c => c.CharId == id);
+        => this.Characters.FirstOrDefault(c => c.CharId == id);
 
     /// <summary>
     /// Adds an infraction to the account.
