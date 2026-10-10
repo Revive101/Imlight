@@ -37,7 +37,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/09/2026
+ * Last Updated: 10/10/2026
  */
 
 using System;
@@ -65,6 +65,8 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
     private readonly byte _serviceTimeRangeRetryInSeconds    = ConfigurationManager.Settings["Advanced.SessionActorServiceRangeRetry"].AsByte();
 
     private static readonly TimeSpan s_clientCloseTimeout    = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan s_askTimeout            = TimeSpan.FromSeconds(20);
+    private static readonly TimeSpan s_serverAskTimeout      = TimeSpan.FromSeconds(60);
 
     public ushort SessionID                                  { get; }
     public uint OfferTime                                    { get; set; }
@@ -107,7 +109,7 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
         else {
             // Fallback for callers that don't provide the ref.
             var query = new SERVER_100_PROTOCOL.MSG_QUERYACTORFACTORY();
-            this._actorFactoryRef = server.Ask<SERVER_100_PROTOCOL.MSG_ACTORFACTORYINFO>(query)
+            this._actorFactoryRef = server.Ask<SERVER_100_PROTOCOL.MSG_ACTORFACTORYINFO>(query, s_askTimeout)
                 .Result
                 .Reference;
         }
@@ -148,7 +150,7 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
             SessionActor = this
         };
 
-        var rsp = ServerRef.Ask<SERVER_100_PROTOCOL.MSG_PLAYERENQUEUEDRSP>(msg)
+        var rsp = ServerRef.Ask<SERVER_100_PROTOCOL.MSG_PLAYERENQUEUEDRSP>(msg, s_askTimeout)
             .Result;
 
         return rsp;
@@ -164,7 +166,7 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
             SessionActor = this
         };
 
-        var rsp = serverRef.Ask<IMessage>(msg)
+        var rsp = serverRef.Ask<IMessage>(msg, s_askTimeout)
             .Result;
 
         return rsp;
@@ -210,7 +212,7 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
                 }
 
                 try {
-                    return handler.Ask<T>(msg, timeout: TimeSpan.FromSeconds(20)).Result;
+                    return handler.Ask<T>(msg, timeout: s_askTimeout).Result;
                 }
                 catch (Exception ex) {
                     Logger.Error("SessionActor service attempted to ask another service with {0}, but the timeout " +
@@ -234,7 +236,7 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
     public T AskServer<T>(IServerMessage msg)
         where T : IServerMessage {
         if (ServerRef is not null) {
-            return ServerRef.Ask<T>(msg).Result;
+            return ServerRef.Ask<T>(msg, s_serverAskTimeout).Result;
         }
 
         throw new SessionFatalException($"SessionActor [{SessionID}] contained a null server reference!");
@@ -368,7 +370,7 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
         // Ask the ActorFactory for this actor's message services.
         var msg = new SERVICE_101_PROTOCOL.MSG_QUERYUNLOADEDSERVICES();
         var services = _actorFactoryRef
-            .Ask<SERVICE_101_PROTOCOL.MSG_SERVICESLIST>(msg)
+            .Ask<SERVICE_101_PROTOCOL.MSG_SERVICESLIST>(msg, s_askTimeout)
             .Result
             .Services;
 
@@ -445,7 +447,7 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
             // We've created the service as a child actor. Problem is, we need to know the actual class
             // identity to use it later. To do that, we'll ask the actor to identify itself.
             var msg = new SERVICE_101_PROTOCOL.MSG_QUERYMESSAGESERVICEIDENTITY();
-            var identity = childRef.Ask<SERVICE_101_PROTOCOL.MSG_MESSAGESERVICEIDENTITY>(msg)
+            var identity = childRef.Ask<SERVICE_101_PROTOCOL.MSG_MESSAGESERVICEIDENTITY>(msg, s_askTimeout)
                 .Result
                 .Service;
             _services.Add(childRef, identity);

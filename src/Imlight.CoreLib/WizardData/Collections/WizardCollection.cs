@@ -18,8 +18,10 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using Raven.Client.Documents;
+using Raven.Client.Exceptions;
 using Raven.Client.Documents.Linq;
 using Raven.Client.Documents.Session;
 using Imlight.Common;
@@ -50,6 +52,9 @@ public static class WizardCollection {
 
     private static readonly TimeSpan s_nonStaleWaitTimeout
         = TimeSpan.FromSeconds(ConfigurationManager.Settings["Database.DatabaseWaitForNonStaleResultsTimeout"].AsByte(5));
+
+    private static readonly TimeSpan s_loginNonStaleWaitTimeout
+        = s_nonStaleWaitTimeout < TimeSpan.FromSeconds(1) ? s_nonStaleWaitTimeout : TimeSpan.FromSeconds(1);
 
     private static readonly ConcurrentDictionary<ulong, string> s_documentIdByCharId = new();
 
@@ -183,10 +188,7 @@ public static class WizardCollection {
     public static Wizard[] LoadWizardsOntoAccount(ulong accountId, ref Account account) {
         using var session = s_store.OpenSession();
 
-        var characters = session.Query<Wizard>(collectionName: CollectionName)
-            .Customize(query => query.WaitForNonStaleResults(s_nonStaleWaitTimeout))
-            .Where(x => x.AccountId == accountId)
-            .ToList();
+        var characters = QueryWizardsOfAccount(session, accountId);
 
         for (var i = 0; i < characters.Count; i++) {
             characters[i].Account = account;
@@ -215,10 +217,7 @@ public static class WizardCollection {
     public static Wizard[] LoadWizardsForCharacterList(ulong accountId, ref Account account) {
         using var session = s_store.OpenSession();
 
-        var characters = session.Query<Wizard>(collectionName: CollectionName)
-            .Customize(query => query.WaitForNonStaleResults(s_nonStaleWaitTimeout))
-            .Where(x => x.AccountId == accountId)
-            .ToList();
+        var characters = QueryWizardsOfAccount(session, accountId);
 
         for (var i = 0; i < characters.Count; i++) {
             characters[i].Account = account;
@@ -490,6 +489,22 @@ public static class WizardCollection {
 
         return UpdateCharacter(wizard.CharId, dbWizard =>
             dbWizard.QuestBehavior = wizard.QuestBehavior);
+    }
+
+    private static List<Wizard> QueryWizardsOfAccount(IDocumentSession session, ulong accountId) {
+        try {
+            return session.Query<Wizard>(collectionName: CollectionName)
+                .Customize(query => query.WaitForNonStaleResults(s_loginNonStaleWaitTimeout))
+                .Where(x => x.AccountId == accountId)
+                .ToList();
+        } catch (Exception ex) when (ex is TimeoutException or RavenTimeoutException) {
+            Logger.Warning("The Wizards index was still stale after {Seconds} s, listing the characters of account {AccountId} as it is.",
+                Logger.Args(s_loginNonStaleWaitTimeout.TotalSeconds, accountId));
+
+            return session.Query<Wizard>(collectionName: CollectionName)
+                .Where(x => x.AccountId == accountId)
+                .ToList();
+        }
     }
 
     private static void LoadEquippedItems(IDocumentSession session, Wizard wizard) {

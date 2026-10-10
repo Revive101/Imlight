@@ -39,6 +39,7 @@
  */
 
 using System;
+using System.Diagnostics;
 using Imcodec.IO;
 using Imlight.Common;
 using Imlight.CoreLib.Shared.Cryptography;
@@ -77,6 +78,7 @@ internal static class UserAuthenticator {
         = ConfigurationManager.Settings["Global Settings.EnforceRevision"].AsBool();
     private static readonly string s_serverRevision 
         = ConfigurationManager.Settings["Global Settings.GameRevision"].AsString();
+    private static readonly TimeSpan s_deadline = TimeSpan.FromSeconds(10);
 
     internal class AuthenticationDetails {
         
@@ -99,6 +101,7 @@ internal static class UserAuthenticator {
         var offerMilli = sessionActor.OfferMillisecondsIntoSecond;
         var (returnedSessionid, username, clientKey1) = DecodeRec1(authMessage.Rec1, sessionActor);
         var details = new AuthenticationDetails();
+        var stopwatch = Stopwatch.StartNew();
 
         // Check if the session id matches.
         if (returnedSessionid != sessionId) {
@@ -128,6 +131,10 @@ internal static class UserAuthenticator {
             return details;
         }
 
+        if (stopwatch.Elapsed > s_deadline) {
+            return TimedOut(details, sessionActor, stopwatch);
+        }
+
         // Check to see if this machine is banned.
         if (InfractionCollection.IsMachineBanned(authMessage.MachineID)) {
             // Add an infraction to the account.
@@ -152,6 +159,10 @@ internal static class UserAuthenticator {
             details._result = UserAuthenResult.AccountBanned;
 
             return details;
+        }
+
+        if (stopwatch.Elapsed > s_deadline) {
+            return TimedOut(details, sessionActor, stopwatch);
         }
 
         details._account = matchedAccount;
@@ -179,6 +190,15 @@ internal static class UserAuthenticator {
 
             return details;
         }
+    }
+
+    private static AuthenticationDetails TimedOut(AuthenticationDetails details, SessionActor sessionActor, Stopwatch stopwatch) {
+        Logger.Warning("SessionActor {0} authentication ran past its deadline after {1} ms.",
+            Logger.Args(sessionActor.SessionID, stopwatch.ElapsedMilliseconds));
+
+        details._result = UserAuthenResult.Timeout;
+
+        return details;
     }
 
     private static (ushort, string, string) DecodeRec1(ByteString rec1, SessionActor sessionActor) {

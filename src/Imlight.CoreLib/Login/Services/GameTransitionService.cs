@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/09/2026
+ * Last Updated: 10/10/2026
  */
 
 using System;
@@ -165,7 +165,7 @@ internal class GameTransitionService(SessionActor sessionActor) : MessageService
             Account = account
         };
 
-        return gameServerRef.Ask<SERVER_100_PROTOCOL.MSG_CREATEKEYRSP>(msg)
+        return gameServerRef.Ask<SERVER_100_PROTOCOL.MSG_CREATEKEYRSP>(msg, s_gameServerAskTimeout)
             .Result
             .Key;
     }
