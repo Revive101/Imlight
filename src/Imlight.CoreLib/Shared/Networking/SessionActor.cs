@@ -85,6 +85,7 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
     private IActorRef _socketListenerRef;
     private IActorRef _socketSenderRef;
     private bool _isDisposed;
+    private bool _stoppedByStrategy;
 
     // ctor
     public SessionActor(Socket socket, ushort sessionId, IActorRef server, IActorRef actorFactoryRef = null) {
@@ -265,13 +266,15 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
     /// <summary>
     /// Disposes of the SessionActor.
     /// </summary>
-    public void Dispose() {
+    public void Dispose() => Dispose("shutdown");
+
+    private void Dispose(string reason) {
         // Avoid duplicate Dispose calls.
         if (_isDisposed) {
             return;
         }
 
-        Logger.Debug("SessionActor {Id} disposing.", Logger.Args(SessionID));
+        Logger.Debug("SessionActor {Id} disposing, reason={Reason}.", Logger.Args(SessionID, reason));
         _isDisposed = true;
 
         // Send a message to the server to deallocate this SessionActor.
@@ -311,13 +314,14 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
                     case SessionFatalException tex: {
                             Logger.Error("SessionActor {Sid} service {Class} L:{LineNumber} threw fatal exception: " +
                                       "{Message}", Logger.Args(SessionID, tex.CallingClass, tex.LineNumber, tex.Message));
+                            _stoppedByStrategy = true;
                             return Directive.Stop;
                         }
                     default:
                         Logger.Error("SessionActor {Sid} service {Class} L:{LineNumber} threw unknown exception: " +
                                      "{Message}. Exception details: {Exception}. Inner exception: {InnerException}",
-                                     Logger.Args(SessionID, ex.TargetSite.DeclaringType, ex.TargetSite.Name, ex.Message, ex, ex.InnerException));
-                        return Directive.Stop;
+                                     Logger.Args(SessionID, ex.TargetSite?.DeclaringType, ex.TargetSite?.Name, ex.Message, ex, ex.InnerException));
+                        return Directive.Resume;
                 }
             }
         );
@@ -343,7 +347,7 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
 
     private void ConfigureReceivers() {
         // Specific message handlers.
-        Receive<string>(x => x == "Close", x => Dispose());
+        Receive<string>(x => x == "Close", x => Dispose(GetCloseReason()));
         Receive<string>(x => x == "Identify", x => Sender.Tell(this));
         Receive<SERVICE_101_PROTOCOL.MSG_GETALLSERVICES>(InitializeActiveSession);
         Receive<SERVER_100_PROTOCOL.MSG_PING>(x => this.Ping = x.Ping);
@@ -370,6 +374,12 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
     }
 
     private void InitializeActiveSession(SERVICE_101_PROTOCOL.MSG_GETALLSERVICES message) {
+        if (SessionValid) {
+            Logger.Debug("SessionActor {Id} ignored a repeated session initialization.", Logger.Args(SessionID));
+
+            return;
+        }
+
         SessionValid = true;
 
         Logger.Debug("SessionActor {Id} initialized with all services.", Logger.Args(SessionID));
@@ -377,6 +387,7 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
         foreach (var preInitMessage in _preInitMessages) {
             HandlePacket(preInitMessage);
         }
+        _preInitMessages.Clear();
     }
 
     private void SetServices(List<Type> services) {
@@ -411,7 +422,18 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
     }
 
     private void ReceiveException(Exception ex) {
-        Dispose();
+        Dispose("exception");
+    }
+
+    private string GetCloseReason() {
+        if (_stoppedByStrategy) {
+            return "AllForOne";
+        }
+
+        // A close sent by a service names it (ClientService is a client logout); any other sender is a socket actor.
+        return _services.TryGetValue(Sender, out var service)
+            ? $"{service.GetType().Name} requested close"
+            : "socket closed";
     }
 
     private void HandlePacket(IMessage packet) {
