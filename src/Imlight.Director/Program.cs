@@ -37,7 +37,7 @@
  *
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/09/2026
+ * Last Updated: 10/10/2026
 */
 
 using System;
@@ -47,6 +47,7 @@ using System.Globalization;
 using System.IO;
 using Akka.Actor;
 using Imlight.Common;
+using Imlight.CoreLib.Auth;
 using Imlight.CoreLib.Login;
 using Imlight.CoreLib.Patch;
 using Imlight.CoreLib.Shared.Packets;
@@ -160,6 +161,7 @@ internal static class Program {
         CreateEmbeddedDatabaseAccounts();
 
         OnlinePlayerCollection.Clear();
+        LoginWarmup.Run();
 
         // Keep program busy with a while loop.
         Logger.Information("Imlight may now be connected to.");

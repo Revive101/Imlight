@@ -57,11 +57,7 @@ public static class ClientKeyCollection {
         using var session = Store.OpenSession();
 
         // Remove any existing document that matches the account id.
-        Store
-            .Operations
-            .Send(new DeleteByQueryOperation(new IndexQuery {
-                Query = $"from {CollectionName} where AccountId = '{accountId}'"
-            }));
+        RemoveSessionKeys(accountId);
 
         // Store a new ClientKeyPair in the database with an expiry date.
         var pair = new ClientKeyPair(accountId, machineId, key);
@@ -74,6 +70,18 @@ public static class ClientKeyCollection {
         metadata[Constants.Documents.Metadata.Expires] = expiry;
 
         session.SaveChanges();
+    }
+
+    /// <summary>
+    /// Removes every session key stored for an account.
+    /// </summary>
+    /// <param name="accountId"></param>
+    public static void RemoveSessionKeys(ulong accountId) {
+        Store
+            .Operations
+            .Send(new DeleteByQueryOperation(new IndexQuery {
+                Query = $"from {CollectionName} where AccountId = '{accountId}'"
+            }));
     }
 
     /// <summary>
