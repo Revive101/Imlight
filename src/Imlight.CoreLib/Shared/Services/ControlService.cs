@@ -84,19 +84,24 @@ internal class ControlService : MessageService, IHandshakeService {
 
     [MessageHandler(typeof(ControlMessageProtocol.SessionAccept))]
     private void ReceiveSessionAccept(ControlMessageProtocol.SessionAccept message) {
+        Logger.Debug("SessionActor {Sid} SessionAccept received.", Logger.Args(SessionActor.SessionID));
+
         // The game client approves of the agreed upon session.
         _responseStopwatch.Stop();
         if (message.SessionId != SessionActor.SessionID) {
             throw new Exception($"SessionActor [{SessionActor.SessionID}] misaligned Session ID.");
+        }
+        if (_sessionValid) {
+            Logger.Debug("SessionActor {Sid} ignored a repeated SessionAccept.", Logger.Args(SessionActor.SessionID));
+
+            return;
         }
 
         // Set local variables.
         _sessionValid = true;
         _isWaitingForHeartbeatResponse = false;
 
-        // The session is now valid. For optimization purposes, our parent SessionActor doesn't load
-        // all the services on creation. Instead, we wait for the session to be valid.
-        // We need to now tell our SessionActor that the session is created, and to grab the rest of its services.
+        // The SessionActor marks the session valid and replays the messages it cached while the handshake was open.
         var msg = new SERVICE_101_PROTOCOL.MSG_GETALLSERVICES();
         SessionActor.ActorRef.Tell(msg);
         SessionActor
