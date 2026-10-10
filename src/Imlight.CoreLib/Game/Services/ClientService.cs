@@ -61,7 +61,8 @@ internal class ClientService(SessionActor sessionActor) : MessageService(session
 
         Logger.Information("SessionActor {SessionId} CLIENT_DISCONNECT echoed.", Logger.Args(SessionActor.SessionID));
 
-        CloseSession();
+        // The client closes its end of the connection after the echo, so the server does not close first.
+        CloseSessionAfterClient();
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_QUERY_LOGOUT))]

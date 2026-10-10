@@ -44,6 +44,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Imcodec.MessageLayer;
@@ -62,6 +63,8 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
 
     private readonly byte _serviceRetryCount                 = ConfigurationManager.Settings["Advanced.SessionActorServiceRetryCount"].AsByte();
     private readonly byte _serviceTimeRangeRetryInSeconds    = ConfigurationManager.Settings["Advanced.SessionActorServiceRangeRetry"].AsByte();
+
+    private static readonly TimeSpan s_clientCloseTimeout    = TimeSpan.FromSeconds(10);
 
     public ushort SessionID                                  { get; }
     public uint OfferTime                                    { get; set; }
@@ -86,6 +89,7 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
     private IActorRef _socketSenderRef;
     private bool _isDisposed;
     private bool _stoppedByStrategy;
+    private ICancelable _clientCloseTimer;
 
     // ctor
     public SessionActor(Socket socket, ushort sessionId, IActorRef server, IActorRef actorFactoryRef = null) {
@@ -268,9 +272,13 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
     /// </summary>
     public void Dispose() => Dispose("shutdown");
 
-    private void Dispose(string reason) {
+    private void Dispose(string reason, bool waitForClientClose = false) {
         // Avoid duplicate Dispose calls.
         if (_isDisposed) {
+            // A close that arrives while a logout waits for the client (a kick, a shutdown, the socket closing)
+            // ends the session right away.
+            StopWaitingForClientClose(reason);
+
             return;
         }
 
@@ -295,7 +303,29 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
 
         Sender.Tell("DoneDisposing");
 
+        if (waitForClientClose) {
+            // The client closes its end after the logout echo. The timer only covers a client that never does.
+            Logger.Debug("SessionActor {Id} waiting up to {Seconds}s for the client to close.",
+                Logger.Args(SessionID, s_clientCloseTimeout.TotalSeconds));
+            _clientCloseTimer = Context.System.Scheduler.ScheduleTellOnceCancelable(s_clientCloseTimeout, Self, "ClientCloseTimeout", Self);
+
+            return;
+        }
+
         // Dispose self.
+        ActorRef.Tell(PoisonPill.Instance);
+    }
+
+    private void StopWaitingForClientClose(string reason) {
+        // Also reached from other threads through the public Dispose, so only the actor reference is used.
+        var timer = Interlocked.Exchange(ref _clientCloseTimer, null);
+        if (timer is null) {
+            return;
+        }
+
+        timer.Cancel();
+
+        Logger.Debug("SessionActor {Id} closing after logout, reason={Reason}.", Logger.Args(SessionID, reason));
         ActorRef.Tell(PoisonPill.Instance);
     }
 
@@ -348,6 +378,8 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
     private void ConfigureReceivers() {
         // Specific message handlers.
         Receive<string>(x => x == "Close", x => Dispose(GetCloseReason()));
+        Receive<string>(x => x == "CloseAfterClient", x => Dispose("client logout", waitForClientClose: true));
+        Receive<string>(x => x == "ClientCloseTimeout", x => StopWaitingForClientClose("client did not close"));
         Receive<string>(x => x == "Identify", x => Sender.Tell(this));
         Receive<SERVICE_101_PROTOCOL.MSG_GETALLSERVICES>(InitializeActiveSession);
         Receive<SERVER_100_PROTOCOL.MSG_PING>(x => this.Ping = x.Ping);
@@ -437,6 +469,13 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
     }
 
     private void HandlePacket(IMessage packet) {
+        if (_isDisposed) {
+            Logger.Verbose("SessionActor {Id} dropped {MessageName}: the session is closing.",
+                Logger.Args(SessionID, packet.GetType().Name));
+
+            return;
+        }
+
         // If the session still is not valid (the client hasn't completed the session handshake)
         // we'll cache all non-control messages for later processing.
         if (!SessionValid && packet.ServiceId != 0) {
