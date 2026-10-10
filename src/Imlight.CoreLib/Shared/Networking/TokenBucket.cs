@@ -34,7 +34,7 @@ public class TokenBucket {
         this._maxTokens = maxTokens;
         this._tokensPerSecond = tokensPerSecond;
         this._tokens = _maxTokens;
-        this._lastRefillTime = DateTime.Now;
+        this._lastRefillTime = DateTime.UtcNow;
     }
 
     public bool TryAcquire() {
@@ -53,17 +53,31 @@ public class TokenBucket {
         }
     }
 
+    public void Spend() {
+        lock (_tokenBucketLock) {
+            RefillTokens();
+
+            if (_tokens > 0) {
+                _tokens--;
+            }
+        }
+    }
+
     public int GetFailedAcquisitionCount() 
         => _failedAcquisitionCount;
 
     private void RefillTokens() {
-        DateTime now = DateTime.Now;
+        DateTime now = DateTime.UtcNow;
         double elapsedSeconds = (now - _lastRefillTime).TotalSeconds;
         int tokensToAdd = (int) (elapsedSeconds * _tokensPerSecond);
 
         if (tokensToAdd > 0) {
             _tokens = Math.Min(_tokens + tokensToAdd, _maxTokens);
-            _lastRefillTime = now;
+
+            // The fraction of a token not yet added stays on the clock.
+            _lastRefillTime = _tokens >= _maxTokens
+                ? now
+                : _lastRefillTime.AddSeconds((double) tokensToAdd / _tokensPerSecond);
         }
     }
 

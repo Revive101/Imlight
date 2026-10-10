@@ -36,7 +36,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/09/2026
+ * Last Updated: 10/10/2026
  */
 
 using System;
@@ -57,11 +57,16 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
     private const int MaxFramesPerRead = 1024;
     private const int HexPreviewBytes = 8;
 
+    // Live clients send up to ~220 messages in 10 s on zone entry.
+    private const int DefaultTokenBucketMax = 1000;
+    private const int DefaultTokenBucketPerSecond = 200;
+    private const byte DefaultTokenBucketFailedAcquisitionLimit = 5;
+
     private readonly int _bufferSize = ConfigurationManager.Settings["Advanced.SessionActorBufferSize"].AsInt();
     private readonly bool _closeOnSocketException = ConfigurationManager.Settings["Advanced.SessionActorCloseOnException"].AsBool();
-    private readonly int _tokenBucketMax = ConfigurationManager.Settings["Advanced.SessionTokenBucketMax"].AsInt();
-    private readonly int _tokenBucketPerSecond = ConfigurationManager.Settings["Advanced.SessionTokenBucketPerSecond"].AsInt();
-    private readonly byte _tokenBucketFailedAcquisitionLimit = ConfigurationManager.Settings["Advanced.SessionTokenBucketFailedAcquisitionLimit"].AsByte();
+    private readonly int _tokenBucketMax = ConfigurationManager.GetValue("Advanced.SessionTokenBucketMax", DefaultTokenBucketMax);
+    private readonly int _tokenBucketPerSecond = ConfigurationManager.GetValue("Advanced.SessionTokenBucketPerSecond", DefaultTokenBucketPerSecond);
+    private readonly byte _tokenBucketFailedAcquisitionLimit = ConfigurationManager.GetValue("Advanced.SessionTokenBucketFailedAcquisitionLimit", DefaultTokenBucketFailedAcquisitionLimit);
     private readonly IActorRef _sessionActorRef;
     private readonly Socket _socket;
     private readonly ushort _sessionid;
@@ -192,7 +197,9 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
             }
 
             foreach (var packet in packets) {
-                if (!_tokenBucket.TryAcquire()) {
+                if (IsCriticalPacket(packet)) {
+                    _tokenBucket.Spend();
+                } else if (!_tokenBucket.TryAcquire()) {
                     Logger.Warning("SessionActor {SessionId} failed to acquire token.", Logger.Args(_sessionid));
 
                     // The rate limit was reached.
@@ -263,7 +270,8 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
             or GAME_5_PROTOCOL.MSG_ATTACH
             or GAME_5_PROTOCOL.MSG_QUERY_LOGOUT
             or GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT
-            or LOGIN_7_PROTOCOL.MSG_USER_VALIDATE;
+            or LOGIN_7_PROTOCOL.MSG_USER_VALIDATE
+            or LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_V3;
 
     private static string GetScopedMessageName(IMessage packet)
         => packet
