@@ -126,20 +126,32 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
             return;
         }
 
+        // The sender shares this socket and may have closed it already.
+        if (_socket.SafeHandle.IsClosed) {
+            Dispose();
+
+            return;
+        }
+
         var buffer = new byte[_bufferSize];
-        _socket.ReceiveAsync(new ArraySegment<byte>(buffer), SocketFlags.None)
-            .ContinueWith(t => {
-                if (t.IsFaulted) {
-                    return (object) new SocketReadFailed {
-                        Error = t.Exception?.InnerException ?? t.Exception!
+        try {
+            _socket.ReceiveAsync(new ArraySegment<byte>(buffer), SocketFlags.None)
+                .ContinueWith(t => {
+                    if (t.IsFaulted) {
+                        return (object) new SocketReadFailed {
+                            Error = t.Exception?.InnerException ?? t.Exception!
+                        };
+                    }
+                    return new SocketReadCompleted {
+                        Buffer = buffer,
+                        ByteCount = t.Result
                     };
-                }
-                return new SocketReadCompleted {
-                    Buffer = buffer,
-                    ByteCount = t.Result
-                };
-            })
-            .PipeTo(Self);
+                })
+                .PipeTo(Self);
+        }
+        catch (ObjectDisposedException) {
+            Dispose();
+        }
     }
 
     private void OnSocketReadCompleted(SocketReadCompleted result) {
