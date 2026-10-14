@@ -67,11 +67,9 @@ internal sealed class InteractVendorComponent(ZoneEntity entity) : ZoneEntityCom
     public string DisplayKey      => "GUI_ShopOptionEquipment";
 
     private List<GID> _inventory;
-    private string _shopTitle = "Shop";
+    private string _shopTitle = "Unknown Shop";
     private int _shopType;
     private bool _csrTestShop;
-    private int _furnitureShop;
-    private List<string> _recipeList;
 
     public static bool ShouldAttachToEntity(CoreTemplate template)
         // Attach if the template is an NPC and has an inventory in Dragon database,
@@ -98,11 +96,6 @@ internal sealed class InteractVendorComponent(ZoneEntity entity) : ZoneEntityCom
             }
             _shopType = shoppingBehavior.m_shopType;
             _csrTestShop = shoppingBehavior.m_CSRTestShop;
-            _furnitureShop = shoppingBehavior.m_furnitureShop;
-            _recipeList = shoppingBehavior.m_recipeList;
-
-            _inventory.AddRange(shoppingBehavior.m_shopList.Select(x => (GID) x).ToList());
-            _inventory = _inventory.Distinct().ToList();
         }
     }
 
@@ -129,14 +122,10 @@ internal sealed class InteractVendorComponent(ZoneEntity entity) : ZoneEntityCom
             m_sellModifier = 0.05f,
             m_shopTitle = _shopTitle,
             m_shopList = _inventory,
-            m_furnitureShop = _furnitureShop,
-            m_recipeList = _recipeList,
-
             // Changes the type of currency that is used
             // 0 - Gold
             // 1 - PvP tickets
             m_shopType = _shopType,
-
             // todo: figure this out for QA
             m_CSRTestShop = _csrTestShop,
         };
