@@ -68,8 +68,8 @@ internal sealed class InteractVendorComponent(ZoneEntity entity) : ZoneEntityCom
 
     private List<GID> _inventory;
     private string _shopTitle = "Unknown Shop";
-    private int _shopType;
-    private bool _csrTestShop;
+    private int _shopType = 0;
+    private bool _csrTestShop = false;
 
     public static bool ShouldAttachToEntity(CoreTemplate template)
         // Attach if the template is an NPC and has an inventory in Dragon database,
