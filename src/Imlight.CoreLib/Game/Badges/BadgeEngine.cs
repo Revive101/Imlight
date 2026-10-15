@@ -20,13 +20,15 @@
  * ========================================================================
  *
  * PURPOSE:
- * Changes a character's stored badge state (counters, awards, auto-add rechecks) and reports which badges the client has to be told about.
+ * Changes a character's stored badge state (counters, awards, auto-add rechecks) 
+ * and reports which badges the client has to be told about.
  *
  * USAGE EXAMPLE:
  * var changes = new BadgeEngine(wizard, catalog).Execute(engine => engine.Increment(counterKey, 1));
  *
  * NOTE:
- * Pure logic over the Wizard and the catalog: it persists nothing, sends nothing and runs no results. BadgeService does that with the returned Changes. Counters stop at the highest tier of their family.
+ * Pure logic over the Wizard and the catalog: it persists nothing, sends nothing and runs no results. 
+ * BadgeService does that with the returned Changes. Counters stop at the highest tier of their family.
  *
  * TODO:
  *
@@ -49,7 +51,9 @@ internal sealed class BadgeEngine(Wizard wizard, BadgeCatalog catalog) {
     private readonly ServerBadgeBehavior _state = wizard.BadgeBehavior;
     private bool _stateChanged;
 
-    internal sealed record Changes(IReadOnlyList<IReadOnlyList<BadgeDefinition>> Batches, IReadOnlyList<BadgeDefinition> Completed, bool StateChanged) {
+    internal sealed record Changes(IReadOnlyList<IReadOnlyList<BadgeDefinition>> Batches, 
+                                   IReadOnlyList<BadgeDefinition> Completed, 
+                                   bool StateChanged) {
 
         internal static Changes None { get; } = new([], [], false);
 

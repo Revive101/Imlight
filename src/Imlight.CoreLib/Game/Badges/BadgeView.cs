@@ -47,7 +47,7 @@ namespace Imlight.CoreLib.Game.Badges;
 internal static class BadgeView {
 
     internal static bool IsComplete(ServerBadgeBehavior state, BadgeDefinition definition)
-        => definition.Id == BadgeCatalog.NoTitleId || state.Earned.ContainsKey(definition.Id);
+        => definition.Id == BadgeCatalog.s_noTitleId || state.Earned.ContainsKey(definition.Id);
 
     internal static ulong GetCounter(ServerBadgeBehavior state, BadgeDefinition definition)
         => state.Counters.GetValueOrDefault(BadgeCatalog.GetCounterKey(definition));
@@ -64,7 +64,7 @@ internal static class BadgeView {
     }
 
     internal static List<BadgeDefinition> GetHeld(ServerBadgeBehavior state, BadgeCatalog catalog) {
-        var held = new HashSet<uint> { BadgeCatalog.NoTitleId };
+        var held = new HashSet<uint> { BadgeCatalog.s_noTitleId };
         foreach (var id in state.Earned.Keys) {
             held.Add(id);
         }

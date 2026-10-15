@@ -26,7 +26,10 @@
  * if (BadgeGate.Blocks(template.m_purchaseRequirements, templateId, SessionActor.ActorRef, GetActiveGameObject(), wizard, SessionActor.GetZoneActor())) { ... }
  *
  * NOTE:
- * Only lists that name a badge are enforced, and only for badges the catalog calls earnable: a requirement on a badge no rule or quest awards counts as met, so such an item is not locked forever. The other requirement kinds in purchase lists are not all answered by the server yet, and an unanswered kind evaluates to false, which would deny items that sell today.
+ * Only lists that name a badge are enforced, and only for badges the catalog calls earnable: 
+ * a requirement on a badge no rule or quest awards counts as met, so such an item is not locked forever. 
+ * The other requirement kinds in purchase lists are not all answered by the server yet, 
+ * and an unanswered kind evaluates to false, which would deny items that sell today.
  *
  * TODO:
  * Enforce the other purchase requirement kinds once their handlers exist?

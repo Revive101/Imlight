@@ -26,7 +26,8 @@
  * var names = QuestBadgeAwards.Find(QuestTemplateCollection.GetAllQuests());
  *
  * NOTE:
- * Walks the start and end results of a quest and the activate and complete results of its goals, into every nested result list (conditionals, random results, ...). Dialog results are not walked.
+ * Walks the start and end results of a quest and the activate and complete results of its goals, 
+ * into every nested result list (conditionals, random results, ...). Dialog results are not walked.
  *
  * TODO:
  *

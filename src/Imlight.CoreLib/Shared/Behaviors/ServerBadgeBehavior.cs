@@ -20,13 +20,13 @@
  * ========================================================================
  *
  * PURPOSE:
- * Persisted per-character badge state: kill counters, earned badges, the displayed badge and the lists of the client's BadgeBehavior blob.
  *
  * USAGE EXAMPLE:
  * wizard.BadgeBehavior.Counters[counterKey] = 3;
  *
  * NOTE:
- * Earned is concurrent because purchase gates and requirement handlers on other actors read it while BadgeService writes it. The three reward and new-badge lists make up the m_badgeData string of the client's BadgeBehavior in the player object.
+ * Earned is concurrent because purchase gates and requirement handlers on other actors read it while BadgeService writes it. 
+ * The three reward and new-badge lists make up the m_badgeData string of the client's BadgeBehavior in the player object.
  *
  * TODO:
  *
@@ -49,8 +49,7 @@ public class ServerBadgeBehavior : IClientBehaviorProvider<BadgeBehavior> {
 
     public static readonly TimeSpan NewBadgeLifetime = TimeSpan.FromHours(48);
 
-    // The blob string holds at most 65535 bytes.
-    public const int MaxNewBadges = 200;
+    public const int MAX_NEW_BADGES = 200;
 
     [JsonIgnore] public bool NoTransfer { get; set; } = false;
 
@@ -63,16 +62,18 @@ public class ServerBadgeBehavior : IClientBehaviorProvider<BadgeBehavior> {
     public List<uint> PendingOvercount { get; set; } = [];
 
     /// <summary>
-    /// The new badges the client still lists: not older than <see cref="NewBadgeLifetime"/>, at most <see cref="MaxNewBadges"/> of the newest.
+    /// The new badges the client still lists: not older than <see cref="NewBadgeLifetime"/>, 
+    /// at most <see cref="MAX_NEW_BADGES"/> of the newest.
     /// </summary>
     public List<NewBadgeEntry> GetRecentNewBadges(DateTimeOffset now) {
         var oldest = now.Subtract(NewBadgeLifetime).ToUnixTimeSeconds();
 
-        return [.. NewBadges.Where(entry => entry.Time >= oldest).TakeLast(MaxNewBadges)];
+        return [.. NewBadges.Where(entry => entry.Time >= oldest).TakeLast(MAX_NEW_BADGES)];
     }
 
     public void AddNewBadge(NewBadgeEntry entry, DateTimeOffset now) {
-        // The zone service reads these lists while the badge service writes, so they are replaced, never changed in place.
+        // The zone service reads these lists while the badge service writes, 
+        // so they are replaced, never changed in place.
         NewBadges = [.. NewBadges, entry];
         PruneNewBadges(now);
     }
@@ -82,7 +83,8 @@ public class ServerBadgeBehavior : IClientBehaviorProvider<BadgeBehavior> {
     public BadgeBehavior GetClientBehaviorInstance() {
         var badgeData = new BadgeData {
             ClaimedRewards = ClaimedRewards,
-            NewBadges = [.. GetRecentNewBadges(DateTimeOffset.UtcNow).Select(entry => new BadgeData.NewBadge(entry.BadgeId, entry.Time))],
+            NewBadges = [.. GetRecentNewBadges(DateTimeOffset.UtcNow)
+                        .Select(entry => new BadgeData.NewBadge(entry.BadgeId, entry.Time))],
             PendingOvercountRewards = PendingOvercount,
         };
 

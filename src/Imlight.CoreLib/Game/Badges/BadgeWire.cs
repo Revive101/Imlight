@@ -26,7 +26,9 @@
  * foreach (var message in BadgeWire.Build(wizard, BadgeCatalog.Current, entries, full: true)) { SendToSocket(message); }
  *
  * NOTE:
- * BadgeInfo and BadgeFilterInfo are zlib-compressed serialized lists with the uncompressed length in front. A list too large for one string is cut into MSG_BADGESEGMENT chunks of one compressed stream; the last chunk travels in MSG_BADGES. Every message carries the complete filter list of the held badges.
+ * BadgeInfo and BadgeFilterInfo are zlib-compressed serialized lists with the uncompressed length in front. 
+ * A list too large for one string is cut into MSG_BADGESEGMENT chunks of one compressed stream; the last chunk travels in MSG_BADGES. 
+ * Every message carries the complete filter list of the held badges.
  *
  * TODO:
  *
@@ -53,7 +55,6 @@ internal static class BadgeWire {
 
     internal const int MaxChunkBytes = 30000;
     internal const int MaxChunks = 255;
-
     private const uint SerializationFlags = 4;
 
     internal static List<IMessage> Build(Wizard wizard, BadgeCatalog catalog, IReadOnlyCollection<BadgeDefinition> entries, bool full) {
@@ -107,7 +108,7 @@ internal static class BadgeWire {
     }
 
     private static uint GetCurrentBadge(ServerBadgeBehavior state, BadgeCatalog catalog)
-        => state.SelectedBadgeId != 0 && catalog.TryGet(state.SelectedBadgeId, out _) ? state.SelectedBadgeId : BadgeCatalog.NoTitleId;
+        => state.SelectedBadgeId != 0 && catalog.TryGet(state.SelectedBadgeId, out _) ? state.SelectedBadgeId : BadgeCatalog.s_noTitleId;
 
     private static IEnumerable<BadgeFilterInfo> GetHeldFilters(ServerBadgeBehavior state, BadgeCatalog catalog)
         => BadgeView.GetHeld(state, catalog)

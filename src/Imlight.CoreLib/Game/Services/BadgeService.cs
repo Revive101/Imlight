@@ -61,7 +61,6 @@ namespace Imlight.CoreLib.Game.Services;
 
 internal class BadgeService(SessionActor sessionActor) : MessageService(sessionActor) {
 
-    // The client compares the Error of a refused MSG_SELECT_BADGE with these hashes.
     private static readonly uint s_selectBadgeError = StringHash.Compute("SelectBadgeError");
     private static readonly uint s_badgeDoesNotExist = StringHash.Compute("BadgeDoesNotExist");
     private static readonly uint s_badgeNotComplete = StringHash.Compute("BadgeNotComplete");
@@ -159,7 +158,7 @@ internal class BadgeService(SessionActor sessionActor) : MessageService(sessionA
 
         var wizard = GetActiveWizard();
         var state = wizard.BadgeBehavior;
-        var requestedId = message.BadgeNameID == BadgeCatalog.NoTitleId ? 0 : message.BadgeNameID;
+        var requestedId = message.BadgeNameID == BadgeCatalog.s_noTitleId ? 0 : message.BadgeNameID;
 
         // The client re-sends its current badge when a PvP duel starts, so the current selection is a no-op.
         if (requestedId == state.SelectedBadgeId && TitleMatchesSelection(wizard, catalog)) {
@@ -207,7 +206,7 @@ internal class BadgeService(SessionActor sessionActor) : MessageService(sessionA
         var target = message.RequestedID == wizard.CharId ? wizard : WizardCollection.GetCharacterUnloaded(message.RequestedID);
 
         // Nothing selected (or an unknown character) shows the "Display no badge title" description.
-        catalog.TryGet(BadgeCatalog.NoTitleId, out var noTitle);
+        catalog.TryGet(BadgeCatalog.s_noTitleId, out var noTitle);
         var title = noTitle?.Title ?? string.Empty;
         var info = noTitle?.Info ?? string.Empty;
         if (target?.BadgeBehavior is not null && catalog.TryGet(target.BadgeBehavior.SelectedBadgeId, out var selected)) {
@@ -360,7 +359,7 @@ internal class BadgeService(SessionActor sessionActor) : MessageService(sessionA
 
     private void CommandList(Wizard wizard, BadgeCatalog catalog) {
         var state = wizard.BadgeBehavior;
-        var held = BadgeView.GetHeld(state, catalog).Where(d => d.Id != BadgeCatalog.NoTitleId).ToList();
+        var held = BadgeView.GetHeld(state, catalog).Where(d => d.Id != BadgeCatalog.s_noTitleId).ToList();
         if (held.Count == 0) {
             CommandReply("You hold no badges.");
 
@@ -393,7 +392,8 @@ internal class BadgeService(SessionActor sessionActor) : MessageService(sessionA
     private static string DescribeBadge(BadgeDefinition definition)
         => string.IsNullOrEmpty(definition.DisplayName) ? definition.Id.ToString(CultureInfo.InvariantCulture) : $"{definition.DisplayName} ({definition.Id})";
 
-    private static uint GetClientBadgeId(uint selectedBadgeId) => selectedBadgeId != 0 ? selectedBadgeId : BadgeCatalog.NoTitleId;
+    private static uint GetClientBadgeId(uint selectedBadgeId) 
+        => selectedBadgeId != 0 ? selectedBadgeId : BadgeCatalog.s_noTitleId;
 
     private static bool TitleMatchesSelection(Wizard wizard, BadgeCatalog catalog) {
         // A title set by the mod badge command is not a selection, so choosing no title still clears it.

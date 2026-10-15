@@ -40,6 +40,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using Imcodec.Cryptography;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
@@ -50,11 +51,10 @@ namespace Imlight.CoreLib.Game.Badges;
 
 internal sealed class BadgeCatalog {
 
-    internal const string NoTitleBadgeName = "NoTitle";
-    internal static readonly uint NoTitleId = StringHash.Compute(NoTitleBadgeName);
+    internal const string NO_TITLE_BADGE_NAME = "NoTitle";
+    internal static readonly uint s_noTitleId = StringHash.Compute(NO_TITLE_BADGE_NAME);
 
-    private static readonly object s_lock = new();
-    private static BadgeCatalog s_current;
+    private static readonly Lock s_lock = new();
 
     private readonly Dictionary<uint, BadgeDefinition> _byId = [];
     private readonly Dictionary<uint, uint> _filterIndexById = [];
@@ -63,25 +63,24 @@ internal sealed class BadgeCatalog {
     private readonly Dictionary<string, List<string>> _counterKeysByAdjective = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<uint> _earnable = [];
 
-    private BadgeCatalog() { }
-
-    internal sealed record BadgeFilter(uint Id, string Name, int Total, int ExtraCredit);
-
-    internal static BadgeCatalog Current {
-        get {
-            lock (s_lock) {
-                return s_current ??= Create(BadgeDefinitionCollection.GetAll(), QuestTemplateCollection.GetAllQuests());
-            }
-        }
-    }
-
     internal bool IsReady { get; private set; }
     internal int Count => Records.Count;
     internal IReadOnlyList<BadgeDefinition> Records { get; private set; } = [];
     internal IReadOnlyList<BadgeFilter> Filters { get; private set; } = [];
     internal IReadOnlyList<BadgeDefinition> AutoAddRecords { get; private set; } = [];
 
-    internal static BadgeCatalog Create(IEnumerable<BadgeDefinition> definitions) => Create(definitions, []);
+    internal sealed record BadgeFilter(uint Id, string Name, int Total, int ExtraCredit);
+
+    internal static BadgeCatalog Current {
+        get {
+            lock (s_lock) {
+                return field ??= Create(BadgeDefinitionCollection.GetAll(), QuestTemplateCollection.GetAllQuests());
+            }
+        }
+    }
+
+    internal static BadgeCatalog Create(IEnumerable<BadgeDefinition> definitions) 
+        => Create(definitions, []);
 
     internal static BadgeCatalog Create(IEnumerable<BadgeDefinition> definitions, IEnumerable<QuestTemplate> quests) {
         var catalog = new BadgeCatalog();
@@ -95,9 +94,11 @@ internal sealed class BadgeCatalog {
             : !string.IsNullOrEmpty(definition.ProgressInfo) ? definition.ProgressInfo
             : definition.Id.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
-    internal static uint GetFilterId(BadgeDefinition definition) => StringHash.Compute(definition.Filter);
+    internal static uint GetFilterId(BadgeDefinition definition)
+        => StringHash.Compute(definition.Filter);
 
-    internal bool TryGet(uint id, out BadgeDefinition definition) => _byId.TryGetValue(id, out definition);
+    internal bool TryGet(uint id, out BadgeDefinition definition)
+        => _byId.TryGetValue(id, out definition);
 
     internal bool TryGetByName(string name, out BadgeDefinition definition) {
         definition = null;
@@ -105,11 +106,14 @@ internal sealed class BadgeCatalog {
         return !string.IsNullOrEmpty(name) && _byId.TryGetValue(StringHash.Compute(name), out definition);
     }
 
-    internal bool IsEarnable(uint id) => _earnable.Contains(id);
+    internal bool IsEarnable(uint id)
+        => _earnable.Contains(id);
 
-    internal bool TryGetFilter(uint filterId, out BadgeFilter filter) => _filtersById.TryGetValue(filterId, out filter);
+    internal bool TryGetFilter(uint filterId, out BadgeFilter filter)
+        => _filtersById.TryGetValue(filterId, out filter);
 
-    internal uint GetFilterIndex(uint id) => _filterIndexById.GetValueOrDefault(id);
+    internal uint GetFilterIndex(uint id)
+        => _filterIndexById.GetValueOrDefault(id);
 
     internal IReadOnlyList<BadgeDefinition> GetFamily(string counterKey)
         => _familiesByCounterKey.TryGetValue(counterKey ?? string.Empty, out var family) ? family : [];
@@ -177,11 +181,12 @@ internal sealed class BadgeCatalog {
         AutoAddRecords = [.. Records.Where(d => d.AutoAdd && d.Requirements is not null)];
         BuildEarnable(quests);
 
-        IsReady = Records.Count > 0 && _byId.ContainsKey(NoTitleId);
+        IsReady = Records.Count > 0 && _byId.ContainsKey(s_noTitleId);
         if (!IsReady) {
             Logger.Error("Badge catalog is not ready: {0} badge definitions and the {1} record is {2}. Badges are not sent.",
-                Logger.Args(Records.Count, NoTitleBadgeName, _byId.ContainsKey(NoTitleId) ? "present" : "missing"));
-        } else {
+                Logger.Args(Records.Count, NO_TITLE_BADGE_NAME, _byId.ContainsKey(s_noTitleId) ? "present" : "missing"));
+        }
+        else {
             Logger.Information("Badge catalog: {0} of {1} badges can be earned.", Logger.Args(EarnableCount, Records.Count));
         }
     }
@@ -223,12 +228,15 @@ internal sealed class BadgeCatalog {
     }
 
     private void BuildEarnable(IEnumerable<QuestTemplate> quests) {
-        // A badge is earnable when Imlight has a way to award it: a kill counter, an auto-add rule, a quest result or another earnable badge's result.
+        // A badge is earnable when Imlight has a way to award it: a kill counter, 
+        // an auto-add rule, a quest result or another earnable badge's result.
         var killCounterKeys = _counterKeysByAdjective.Values.SelectMany(keys => keys).ToHashSet(StringComparer.Ordinal);
         var questAwarded = QuestBadgeAwards.Find(quests).Select(StringHash.Compute).ToHashSet();
         var autoAdded = AutoAddRecords.Select(d => d.Id).ToHashSet();
         foreach (var definition in Records.Where(d => !d.Retired)) {
-            if ((definition.Max > 0 && killCounterKeys.Contains(GetCounterKey(definition))) || autoAdded.Contains(definition.Id) || questAwarded.Contains(definition.Id)) {
+            if ((definition.Max > 0 && killCounterKeys.Contains(GetCounterKey(definition)))
+              || autoAdded.Contains(definition.Id)
+              || questAwarded.Contains(definition.Id)) {
                 _earnable.Add(definition.Id);
             }
         }
@@ -253,7 +261,9 @@ internal sealed class BadgeCatalog {
             }
 
             family.Add(definition);
-            foreach (var adjective in definition.Adjectives.Where(a => !string.IsNullOrEmpty(a)).Distinct(StringComparer.OrdinalIgnoreCase)) {
+            foreach (var adjective in definition.Adjectives
+                                                .Where(a => !string.IsNullOrEmpty(a))
+                                                .Distinct(StringComparer.OrdinalIgnoreCase)) {
                 if (!_counterKeysByAdjective.TryGetValue(adjective, out var keys)) {
                     keys = [];
                     _counterKeysByAdjective[adjective] = keys;
