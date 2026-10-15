@@ -79,8 +79,15 @@ public class ServerBadgeBehavior : IClientBehaviorProvider<BadgeBehavior> {
 
     public void PruneNewBadges(DateTimeOffset now) => NewBadges = GetRecentNewBadges(now);
 
-    public BadgeBehavior GetClientBehaviorInstance()
-        => new() { m_badgeData = BadgeDataBlob.Encode(ClaimedRewards, GetRecentNewBadges(DateTimeOffset.UtcNow), PendingOvercount) };
+    public BadgeBehavior GetClientBehaviorInstance() {
+        var badgeData = new BadgeData {
+            ClaimedRewards = ClaimedRewards,
+            NewBadges = [.. GetRecentNewBadges(DateTimeOffset.UtcNow).Select(entry => new BadgeData.NewBadge(entry.BadgeId, entry.Time))],
+            PendingOvercountRewards = PendingOvercount,
+        };
+
+        return new() { m_badgeData = badgeData.ToByteString() };
+    }
 
     public void Reset() {
         Counters.Clear();
