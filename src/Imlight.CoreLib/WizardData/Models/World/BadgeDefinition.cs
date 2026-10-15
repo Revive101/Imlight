@@ -70,6 +70,5 @@ public class BadgeDefinition {
     public RequirementList Requirements { get; set; }
     public List<uint> RequiredAutoAddBadges { get; set; } = [];
     public ResultList CompleteResults { get; set; }
-    public string Source { get; set; } = string.Empty;
 
 }
