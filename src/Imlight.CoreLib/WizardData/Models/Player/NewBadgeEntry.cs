@@ -20,13 +20,13 @@
  * ========================================================================
  *
  * PURPOSE:
- * One completed badge of a character: when it was completed and its place in the award order.
+ * A badge the client has been told about and when; the entries back the client's New tab.
  *
  * USAGE EXAMPLE:
- * wizard.BadgeBehavior.Earned[badgeId] = new EarnedBadge { AwardSequence = 1, CompletedAtUnix = now };
+ * wizard.BadgeBehavior.NewBadges.Add(new NewBadgeEntry { BadgeId = id, Time = now });
  *
  * NOTE:
- *
+ * The client never removes entries from this list, so the server expires them.
  *
  * TODO:
  *
@@ -35,11 +35,11 @@
  * Last Updated: 10/14/2026
  */
 
-namespace Imlight.CoreLib.Shared.Behaviors;
+namespace Imlight.CoreLib.WizardData.Models.Player;
 
-public class EarnedBadge {
+public class NewBadgeEntry {
 
-    public uint AwardSequence { get; set; }
-    public long CompletedAtUnix { get; set; }
+    public uint BadgeId { get; set; }
+    public uint Time { get; set; }
 
 }
