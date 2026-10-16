@@ -61,11 +61,11 @@ namespace Imlight.CoreLib.Game.Services;
 
 internal class BadgeService(SessionActor sessionActor) : MessageService(sessionActor) {
 
+    private const int MAX_LISTED_BADGES = 25;
+
     private static readonly uint s_selectBadgeError = StringHash.Compute("SelectBadgeError");
     private static readonly uint s_badgeDoesNotExist = StringHash.Compute("BadgeDoesNotExist");
     private static readonly uint s_badgeNotComplete = StringHash.Compute("BadgeNotComplete");
-
-    private const int MaxListedBadges = 25;
 
     private readonly HashSet<uint> _warnedUnknownBadges = [];
 
@@ -81,7 +81,7 @@ internal class BadgeService(SessionActor sessionActor) : MessageService(sessionA
 
         // An award that is due at login is already in the full list, so the changes are not sent on their own.
         var wizard = GetActiveWizard();
-        var changes = new BadgeEngine(wizard, catalog).Execute(engine => engine.Recheck(definition => MeetsRequirements(wizard, definition)));
+        var changes = Recheck(wizard, catalog);
         FinishChanges(wizard, changes, sendBatches: false);
 
         SendFullList(wizard, catalog);
@@ -95,16 +95,14 @@ internal class BadgeService(SessionActor sessionActor) : MessageService(sessionA
         }
 
         var wizard = GetActiveWizard();
-        var engine = new BadgeEngine(wizard, catalog);
         var changes = message.Kind switch {
-            BadgeEventKind.Award => engine.Execute(e => e.Award(message.BadgeId)),
-            BadgeEventKind.Recheck => engine.Execute(e => e.Recheck(definition => MeetsRequirements(wizard, definition))),
+            BadgeEventKind.Award => new BadgeEngine(wizard, catalog).Execute(engine => engine.Award(message.BadgeId)),
+            BadgeEventKind.Recheck => Recheck(wizard, catalog),
             _ => BadgeEngine.Changes.None
         };
 
-        if (message.Kind == BadgeEventKind.Award && !catalog.TryGet(message.BadgeId, out _) && _warnedUnknownBadges.Add(message.BadgeId)) {
-            Logger.Warning("Badge {0} is not in the badge catalog and was not awarded to {1}.",
-                Logger.Args(message.BadgeId, wizard.CharId));
+        if (message.Kind == BadgeEventKind.Award) {
+            WarnIfUnknown(wizard, catalog, message.BadgeId);
         }
 
         FinishChanges(wizard, changes, sendBatches: true);
@@ -122,19 +120,7 @@ internal class BadgeService(SessionActor sessionActor) : MessageService(sessionA
             return;
         }
 
-        // Each defeated mob advances a counter once, however many of its adjectives name that counter.
-        var kills = new Dictionary<string, ulong>(StringComparer.Ordinal);
-        foreach (var templateId in message.MobTemplateIds) {
-            if (CoreObjectFactory.GetCoreTemplate(templateId) is not GameObjectTemplate mob) {
-                continue;
-            }
-
-            var adjectives = mob.m_adjectiveList?.Where(a => !a.IsEmpty).Select(a => (string) a) ?? [];
-            foreach (var counterKey in catalog.GetCounterKeysForAdjectives(adjectives)) {
-                kills[counterKey] = kills.GetValueOrDefault(counterKey) + 1;
-            }
-        }
-
+        var kills = CountKills(catalog, message.MobTemplateIds);
         if (kills.Count == 0) {
             return;
         }
@@ -168,15 +154,13 @@ internal class BadgeService(SessionActor sessionActor) : MessageService(sessionA
         }
 
         BadgeDefinition chosen = null;
-        if (requestedId != 0) {
-            var error = GetSelectionError(state, catalog, requestedId, out chosen);
-            if (error != 0) {
-                Logger.Warning("{0} could not select badge {1}, error {2}.",
-                    Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), requestedId, error));
-                SendToSocket(new GAME_5_PROTOCOL.MSG_SELECT_BADGE { BadgeNameID = message.BadgeNameID, Error = error });
+        var error = requestedId != 0 ? GetSelectionError(state, catalog, requestedId, out chosen) : 0;
+        if (error != 0) {
+            Logger.Warning("{0} could not select badge {1}, error {2}.",
+                Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), requestedId, error));
+            SendToSocket(new GAME_5_PROTOCOL.MSG_SELECT_BADGE { BadgeNameID = message.BadgeNameID, Error = error });
 
-                return;
-            }
+            return;
         }
 
         state.SelectedBadgeId = requestedId;
@@ -205,20 +189,13 @@ internal class BadgeService(SessionActor sessionActor) : MessageService(sessionA
 
         var target = message.RequestedID == wizard.CharId ? wizard : WizardCollection.GetCharacterUnloaded(message.RequestedID);
 
-        // Nothing selected (or an unknown character) shows the "Display no badge title" description.
-        catalog.TryGet(BadgeCatalog.s_noTitleId, out var noTitle);
-        var title = noTitle?.Title ?? string.Empty;
-        var info = noTitle?.Info ?? string.Empty;
-        if (target?.BadgeBehavior is not null && catalog.TryGet(target.BadgeBehavior.SelectedBadgeId, out var selected)) {
-            title = selected.Title;
-            info = selected.Info;
-        }
+        var displayed = GetDisplayedBadge(catalog, target);
 
         SendToSocket(new WIZARD3_56_PROTOCOL.MSG_REQUESTPLAYERBADGE {
             GlobalID = 0,
             RequestedID = message.RequestedID,
-            BadgeName = title,
-            BadgeDescription = info
+            BadgeName = displayed?.Title ?? string.Empty,
+            BadgeDescription = displayed?.Info ?? string.Empty
         });
     }
 
@@ -328,11 +305,7 @@ internal class BadgeService(SessionActor sessionActor) : MessageService(sessionA
         => SendToSocket(new EXTENDEDBASE_2_PROTOCOL.MSG_SERVERMESSAGE { Message = text, Modal = 0 });
 
     private void CommandGrant(Wizard wizard, BadgeCatalog catalog, string idOrName) {
-        BadgeDefinition definition;
-        var found = uint.TryParse(idOrName, NumberStyles.None, CultureInfo.InvariantCulture, out var id)
-            ? catalog.TryGet(id, out definition)
-            : catalog.TryGetByName(idOrName, out definition);
-        if (!found) {
+        if (!TryFindBadge(catalog, idOrName, out var definition)) {
             CommandReply($"No badge matches '{idOrName}'.");
 
             return;
@@ -340,7 +313,9 @@ internal class BadgeService(SessionActor sessionActor) : MessageService(sessionA
 
         var changes = new BadgeEngine(wizard, catalog).Execute(engine => engine.Award(definition.Id));
         FinishChanges(wizard, changes, sendBatches: true);
-        CommandReply(changes.Completed.Count > 0
+
+        var granted = changes.Completed.Count > 0;
+        CommandReply(granted
             ? $"Granted {DescribeBadge(definition)}."
             : $"{DescribeBadge(definition)} was not granted: it is already earned or retired.");
     }
@@ -366,13 +341,13 @@ internal class BadgeService(SessionActor sessionActor) : MessageService(sessionA
             return;
         }
 
-        foreach (var definition in held.Take(MaxListedBadges)) {
-            var progress = BadgeView.IsComplete(state, definition) ? "complete" : $"{BadgeView.GetProgress(state, definition)}/{definition.Max}";
+        foreach (var definition in held.Take(MAX_LISTED_BADGES)) {
+            var progress = DescribeProgress(state, definition);
             CommandReply($"{DescribeBadge(definition)}: {definition.Description} [{progress}]");
         }
 
-        if (held.Count > MaxListedBadges) {
-            CommandReply($"... and {held.Count - MaxListedBadges} more.");
+        if (held.Count > MAX_LISTED_BADGES) {
+            CommandReply($"... and {held.Count - MAX_LISTED_BADGES} more.");
         }
     }
 
@@ -389,10 +364,60 @@ internal class BadgeService(SessionActor sessionActor) : MessageService(sessionA
         CommandReply("Your badges were reset.");
     }
 
+    private BadgeEngine.Changes Recheck(Wizard wizard, BadgeCatalog catalog)
+        => new BadgeEngine(wizard, catalog).Execute(engine => engine.Recheck(definition => MeetsRequirements(wizard, definition)));
+
+    private void WarnIfUnknown(Wizard wizard, BadgeCatalog catalog, uint badgeId) {
+        if (catalog.TryGet(badgeId, out _) || !_warnedUnknownBadges.Add(badgeId)) {
+            return;
+        }
+
+        Logger.Warning("Badge {0} is not in the badge catalog and was not awarded to {1}.",
+            Logger.Args(badgeId, wizard.CharId));
+    }
+
+    private static Dictionary<string, ulong> CountKills(BadgeCatalog catalog, IEnumerable<ulong> mobTemplateIds) {
+        // Each defeated mob advances a counter once, however many of its adjectives name that counter.
+        var kills = new Dictionary<string, ulong>(StringComparer.Ordinal);
+        foreach (var templateId in mobTemplateIds) {
+            if (CoreObjectFactory.GetCoreTemplate(templateId) is not GameObjectTemplate mob) {
+                continue;
+            }
+
+            var adjectives = mob.m_adjectiveList?.Where(a => !a.IsEmpty).Select(a => (string) a) ?? [];
+            foreach (var counterKey in catalog.GetCounterKeysForAdjectives(adjectives)) {
+                kills[counterKey] = kills.GetValueOrDefault(counterKey) + 1;
+            }
+        }
+
+        return kills;
+    }
+
+    private static BadgeDefinition GetDisplayedBadge(BadgeCatalog catalog, Wizard target) {
+        // Nothing selected (or an unknown character) shows the "Display no badge title" description.
+        var selectedId = target?.BadgeBehavior?.SelectedBadgeId ?? 0;
+        if (catalog.TryGet(selectedId, out var selected)) {
+            return selected;
+        }
+
+        catalog.TryGet(BadgeCatalog.s_noTitleId, out var noTitle);
+
+        return noTitle;
+    }
+
+    private static bool TryFindBadge(BadgeCatalog catalog, string idOrName, out BadgeDefinition definition) {
+        var isId = uint.TryParse(idOrName, NumberStyles.None, CultureInfo.InvariantCulture, out var id);
+
+        return isId ? catalog.TryGet(id, out definition) : catalog.TryGetByName(idOrName, out definition);
+    }
+
+    private static string DescribeProgress(ServerBadgeBehavior state, BadgeDefinition definition)
+        => BadgeView.IsComplete(state, definition) ? "complete" : $"{BadgeView.GetProgress(state, definition)}/{definition.Max}";
+
     private static string DescribeBadge(BadgeDefinition definition)
         => string.IsNullOrEmpty(definition.DisplayName) ? definition.Id.ToString(CultureInfo.InvariantCulture) : $"{definition.DisplayName} ({definition.Id})";
 
-    private static uint GetClientBadgeId(uint selectedBadgeId) 
+    private static uint GetClientBadgeId(uint selectedBadgeId)
         => selectedBadgeId != 0 ? selectedBadgeId : BadgeCatalog.s_noTitleId;
 
     private static bool TitleMatchesSelection(Wizard wizard, BadgeCatalog catalog) {

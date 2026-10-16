@@ -47,9 +47,9 @@ namespace Imlight.CoreLib.Shared.Behaviors;
 
 public class ServerBadgeBehavior : IClientBehaviorProvider<BadgeBehavior> {
 
-    public static readonly TimeSpan NewBadgeLifetime = TimeSpan.FromHours(48);
-
     public const int MAX_NEW_BADGES = 200;
+
+    public static readonly TimeSpan NewBadgeLifetime = TimeSpan.FromHours(48);
 
     [JsonIgnore] public bool NoTransfer { get; set; } = false;
 
@@ -68,7 +68,8 @@ public class ServerBadgeBehavior : IClientBehaviorProvider<BadgeBehavior> {
     public List<NewBadgeEntry> GetRecentNewBadges(DateTimeOffset now) {
         var oldest = now.Subtract(NewBadgeLifetime).ToUnixTimeSeconds();
 
-        return [.. NewBadges.Where(entry => entry.Time >= oldest).TakeLast(MAX_NEW_BADGES)];
+        return [.. NewBadges.Where(entry => entry.Time >= oldest)
+                            .TakeLast(MAX_NEW_BADGES)];
     }
 
     public void AddNewBadge(NewBadgeEntry entry, DateTimeOffset now) {
@@ -84,7 +85,7 @@ public class ServerBadgeBehavior : IClientBehaviorProvider<BadgeBehavior> {
         var badgeData = new BadgeData {
             ClaimedRewards = ClaimedRewards,
             NewBadges = [.. GetRecentNewBadges(DateTimeOffset.UtcNow)
-                        .Select(entry => new BadgeData.NewBadge(entry.BadgeId, entry.Time))],
+                           .Select(entry => new BadgeData.NewBadge(entry.BadgeId, entry.Time))],
             PendingOvercountRewards = PendingOvercount,
         };
 
