@@ -52,6 +52,7 @@ using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.CoreLib.Game.Badges;
 using Imlight.CoreLib.Game.Pet;
+using Imlight.CoreLib.Game.Rentals;
 using Imlight.CoreLib.Game.Zone.Components;
 using Imlight.CoreLib.Game.WizBang;
 
@@ -110,6 +111,15 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
 
         if (BadgeGate.Blocks(template?.m_purchaseRequirements, itemTemplateID, SessionActor.ActorRef, GetActiveGameObject(), playerWizard, SessionActor.GetZoneActor())) {
             Logger.Warning("{0} tried to buy item {1} without the badge it requires.",
+                Logger.Args(playerWizard.PlayerNameBehavior.GetWizardName(), itemTemplateID));
+            SendShopDenyMessage();
+
+            return;
+        }
+
+        // The client refuses a second rental of one type; a forged or racing request gets the same answer.
+        if (RentalItems.TryGetRentalTemplate(template, out var rentalTemplate) && RentalItems.OwnsType(playerWizard, rentalTemplate)) {
+            Logger.Warning("{0} tried to buy rental {1} while owning a rental of the same type.",
                 Logger.Args(playerWizard.PlayerNameBehavior.GetWizardName(), itemTemplateID));
             SendShopDenyMessage();
 

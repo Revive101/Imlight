@@ -16,12 +16,15 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Operations;
+using Raven.Client.Exceptions;
 using Imlight.Common;
 using Imlight.CoreLib.Game.Pet;
+using Imlight.CoreLib.Game.Rentals;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models.Player;
@@ -269,6 +272,38 @@ public static class WizardItemCollection {
         session.SaveChanges();
 
         return true;
+    }
+
+    /// <summary>
+    /// Saves the expiry of a started rental onto its stored item.
+    /// </summary>
+    /// <param name="item">The rental item.</param>
+    /// <param name="expireTime">The absolute expiry, in Unix seconds.</param>
+    /// <returns>True if the item was found and saved, false otherwise.</returns>
+    public static bool SetRentalExpireTime(WizClientObjectItem item, uint expireTime) {
+        try {
+            using var session = s_store.OpenSession();
+
+            // A freshly granted item is often equipped within seconds, so wait for the index to catch up.
+            var associatedItem = session.Query<WizClientObjectItem>(collectionName: CollectionName)
+                .Customize(query => query.WaitForNonStaleResults())
+                .FirstOrDefault(x => x.m_globalID == item.m_globalID && x.m_characterId == item.m_characterId);
+            if (associatedItem is null || !RentalItems.TryGetBehavior(associatedItem, out var behavior)) {
+                Logger.Error("Failed to persist rental expiry of item {0}: the stored item or its rental behavior was not found.",
+                    Logger.Args(item.m_globalID.Full));
+
+                return false;
+            }
+
+            behavior.m_expireTime = expireTime;
+            session.SaveChanges();
+
+            return true;
+        } catch (Exception ex) when (ex is TimeoutException or RavenException) {
+            Logger.Error("Failed to persist rental expiry of item {0}: {1}", Logger.Args(item.m_globalID.Full, ex.Message));
+
+            return false;
+        }
     }
 
     /// <summary>

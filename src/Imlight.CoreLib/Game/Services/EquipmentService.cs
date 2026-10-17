@@ -44,6 +44,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Akka.Actor;
 using Imcodec.CoreObject;
 using Imcodec.IO;
@@ -58,6 +59,7 @@ using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Misc;
 using Imlight.CoreLib.Game.Pet;
+using Imlight.CoreLib.Game.Rentals;
 using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Services;
@@ -74,6 +76,9 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
     );
     private static readonly bool s_hidePetWhileMounted
         = ConfigurationManager.Settings["Character.HidePetWhileMounted"].AsBool();
+    private const long EXPIRED_RENTAL_GRACE_SECONDS = 60;
+
+    private readonly Dictionary<ulong, long> _expiredRentals = [];
     private ulong _summonedPetId;
 
     internal static bool HidePetWhileMounted => s_hidePetWhileMounted;
@@ -124,12 +129,24 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
 
         var item = wizard.InventoryBehavior.GetItem(itemId);
         if (item is null) {
+            // The client may have clicked in the moment its rental ran out.
+            if (WasRentalJustExpired(itemId)) {
+                return;
+            }
+
             var infractionText = $"Player tried to equip item {itemId} that they do not have in their inventory!";
             account.AddInfraction(InfractionType.SuspiciousBehavior, infractionText);
 
             Logger.Warning("Player tried to equip item {0} that they do not have in their inventory."
                         + " This has been logged as suspicious behavior.",
                 Logger.Args(itemId));
+
+            return;
+        }
+
+        if (RentalItems.TryGetBehavior(item, out var rental) && RentalItems.IsDue(rental, DateTimeOffset.UtcNow.ToUnixTimeSeconds())) {
+            Logger.Debug("Player tried to equip rental {0}, which has run out.", Logger.Args(itemId));
+            TellOtherServices(new CHARACTER_103_PROTOCOL.MSG_CHECKRENTALS());
 
             return;
         }
@@ -155,6 +172,10 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
 
         SendEquipItem(item, message.SlotName);
         SendAddEffects(effects);
+
+        if (RentalItems.TryGetBehavior(item, out _)) {
+            TellOtherServices(new CHARACTER_103_PROTOCOL.MSG_STARTRENTAL { ItemId = itemId });
+        }
 
         // A mount equipped indoors is dismounted right away; the reconcile no-ops in the open world.
         if (Enum.TryParse<EquipmentSlotType>(message.SlotName, true, out var equippedSlot)
@@ -184,6 +205,10 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
 
         // Check to see if the player has this item equipped. If they don't, log an infraction.
         if (!wizEquipmentBehavior.HasItemEquipped(itemId)) {
+            if (WasRentalJustExpired(itemId)) {
+                return;
+            }
+
             var infractionText = $"Player tried to unequip item {itemId} that they do not have in their inventory!";
             account.AddInfraction(InfractionType.SuspiciousBehavior, infractionText);
 
@@ -257,6 +282,65 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
             DismissPetEntity();
         }
     }
+
+    [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_EXPIRERENTAL))]
+    private void ReceiveExpireRental(CHARACTER_103_PROTOCOL.MSG_EXPIRERENTAL message) {
+        try {
+            var wizard = GetActiveWizard();
+            var item = wizard.EquipmentBehavior.GetItem(message.ItemId) ?? wizard.InventoryBehavior.GetItem(message.ItemId);
+
+            // A message that outlived its item, or one sent before the timer ran out, changes nothing.
+            if (item is null || !RentalItems.TryGetBehavior(item, out var behavior)) {
+                return;
+            }
+
+            var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            if (!RentalItems.IsDue(behavior, now)) {
+                return;
+            }
+
+            if (!wizard.RemoveRentalItem(message.ItemId, out var removal)) {
+                return;
+            }
+
+            RememberExpiredRental(message.ItemId);
+
+            // The client moves a worn item to its backpack with the unequip, and the remove only touches the backpack.
+            if (removal.WasEquipped) {
+                SendUnequipItem(removal.SlotName, removal.SlotIndex, message.ItemId);
+                SendRemoveEffects(removal.RemovedEffects);
+
+                if (s_hidePetWhileMounted && removal.SlotType == EquipmentSlotType.Mount) {
+                    SpawnPetEntity();
+                }
+                if (removal.SlotType == EquipmentSlotType.Pet) {
+                    DismissPetEntity();
+                }
+            }
+
+            ItemSync.SendRemoved(SessionActor.ActorRef, wizard, message.ItemId);
+            SendToSocket(new WIZARD_12_PROTOCOL.MSG_RENTALUPDATE { TemplateID = removal.TemplateId, Reason = 0 });
+        } catch (Exception ex) {
+            Logger.Error("Error while expiring rental {0}: {1} {2}", Logger.Args(message.ItemId, ex.Message, ex.StackTrace));
+        }
+    }
+
+    private void RememberExpiredRental(ulong itemId) {
+        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var staleIds = _expiredRentals
+            .Where(expired => now - expired.Value > EXPIRED_RENTAL_GRACE_SECONDS)
+            .Select(expired => expired.Key)
+            .ToList();
+        foreach (var staleId in staleIds) {
+            _expiredRentals.Remove(staleId);
+        }
+
+        _expiredRentals[itemId] = now;
+    }
+
+    private bool WasRentalJustExpired(ulong itemId)
+        => _expiredRentals.TryGetValue(itemId, out var expiredAt)
+            && DateTimeOffset.UtcNow.ToUnixTimeSeconds() - expiredAt <= EXPIRED_RENTAL_GRACE_SECONDS;
 
     private void SpawnPetEntity(WizClientObjectItem petItem = null) {
         var zoneActor = SessionActor.GetZoneActor();
