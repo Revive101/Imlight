@@ -27,9 +27,6 @@
  * var reward = MinigameRewardGranter.Grant(playerActor, wizard, minigameInfo, score);
  *
  * NOTE:
- * The window draws at most 4 slots, and the gold always takes the second one. The loot list holds what
- * was actually granted, and the mana shows the rolled amount even when the wizard is already full.
- * A table without outcomes is not an error: the slot is skipped.
  *
  * TODO:
  *
@@ -51,9 +48,6 @@ using Imlight.CoreLib.WizardData.Models.World;
 
 namespace Imlight.CoreLib.Game.Minigames;
 
-/// <summary>
-/// Rolls and grants the rewards of a finished kiosk minigame.
-/// </summary>
 internal static class MinigameRewardGranter {
 
     internal static MinigameRewardResult Grant(IActorRef playerActor, Wizard wizard, MinigameInfo info, int score) {
