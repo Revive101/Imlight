@@ -78,7 +78,7 @@ Your command context will not drop. If you select a player, that player will sti
 | energize | Quality Assurance | `.mod energize` | Refills the energy of your character. |
 | cantriplevelup | Quality Assurance | `.mod cantriplevelup` | Levels up your cantrip level. |
 | cantriplevel | Quality Assurance | `.mod cantriplevel $level` | Changes your cantrip level. |
-| badge | Quality Assurance | `.mod badge $locale_id` | Changes your badge. This must be a locale id to function. |
+| badge | Quality Assurance | `.mod badge $locale_id` | Changes your badge title. This must be a locale id to function. Choosing no title in the Badges window clears it. |
 | setcrowns | Quality Assurance | `.mod setcrowns $newAmount` | Sets your account's Crowns balance. |
 
 ## DynaMod Commands

@@ -73,6 +73,7 @@ public static class BehaviorCache {
         0x29474BCF => new TutorialLogBehavior(),
         0x174F46F4 => new WishlistBehavior(),
         0x673324BA => new ClientPetOwnerBehavior(),
+        0x06DC1B56 => new BadgeBehavior(),               // The badges the client has been told about.
         // Client also has PathMovementBehaviorTemplate, but doesn't appear to use the actual behavior.
         //case 0x22B1AD8D: return new PathMovementBehavior();
         // ======================================================================

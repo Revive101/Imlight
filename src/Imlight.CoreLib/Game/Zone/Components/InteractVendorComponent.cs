@@ -38,6 +38,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using Akka.Actor;
 using Imcodec.Cryptography;
 using Imcodec.MessageLayer.Generated;
@@ -66,6 +67,9 @@ internal sealed class InteractVendorComponent(ZoneEntity entity) : ZoneEntityCom
     public string DisplayKey      => "GUI_ShopOptionEquipment";
 
     private List<GID> _inventory;
+    private string _shopTitle = "Unknown Shop";
+    private int _shopType = 0;
+    private bool _csrTestShop = false;
 
     public static bool ShouldAttachToEntity(CoreTemplate template)
         // Attach if the template is an NPC and has an inventory in Dragon database,
@@ -84,6 +88,15 @@ internal sealed class InteractVendorComponent(ZoneEntity entity) : ZoneEntityCom
         }
 
         _inventory = inventory.Inventory;
+
+        var shoppingBehavior = Entity.Template?.m_behaviors?.OfType<WizShoppingBehaviorTemplate>().FirstOrDefault();
+        if (shoppingBehavior != null) {
+            if (!string.IsNullOrWhiteSpace(shoppingBehavior.m_shopTitle)) {
+                _shopTitle = shoppingBehavior.m_shopTitle;
+            }
+            _shopType = shoppingBehavior.m_shopType;
+            _csrTestShop = shoppingBehavior.m_CSRTestShop;
+        }
     }
 
     public IEnumerable<ServiceOptionBase> GetServiceOptions(Wizard _)
@@ -107,16 +120,14 @@ internal sealed class InteractVendorComponent(ZoneEntity entity) : ZoneEntityCom
     private void SendShopOfferings(IActorRef playerActor) {
         var shopOffering = new WizShopOffering() {
             m_sellModifier = 0.05f,
-            m_shopTitle = "KrocNPC_00000013",
+            m_shopTitle = _shopTitle,
             m_shopList = _inventory,
-
             // Changes the type of currency that is used
             // 0 - Gold
             // 1 - PvP tickets
-            m_shopType = 0,
-
+            m_shopType = _shopType,
             // todo: figure this out for QA
-            m_CSRTestShop = false,
+            m_CSRTestShop = _csrTestShop,
         };
 
         // Serialize the offerings and send them to the player.

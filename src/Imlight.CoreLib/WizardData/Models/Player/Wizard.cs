@@ -102,6 +102,7 @@ public class Wizard {
     public ServerWizGameStats GameStats { get; set; }
     public ServerPetOwnerBehavior PetOwnerBehavior { get; set; }
     public ServerQuestBehavior QuestBehavior { get; set; }
+    public ServerBadgeBehavior BadgeBehavior { get; set; } = new();
 
     [JsonIgnore] public Account Account;
     // Holds character data before attachment and is replaced by the initialized player object.

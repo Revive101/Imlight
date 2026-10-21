@@ -103,6 +103,13 @@ Commands are organized into logical groups based on functionality:
 - `remove` - remove a quest (active or completed) and clear its registry entries so it can be offered again
 - The commands only send a `MSG_QUESTCOMMAND` to the session; `QuestService` runs the action through its normal goal, quest and removal paths. The server does not know which quest the client tracks, so commands without a name use the only active quest.
 
+**Badge Commands (`badge`)**
+- `grant <id or name>` - award a badge through the normal award path (the client gets the new badge and the completion results run)
+- `progress <counter key> <amount>` - add to a kill counter, for example `badge progress Badges_00002780 49`, so the next win completes the tier
+- `list` - print the held badges and their progress
+- `reset` - clear the badge state, the selected title and the nameplate title
+- The commands only send a `MSG_BADGECOMMAND` to the session; `BadgeService` runs the action through its normal award, counter and title paths. `mod badge <locale id>` sets the nameplate title the same way and needs no relog.
+
 **DynaMod Commands (`dynamod`)**
 - Listing, setting, toggling and removing the character's dynamic mods
 

@@ -231,6 +231,7 @@ internal class PetService(SessionActor sessionActor) : MessageService(sessionAct
 
         // Remove the egg from morphing slots and notify client.
         wizard.PetOwnerBehavior.HatchEgg(egg);
+        TellOtherServices(new CHARACTER_103_PROTOCOL.MSG_BADGEEVENT { Kind = BadgeEventKind.Recheck });
 
         SendToSocket(new PET_9_PROTOCOL.MSG_PETMORPHINGSLOT {
             GlobalID = egg.m_globalID,

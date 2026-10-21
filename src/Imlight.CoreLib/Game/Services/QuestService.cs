@@ -1196,6 +1196,8 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             wizard.SetQuestRegistryValue(questInstance.QuestName, QUEST_COMPLETED_ENTRY, runCount + 1);
         }
 
+        TellOtherServices(new CHARACTER_103_PROTOCOL.MSG_BADGEEVENT { Kind = BadgeEventKind.Recheck });
+
         SendCompleteQuest(questInstance.ID);
 
         var qTemplate = _cachedQuestTemplates.FirstOrDefault(q => q.m_questName == questInstance.QuestName);

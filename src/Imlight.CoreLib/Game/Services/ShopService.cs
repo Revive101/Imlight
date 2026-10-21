@@ -50,6 +50,7 @@ using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
+using Imlight.CoreLib.Game.Badges;
 using Imlight.CoreLib.Game.Pet;
 using Imlight.CoreLib.Game.Zone.Components;
 using Imlight.CoreLib.Game.WizBang;
@@ -106,6 +107,14 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
         var playerWizard = GetActiveWizard();
         var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(itemTemplateID);
         var isPet = PetFactory.IsPetTemplate(itemTemplateID);
+
+        if (BadgeGate.Blocks(template?.m_purchaseRequirements, itemTemplateID, SessionActor.ActorRef, GetActiveGameObject(), playerWizard, SessionActor.GetZoneActor())) {
+            Logger.Warning("{0} tried to buy item {1} without the badge it requires.",
+                Logger.Args(playerWizard.PlayerNameBehavior.GetWizardName(), itemTemplateID));
+            SendShopDenyMessage();
+
+            return;
+        }
 
         WizClientObjectItem item;
         if (isPet) {

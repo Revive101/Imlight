@@ -324,10 +324,11 @@ internal class CommandModifyProtocol : CommandProtocol {
     [Command("badge")]
     [AuthRequired(AuthLevel.QualityAssurance)]
     private void SetBadgeCommand([Remainder] string badge) {
-        // Set the badge of the character.
-        Context.Character.SetBadgeOverride(badge);
-
-        InformSenderClient($"Set badge to {badge}. Relog to see changes.");
+        // The badge service sets the title and tells the zone, so nobody has to relog.
+        Context.SessionActor.Tell(new CHARACTER_103_PROTOCOL.MSG_BADGECOMMAND {
+            Action = "title",
+            Argument = badge,
+        }, null);
     }
 
     [Command("maxgold")]

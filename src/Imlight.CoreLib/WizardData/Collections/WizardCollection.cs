@@ -379,6 +379,20 @@ public static class WizardCollection {
     }
 
     /// <summary>
+    /// Updates the character badge behavior for a wizard; persists counters, earned badges and the selected badge.
+    /// </summary>
+    /// <param name="wizard">The wizard whose badge behavior should be persisted.</param>
+    /// <returns>True if the update was successful; otherwise, false.</returns>
+    public static bool UpdateCharacterBadgeBehavior(Wizard wizard) {
+        if (wizard is null || wizard.BadgeBehavior is null) {
+            return false;
+        }
+
+        return UpdateCharacter(wizard.CharId, existingCharacter =>
+            existingCharacter.BadgeBehavior = wizard.BadgeBehavior);
+    }
+
+    /// <summary>
     /// Updates the character spellbook behavior for a wizard; persists the
     /// excluded item spell list and other spellbook state to the database.
     /// </summary>
