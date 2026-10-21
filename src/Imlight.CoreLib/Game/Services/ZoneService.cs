@@ -113,8 +113,6 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         // Remove the player from the online player collection.
         OnlinePlayerCollection.RemoveOnlinePlayer(SessionActor.SessionID);
 
-        Timers.Cancel("sync-crowns");
-
         base.OnPreDispose();
     }
 
@@ -136,16 +134,13 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         };
         ZoneActor.Tell(postEventMsg);
 
-        // Sync crowns. Send an immediate sync, then periodic sync so that whenever the
-        // character stats page or Crown Shop is opened, the crowns display correctly.
         var crownMsg = new WIZARD_12_PROTOCOL.MSG_CROWNBALANCE {
             Failure = 0,
             TotalCrowns = wizard.Account.Crowns,
             CharacterID = wizard.CharId,
             CacheBalanceForCSSegmentation = 1
         };
-        SendToSocket(crownMsg);
-        Timers.StartPeriodicTimer("sync-crowns", crownMsg, TimeSpan.FromMilliseconds(500), TimeSpan.FromSeconds(1));
+        ZoneActor.Tell(crownMsg);
 
         return;
     }
