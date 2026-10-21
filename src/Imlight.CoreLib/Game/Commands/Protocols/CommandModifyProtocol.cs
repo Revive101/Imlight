@@ -745,11 +745,13 @@ internal class CommandModifyProtocol : CommandProtocol {
     private void SetCrownsCommand(string crowns) {
         if (!int.TryParse(crowns, NumberStyles.Integer, CultureInfo.InvariantCulture, out var crownsAmount) || crownsAmount < 0) {
             InformSenderClient("Invalid Crowns amount.");
+
             return;
         }
 
         if (!Context.Account.SetCrowns(crownsAmount)) {
             InformSenderClient("The Crowns could not be saved.");
+
             return;
         }
 

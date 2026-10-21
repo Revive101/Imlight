@@ -55,12 +55,12 @@ namespace Imlight.CoreLib.Game.Zone.Components;
 
 internal sealed class InteractSeamstressComponent(ZoneEntity entity) : ZoneEntityComponent(entity), IServiceComponent, IComponentFactory {
 
-    private const uint StitchOptionIndex = 0;
+    private const uint STITCH_OPTION_INDEX = 0;
 
     public string ServiceName     => "Seamstress";
     public string NpcIcon         => null;
     public string NpcNameKey      => null;
-    public string NpcTextKey      => null;
+    public string NpcTextKey      => "WizardShops_00000074";
     public WizBangs WizBang       => WizBangs.Shopping;
     public string StateName       => "Shop";
     public string InteractWizBang => "Registrar";
@@ -91,10 +91,10 @@ internal sealed class InteractSeamstressComponent(ZoneEntity entity) : ZoneEntit
             return;
         }
 
-        if (serviceOptionIndex == StitchOptionIndex) {
+        if (serviceOptionIndex == STITCH_OPTION_INDEX) {
             playerActor.Tell(new WIZARD_12_PROTOCOL.MSG_SEAMSTRESSOPEN {
                 GlobalID = Entity.ActiveGameObject.m_globalID,
-                ShopTitle = SeamstressConfig.ShopTitleKey,
+                ShopTitle = NpcTextKey,
                 Credits = playerCharacter.Account.Crowns,
                 MergeCost = stitchCrowns,
                 WebFailure = 0
@@ -102,7 +102,7 @@ internal sealed class InteractSeamstressComponent(ZoneEntity entity) : ZoneEntit
         } else {
             playerActor.Tell(new WIZARD_12_PROTOCOL.MSG_UNSTITCHOPEN {
                 GlobalID = Entity.ActiveGameObject.m_globalID,
-                ShopTitle = SeamstressConfig.ShopTitleKey,
+                ShopTitle = NpcTextKey,
                 Credits = playerCharacter.Account.Crowns,
                 MergeCost = unstitchCrowns,
                 WebFailure = 0
@@ -123,7 +123,6 @@ internal sealed class InteractSeamstressComponent(ZoneEntity entity) : ZoneEntit
         => IsInHorizontalRadius(playerObject, ((IServiceComponent) this).DEFAULT_INTERACTION_RADIUS);
 
     private void SendPlayerIntoWizbang(ulong playerObjID) {
-        // Create the wiz bang message, and wrap it in a broadcast message.
         var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG {
             WizBangID = (uint) WizBang,
             GameObjectID = playerObjID
@@ -137,7 +136,6 @@ internal sealed class InteractSeamstressComponent(ZoneEntity entity) : ZoneEntit
     }
 
     private void SendPlayerIntoState(ulong playerObjID) {
-        // Create the change state message, and wrap it in a broadcast message.
         var changeStateMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
             State = StringHash.Compute(StateName),
             GameObjectID = playerObjID

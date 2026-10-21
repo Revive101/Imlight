@@ -44,16 +44,10 @@ namespace Imlight.CoreLib.Game.Seamstress;
 /// </summary>
 internal static class SeamstressConfig {
 
-    private const string StitchCrownsKey = "Seamstress.StitchCrowns";
-    private const string UnstitchCrownsKey = "Seamstress.UnstitchCrowns";
-    private const string ShopTitleKeyKey = "Seamstress.ShopTitleKey";
+    private const string STITCH_CROWNS_KEY = "Seamstress.StitchCrowns";
+    private const string UNSTITCH_CROWNS_KEY = "Seamstress.UnstitchCrowns";
 
     private static int s_warnedUnsetPrices;
-
-    /// <summary>
-    /// The locale key shown as the title of the stitch and unstitch windows.
-    /// </summary>
-    internal static string ShopTitleKey => ConfigurationManager.GetValue(ShopTitleKeyKey, string.Empty);
 
     /// <summary>
     /// Reads the Crowns prices of one stitch and one unstitch.
@@ -62,8 +56,8 @@ internal static class SeamstressConfig {
     /// <param name="unstitchCrowns">The price of an unstitch.</param>
     /// <returns>False when either price is missing or negative. A price of 0 is allowed.</returns>
     internal static bool TryGetPrices(out int stitchCrowns, out int unstitchCrowns) {
-        stitchCrowns = ConfigurationManager.GetValue(StitchCrownsKey, -1);
-        unstitchCrowns = ConfigurationManager.GetValue(UnstitchCrownsKey, -1);
+        stitchCrowns = ConfigurationManager.GetValue(STITCH_CROWNS_KEY, -1);
+        unstitchCrowns = ConfigurationManager.GetValue(UNSTITCH_CROWNS_KEY, -1);
         if (stitchCrowns >= 0 && unstitchCrowns >= 0) {
             return true;
         }
