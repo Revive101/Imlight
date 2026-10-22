@@ -111,6 +111,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     private readonly Lock _mobileIdLock = new();
     private readonly List<IActorRef> _supervisors = [];
     private readonly IActorRef _sigilSupervisor;
+    private readonly IActorRef _statueSupervisor;
     private readonly IActorRef _playerSupervisor;
     private readonly IActorRef _objectSupervisor;
     private readonly IActorRef _volumeSupervisor;
@@ -155,6 +156,8 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         _supervisors.Add(_pathSupervisor);
         _sigilSupervisor = CreateSupervisor<ZoneSigilSupervisor>();
         _supervisors.Add(_sigilSupervisor);
+        _statueSupervisor = CreateSupervisor<ZoneStatueSupervisor>();
+        _supervisors.Add(_statueSupervisor);
 
         Timers.StartPeriodicTimer("flush-moves", new ZONE_102_PROTOCOL.MSG_FLUSHMOVES(),
             TimeSpan.FromMilliseconds(250), TimeSpan.FromMilliseconds(250));
@@ -298,6 +301,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
                 Targets = ZoneBroadcastTarget.Objects
                         | ZoneBroadcastTarget.Volumes
                         | ZoneBroadcastTarget.Sigils
+                        | ZoneBroadcastTarget.Statues
                         | ZoneBroadcastTarget.Paths,
             });
         }
@@ -490,6 +494,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         if ((message.Targets & ZoneBroadcastTarget.Triggers) != 0) _triggerSupervisor.Forward(message);
         if ((message.Targets & ZoneBroadcastTarget.Paths)    != 0) _pathSupervisor.Forward(message);
         if ((message.Targets & ZoneBroadcastTarget.Sigils)   != 0) _sigilSupervisor.Forward(message);
+        if ((message.Targets & ZoneBroadcastTarget.Statues)  != 0) _statueSupervisor.Forward(message);
     }
 
     private IActorRef CreateSupervisor<T>() where T : ActorBase {

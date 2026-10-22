@@ -55,7 +55,8 @@ public enum ZoneBroadcastTarget : byte {
     Triggers = 1 << 3,
     Paths   = 1 << 4,
     Sigils  = 1 << 5,
-    All         = Players | Objects | Volumes | Triggers | Paths | Sigils,
+    Statues = 1 << 6,
+    All         = Players | Objects | Volumes | Triggers | Paths | Sigils | Statues,
     AllNoPlayers = All & ~Players,
 }
 

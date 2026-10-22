@@ -435,7 +435,7 @@ public class ZoneEntity(
     /// Gets the object sent to clients in MSG_NEWOBJECT. Its class follows the entity's own object, because
     /// the client builds the object from the template and reads that class's properties from the payload.
     /// </summary>
-    public ClientObject GetClientObject() => ActiveGameObject switch {
+    public virtual ClientObject GetClientObject() => ActiveGameObject switch {
         ClientReagentItem => BuildClientObject<ClientReagentItem>(),
         ClientPetSnackItem => BuildClientObject<ClientPetSnackItem>(),
         WizClientObjectItem => BuildClientObject<WizClientObjectItem>(),
