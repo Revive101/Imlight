@@ -421,7 +421,13 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
             return;
         }
 
-        Zone.ScriptState.SetObjectState(objectName, stateName);
+        // Setting an object to the state it already has must not rebroadcast or re-post its EnterState, or a trigger cycle loops forever.
+        if (!Zone.ScriptState.SetObjectState(objectName, stateName)) {
+            Logger.Debug("Zone {0}: object {1} is already in state {2}, nothing to broadcast.",
+                Logger.Args(Zone.ZonePath, objectName, stateName));
+
+            return;
+        }
 
         ZoneRef.Tell(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
             Messages = [new ZONE_102_PROTOCOL.MSG_ENTERSTATE {

@@ -145,7 +145,11 @@ public sealed class ZoneTrigger(IActorRef zoneRef, Zone zone, Trigger trigger)
         && list.Any(r => r is null || r is RequirementList nested && HasUndecodableRequirement(nested));
 
     private bool IsSelfPost(Result result)
-        => result is ResPostEvent post && TriggerData.m_fireEvents.Any(x => x == post.m_eventName);
+        => result switch {
+            ResPostEvent post => TriggerData.m_fireEvents.Any(x => x == post.m_eventName),
+            ResModifyTriggerObject modify => TriggerData.m_fireEvents.Any(x => x == $"{modify.m_triggerObjName}.{modify.m_triggerObjState}.EnterState"),
+            _ => false
+        };
 
     private bool CooldownCheck(CoreObject playerObject) {
         var key = playerObject?.m_globalID ?? 0;
