@@ -86,8 +86,7 @@ internal class ChatService(SessionActor sessionActor) : MessageService(sessionAc
         }
 
         // Craft the wizard name.
-        var byteName = wizard.PlayerNameBehavior.GetWizardNameAsByteHexString();
-        var sourceName = DataManipulation.SpacedHexStringToBytes(byteName);
+        var sourceName = wizard.PlayerNameBehavior.GetPackedNameBytes();
 
         var cleanedMessage = CleanMessageTrash(message.Message);
 
@@ -122,8 +121,7 @@ internal class ChatService(SessionActor sessionActor) : MessageService(sessionAc
 
         var globalId = GetActiveGameObject().m_globalID;
         var character = GetActiveWizard();
-        var byteName = character.PlayerNameBehavior.GetWizardNameAsByteHexString();
-        var src = DataManipulation.SpacedHexStringToBytes(byteName);
+        var src = character.PlayerNameBehavior.GetPackedNameBytes();
 
         var msg = new GAME_5_PROTOCOL.MSG_RADIALQUICKCHAT() {
             MessageID = message.MessageID,
@@ -161,8 +159,7 @@ internal class ChatService(SessionActor sessionActor) : MessageService(sessionAc
         }
 
         // Send the quick chat to the target player.
-        var hexName = myWizard.PlayerNameBehavior.GetWizardNameAsByteHexString();
-        var sourceName = DataManipulation.SpacedHexStringToBytes(hexName);
+        var sourceName = myWizard.PlayerNameBehavior.GetPackedNameBytes();
         var msg = new GAME_5_PROTOCOL.MSG_DIRECTEDQUICKCHAT {
             SourceName = sourceName,
             SourceID = myWizard.CharId,
@@ -202,8 +199,7 @@ internal class ChatService(SessionActor sessionActor) : MessageService(sessionAc
         }
 
         // Send the directed chat to the target player.
-        var hexName = myWizard.PlayerNameBehavior.GetWizardNameAsByteHexString();
-        var sourceName = DataManipulation.SpacedHexStringToBytes(hexName);
+        var sourceName = myWizard.PlayerNameBehavior.GetPackedNameBytes();
         var msg = new GAME_5_PROTOCOL.MSG_DIRECTEDQUICKCHATEXT {
             SourceName = sourceName,
             SourceID = myWizard.CharId,
@@ -250,8 +246,7 @@ internal class ChatService(SessionActor sessionActor) : MessageService(sessionAc
         }
 
         // Send the directed chat to the target player.
-        var hexName = myWizard.PlayerNameBehavior.GetWizardNameAsByteHexString();
-        var sourceName = DataManipulation.SpacedHexStringToBytes(hexName);
+        var sourceName = myWizard.PlayerNameBehavior.GetPackedNameBytes();
         var msg = new GAME_5_PROTOCOL.MSG_DIRECTEDCHAT {
             SourceName = sourceName,
             SourceID = myWizard.CharId,
@@ -316,13 +311,12 @@ internal class ChatService(SessionActor sessionActor) : MessageService(sessionAc
     }
 
     private void SendGroupChat(GAME_5_PROTOCOL.MSG_REQUESTDIRECTEDCHAT message, Wizard wizard) {
-        var hexName = wizard.PlayerNameBehavior.GetWizardNameAsByteHexString();
         var text = message.Message.ToString() ?? string.Empty;
 
         GroupDirectory.Instance?.Tell(new GROUP_109_PROTOCOL.MSG_GROUPCHAT {
             SenderCharId = wizard.CharId,
             ChannelId = message.TargetID,
-            SourceName = DataManipulation.SpacedHexStringToBytes(hexName),
+            SourceName = wizard.PlayerNameBehavior.GetPackedNameBytes(),
             Message = message.Message,
             CharIdsIgnoringSender = BuddyRelationshipCollection.GetCharactersWhoBlocked(wizard.CharId)
         });
