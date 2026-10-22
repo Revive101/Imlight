@@ -331,31 +331,12 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
             .ToList();
         var cinematicTime = (dotEffects.Count + hotEffects.Count) * SpellCinematics.GetOverTimeTickTime();
 
-        foreach (var effect in dotEffects) {
-            var initialDamage = effect.m_paramPerRound;
-            var wards = CombatWards.FindAppliedWards(caster, effect).ToList();
-            var damage = CombatWards.GetIncomingDamageFromWards(wards, initialDamage);
+        foreach (var effect in dotEffects.Concat(hotEffects)) {
+            var amount = CombatHangingEffects.AdvanceOverTime(effect);
+            cinematicTime += CombatHangingEffects.ApplyOverTimeTick(caster, effect, amount);
 
-            // We don't need to calculate stats from gear because the initial application already did that.
-
-            cinematicTime += CombatEffectApplicator.HANGING_EFFECT_CONSUME_TIME * wards.Count;
-            caster.DamageParticipant(damage);
-            effect.m_numRounds--;
-
-            // Remove the effect if it's out of rounds.
-            if (effect.m_numRounds <= 0) {
-                caster._hangingEffects.Remove(effect);
-            }
-        }
-
-        foreach (var effect in hotEffects) {
-            // Todo: are there wards that increase incoming healing?
-            // We don't need to calculate stats from gear because the initial application already did that.
-            caster.HealParticipant(effect.m_paramPerRound);
-            effect.m_numRounds--;
-
-            // Remove the effect if it's out of rounds.
-            if (effect.m_numRounds <= 0) {
+            // Remove the effect once its ticks are used up.
+            if (effect.m_effectParam <= 0) {
                 caster._hangingEffects.Remove(effect);
             }
         }

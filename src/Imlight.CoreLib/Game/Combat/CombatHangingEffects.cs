@@ -21,7 +21,7 @@
  * 
  * PURPOSE:
  * Classifies hanging effects (charms, wards, over-time effects) the way the client
- * does, copies spell effects into per-target hanging instances, and logs a
+ * does, runs over-time ticks, copies spell effects into per-target hanging instances, and logs a
  * participant's hanging state.
  * 
  * USAGE EXAMPLE:
@@ -51,6 +51,9 @@ namespace Imlight.CoreLib.Game.Combat;
 /// Classification, copying and logging helpers for hanging effects.
 /// </summary>
 internal static class CombatHangingEffects {
+
+    internal const float HANGING_EFFECT_CONSUME_TIME = 1.0f;
+    internal const float HANGING_EFFECT_ADD_TIME = 1.0f;
 
     /// <summary>
     /// Whether the effect is a charm, which modifies the carrier's outgoing effects.
@@ -213,6 +216,57 @@ internal static class CombatHangingEffects {
         m_rank = source.m_rank,
         m_shadowPactCasterSC = source.m_shadowPactCasterSC,
     };
+
+    /// <summary>
+    /// Moves an over-time effect on by one tick in the client layout: the first tick turns the total in the effect param
+    /// into a per-round amount and the tick count, and every tick uses one count up.
+    /// </summary>
+    /// <param name="effect">The hanging over-time effect.</param>
+    /// <returns>The amount this tick delivers.</returns>
+    internal static int AdvanceOverTime(SpellEffect effect) {
+        if (effect.m_paramPerRound == 0) {
+            var rounds = Math.Max(effect.m_numRounds, 1);
+            effect.m_paramPerRound = (int) (effect.m_effectParam / (float) rounds);
+            effect.m_effectParam = rounds;
+
+            // A total smaller than its round count would never settle on an amount, so it delivers nothing and ends.
+            if (effect.m_paramPerRound == 0) {
+                effect.m_effectParam = 0;
+
+                return 0;
+            }
+        }
+
+        effect.m_effectParam--;
+
+        return effect.m_paramPerRound;
+    }
+
+    /// <summary>
+    /// Delivers one over-time tick to its carrier. A damage tick goes through the carrier's wards like a hit does,
+    /// a heal tick heals the carrier.
+    /// </summary>
+    /// <param name="carrier">The participant that carries the effect.</param>
+    /// <param name="effect">The over-time effect that ticks.</param>
+    /// <param name="amount">The amount to deliver.</param>
+    /// <returns>The cinematic time the wards used.</returns>
+    internal static float ApplyOverTimeTick(CombatDuelSubCircle carrier, SpellEffect effect, int amount) {
+        if (effect.m_effectType == kSpellEffects.kHealOverTime) {
+            // todo: are there wards that increase incoming healing? The client runs its ward pass on heal ticks too.
+            carrier.HealParticipant(amount);
+
+            return 0.0f;
+        }
+
+        // todo: the client runs its ward pass on every tick; that a tick consumes the wards it used is unconfirmed.
+        var wards = CombatWards.FindAppliedWards(carrier, effect);
+        wards = CombatWards.GetWardsBySchool([.. wards], effect.m_sDamageType, out _);
+        var damage = CombatWards.GetIncomingDamageFromWards(wards, amount);
+        carrier.DamageParticipant(damage);
+        CombatWards.RemoveSpentWards(carrier, wards);
+
+        return wards.Count * HANGING_EFFECT_CONSUME_TIME;
+    }
 
     /// <summary>
     /// Logs the hanging effects of the caster and every target of an effect, newest first.
