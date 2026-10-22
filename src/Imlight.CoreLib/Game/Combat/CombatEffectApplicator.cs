@@ -37,6 +37,7 @@
  * Last Updated: 10/22/2026
  */
 
+using System.Collections.Generic;
 using Imlight.Common;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Game.Spells;
@@ -596,7 +597,9 @@ internal static class CombatEffectApplicator {
     }
 
     private static float ApplyGlobalEffect(SpellEffect spellEffect, Duel duel, CombatEffectContext context) {
-        // todo: not good. some bubbles give two effects.
+        // todo: some globals are wrappers with two effects; unknown whether the client expects the wrapper or one child stored, and which m_effectChosen it sends.
+        // todo: a damage spell that also sets a global carries m_numRounds 3 on the global effect; its meaning is unknown and it is ignored.
+        // todo: recasting a global already in play currently replaces it with the new instance; unconfirmed against the client.
         var replacesGlobal = duel.m_duelModifier.m_battlefieldEffects.Count > 0;
         duel.m_duelModifier.m_battlefieldEffects.Clear();
         duel.m_duelModifier.m_battlefieldEffects.Add(spellEffect);
@@ -668,8 +671,29 @@ internal static class CombatEffectApplicator {
     private static float GetPercentIncomingHealIncrease(CombatDuelSubCircle target) 
         => target.ParticipantGameStats.m_healIncBonusPercentAll;
 
+    private static IEnumerable<SpellEffect> GetCurrentGlobalEffects(Duel duel) {
+        foreach (var effect in duel.m_duelModifier.m_battlefieldEffects) {
+            var children = effect switch {
+                RandomSpellEffect random => random.m_effectList,
+                VariableSpellEffect variable => variable.m_effectList,
+                EffectListSpellEffect list => list.m_effectList,
+                _ => null,
+            };
+
+            if (children is not { Count: > 0 }) {
+                yield return effect;
+
+                continue;
+            }
+
+            foreach (var child in children) {
+                yield return child;
+            }
+        }
+    }
+
     private static float GetGlobalEffectDamageModifier(Duel duel, string damageType) {
-        var schoolBubble = duel.m_duelModifier.m_battlefieldEffects
+        var schoolBubble = GetCurrentGlobalEffects(duel)
             .FirstOrDefault(x => x.m_effectType == kSpellEffects.kModifyOutgoingDamage
                               && x.m_sDamageType == damageType);
 
@@ -681,7 +705,7 @@ internal static class CombatEffectApplicator {
     }
 
     private static float GetGlobalEffectHealingModifier(Duel duel) {
-        var healBubble = duel.m_duelModifier.m_battlefieldEffects
+        var healBubble = GetCurrentGlobalEffects(duel)
             .FirstOrDefault(x => x.m_effectType == kSpellEffects.kModifyOutgoingHeal);
 
         if (healBubble is not null) {

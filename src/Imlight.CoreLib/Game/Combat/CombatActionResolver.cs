@@ -111,6 +111,7 @@ internal static class CombatActionResolver {
 
             charmsAffectingThisSpell = CombatCharms.FindAppliedCharms(action.SpellCaster, [.. allEffects]);
 
+            // A global effect has no real targets; GetEffectTargets yields the caster so the cast is not skipped.
             var targets = GetEffectTargets(chosenEffect, action.SpellCaster, action.SelectedTarget);
             if (targets.Length == 0) {
                 continue;
@@ -331,7 +332,9 @@ internal static class CombatActionResolver {
                 targets = [.. _activeSubCircles.Where(x => x.CurrentTeam != caster.CurrentTeam)];
                 break;
             case kEffectTarget.kGlobal:
-                return [];
+                // todo: the target list the client expects for a global cast is a guess; live AoE rows carry only the caster slot.
+                targets = [caster];
+                break;
         }
 
         return targets;
