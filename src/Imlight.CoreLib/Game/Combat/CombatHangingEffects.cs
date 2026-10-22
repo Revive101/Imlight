@@ -55,6 +55,20 @@ internal static class CombatHangingEffects {
     internal const float HANGING_EFFECT_CONSUME_TIME = 1.0f;
     internal const float HANGING_EFFECT_ADD_TIME = 1.0f;
 
+    private static readonly HangingKind[] s_kindOrder = [HangingKind.Charm, HangingKind.Ward, HangingKind.OverTime];
+
+    /// <summary>
+    /// The classes of hanging effect a spell can take.
+    /// </summary>
+    [Flags]
+    internal enum HangingKind {
+        None = 0,
+        Charm = 1,
+        Ward = 2,
+        OverTime = 4,
+        All = Charm | Ward | OverTime,
+    }
+
     /// <summary>
     /// Whether the effect is a charm, which modifies the carrier's outgoing effects.
     /// </summary>
@@ -183,6 +197,101 @@ internal static class CombatHangingEffects {
         kHangingDisposition.kBeneficial => !IsHarmful(effect),
         kHangingDisposition.kHarmful => IsHarmful(effect),
         _ => true,
+    };
+
+    /// <summary>
+    /// Gets the classes of hanging effect a remove, steal, push or swap effect type works on.
+    /// </summary>
+    /// <param name="effectType">The type of the moving effect.</param>
+    /// <returns>The classes it takes, or none when the type does not move hanging effects.</returns>
+    internal static HangingKind GetKinds(kSpellEffects effectType) => effectType switch {
+        kSpellEffects.kPushCharm or kSpellEffects.kStealCharm or kSpellEffects.kRemoveCharm or kSpellEffects.kSwapCharm => HangingKind.Charm,
+        kSpellEffects.kPushWard or kSpellEffects.kStealWard or kSpellEffects.kRemoveWard or kSpellEffects.kSwapWard => HangingKind.Ward,
+        kSpellEffects.kPushOverTime or kSpellEffects.kStealOverTime or kSpellEffects.kRemoveOverTime or kSpellEffects.kSwapOverTime => HangingKind.OverTime,
+        kSpellEffects.kSwapAll => HangingKind.All,
+        _ => HangingKind.None,
+    };
+
+    /// <summary>
+    /// Takes hanging effects off a participant, newest first. Each step takes one effect, trying charms, then wards, then
+    /// over-time effects. Effects that cannot be moved are skipped.
+    /// </summary>
+    /// <param name="participant">The participant to take from.</param>
+    /// <param name="kinds">The classes of effect to take.</param>
+    /// <param name="disposition">The disposition an effect must match.</param>
+    /// <param name="count">How many to take, or a negative number for no limit.</param>
+    /// <param name="bypassProtection">Whether the taking effect ignores protection.</param>
+    /// <returns>The taken effects in take order.</returns>
+    internal static List<SpellEffect> Take(CombatDuelSubCircle participant,
+                                           HangingKind kinds,
+                                           kHangingDisposition disposition,
+                                           int count,
+                                           bool bypassProtection) {
+        var taken = new List<SpellEffect>();
+        var hanging = participant._hangingEffects;
+        var steps = 0;
+
+        while (count < 0 || steps < count) {
+            var index = FindNewestIndex(hanging, kinds, disposition);
+            if (index < 0) {
+                break;
+            }
+
+            steps++;
+            var next = hanging[index];
+            hanging.RemoveAt(index);
+
+            // A protected effect spends its protection and goes back as the newest.
+            // todo: whether a spent protection counts as a step of the count is a guess.
+            if (next.m_protected && !bypassProtection) {
+                next.m_protected = false;
+                hanging.Add(next);
+
+                continue;
+            }
+
+            taken.Add(next);
+        }
+
+        return taken;
+    }
+
+    /// <summary>
+    /// Removes the given effect instances from a participant, matching by reference and newest first.
+    /// </summary>
+    /// <param name="participant">The participant that carries the effects.</param>
+    /// <param name="effects">The instances to remove.</param>
+    internal static void RemoveInstances(CombatDuelSubCircle participant, IEnumerable<SpellEffect> effects) {
+        var hanging = participant._hangingEffects;
+
+        foreach (var effect in effects) {
+            var index = hanging.FindLastIndex(x => ReferenceEquals(x, effect));
+            if (index >= 0) {
+                hanging.RemoveAt(index);
+            }
+        }
+    }
+
+    private static int FindNewestIndex(List<SpellEffect> hanging, HangingKind kinds, kHangingDisposition disposition) {
+        foreach (var kind in s_kindOrder) {
+            if (!kinds.HasFlag(kind)) {
+                continue;
+            }
+
+            var index = hanging.FindLastIndex(x => IsOfKind(x, kind) && IsRemovable(x) && MatchesDisposition(x, disposition));
+            if (index >= 0) {
+                return index;
+            }
+        }
+
+        return -1;
+    }
+
+    private static bool IsOfKind(SpellEffect effect, HangingKind kind) => kind switch {
+        HangingKind.Charm => IsCharm(effect),
+        HangingKind.Ward => IsWard(effect),
+        HangingKind.OverTime => IsOverTime(effect),
+        _ => false,
     };
 
     /// <summary>

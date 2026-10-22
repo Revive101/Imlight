@@ -169,7 +169,7 @@ internal static class CombatActionResolver {
         }
 
         // Remove all charms that were applied to this spell from the caster's hanging effects.
-        action.SpellCaster._hangingEffects.RemoveAll(x => charmsAffectingThisSpell.Contains(x));
+        CombatHangingEffects.RemoveInstances(action.SpellCaster, charmsAffectingThisSpell);
         combatAction.m_effectChosen = effectStack.GetStackAsUint();
         combatAction.m_handledRandomSpellPerTarget = true;
 

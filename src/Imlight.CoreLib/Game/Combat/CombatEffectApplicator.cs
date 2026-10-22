@@ -150,16 +150,21 @@ internal static class CombatEffectApplicator {
                 ApplyReshuffleEffect(targets[0]);
                 break;
             case kSpellEffects.kRemoveCharm:
-                cinematicTime += ApplyRemoveCharmEffect(effect, targets);
-                break;
             case kSpellEffects.kRemoveWard:
-                cinematicTime += ApplyRemoveWardEffect(effect, targets);
+            case kSpellEffects.kRemoveOverTime:
+                cinematicTime += ApplyRemoveHangingEffect(effect, targets);
                 break;
             case kSpellEffects.kStealCharm:
-                cinematicTime += ApplyStealCharmEffect(effect, caster, targets);
-                break;
             case kSpellEffects.kStealWard:
-                cinematicTime += ApplyStealWardEffect(effect, caster, targets);
+            case kSpellEffects.kStealOverTime:
+            case kSpellEffects.kPushCharm:
+            case kSpellEffects.kPushWard:
+            case kSpellEffects.kPushOverTime:
+            case kSpellEffects.kSwapCharm:
+            case kSpellEffects.kSwapWard:
+            case kSpellEffects.kSwapOverTime:
+            case kSpellEffects.kSwapAll:
+                cinematicTime += ApplyMoveHangingEffect(effect, caster, targets);
                 break;
             default:
                 break;
@@ -351,87 +356,46 @@ internal static class CombatEffectApplicator {
     private static void ApplyReshuffleEffect(CombatDuelSubCircle caster) 
         => caster.Reshuffle();
 
-    private static float ApplyRemoveCharmEffect(SpellEffect effect, CombatDuelSubCircle[] targets) {
+    private static float ApplyRemoveHangingEffect(SpellEffect effect, CombatDuelSubCircle[] targets) {
+        var kinds = CombatHangingEffects.GetKinds(effect.m_effectType);
         var cinematicTime = 0.0f;
 
-        // A negative count means no limit.
-        var charmRemoveCount = effect.m_effectParam < 0 ? int.MaxValue : effect.m_effectParam;
-
         foreach (var target in targets) {
-            var hangingEffects = target._hangingEffects.ToArray();
-            var charmsInQuesiton = CombatCharms.FindAppliedCharms(target, hangingEffects, effect.m_disposition)
-                                               .Take(charmRemoveCount);
-
-            cinematicTime += charmsInQuesiton.Count() * CombatHangingEffects.HANGING_EFFECT_CONSUME_TIME;
-
-            target._hangingEffects.RemoveAll(x => charmsInQuesiton.Contains(x));
+            var removed = TakeFor(effect, target, kinds);
+            cinematicTime += removed.Count * CombatHangingEffects.HANGING_EFFECT_CONSUME_TIME;
         }
 
         return cinematicTime;
     }
 
-    private static float ApplyRemoveWardEffect(SpellEffect effect, CombatDuelSubCircle[] targets) {
+    private static float ApplyMoveHangingEffect(SpellEffect effect, CombatDuelSubCircle caster, CombatDuelSubCircle[] targets) {
+        var kinds = CombatHangingEffects.GetKinds(effect.m_effectType);
+        var isPush = effect.m_effectType is kSpellEffects.kPushCharm or kSpellEffects.kPushWard or kSpellEffects.kPushOverTime;
+        var isSwap = effect.m_effectType is kSpellEffects.kSwapCharm or kSpellEffects.kSwapWard or kSpellEffects.kSwapOverTime
+                                         or kSpellEffects.kSwapAll;
         var cinematicTime = 0.0f;
 
-        // A negative count means no limit.
-        var wardRemoveCount = effect.m_effectParam < 0 ? int.MaxValue : effect.m_effectParam;
-
         foreach (var target in targets) {
-            // Remove all wards except for stun blocks.
-            var wards = CombatWards.FindAppliedWards(target, effect)
-                                   .Where(x => x.m_effectType != kSpellEffects.kStunBlock)
-                                   .Take(wardRemoveCount);
+            if (target == caster) {
+                continue;
+            }
 
-            cinematicTime += wards.Count() * CombatHangingEffects.HANGING_EFFECT_CONSUME_TIME;
+            var fromTarget = isPush ? new List<SpellEffect>() : TakeFor(effect, target, kinds);
+            var fromCaster = isPush || isSwap ? TakeFor(effect, caster, kinds) : new List<SpellEffect>();
 
-            target._hangingEffects.RemoveAll(x => wards.Contains(x));
+            // Both sets are taken before either is added, so nothing moves twice.
+            target._hangingEffects.AddRange(fromCaster);
+            caster._hangingEffects.AddRange(fromTarget);
+            cinematicTime += (fromTarget.Count + fromCaster.Count) * CombatHangingEffects.HANGING_EFFECT_CONSUME_TIME;
         }
 
         return cinematicTime;
     }
 
-    private static float ApplyStealCharmEffect(SpellEffect effect, CombatDuelSubCircle caster, CombatDuelSubCircle[] targets) {
-        var cinematicTime = 0.0f;
-
-        // A negative count means no limit.
-        var charmRemoveCount = effect.m_effectParam < 0 ? int.MaxValue : effect.m_effectParam;
-
-        // This is the same as the remove charm function, but we're moving the charms from the target to the caster.
-
-        foreach (var target in targets) {
-            var hangingEffects = target._hangingEffects.ToArray();
-            var charmsInQuesiton = CombatCharms.FindAppliedCharms(target, hangingEffects, effect.m_disposition)
-                                               .Take(charmRemoveCount);
-
-            cinematicTime += charmsInQuesiton.Count() * CombatHangingEffects.HANGING_EFFECT_CONSUME_TIME;
-
-            target._hangingEffects.RemoveAll(x => charmsInQuesiton.Contains(x));
-            caster._hangingEffects.AddRange(charmsInQuesiton);
-        }
-
-        return cinematicTime;
-    }
-
-    private static float ApplyStealWardEffect(SpellEffect effect, CombatDuelSubCircle caster, CombatDuelSubCircle[] targets) {
-        var cinematicTime = 0.0f;
-
-        // A negative count means no limit.
-        var wardRemoveCount = effect.m_effectParam < 0 ? int.MaxValue : effect.m_effectParam;
-
-        // This is the same as the remove ward function, but we're moving the wards from the target to the caster.
-
-        foreach (var target in targets) {
-            var wards = CombatWards.FindAppliedWards(target, effect)
-                                   .Take(wardRemoveCount);
-
-            cinematicTime += wards.Count() * CombatHangingEffects.HANGING_EFFECT_CONSUME_TIME;
-
-            target._hangingEffects.RemoveAll(x => wards.Contains(x));
-            caster._hangingEffects.AddRange(wards);
-        }
-
-        return cinematicTime;
-    }
+    private static List<SpellEffect> TakeFor(SpellEffect effect,
+                                              CombatDuelSubCircle from,
+                                              CombatHangingEffects.HangingKind kinds)
+        => CombatHangingEffects.Take(from, kinds, effect.m_disposition, effect.m_effectParam, effect.m_bypassProtection);
 
     private static float ApplyHangingEffect(SpellEffect effect, CombatDuelSubCircle[] targets, CombatEffectContext context) {
         foreach (var target in targets) {
