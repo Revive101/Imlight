@@ -290,10 +290,8 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
     }
 
     private COMBAT_106_PROTOCOL.MSG_ACTORCOMBATMOVE DetermineTurnAction() {
-        // If I'm stunned, pass.
+        // If I'm stunned, pass. The resolver ticks the stun down when the action resolves.
         if (_currentSubCircle.CombatParticipant.m_stunned > 0) {
-            _currentSubCircle.CombatParticipant.m_stunned--;
-
             Logger.Debug("Duel {0} | Slot {1} | Stunned. Passing.",
                 Logger.Args(_currentDuelComponent.SigilId, _currentSubCircle.SlotIndex));
 

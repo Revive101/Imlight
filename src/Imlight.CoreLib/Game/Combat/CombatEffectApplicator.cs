@@ -37,6 +37,7 @@
  * Last Updated: 10/22/2026
  */
 
+using Imlight.Common;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Game.Spells;
 using System;
@@ -63,7 +64,7 @@ internal static class CombatEffectApplicator {
     /// <param name="charms">The charms currently applied to the caster.</param>
     /// <param name="caster">The caster of the spell.</param>
     /// <param name="targets">The targets of the spell effect.</param>
-    /// <param name="context">The per-action values: source spell template id and crit multiplier.</param>
+    /// <param name="context">The per-action values: source spell template id, crit multiplier and stun resist roll.</param>
     /// <returns>The cinematic time required for the effect to be applied.</returns>
     internal static float ApplyEffect(SpellEffect effect,
                                       SpellEffect[] charms,
@@ -110,7 +111,10 @@ internal static class CombatEffectApplicator {
                 cinematicTime += ApplyHangingEffect(effect, targets, context);
                 break;
             case kSpellEffects.kStun:
-                cinematicTime += ApplyStunEffect(effect, targets);
+                cinematicTime += ApplyStunEffect(effect, caster, targets, context);
+                break;
+            case kSpellEffects.kStunBlock:
+                ApplyStunBlockEffect(effect, targets, context);
                 break;
             case kSpellEffects.kSummonCreature:
             case kSpellEffects.kSpawnCreature:
@@ -487,37 +491,92 @@ internal static class CombatEffectApplicator {
         caster._duelActor.SummonMinion((uint) effect.m_effectParam, caster);
     }
 
-    private static float ApplyStunEffect(SpellEffect effect, CombatDuelSubCircle[] targets) {
+    private static float ApplyStunEffect(SpellEffect effect,
+                                         CombatDuelSubCircle caster,
+                                         CombatDuelSubCircle[] targets,
+                                         CombatEffectContext context) {
+        var stunResistRoll = context.StunResistRoll;
         var cinematicTime = 0.0f;
 
         foreach (var target in targets) {
-            // If this target is dead, do nothing.
             if (!target.IsAlive) {
                 continue;
             }
 
-            // Check to see if this target has a stun block.
+            var resist = (int) (target.ParticipantGameStats.m_stunResistancePercent * 100);
             var spellBlock = target._hangingEffects.FirstOrDefault(x => x.m_effectType == kSpellEffects.kStunBlock);
             if (spellBlock is not null) {
-                // Remove the stun block and do nothing else.
                 target._hangingEffects.Remove(spellBlock);
                 cinematicTime += CombatHangingEffects.HANGING_EFFECT_CONSUME_TIME;
+                LogStunAttempt(caster, target, stunResistRoll, resist, "blocked");
 
                 continue;
             }
 
-            if (target.TryStun()) {
-                // Creature was stunned. Add a stun block hanging effect.
-                var stunBlockEffect = new SpellEffect {
-                    m_effectType = kSpellEffects.kStunBlock,
-                    m_spellTemplateID = effect.m_spellTemplateID,
-                };
+            if (resist >= stunResistRoll) {
+                LogStunAttempt(caster, target, stunResistRoll, resist, "resisted");
 
-                target._hangingEffects.Add(stunBlockEffect);
+                continue;
             }
+
+            if (!target.TryStun(Math.Max(1, effect.m_effectParam))) {
+                LogStunAttempt(caster, target, stunResistRoll, resist, "immune");
+
+                continue;
+            }
+
+            var blockCount = GetStunBlockCount(caster, target);
+            for (var i = 0; i < blockCount; i++) {
+                target._hangingEffects.Add(CreateStunBlock(context.SpellTemplateId));
+            }
+
+            LogStunAttempt(caster, target, stunResistRoll, resist,
+                $"stunned {target.CombatParticipant.m_stunned}, blocks given {blockCount}");
         }
 
         return cinematicTime;
+    }
+
+    private static int GetStunBlockCount(CombatDuelSubCircle caster, CombatDuelSubCircle target) {
+        if (caster._duelActor.Duel.m_bBattleground) {
+            return 0;
+        }
+
+        if (target._wizard is null) {
+            return 1;
+        }
+
+        var teamPlayers = caster._duelActor.ActiveSubCircles
+            .Count(x => x._wizard is not null && x.OccupiedTeam == caster.OccupiedTeam);
+
+        return Math.Max(1, teamPlayers);
+    }
+
+    private static SpellEffect CreateStunBlock(uint spellTemplateId) {
+        return new SpellEffect {
+            m_effectType = kSpellEffects.kStunBlock,
+            m_disposition = kHangingDisposition.kBeneficial,
+            m_spellTemplateID = spellTemplateId,
+        };
+    }
+
+    private static void ApplyStunBlockEffect(SpellEffect effect, CombatDuelSubCircle[] targets, CombatEffectContext context) {
+        var blockCount = Math.Max(1, effect.m_effectParam);
+
+        foreach (var target in targets) {
+            for (var i = 0; i < blockCount; i++) {
+                target._hangingEffects.Add(CreateStunBlock(context.SpellTemplateId));
+            }
+        }
+    }
+
+    private static void LogStunAttempt(CombatDuelSubCircle caster,
+                                       CombatDuelSubCircle target,
+                                       int roll,
+                                       int resist,
+                                       string result) {
+        Logger.Debug("Duel {0} | Slot {1} | Stun roll {2} | Resist {3} | {4}",
+            Logger.Args(caster._duelActor.Duel.m_duelID.Full, target.SlotIndex, roll, resist, result));
     }
 
     private static float ApplyGlobalEffect(SpellEffect spellEffect, Duel duel, CombatEffectContext context) {

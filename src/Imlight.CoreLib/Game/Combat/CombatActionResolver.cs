@@ -139,7 +139,11 @@ internal static class CombatActionResolver {
                 }
             }
 
-            var effectContext = new CombatEffectContext(action.Spell.m_templateID, critMultiplier);
+            if (chosenEffect.m_effectType == kSpellEffects.kStun && combatAction.m_stunResistRoll == 0) {
+                combatAction.m_stunResistRoll = (byte) Random.Shared.Next(1, 101);
+            }
+
+            var effectContext = new CombatEffectContext(action.Spell.m_templateID, critMultiplier, combatAction.m_stunResistRoll);
             cinematicTime += CombatEffectApplicator.ApplyEffect(chosenEffect,
                                                                 [.. charmsAffectingThisSpell],
                                                                 action.SpellCaster,

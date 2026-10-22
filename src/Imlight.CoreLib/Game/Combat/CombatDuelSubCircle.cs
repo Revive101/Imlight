@@ -360,9 +360,12 @@ public class CombatDuelSubCircle {
         return maxPips >= spell.m_pipCost.m_spellRank;
     }
 
-    internal bool TryStun() {
-        // todo: check if this creature can be stunned.
-        CombatParticipant.m_stunned = 1;
+    internal bool TryStun(int rounds) {
+        if (IsBoss) {
+            return false;
+        }
+
+        CombatParticipant.m_stunned = rounds;
 
         return true;
     }

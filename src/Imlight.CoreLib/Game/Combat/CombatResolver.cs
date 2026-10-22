@@ -251,6 +251,19 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
             return cinematicTime;
         }
 
+        // A stunned caster loses this action whether or not a spell was queued.
+        // todo: the client ticks m_stunned on a turn only in alternating-turn duels, and plays its 2 s Unstunned stage on the first
+        // turn after a stun when m_stunnedDisplay is set; the server neither sets m_stunnedDisplay nor times that stage.
+        // todo: confirm whether a stunned client sends a move (else queue a pass at planning begin).
+        if (action.SpellCaster.CombatParticipant.m_stunned > 0) {
+            action.SpellCaster.CombatParticipant.m_stunned--;
+
+            Logger.Debug("Duel {0} | Slot {1} | Caster is stunned. Passing.",
+                Logger.Args(_duel.m_duelID.Full, action.SpellCaster.SlotIndex));
+
+            return cinematicTime + HandlePassAction(action, combatActionList);
+        }
+
         // A null spell indicates the caster is passing their turn.
         if (action.Spell is null || action.SelectedTarget is null) {
             Logger.Debug("Duel {0} | Slot {1} | Caster is passing their turn.",
@@ -259,15 +272,9 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
             return cinematicTime + HandlePassAction(action, combatActionList);
         }
 
-        // If our target is gone or we're stunned, pass the turn.
-        // todo: the client ticks m_stunned on a turn only in alternating-turn duels, and plays its 2 s Unstunned stage on the first
-        // turn after a stun when m_stunnedDisplay is set; the server neither sets m_stunnedDisplay nor times that stage.
-        if (    action.SpellCaster.CombatParticipant.m_stunned > 0 
-            || !action.SelectedTarget.IsAlive
-            || !action.SelectedTarget.AddedToDuel) {
-            action.SpellCaster.CombatParticipant.m_stunned--;
-
-            Logger.Debug("Duel {0} | Slot {1} | Spell cannot occur because target is dead or caster is stunned.",
+        // If our target is gone, pass the turn.
+        if (!action.SelectedTarget.IsAlive || !action.SelectedTarget.AddedToDuel) {
+            Logger.Debug("Duel {0} | Slot {1} | Spell cannot occur because target is dead.",
                 Logger.Args(_duel.m_duelID.Full, action.SpellCaster.SlotIndex));
 
             return cinematicTime + HandlePassAction(action, combatActionList);
