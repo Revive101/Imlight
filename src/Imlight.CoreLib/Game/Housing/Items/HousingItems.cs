@@ -89,26 +89,10 @@ internal readonly record struct HousingVerdict(HousingPlacement Placement, strin
 
 internal static class HousingItems {
 
-    /// <summary>
-    /// The live blob of plain objects.
-    /// </summary>
     internal const string ITEM_SUB_TYPE = "Item";
-
-    /// <summary>
-    /// The live blob of pets, whose entries carry the pet's look.
-    /// </summary>
     internal const string PET_SUB_TYPE = "Pet";
-
-    /// <summary>
-    /// The live blob of mounts, whose entries carry the mount's look.
-    /// </summary>
     internal const string MOUNT_SUB_TYPE = "Mount";
-
-    /// <summary>
-    /// The one blob of an attic, whatever the kind of its items.
-    /// </summary>
     internal const string ATTIC_SUB_TYPE = "Attic";
-
     private const string NOT_PLACEABLE_ADJECTIVE = "NotPlaceable";
     private const uint PET_PROPERTY_MASK = 1u << 7;
     private const uint MOUNT_PROPERTY_MASK = 1u << 16;

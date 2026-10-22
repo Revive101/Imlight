@@ -114,7 +114,8 @@ internal static class HouseTravel {
             return false;
         }
 
-        return TryOpen(player, owner, partner, (lotGid, newItems) => HouseEntry.ForDoor(lotGid, owner.CharId, partner, doorGid, newItems), out entry, out failure);
+        return TryOpen(player, owner, partner, (lotGid, newItems) 
+            => HouseEntry.ForDoor(lotGid, owner.CharId, partner, doorGid, newItems), out entry, out failure);
     }
 
     /// <summary>
@@ -138,7 +139,8 @@ internal static class HouseTravel {
             return false;
         }
 
-        return TryOpen(player, owner, target, (lotGid, newItems) => HouseEntry.ForTeleport(lotGid, owner.CharId, target, newItems), out entry, out failure);
+        return TryOpen(player, owner, target, (lotGid, newItems) 
+            => HouseEntry.ForTeleport(lotGid, owner.CharId, target, newItems), out entry, out failure);
     }
 
     private static bool TryLoadCurrentHouse(Wizard player, out Wizard owner, out HouseTemplateInfo template, out HouseTravelFailure failure) {
@@ -156,7 +158,8 @@ internal static class HouseTravel {
 
         owner = current.OwnerCharId == player.CharId ? player : WizardCollection.GetCharacterUnloaded(current.OwnerCharId);
         if (owner is null) {
-            Logger.Warning("The owner {OwnerId} of lot {LotGid} cannot be loaded.", Logger.Args(current.OwnerCharId, current.LotGid));
+            Logger.Warning("The owner {OwnerId} of lot {LotGid} cannot be loaded.", 
+                Logger.Args(current.OwnerCharId, current.LotGid));
 
             return false;
         }
@@ -166,8 +169,12 @@ internal static class HouseTravel {
         return true;
     }
 
-    private static bool TryOpen(Wizard player, Wizard owner, HouseTemplateInfo target, Func<ulong, IReadOnlyList<ulong>, HouseEntry> createEntry,
-                                out HouseEntry entry, out HouseTravelFailure failure) {
+    private static bool TryOpen(Wizard player,
+                                Wizard owner,
+                                HouseTemplateInfo target,
+                                Func<ulong, IReadOnlyList<ulong>, HouseEntry> createEntry,
+                                out HouseEntry entry,
+                                out HouseTravelFailure failure) {
         entry = null;
         IReadOnlyList<ulong> newItems = [];
         if (owner.CharId == player.CharId) {

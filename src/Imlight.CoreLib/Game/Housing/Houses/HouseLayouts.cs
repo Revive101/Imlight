@@ -52,9 +52,6 @@ using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Housing.Houses;
 
-/// <summary>
-/// Reads the initial layouts of houses.
-/// </summary>
 internal static class HouseLayouts {
 
     private const char ASSET_SEPARATOR = '|';
@@ -103,21 +100,24 @@ internal static class HouseLayouts {
     private static HousingLayout ReadNamed(string layoutFile) {
         var parts = layoutFile.Split(ASSET_SEPARATOR, StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length != ASSET_PARTS) {
-            Logger.Error("The layout file {LayoutFile} is not an archive, a folder and a file.", Logger.Args(layoutFile));
+            Logger.Error("The layout file {LayoutFile} is not an archive, a folder and a file.", 
+                Logger.Args(layoutFile));
 
             return null;
         }
 
         var archiveName = $"{parts[0]}-{parts[1]}";
         if (!ResourceManager.TryLoadArchive(archiveName, out var wad)) {
-            Logger.Error("Could not load the archive {ArchiveName} of the layout {LayoutFile}.", Logger.Args(archiveName, layoutFile));
+            Logger.Error("Could not load the archive {ArchiveName} of the layout {LayoutFile}.", 
+                Logger.Args(archiveName, layoutFile));
 
             return null;
         }
 
         var bytes = wad.OpenFile(parts[2]);
         if (!bytes.HasValue || !TryDeserialize(bytes.Value.ToArray(), out var layout)) {
-            Logger.Error("Could not read the layout {LayoutFile}.", Logger.Args(layoutFile));
+            Logger.Error("Could not read the layout {LayoutFile}.", 
+                Logger.Args(layoutFile));
 
             return null;
         }
@@ -127,7 +127,8 @@ internal static class HouseLayouts {
 
     private static HousingLayout FindInZoneArchive(string zoneName) {
         if (!ResourceManager.TryLoadArchive(zoneName, out var wad)) {
-            Logger.Error("Could not load the archive of house zone {ZoneName}.", Logger.Args(zoneName));
+            Logger.Error("Could not load the archive of house zone {ZoneName}.", 
+                Logger.Args(zoneName));
 
             return null;
         }

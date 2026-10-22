@@ -55,7 +55,8 @@ namespace Imlight.CoreLib.Game.Housing.Houses;
 /// </summary>
 /// <param name="TemplateId">The template id of the deed or structure item.</param>
 /// <param name="LotZone">The zone of the house's lot.</param>
-/// <param name="StructureTemplateId">The interior structure's template id, or 0 for none. Only a deed's value means anything: a structure names itself, nothing, or by a data mistake another structure.</param>
+/// <param name="StructureTemplateId">The interior structure's template id, or 0 for none. Only a deed's value means anything: 
+///     a structure names itself, nothing, or by a data mistake another structure.</param>
 /// <param name="LayoutFile">The initial layout in the client's pipe-delimited asset form, or empty.</param>
 /// <param name="ItemLimit">The template's item limit, before any bonus slots.</param>
 /// <param name="IsStructure">Whether the template is a structure, the interior side of a residence, rather than a deed.</param>

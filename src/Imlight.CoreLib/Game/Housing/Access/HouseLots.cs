@@ -65,7 +65,8 @@ internal static class HouseLots {
 
         var stored = HouseCollection.Load(wizard.AttachedLotGid);
         if (stored is null || !HouseTemplates.TryGet(stored.TemplateId, out template)) {
-            Logger.Warning("Character {CharId} stands in lot {LotGid}, which is not a stored house.", Logger.Args(wizard.CharId, wizard.AttachedLotGid));
+            Logger.Warning("Character {CharId} stands in lot {LotGid}, which is not a stored house.", 
+                Logger.Args(wizard.CharId, wizard.AttachedLotGid));
 
             return false;
         }

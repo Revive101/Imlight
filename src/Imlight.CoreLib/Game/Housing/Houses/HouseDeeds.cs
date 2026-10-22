@@ -195,20 +195,6 @@ internal static class HouseDeeds {
         }
     }
 
-    private static void ApplyLot(Wizard wizard, WizClientObjectItem item) {
-        if (!TryEnsureLot(wizard, ItemHelper.GetTemplateId(item), out var lot)) {
-            Logger.Warning("Could not give house item {ItemId} of character {CharId} a lot.", Logger.Args(item.m_globalID, wizard.CharId));
-
-            return;
-        }
-
-        if (!TrySetLot(item, lot, out var changed)) {
-            Logger.Warning("House item {ItemId} of character {CharId} has no deed behavior.", Logger.Args(item.m_globalID, wizard.CharId));
-        } else if (changed && !WizardItemCollection.ApplyDeedLot(item, lot)) {
-            Logger.Warning("Could not store the lot on house item {ItemId} of character {CharId}.", Logger.Args(item.m_globalID, wizard.CharId));
-        }
-    }
-
     /// <summary>
     /// Points a house item at a lot.
     /// </summary>
@@ -232,6 +218,24 @@ internal static class HouseDeeds {
         return true;
     }
 
+    private static void ApplyLot(Wizard wizard, WizClientObjectItem item) {
+        if (!TryEnsureLot(wizard, ItemHelper.GetTemplateId(item), out var lot)) {
+            Logger.Warning("Could not give house item {ItemId} of character {CharId} a lot.", 
+                Logger.Args(item.m_globalID, wizard.CharId));
+
+            return;
+        }
+
+        if (!TrySetLot(item, lot, out var changed)) {
+            Logger.Warning("House item {ItemId} of character {CharId} has no deed behavior.", 
+                Logger.Args(item.m_globalID, wizard.CharId));
+        }
+        else if (changed && !WizardItemCollection.ApplyDeedLot(item, lot)) {
+            Logger.Warning("Could not store the lot on house item {ItemId} of character {CharId}.", 
+                Logger.Args(item.m_globalID, wizard.CharId));
+        }
+    }
+
     private static HouseGrant IssueAll(Wizard wizard, IReadOnlyList<uint> requested) {
         lock (HousingItems.BackpackLock(wizard)) {
             if (!TryCollectTemplates(requested, out var wanted, out var failure)) {
@@ -253,7 +257,10 @@ internal static class HouseDeeds {
         }
     }
 
-    private static bool TryIssueAll(Wizard wizard, List<HouseTemplateInfo> wanted, Dictionary<uint, ulong> lots, List<WizClientObjectItem> created) {
+    private static bool TryIssueAll(Wizard wizard,
+                                    List<HouseTemplateInfo> wanted,
+                                    Dictionary<uint, ulong> lots,
+                                    List<WizClientObjectItem> created) {
         foreach (var template in wanted) {
             if (!TryIssue(wizard, template.TemplateId, lots[template.TemplateId], created)) {
                 return false;
@@ -293,19 +300,23 @@ internal static class HouseDeeds {
         }
 
         if (!TrySetLot(item, lot, out var changed)) {
-            Logger.Error("House item {ItemId} of character {CharId} has no deed behavior.", Logger.Args(item.m_globalID, wizard.CharId));
+            Logger.Error("House item {ItemId} of character {CharId} has no deed behavior.", 
+                Logger.Args(item.m_globalID, wizard.CharId));
 
             return false;
         }
 
         if (changed && !WizardItemCollection.ApplyDeedLot(item, lot)) {
-            Logger.Warning("Could not store the lot on house item {ItemId} of character {CharId}.", Logger.Args(item.m_globalID, wizard.CharId));
+            Logger.Warning("Could not store the lot on house item {ItemId} of character {CharId}.", 
+                Logger.Args(item.m_globalID, wizard.CharId));
         }
 
         return true;
     }
 
-    private static bool TryCollectTemplates(IReadOnlyList<uint> requested, out List<HouseTemplateInfo> wanted, out HouseGrantFailure failure) {
+    private static bool TryCollectTemplates(IReadOnlyList<uint> requested,
+                                            out List<HouseTemplateInfo> wanted,
+                                            out HouseGrantFailure failure) {
         wanted = [];
         failure = HouseGrantFailure.None;
         foreach (var templateId in requested) {

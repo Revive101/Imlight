@@ -59,30 +59,16 @@ internal static class BankConfig {
 
     private static int s_warnedDisabled;
 
-    /// <summary>
-    /// The default capacity of a character's bank. Zero when the key is unset or not a positive number.
-    /// </summary>
-    internal static int MaxBankItems => Math.Max(0, ConfigurationManager.GetValue(MAX_BANK_ITEMS_KEY, 0));
-
-    /// <summary>
-    /// The default capacity of an account's shared bank. Zero when the key is unset or not a positive number.
-    /// </summary>
-    internal static int MaxSharedBankItems => Math.Max(0, ConfigurationManager.GetValue(MAX_SHARED_BANK_ITEMS_KEY, 0));
-
-    /// <summary>
-    /// The most jewels the shared bank holds. Zero when the key is unset, which keeps jewels out of the shared bank.
-    /// </summary>
-    internal static int SharedJewelCap => Math.Max(0, ConfigurationManager.GetValue(SHARED_JEWEL_CAP_KEY, 0));
-
-    /// <summary>
-    /// How much capacity one Expand Bank Elixir adds. Zero when the key is unset, which keeps the bank from being expanded.
-    /// </summary>
-    internal static int ExpandElixirAmount => Math.Max(0, ConfigurationManager.GetValue(EXPAND_ELIXIR_AMOUNT_KEY, 0));
-
-    /// <summary>
-    /// The largest capacity an expansion can reach. Zero when the key is unset, which means no limit.
-    /// </summary>
-    internal static int MaxBankLimit => Math.Max(0, ConfigurationManager.GetValue(MAX_BANK_LIMIT_KEY, 0));
+    internal static int MaxBankItems 
+        => Math.Max(0, ConfigurationManager.GetValue(MAX_BANK_ITEMS_KEY, 0));
+    internal static int MaxSharedBankItems
+        => Math.Max(0, ConfigurationManager.GetValue(MAX_SHARED_BANK_ITEMS_KEY, 0));
+    internal static int SharedJewelCap
+        => Math.Max(0, ConfigurationManager.GetValue(SHARED_JEWEL_CAP_KEY, 0));
+    internal static int ExpandElixirAmount
+        => Math.Max(0, ConfigurationManager.GetValue(EXPAND_ELIXIR_AMOUNT_KEY, 0));
+    internal static int MaxBankLimit 
+        => Math.Max(0, ConfigurationManager.GetValue(MAX_BANK_LIMIT_KEY, 0));
 
     /// <summary>
     /// The object names of the NPCs that open the bank.
@@ -111,7 +97,8 @@ internal static class BankConfig {
             }
 
             if (Interlocked.Exchange(ref s_warnedDisabled, 1) == 0) {
-                Logger.Warning("[Character] MaxBankItems and MaxSharedBankItems must both be set above 0, so the bank is not offered. MaxBankItems={Bank}, MaxSharedBankItems={Shared}.",
+                Logger.Warning("[Character] MaxBankItems and MaxSharedBankItems must both be set above 0, " +
+                    "so the bank is not offered. MaxBankItems={Bank}, MaxSharedBankItems={Shared}.",
                     Logger.Args(maxBankItems, maxSharedBankItems));
             }
 

@@ -49,26 +49,10 @@ namespace Imlight.CoreLib.Game.Housing.Items;
 
 internal static class HousingGids {
 
-    /// <summary>
-    /// The most bytes one blob holds: a string field is at most 65,535 bytes.
-    /// </summary>
     internal const int MAX_BLOB_BYTES = 65535;
-
-    /// <summary>
-    /// The bytes of a blob without entries.
-    /// </summary>
     internal const int BLOB_HEADER_BYTES = 47;
-
-    /// <summary>
-    /// The bytes of a plain entry. A custom entry adds the length of its string.
-    /// </summary>
     internal const int ENTRY_BYTES = 21;
-
-    /// <summary>
-    /// The most plain entries one blob holds. A kind blob holds fewer, because its entries carry a string.
-    /// </summary>
     internal const int MAX_SLOTS = (MAX_BLOB_BYTES - BLOB_HEADER_BYTES) / ENTRY_BYTES;
-
     private const int OBJECT_GID_TYPE = 9;
     private const long LOWEST_BASE = 0x80000000L;
     private const long HIGHEST_BASE = 0xFFFF0000L;
