@@ -343,6 +343,21 @@ public class CombatDuelSubCircle {
         return totalPips >= spellRank;
     }
 
+    /// <summary>
+    /// Whether this participant could ever hold enough pips for the spell, counting school mastery.
+    /// </summary>
+    internal bool CanEverAffordSpell(Spell spell) {
+        if (CombatActionResolver.IsXPipSpell(spell)) {
+            return true;
+        }
+
+        var maxPips = HasSchoolMastery(spell.m_magicSchoolID)
+            ? MAX_PIP_COUNT * 2
+            : MAX_PIP_COUNT;
+
+        return maxPips >= spell.m_pipCost.m_spellRank;
+    }
+
     internal bool TryStun() {
         // todo: check if this creature can be stunned.
         CombatParticipant.m_stunned = 1;

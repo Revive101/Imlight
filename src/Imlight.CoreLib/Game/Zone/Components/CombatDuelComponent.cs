@@ -1180,6 +1180,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
                 Logger.Args(Duel.m_duelID.Full, caster.SlotIndex, spell.m_templateID));
 
             CombatResolver.AddCombatMove(CombatMoveType.Pass, caster, null, null);
+
+            return;
         }
 
         // Find the target sub circle. Valid targets are 1-8.
