@@ -168,16 +168,33 @@ public static class WizardItemCollection {
     }
 
     /// <summary>
-    /// Checks whether an item is stored under a global id, whoever owns it.
+    /// Loads the stored document of an item that is not in the character's backpack, such as one placed in a house or
+    /// put in an attic.
     /// </summary>
+    /// <param name="charId">The ID of the player who owns the item.</param>
     /// <param name="itemId">The global id of the item.</param>
-    /// <returns>True if an item with the id is stored, false otherwise.</returns>
-    public static bool Exists(ulong itemId) {
+    /// <returns>The item, or <c>null</c> when no such document is stored.</returns>
+    internal static WizClientObjectItem Load(ulong charId, ulong itemId) {
         using var session = s_store.OpenSession();
 
         return session.Query<WizClientObjectItem>(collectionName: CollectionName)
             .Customize(query => query.WaitForNonStaleResults())
-            .Any(x => x.m_globalID == itemId);
+            .FirstOrDefault(x => x.m_characterId == charId && x.m_globalID == itemId);
+    }
+
+    /// <summary>
+    /// Writes a character's backpack as it is in memory through a session the caller saves, so a change to the backpack
+    /// commits together with the caller's other changes.
+    /// </summary>
+    /// <param name="session">The open session of the caller.</param>
+    /// <param name="storedOwner">The stored character the session loaded.</param>
+    /// <param name="owner">The character whose backpack is written.</param>
+    /// <param name="addedItem">An item that entered the backpack and has no document yet, or <c>null</c>.</param>
+    internal static void StoreBackpackInSession(IDocumentSession session, Wizard storedOwner, Wizard owner, WizClientObjectItem addedItem) {
+        storedOwner.InventoryBehavior = owner.InventoryBehavior;
+        if (addedItem is not null) {
+            StoreInSession(session, addedItem);
+        }
     }
 
     /// <summary>

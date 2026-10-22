@@ -181,7 +181,7 @@ public static class HouseCollection {
     /// </summary>
     /// <param name="house">The house to save.</param>
     /// <param name="owner">The owner, whose backpack is written as it is in memory.</param>
-    /// <param name="addedItem">An item that entered the backpack and is not stored yet, or <c>null</c>.</param>
+    /// <param name="addedItem">An item that entered the backpack and has no document yet, or <c>null</c>. An item that came out of a house keeps its document.</param>
     /// <returns><c>true</c> when both are stored; <c>false</c> when neither changed.</returns>
     public static bool SaveWithBackpack(House house, Wizard owner, WizClientObjectItem addedItem = null) {
         try {
@@ -192,12 +192,7 @@ public static class HouseCollection {
                 }
 
                 CopyChanging(house, stored);
-                storedOwner.InventoryBehavior = owner.InventoryBehavior;
-                if (addedItem is not null) {
-                    session.Store(addedItem);
-                    var metadata = session.Advanced.GetMetadataFor(addedItem);
-                    metadata[Raven.Client.Constants.Documents.Metadata.Collection] = WizardItemCollection.CollectionName;
-                }
+                WizardItemCollection.StoreBackpackInSession(session, storedOwner, owner, addedItem);
 
                 return true;
             });

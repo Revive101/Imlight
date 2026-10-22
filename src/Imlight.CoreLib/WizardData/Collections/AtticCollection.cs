@@ -126,7 +126,7 @@ public static class AtticCollection {
     /// </summary>
     /// <param name="attic">The attic to save.</param>
     /// <param name="owner">The owner, whose backpack is written as it is in memory.</param>
-    /// <param name="addedItem">An item that entered the backpack and is not stored yet, or <c>null</c>.</param>
+    /// <param name="addedItem">An item that entered the backpack and has no document yet, or <c>null</c>. An item that came out of an attic keeps its document.</param>
     /// <returns><c>true</c> when both are stored; <c>false</c> when neither changed.</returns>
     public static bool SaveWithBackpack(Attic attic, Wizard owner, WizClientObjectItem addedItem = null) {
         try {
@@ -137,17 +137,43 @@ public static class AtticCollection {
                 }
 
                 CopyChanging(attic, stored);
-                storedOwner.InventoryBehavior = owner.InventoryBehavior;
-                if (addedItem is not null) {
-                    session.Store(addedItem);
-                    session.Advanced.GetMetadataFor(addedItem)[Raven.Client.Constants.Documents.Metadata.Collection] = WizardItemCollection.CollectionName;
-                }
+                WizardItemCollection.StoreBackpackInSession(session, storedOwner, owner, addedItem);
 
                 return true;
             });
         } catch (Exception ex) {
             Logger.Error("Failed to save attic {AtticId} with the backpack of character {CharId}: {Reason}",
                 Logger.Args(attic.Id, owner.CharId, ex.Message));
+
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Writes an attic and deletes the document of an item that left it for good, in one transaction.
+    /// </summary>
+    /// <param name="attic">The attic to save.</param>
+    /// <param name="itemGid">The global id of the deleted item; 0 for an item that has no document.</param>
+    /// <returns><c>true</c> when the attic is stored and the document is deleted; <c>false</c> when neither changed.</returns>
+    public static bool SaveDeleting(Attic attic, ulong itemGid) {
+        try {
+            using var session = s_store.OpenSession();
+
+            var stored = session.Load<Attic>(attic.Id);
+            if (stored is null) {
+                return false;
+            }
+
+            CopyChanging(attic, stored);
+            if (itemGid != 0 && !WizardItemCollection.DeleteInSession(session, attic.CharId, itemGid)) {
+                Logger.Warning("Item {ItemId} of character {CharId} has no stored document to delete.", Logger.Args(itemGid, attic.CharId));
+            }
+
+            session.SaveChanges();
+
+            return true;
+        } catch (Exception ex) {
+            Logger.Error("Failed to save attic {AtticId} and delete item {ItemId}: {Reason}", Logger.Args(attic.Id, itemGid, ex.Message));
 
             return false;
         }

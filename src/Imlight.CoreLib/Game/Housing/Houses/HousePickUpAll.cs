@@ -33,7 +33,8 @@
  * - The objects the client names stay in the house. So does an object whose family has no attic blob, or that the server does
  *   not support in an attic, and so does every object past the room the attic has left; the result counts the objects that
  *   could have moved but did not.
- * - An object keeps the global id it was placed from, so it comes back as the same item.
+ * - An object keeps the global id and the item document it was placed from, so it comes back as the same item, whether
+ *   it is a pet or a chair.
  * - The house and the attic are locked in that order, and nothing takes them the other way round.
  *
  * TODO:
@@ -94,8 +95,7 @@ internal static class HousePickUpAll {
         foreach (var item in house.Snapshot().Slots) {
             if (item is not null && !kept.Contains(item.Id)
                 && HousingItems.Check(item.TemplateId, out _, out var family) == HousingPlacement.Allowed
-                && family.AtticSubType is not null
-                && !family.KeepsItem) {
+                && family.AtticSubType is not null) {
                 movable.Add((item, family));
             }
         }
@@ -111,7 +111,6 @@ internal static class HousePickUpAll {
                 new AtticItem {
                     ItemGid = entry.Item.ItemGid,
                     TemplateId = entry.Item.TemplateId,
-                    Family = entry.Family.Id,
                     Tint = entry.Item.Tint,
                     Custom = entry.Item.Custom,
                 },

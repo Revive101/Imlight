@@ -32,6 +32,8 @@
  *   client shows after a relog. It returns null for a value the client format cannot hold.
  * - The yaw of an exact angle is stored in the middle of its whole degree, because the client
  *   truncates the angle to whole degrees.
+ * - ItemGid names the item document of the backpack item the object was placed from. The house holds only that id, as the
+ *   backpack and the bank do, so a pet keeps its stats, name and dyes.
  * - A remap index of 0 is a set index, so the remap is null when it is not used.
  *
  * TODO:
@@ -94,14 +96,10 @@ public sealed record PlacedItem {
     public uint Id { get; init; }
 
     /// <summary>
-    /// The global id of the backpack item this was placed from, or 0 for an object a layout placed.
+    /// The global id of the item document this was placed from, or 0 for an object a layout placed. The document stays
+    /// in the items collection while the object is placed, so a pick up gives back the same item.
     /// </summary>
     public ulong ItemGid { get; init; }
-
-    /// <summary>
-    /// The backpack item itself, kept for objects whose item has state a template cannot rebuild, such as a pet.
-    /// </summary>
-    public WizClientObjectItem Stored { get; init; }
 
     public uint TemplateId { get; init; }
     public float X { get; init; }

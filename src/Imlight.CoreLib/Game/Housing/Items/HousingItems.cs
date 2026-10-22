@@ -38,7 +38,8 @@
  * - A pet or a mount is furniture by its behavior, with or without the adjective.
  * - Plants, wallpapers and seeds go through their own messages, so they are not furniture.
  * - Furniture of a family that is declared but not enabled is refused without blame, because the client offers it.
- * - A picked up object gets back the global id its backpack item had, unless something holds that id by now.
+ * - A placed or stored object keeps its item document, so it comes back as the same item. An object that has no document, as
+ *   one a layout placed, or whose document is gone, comes back as a new item of its template.
  *
  * TODO:
  * - Is the client's rule for offering a pet or a mount for placing the behavior, as it is here? No capture shows it.
@@ -105,7 +106,7 @@ internal static class HousingItems {
             return HousingItemKind.NotFurniture;
         }
 
-        if (KeepsItem(template) && !IsSeed(template)) {
+        if (IsPetOrMount(template) && !IsSeed(template)) {
             return HousingItemKind.Furniture;
         }
 
@@ -123,12 +124,13 @@ internal static class HousingItems {
     }
 
     /// <summary>
-    /// Checks whether a template's items carry state that a placed object has to keep, as a pet or a mount does.
+    /// Finds the attic blob subtype of an item template: the subtype of its family, or the plain one when the client has no
+    /// attic blob for the family.
     /// </summary>
     /// <param name="template">An item template.</param>
-    /// <returns><c>true</c> when one of the template's families keeps the item.</returns>
-    internal static bool KeepsItem(WizItemTemplate template)
-        => HousingFamilies.Of(template).Any(family => family.KeepsItem);
+    /// <returns>The subtype of the blob the template's items are in.</returns>
+    internal static string AtticSubTypeOf(WizItemTemplate template)
+        => FamilyOf(template).AtticSubType ?? HousingFamilies.Plain.AtticSubType;
 
     /// <summary>
     /// Finds the template of an item and decides whether the server places it.
@@ -151,8 +153,7 @@ internal static class HousingItems {
         }
 
         template = item;
-        var families = HousingFamilies.Of(item);
-        family = families.FirstOrDefault(candidate => !candidate.Enabled) ?? families[0];
+        family = FamilyOf(item);
 
         return family.Enabled ? HousingPlacement.Allowed : HousingPlacement.NotEnabled;
     }
@@ -181,57 +182,62 @@ internal static class HousingItems {
     /// </summary>
     /// <param name="wizard">The character who picks the object up.</param>
     /// <param name="templateId">The object's template id.</param>
-    /// <param name="itemGid">
-    /// The global id the object had as a backpack item, or 0 for an object that never was one. The item gets it
-    /// back when nothing else holds the id.
-    /// </param>
     /// <returns>The new item, or <c>null</c> when the template is not an item.</returns>
-    internal static WizClientObjectItem CreateItem(Wizard wizard, uint templateId, ulong itemGid = 0) {
+    internal static WizClientObjectItem CreateItem(Wizard wizard, uint templateId) {
         if (CoreObjectFactory.FinalizeCoreObject(templateId) is not WizClientObjectItem item) {
             return null;
         }
 
         item.m_characterId = (GID) wizard.CharId;
-        if (itemGid != 0 && !IsGidInUse(wizard, itemGid)) {
-            item.m_globalID = itemGid;
-        }
-
         CoreObjectFactory.InitializeCoreObjectBehaviors(item, item.m_templateID);
 
         return item;
     }
 
     /// <summary>
-    /// Deletes the stored document of an item that already left the backpack, so only an unused document is left.
+    /// Takes the item of an object that leaves a house or an attic. The item is not added to the backpack.
     /// </summary>
-    /// <param name="charId">The character who held the item.</param>
-    /// <param name="itemId">The item's global id.</param>
-    internal static void DeleteStoredItem(ulong charId, ulong itemId) {
-        try {
-            if (!WizardItemCollection.RemoveItem(charId, itemId)) {
-                Logger.Warning("Item {ItemId} of character {CharId} has no stored document to delete.", Logger.Args(itemId, charId));
+    /// <param name="wizard">The character who takes the object.</param>
+    /// <param name="templateId">The object's template id.</param>
+    /// <param name="itemGid">The item document the object was placed from, or 0 for an object that has none.</param>
+    /// <param name="created">
+    /// <c>true</c> when the item is new and its document must be stored with the change that moves it; <c>false</c> when the
+    /// stored document of the object is used.
+    /// </param>
+    /// <returns>The item, or <c>null</c> when the document could not be read or the template is not an item.</returns>
+    internal static WizClientObjectItem TakeItem(Wizard wizard, uint templateId, ulong itemGid, out bool created) {
+        created = false;
+        if (itemGid != 0) {
+            try {
+                if (WizardItemCollection.Load(wizard.CharId, itemGid) is { } stored) {
+                    return stored;
+                }
+            } catch (Exception exception) {
+                Logger.Warning("Could not load the stored item {ItemId} of character {CharId}: {Reason}",
+                    Logger.Args(itemGid, wizard.CharId, exception.Message));
+
+                return null;
             }
-        } catch (Exception exception) {
-            Logger.Warning("Could not delete the stored item {ItemId} of character {CharId}: {Reason}",
-                Logger.Args(itemId, charId, exception.Message));
+
+            Logger.Warning("Item {ItemId} of character {CharId} has no stored document, so template {TemplateId} comes back as a new item.",
+                Logger.Args(itemGid, wizard.CharId, templateId));
         }
+
+        created = true;
+
+        return CreateItem(wizard, templateId);
     }
 
     private static bool IsSeed(WizItemTemplate template)
         => (template.m_behaviors ?? []).OfType<SeedBehaviorTemplate>().Any();
 
-    private static bool IsGidInUse(Wizard wizard, ulong itemGid) {
-        if (wizard.InventoryBehavior.GetItem(itemGid) is not null) {
-            return true;
-        }
+    private static HousingFamily FamilyOf(WizItemTemplate template) {
+        var families = HousingFamilies.Of(template);
 
-        try {
-            return WizardItemCollection.Exists(itemGid);
-        } catch (Exception exception) {
-            Logger.Warning("Could not check whether item {ItemId} exists: {Reason}", Logger.Args(itemGid, exception.Message));
-
-            return true;
-        }
+        return families.FirstOrDefault(candidate => !candidate.Enabled) ?? families[0];
     }
+
+    private static bool IsPetOrMount(WizItemTemplate template)
+        => HousingFamilies.Of(template).Any(family => family == HousingFamilies.Pet || family == HousingFamilies.Mount);
 
 }

@@ -30,14 +30,15 @@
  * }
  *
  * NOTE:
- * - The attic is one blob per subtype, and an item is in the blob of its family's attic subtype. Each blob has its own
+ * - The attic is one blob per subtype, and an item is in the blob of its template's family. The subtype is not stored: it is
+ *   derived from the template whenever the attic is loaded. Each blob has its own
  *   base, revision and slot table: GID id = base + slot, and a removed item leaves a null slot so the numbers in later
  *   patches stay valid.
  * - Every change is written before it returns. A failed write undoes the change in memory.
  * - A change that also moves an item to or from a backpack passes its own save, which writes both in one transaction.
  * - The bases of one attic are far enough apart that no two blobs share an id.
  * - Creating the state numbers every blob again with a new base and a revision no client has seen, and drops the items
- *   whose family or template is gone. Use AtticRegistry to get a state and count viewers.
+ *   whose template is gone. Use AtticRegistry to get a state and count viewers.
  *
  * TODO:
  *
@@ -109,7 +110,7 @@ internal readonly record struct AtticSnapshot(string SubType, uint Revision, uin
 /// What the audit at the creation of a state found.
 /// </summary>
 /// <param name="Audited">The number of items checked.</param>
-/// <param name="Removed">The number of items dropped because their family or template is gone.</param>
+/// <param name="Removed">The number of items dropped because their template is gone.</param>
 internal readonly record struct AtticAudit(int Audited, int Removed);
 
 internal sealed class AtticState {
@@ -145,15 +146,7 @@ internal sealed class AtticState {
     }
 
     /// <summary>
-    /// Finds the attic blob subtype of a family.
-    /// </summary>
-    /// <param name="familyId">The id of a housing family.</param>
-    /// <returns>The subtype, or <c>null</c> when the family is not declared or the client has no attic blob for it.</returns>
-    internal static string SubTypeOf(string familyId)
-        => HousingFamilies.All.FirstOrDefault(family => family.Id == familyId)?.AtticSubType;
-
-    /// <summary>
-    /// Creates the live state of a stored attic. The items are checked, numbered by their ids, every blob gets a new base,
+    /// Creates the live state of a stored attic. Items whose template is gone are dropped, the rest are numbered by their ids, every blob gets a new base,
     /// and the revisions move once and are stored, so a client with an older cache fetches the blobs again.
     /// </summary>
     /// <param name="attic">The stored attic; the state owns it from now on.</param>
@@ -164,11 +157,11 @@ internal sealed class AtticState {
         state = null;
         var previousItems = attic.Items;
         var previousRevisions = attic.Revisions;
-        var kept = previousItems.Where(IsStorable).OrderBy(item => item.Id).ToList();
+        var kept = previousItems.Where(item => SubTypeOf(item) is not null).OrderBy(item => item.Id).ToList();
         audit = new AtticAudit(previousItems.Count, previousItems.Count - kept.Count);
 
         var revisions = new Dictionary<string, uint>(previousRevisions);
-        foreach (var subType in revisions.Keys.Concat(kept.Select(item => SubTypeOf(item.Family))).Distinct().ToList()) {
+        foreach (var subType in revisions.Keys.Concat(kept.Select(SubTypeOf)).Distinct().ToList()) {
             revisions[subType] = revisions.GetValueOrDefault(subType) + 1;
         }
 
@@ -182,7 +175,7 @@ internal sealed class AtticState {
         }
 
         state = new AtticState(attic);
-        foreach (var group in kept.GroupBy(item => SubTypeOf(item.Family))) {
+        foreach (var group in kept.GroupBy(SubTypeOf)) {
             state.TableFor(group.Key).Slots.AddRange(group);
         }
 
@@ -431,10 +424,8 @@ internal sealed class AtticState {
         }
     }
 
-    private static bool IsStorable(AtticItem item)
-        => SubTypeOf(item.Family) is not null
-            && CoreObjectFactory.GetCoreTemplate(item.TemplateId) is WizItemTemplate template
-            && HousingItems.Classify(template) == HousingItemKind.Furniture;
+    private static string SubTypeOf(AtticItem item)
+        => CoreObjectFactory.GetCoreTemplate(item.TemplateId) is WizItemTemplate template ? HousingItems.AtticSubTypeOf(template) : null;
 
     private uint RevisionOf(string subType)
         => _attic.Revisions.TryGetValue(subType, out var revision) ? revision : 1;

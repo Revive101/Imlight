@@ -24,13 +24,13 @@
  * shows them in. Everything in it is a plain domain record, never the client's blob form.
  *
  * USAGE EXAMPLE:
- * var item = new AtticItem { ItemGid = gid, TemplateId = templateId, Family = family.Id };
+ * var item = new AtticItem { ItemGid = gid, TemplateId = templateId };
  * HousingBlobObject entry = item.ToBlobObject();
  *
  * NOTE:
  * - One document per character, id Attics/{charId}. The container id is the id the client files the attic blobs under.
- * - An item keeps the global id it had as a backpack item, so it comes back as the same item.
- * - Family is the id of the housing family the item belongs to. The family decides which blob the item is in.
+ * - An item keeps the global id it had as a backpack item, and its item document stays in the items collection, so it comes
+ *   back as the same item. The blob an item is in is derived from its template when the attic is loaded.
  * - Revisions has one number per blob subtype, the version of that blob. A subtype with no entry has not been sent.
  *
  * TODO:
@@ -54,7 +54,6 @@ public sealed record AtticItem {
     public uint Id { get; init; }
     public ulong ItemGid { get; init; }
     public uint TemplateId { get; init; }
-    public string Family { get; init; }
     public int Tint { get; init; }
     public string Custom { get; init; }
 

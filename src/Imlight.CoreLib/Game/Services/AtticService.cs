@@ -32,8 +32,8 @@
  *   "Pick Up All Items" fills the attic.
  * - The attic document is created the first time the character needs it, and the client is told its container id then.
  * - The blobs are sent when the window is opened and whenever a client that cannot apply a patch asks for one.
- * - An item keeps its global id in the attic, so it comes back as the same item. Only furniture of a supported family
- *   goes in, because the attic keeps no state beyond the template and the colour.
+ * - An item keeps its global id and its item document in the attic, so it comes back as the same item, a pet with its stats,
+ *   name and dyes included. Only furniture of a supported family goes in. Deleting an item from the attic deletes its document.
  *
  * TODO:
  * - Does the live server list the attic blobs when the player enters the game, or only when the window opens?
@@ -145,7 +145,7 @@ internal class AtticService(SessionActor sessionActor) : MessageService(sessionA
             return;
         }
 
-        if (placement == HousingPlacement.NotEnabled || family.AtticSubType is null || family.KeepsItem) {
+        if (placement == HousingPlacement.NotEnabled || family.AtticSubType is null) {
             Logger.Information("Character {CharId} tried to put item {ItemId} of the {Family} family in the attic, which is not supported.",
                 Logger.Args(wizard.CharId, message.ItemID, family.Id));
             InformGameClient("That kind of object cannot be put in the attic yet.");
@@ -164,7 +164,7 @@ internal class AtticService(SessionActor sessionActor) : MessageService(sessionA
         }
 
         // The backpack changes in memory only and is written together with the attic, so a crash between the
-        // two cannot lose the item or leave it in both places.
+        // two cannot lose the item or leave it in both places. The item's document stays where it is.
         var itemId = item.m_globalID;
         AtticChange change;
         lock (HousingItems.BackpackLock(wizard)) {
@@ -172,7 +172,7 @@ internal class AtticService(SessionActor sessionActor) : MessageService(sessionA
                 return;
             }
 
-            change = attic.TryAdd(new AtticItem { ItemGid = itemId, TemplateId = templateId, Family = family.Id }, family.AtticSubType,
+            change = attic.TryAdd(new AtticItem { ItemGid = itemId, TemplateId = templateId }, family.AtticSubType,
                 document => AtticCollection.SaveWithBackpack(document, wizard));
             if (!change.Done && !wizard.InventoryBehavior.AddItem(item)) {
                 Logger.Error("Could not return item {ItemId} to the backpack of character {CharId} after it failed to go in the attic.",
@@ -193,8 +193,6 @@ internal class AtticService(SessionActor sessionActor) : MessageService(sessionA
         ItemSync.SendRemoved(SessionActor.ActorRef, wizard, itemId);
         SendToSocket(AtticMessages.AddPatch(attic, change));
         SendCount(wizard, attic);
-
-        HousingItems.DeleteStoredItem(wizard.CharId, itemId);
     }
 
     [MessageHandler(typeof(WIZARDHOUSING_50_PROTOCOL.MSG_MOVEFROMATTIC))]
@@ -211,6 +209,7 @@ internal class AtticService(SessionActor sessionActor) : MessageService(sessionA
 
         WizClientObjectItem item;
         AtticChange change;
+        var created = false;
         lock (HousingItems.BackpackLock(wizard)) {
             if (CoreObjectFactory.GetCoreTemplate(stored.TemplateId) is not WizItemTemplate template
                 || wizard.InventoryBehavior.FreeSlots <= 0
@@ -220,15 +219,16 @@ internal class AtticService(SessionActor sessionActor) : MessageService(sessionA
                 return;
             }
 
-            item = HousingItems.CreateItem(wizard, stored.TemplateId, stored.ItemGid);
+            item = HousingItems.TakeItem(wizard, stored.TemplateId, stored.ItemGid, out created);
             if (item is null || !wizard.InventoryBehavior.AddItem(item)) {
                 InformGameClient("The object could not be taken out of the attic.");
 
                 return;
             }
 
-            // The new item and the emptied slot are written in one transaction, so a crash between them cannot lose the item.
-            change = attic.TryRemove(stored.Id, document => AtticCollection.SaveWithBackpack(document, wizard, item));
+            // The backpack and the emptied slot are written in one transaction, so a crash between them cannot lose the item.
+            // A stored item keeps its document, and only a new item is stored with it.
+            change = attic.TryRemove(stored.Id, document => AtticCollection.SaveWithBackpack(document, wizard, created ? item : null));
             if (!change.Done) {
                 wizard.InventoryBehavior.RemoveItem(item);
                 InformGameClient("The object could not be taken out of the attic.");
@@ -257,7 +257,8 @@ internal class AtticService(SessionActor sessionActor) : MessageService(sessionA
             return;
         }
 
-        var change = attic.TryRemove(stored.Id);
+        // The item's document goes with the slot, in one write.
+        var change = attic.TryRemove(stored.Id, document => AtticCollection.SaveDeleting(document, stored.ItemGid));
         if (!change.Done) {
             InformGameClient("The object could not be deleted from the attic.");
 

@@ -33,6 +33,8 @@
  * - The service counts the player into the house at MSG_PRELOGIN and out when the session ends.
  * - A blob request that names the attic is left to AtticService.
  * - Only the owner decorates. A visitor sees the same blob and patches, and every edit they send is refused as forged.
+ * - An object that is placed keeps the item document of its backpack item, and the house holds the id, so a pick up gives back
+ *   the same item.
  * - Picking up every object moves them into the owner's attic, so the service is a viewer of the attic as well. The house
  *   and the attic are written in one transaction by Game/Housing/HousePickUpAll.
  *
@@ -181,7 +183,6 @@ internal class HousingService(SessionActor sessionActor) : MessageService(sessio
 
         var placed = new PlacedItem {
             ItemGid = item.m_globalID,
-            Stored = HousingItems.KeepsItem(template) ? item : null,
             TemplateId = templateId,
             X = message.LocX,
             Y = message.LocY,
@@ -202,7 +203,7 @@ internal class HousingService(SessionActor sessionActor) : MessageService(sessio
         }
 
         // The backpack changes in memory only and is written together with the house, so a crash between
-        // the two cannot lose the item or leave it in both places.
+        // the two cannot lose the item or leave it in both places. The item's document stays where it is.
         var itemId = item.m_globalID;
         HouseChange change;
         lock (HousingItems.BackpackLock(wizard)) {
@@ -240,8 +241,6 @@ internal class HousingService(SessionActor sessionActor) : MessageService(sessio
             GIDID = change.GidId,
             ColorBits = (sbyte) change.Item.Tint,
         }, isSelfless: false, ZoneBroadcastTarget.Players);
-
-        HousingItems.DeleteStoredItem(wizard.CharId, itemId);
     }
 
     [MessageHandler(typeof(WIZARDHOUSING_50_PROTOCOL.MSG_UPDATEHOUSINGOBJECT))]
@@ -340,6 +339,7 @@ internal class HousingService(SessionActor sessionActor) : MessageService(sessio
 
         WizClientObjectItem item;
         HouseChange change;
+        var created = false;
         lock (HousingItems.BackpackLock(wizard)) {
             if (placedItem is null
                 || CoreObjectFactory.GetCoreTemplate(placedItem.TemplateId) is not WizItemTemplate template
@@ -350,15 +350,16 @@ internal class HousingService(SessionActor sessionActor) : MessageService(sessio
                 return;
             }
 
-            item = placedItem.Stored ?? HousingItems.CreateItem(wizard, placedItem.TemplateId, placedItem.ItemGid);
+            item = HousingItems.TakeItem(wizard, placedItem.TemplateId, placedItem.ItemGid, out created);
             if (item is null || !wizard.InventoryBehavior.AddItem(item)) {
                 RefusePickUp(house);
 
                 return;
             }
 
-            // The new item and the emptied slot are written in one transaction, so a crash between them cannot lose the item.
-            change = house.TryRemove(placedItem.Id, document => HouseCollection.SaveWithBackpack(document, wizard, item));
+            // The backpack and the emptied slot are written in one transaction, so a crash between them cannot lose the item.
+            // A stored item keeps its document, and only a new item is stored with it.
+            change = house.TryRemove(placedItem.Id, document => HouseCollection.SaveWithBackpack(document, wizard, created ? item : null));
             if (!change.Done) {
                 wizard.InventoryBehavior.RemoveItem(item);
                 RefusePickUp(house);
