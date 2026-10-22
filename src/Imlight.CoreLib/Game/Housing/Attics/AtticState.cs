@@ -232,13 +232,18 @@ internal sealed class AtticState {
     /// </returns>
     internal AtticChange TryAdd(AtticItem item, string subType, Func<Attic, bool> save = null) {
         lock (_lock) {
+            // A retired state is gone from the registry, and a write to it would be lost.
+            if (IsRetired) {
+                return new AtticChange(HouseEdit.NotFound);
+            }
+
             if (_attic.Items.Count >= Limit) {
                 return new AtticChange(HouseEdit.LimitReached);
             }
 
             var table = _tables.For(subType);
-            if (table.Slots.Count >= HousingGids.MAX_SLOTS) {
-                return new AtticChange(MakeRoom(subType, table));
+            if (!table.Fits(item.Custom, stored => stored.Custom)) {
+                return new AtticChange(MakeRoom(subType, table, item.Custom));
             }
 
             var added = item with { Id = _attic.NextItemId };
@@ -281,6 +286,11 @@ internal sealed class AtticState {
     /// </returns>
     internal AtticBatch TryAddMany(IReadOnlyList<AtticAddition> additions, Func<Attic, bool> save = null) {
         lock (_lock) {
+            // A retired state is gone from the registry, and a write to it would be lost.
+            if (IsRetired) {
+                return new AtticBatch(HouseEdit.NotFound, [], []);
+            }
+
             if (additions.Count == 0) {
                 return new AtticBatch(HouseEdit.NotFound, [], []);
             }
@@ -313,6 +323,11 @@ internal sealed class AtticState {
     /// <returns><see cref="HouseEdit.NotFound"/> when the attic has no such item, <see cref="HouseEdit.SaveFailed"/> when the write failed.</returns>
     internal AtticChange TryRemove(uint itemId, Func<Attic, bool> save = null) {
         lock (_lock) {
+            // A retired state is gone from the registry, and a write to it would be lost.
+            if (IsRetired) {
+                return new AtticChange(HouseEdit.NotFound);
+            }
+
             if (_tables.Locate(itemId) is not { } found) {
                 return new AtticChange(HouseEdit.NotFound);
             }
@@ -410,8 +425,8 @@ internal sealed class AtticState {
         return new AtticBatch(renumbered.Count == 0 ? HouseEdit.SaveFailed : HouseEdit.NeedsResync, [], renumbered);
     }
 
-    private HouseEdit MakeRoom(string subType, BlobTable<AtticItem> table) {
-        if (table.Live >= table.Slots.Count) {
+    private HouseEdit MakeRoom(string subType, BlobTable<AtticItem> table, byte[] custom) {
+        if (table.Live >= table.Slots.Count || !table.Fits(custom, stored => stored.Custom, compacted: true)) {
             return HouseEdit.LimitReached;
         }
 

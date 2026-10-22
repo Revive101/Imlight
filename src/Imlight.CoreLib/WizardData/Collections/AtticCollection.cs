@@ -128,26 +128,8 @@ public static class AtticCollection {
     /// <param name="owner">The owner, whose backpack is written as it is in memory.</param>
     /// <param name="addedItem">An item that entered the backpack and has no document yet, or <c>null</c>. An item that came out of an attic keeps its document.</param>
     /// <returns><c>true</c> when both are stored; <c>false</c> when neither changed.</returns>
-    public static bool SaveWithBackpack(Attic attic, Wizard owner, WizClientObjectItem addedItem = null) {
-        try {
-            return WizardCollection.UpdateCharacterWithSession(owner.CharId, (session, storedOwner) => {
-                var stored = session.Load<Attic>(attic.Id);
-                if (stored is null) {
-                    return false;
-                }
-
-                CopyChanging(attic, stored);
-                WizardItemCollection.StoreBackpackInSession(session, storedOwner, owner, addedItem);
-
-                return true;
-            });
-        } catch (Exception ex) {
-            Logger.Error("Failed to save attic {AtticId} with the backpack of character {CharId}: {Reason}",
-                Logger.Args(attic.Id, owner.CharId, ex.Message));
-
-            return false;
-        }
-    }
+    public static bool SaveWithBackpack(Attic attic, Wizard owner, WizClientObjectItem addedItem = null)
+        => WizardItemCollection.SaveContainerWithBackpack<Attic>(attic.Id, owner, stored => CopyChanging(attic, stored), addedItem);
 
     /// <summary>
     /// Writes an attic and deletes the document of an item that left it for good, in one transaction.

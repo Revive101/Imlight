@@ -16,6 +16,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Raven.Client.Documents;
@@ -194,6 +195,38 @@ public static class WizardItemCollection {
         storedOwner.InventoryBehavior = owner.InventoryBehavior;
         if (addedItem is not null) {
             StoreInSession(session, addedItem);
+        }
+    }
+
+    /// <summary>
+    /// Writes a container document (a house or an attic) together with its owner's backpack in one transaction, so an
+    /// item that moves between them is either in the container or in the backpack, never lost and never in both.
+    /// </summary>
+    /// <typeparam name="TContainer">The container's document type.</typeparam>
+    /// <param name="containerId">The id of the container's document.</param>
+    /// <param name="owner">The owner, whose backpack is written as it is in memory.</param>
+    /// <param name="copyChanging">Copies the container's changing parts onto the stored document.</param>
+    /// <param name="addedItem">An item that entered the backpack and has no document yet, or <c>null</c>.</param>
+    /// <returns><c>true</c> when both are stored; <c>false</c> when neither changed.</returns>
+    internal static bool SaveContainerWithBackpack<TContainer>(string containerId, Wizard owner, Action<TContainer> copyChanging, WizClientObjectItem addedItem)
+        where TContainer : class {
+        try {
+            return WizardCollection.UpdateCharacterWithSession(owner.CharId, (session, storedOwner) => {
+                var stored = session.Load<TContainer>(containerId);
+                if (stored is null) {
+                    return false;
+                }
+
+                copyChanging(stored);
+                StoreBackpackInSession(session, storedOwner, owner, addedItem);
+
+                return true;
+            });
+        } catch (Exception ex) {
+            Logger.Error("Failed to save {ContainerId} with the backpack of character {CharId}: {Reason}",
+                Logger.Args(containerId, owner.CharId, ex.Message));
+
+            return false;
         }
     }
 

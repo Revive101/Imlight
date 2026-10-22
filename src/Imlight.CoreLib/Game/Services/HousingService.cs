@@ -195,20 +195,12 @@ internal class HousingService(SessionActor sessionActor) : MessageService(sessio
             return;
         }
 
-        // The backpack changes in memory only and is written together with the house, so a crash between
-        // the two cannot lose the item or leave it in both places. The item's document stays where it is.
         var itemId = item.m_globalID;
-        HouseChange change;
-        lock (HousingItems.BackpackLock(wizard)) {
-            if (!wizard.InventoryBehavior.RemoveItem(item)) {
-                return;
-            }
-
-            change = house.TryAdd(placed, verdict.SubType, document => HouseCollection.SaveWithBackpack(document, wizard));
-            if (!change.Done && !wizard.InventoryBehavior.AddItem(item)) {
-                Logger.Error("Could not return item {ItemId} to the backpack of character {CharId} after it failed to be placed.",
-                    Logger.Args(itemId, wizard.CharId));
-            }
+        HouseChange change = default;
+        var transfer = BackpackTransfer.Store(wizard, item,
+            () => (change = house.TryAdd(placed, verdict.SubType, document => HouseCollection.SaveWithBackpack(document, wizard))).Done, "be placed");
+        if (transfer == BackpackTransferResult.NotInBackpack) {
+            return;
         }
 
         if (!change.Done) {
@@ -331,35 +323,21 @@ internal class HousingService(SessionActor sessionActor) : MessageService(sessio
             return;
         }
 
-        WizClientObjectItem item;
-        HouseChange change;
-        var created = false;
-        lock (HousingItems.BackpackLock(wizard)) {
-            if (placedItem is null
-                || CoreObjectFactory.GetCoreTemplate(placedItem.TemplateId) is not WizItemTemplate template
-                || wizard.InventoryBehavior.FreeSlots <= 0
-                || HousingItems.TemplateCopyLimitReached(template, HousingItems.CountInBackpack(wizard, placedItem.TemplateId))) {
-                RefusePickUp(house);
+        if (placedItem is null) {
+            RefusePickUp(house);
 
-                return;
-            }
+            return;
+        }
 
-            item = HousingItems.TakeItem(wizard, placedItem.TemplateId, placedItem.ItemGid, out created);
-            if (item is null || !wizard.InventoryBehavior.AddItem(item)) {
-                RefusePickUp(house);
+        // The backpack and the emptied slot are written in one transaction, so a crash between them cannot lose the item.
+        // A stored item keeps its document, and only a new item is stored with it.
+        HouseChange change = default;
+        var transfer = BackpackTransfer.Take(wizard, placedItem.TemplateId, placedItem.ItemGid,
+            added => (change = house.TryRemove(placedItem.Id, document => HouseCollection.SaveWithBackpack(document, wizard, added))).Done, out var item);
+        if (transfer != BackpackTransferResult.Done) {
+            RefusePickUp(house);
 
-                return;
-            }
-
-            // The backpack and the emptied slot are written in one transaction, so a crash between them cannot lose the item.
-            // A stored item keeps its document, and only a new item is stored with it.
-            change = house.TryRemove(placedItem.Id, document => HouseCollection.SaveWithBackpack(document, wizard, created ? item : null));
-            if (!change.Done) {
-                wizard.InventoryBehavior.RemoveItem(item);
-                RefusePickUp(house);
-
-                return;
-            }
+            return;
         }
 
         if (!ItemSync.SendAdded(SessionActor.ActorRef, wizard, item)) {
@@ -367,12 +345,7 @@ internal class HousingService(SessionActor sessionActor) : MessageService(sessio
                 Logger.Args(item.m_globalID, wizard.CharId));
         }
 
-        ZoneBroadcast(new WIZARDHOUSING_50_PROTOCOL.MSG_PATCHDELETEHOUSINGOBJECT {
-            SubType = change.SubType,
-            PackageNumber = 0,
-            VersionNumber = change.Revision,
-            GIDID = change.GidId,
-        }, isSelfless: false, ZoneBroadcastTarget.Players);
+        BroadcastDelete(change);
     }
 
     [MessageHandler(typeof(WIZARDHOUSING_50_PROTOCOL.MSG_PICKUPALL))]
@@ -391,7 +364,7 @@ internal class HousingService(SessionActor sessionActor) : MessageService(sessio
             return;
         }
 
-        if (!TryGetAttic(out var attic)) {
+        if (!_atticViewer.TryOpen(wizard, SendToSocket, text => InformGameClient(text), out var attic)) {
             return;
         }
 
@@ -421,15 +394,11 @@ internal class HousingService(SessionActor sessionActor) : MessageService(sessio
         }
 
         foreach (var change in result.Removed) {
-            ZoneBroadcast(new WIZARDHOUSING_50_PROTOCOL.MSG_PATCHDELETEHOUSINGOBJECT {
-                SubType = change.SubType,
-                PackageNumber = 0,
-                VersionNumber = change.Revision,
-                GIDID = change.GidId,
-            }, isSelfless: false, ZoneBroadcastTarget.Players);
+            BroadcastDelete(change);
         }
 
         if (result.Added.Count > 0) {
+            AtticRegistry.SetSummary(wizard, attic);
             SendToSocket(AtticMessages.Count(wizard, attic));
         }
 
@@ -460,19 +429,13 @@ internal class HousingService(SessionActor sessionActor) : MessageService(sessio
         return true;
     }
 
-    private bool TryGetAttic(out AtticState attic) {
-        var wizard = GetActiveWizard();
-        if (!_atticViewer.TryEnter(wizard, out attic, out var opening)) {
-            InformGameClient("Your attic is not available right now. Please try again later.");
-
-            return false;
-        }
-
-        foreach (var message in opening) {
-            SendToSocket(message);
-        }
-
-        return true;
+    private void BroadcastDelete(HouseChange change) {
+        ZoneBroadcast(new WIZARDHOUSING_50_PROTOCOL.MSG_PATCHDELETEHOUSINGOBJECT {
+            SubType = change.SubType,
+            PackageNumber = 0,
+            VersionNumber = change.Revision,
+            GIDID = change.GidId,
+        }, isSelfless: false, ZoneBroadcastTarget.Players);
     }
 
     private void RefusePickUp(HouseState house) {

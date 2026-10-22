@@ -94,8 +94,7 @@ internal readonly record struct HouseGrant(HouseGrantFailure Failure, IReadOnlyL
 /// <param name="TemplateId">The template of the house, or 0 when the character has no home to go to.</param>
 /// <param name="Lot">The character's lot for the template, or 0 when none was issued yet.</param>
 /// <param name="Item">The house item the character holds, or <c>null</c> when it is missing.</param>
-/// <param name="NeedsIssue">Whether the item or its lot has to be issued before the character goes there.</param>
-internal readonly record struct HomeTarget(uint TemplateId, ulong Lot, WizClientObjectItem Item, bool NeedsIssue);
+internal readonly record struct HomeTarget(uint TemplateId, ulong Lot, WizClientObjectItem Item);
 
 internal static class HouseDeeds {
 
@@ -119,7 +118,7 @@ internal static class HouseDeeds {
         var lot = wizard.HouseLots.GetValueOrDefault(templateId);
         var item = FindItem(wizard, templateId);
 
-        return new HomeTarget(templateId, lot, item, item is null || lot == 0);
+        return new HomeTarget(templateId, lot, item);
     }
 
     /// <summary>
@@ -191,18 +190,22 @@ internal static class HouseDeeds {
     internal static void ApplyLots(Wizard wizard) {
         lock (HousingItems.BackpackLock(wizard)) {
             foreach (var item in HouseItems(wizard)) {
-                if (!TryEnsureLot(wizard, ItemHelper.GetTemplateId(item), out var lot)) {
-                    Logger.Warning("Could not give house item {ItemId} of character {CharId} a lot.", Logger.Args(item.m_globalID, wizard.CharId));
-
-                    continue;
-                }
-
-                if (!TrySetLot(item, lot, out var changed)) {
-                    Logger.Warning("House item {ItemId} of character {CharId} has no deed behavior.", Logger.Args(item.m_globalID, wizard.CharId));
-                } else if (changed && !WizardItemCollection.ApplyDeedLot(item, lot)) {
-                    Logger.Warning("Could not store the lot on house item {ItemId} of character {CharId}.", Logger.Args(item.m_globalID, wizard.CharId));
-                }
+                ApplyLot(wizard, item);
             }
+        }
+    }
+
+    private static void ApplyLot(Wizard wizard, WizClientObjectItem item) {
+        if (!TryEnsureLot(wizard, ItemHelper.GetTemplateId(item), out var lot)) {
+            Logger.Warning("Could not give house item {ItemId} of character {CharId} a lot.", Logger.Args(item.m_globalID, wizard.CharId));
+
+            return;
+        }
+
+        if (!TrySetLot(item, lot, out var changed)) {
+            Logger.Warning("House item {ItemId} of character {CharId} has no deed behavior.", Logger.Args(item.m_globalID, wizard.CharId));
+        } else if (changed && !WizardItemCollection.ApplyDeedLot(item, lot)) {
+            Logger.Warning("Could not store the lot on house item {ItemId} of character {CharId}.", Logger.Args(item.m_globalID, wizard.CharId));
         }
     }
 
@@ -245,14 +248,19 @@ internal static class HouseDeeds {
             }
 
             var created = new List<WizClientObjectItem>();
-            foreach (var template in wanted) {
-                if (!TryIssue(wizard, template.TemplateId, lots[template.TemplateId], created)) {
-                    return new HouseGrant(HouseGrantFailure.Unavailable, created);
-                }
-            }
 
-            return new HouseGrant(HouseGrantFailure.None, created);
+            return new HouseGrant(TryIssueAll(wizard, wanted, lots, created) ? HouseGrantFailure.None : HouseGrantFailure.Unavailable, created);
         }
+    }
+
+    private static bool TryIssueAll(Wizard wizard, List<HouseTemplateInfo> wanted, Dictionary<uint, ulong> lots, List<WizClientObjectItem> created) {
+        foreach (var template in wanted) {
+            if (!TryIssue(wizard, template.TemplateId, lots[template.TemplateId], created)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static bool TryEnsureLots(Wizard wizard, List<HouseTemplateInfo> wanted, out Dictionary<uint, ulong> lots) {

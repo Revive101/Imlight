@@ -320,14 +320,12 @@ internal static class HousingItems {
     internal static WizClientObjectItem TakeItem(Wizard wizard, uint templateId, ulong itemGid, out bool created) {
         created = false;
         if (itemGid != 0) {
-            try {
-                if (WizardItemCollection.Load(wizard.CharId, itemGid) is { } stored) {
-                    return stored;
-                }
-            } catch (Exception exception) {
-                Logger.Warning("Could not load the stored item {ItemId} of character {CharId}: {Reason}",
-                    Logger.Args(itemGid, wizard.CharId, exception.Message));
+            var loaded = TryLoadStored(wizard, itemGid, out var stored);
+            if (stored is not null) {
+                return stored;
+            }
 
+            if (!loaded) {
                 return null;
             }
 
@@ -338,6 +336,20 @@ internal static class HousingItems {
         created = true;
 
         return CreateItem(wizard, templateId);
+    }
+
+    private static bool TryLoadStored(Wizard wizard, ulong itemGid, out WizClientObjectItem stored) {
+        stored = null;
+        try {
+            stored = WizardItemCollection.Load(wizard.CharId, itemGid);
+
+            return true;
+        } catch (Exception exception) {
+            Logger.Warning("Could not load the stored item {ItemId} of character {CharId}: {Reason}",
+                Logger.Args(itemGid, wizard.CharId, exception.Message));
+
+            return false;
+        }
     }
 
     private static ClientPetItemBehavior PetBehaviorOf(WizClientObjectItem item)

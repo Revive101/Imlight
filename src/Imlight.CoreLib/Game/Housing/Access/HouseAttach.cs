@@ -68,7 +68,7 @@ internal static class HouseAttach {
             return true;
         }
 
-        var lotGid = messageZoneId != 0 ? messageZoneId : LotOfZone(wizard, zoneName);
+        var lotGid = messageZoneId != 0 ? messageZoneId : HouseLots.TryFindInZone(wizard, zoneName, out _, out var ownLot) ? ownLot : 0;
         var stored = lotGid == 0 ? null : HouseCollection.Load(lotGid);
         if (stored is null || !HouseTemplates.TryGet(stored.TemplateId, out var template)
             || !string.Equals(template.LotZone, zoneName, StringComparison.OrdinalIgnoreCase)) {
@@ -89,17 +89,6 @@ internal static class HouseAttach {
         house = stored;
 
         return true;
-    }
-
-    private static ulong LotOfZone(Wizard wizard, string zoneName) {
-        foreach (var (templateId, lotGid) in wizard.HouseLots) {
-            if (HouseTemplates.TryGet(templateId, out var info)
-                && string.Equals(info.LotZone, zoneName, StringComparison.OrdinalIgnoreCase)) {
-                return lotGid;
-            }
-        }
-
-        return 0;
     }
 
 }

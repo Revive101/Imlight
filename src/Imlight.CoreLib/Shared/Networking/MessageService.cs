@@ -42,6 +42,7 @@
  */
 
 using System;
+using Imcodec.Math;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Imcodec.MessageLayer;
@@ -52,6 +53,7 @@ using Imlight.CoreLib.Game.Housing.Access;
 using Imlight.CoreLib.Game.Services;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Misc;
 using Imlight.CoreLib.WizardData.Models.Player;
@@ -325,6 +327,36 @@ internal abstract class MessageService(SessionActor sessionActor) : ReceiveProto
 
         // No effects — transfer immediately.
         DoTeleport(destinationZone, location, isPrivate, ownerId, houseEntry);
+    }
+
+    /// <summary>
+    /// Teleports the character to another character who is online.
+    /// </summary>
+    /// <param name="target">The character to go to, as the target's session reports it.</param>
+    /// <param name="targetCharId">The target's character ID.</param>
+    /// <param name="zone">The zone the target is in.</param>
+    /// <remarks>
+    /// A target inside a house is visited through the house's lot, which only the house's owner may allow. A refused
+    /// visit is answered with the same error the client shows for an unavailable target.
+    /// </remarks>
+    protected void TeleportToPlayer(Wizard target, ulong targetCharId, string zone) {
+        var wizard = GetActiveWizard();
+        HouseEntry houseEntry = null;
+        if (target.AttachedLotGid != 0 && !HouseVisits.TryPrepare(wizard, target, out houseEntry, out var failure)) {
+            Logger.Information("Character {CharId} cannot go to character {TargetCharId} in a house: {Failure}.",
+                Logger.Args(wizard.CharId, targetCharId, failure));
+            SendToSocket(new GAME_5_PROTOCOL.MSG_GOTOPLAYERRESP { TargetCharacterID = targetCharId, Error = 1 });
+
+            return;
+        }
+
+        Teleport(
+            destinationZone: zone,
+            destinationLocation: Util.GetCompactStringFromVector((Vector4) target.Location),
+            doTeleportEffects: true,
+            ownerCharId: targetCharId,
+            houseEntry: houseEntry
+        );
     }
 
     [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_TELEPORT_DELAY))]

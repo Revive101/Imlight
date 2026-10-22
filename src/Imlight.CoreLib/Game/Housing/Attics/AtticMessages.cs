@@ -87,16 +87,13 @@ internal static class AtticMessages {
         };
 
     /// <summary>
-    /// Builds the message that tells the client how many items the attic holds, and records the count on the character.
+    /// Builds the message that tells the client how many items the attic holds.
     /// </summary>
     /// <param name="wizard">The attic's owner.</param>
     /// <param name="attic">The attic.</param>
     /// <returns>The count message.</returns>
-    internal static IMessage Count(Wizard wizard, AtticState attic) {
-        AtticRegistry.SetSummary(wizard, attic);
-
-        return new WIZARDHOUSING_50_PROTOCOL.MSG_UPDATEATTICCOUNT { GlobalID = wizard.GameObjectID, ItemCount = attic.LiveCount };
-    }
+    internal static IMessage Count(Wizard wizard, AtticState attic)
+        => new WIZARDHOUSING_50_PROTOCOL.MSG_UPDATEATTICCOUNT { GlobalID = wizard.GameObjectID, ItemCount = attic.LiveCount };
 
     /// <summary>
     /// Builds one blob of the attic.

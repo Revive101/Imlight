@@ -103,7 +103,6 @@ using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
-using Imlight.CoreLib.Game.Housing.Access;
 using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Networking;
@@ -603,29 +602,7 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
             .Result;
 
         if (queryResult is not null) {
-            var coordinates = Util.GetCompactStringFromVector((Vector4) queryResult.Wizard.Location);
-
-            // A friend inside a house is visited through the house's lot, which only the house's owner may allow.
-            HouseEntry houseEntry = null;
-            if (queryResult.Wizard.AttachedLotGid != 0 && !HouseVisits.TryPrepare(wizard, queryResult.Wizard, out houseEntry, out var failure)) {
-                Logger.Information("Player {0} cannot go to character ID {1} in a house: {2}.",
-                    Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), targetID, failure));
-
-                SendToSocket(new GAME_5_PROTOCOL.MSG_GOTOPLAYERRESP {
-                    TargetCharacterID = targetID,
-                    Error = 1
-                });
-
-                return;
-            }
-
-            Teleport(
-                destinationZone: onlinePlayer.CurrentZone,
-                destinationLocation: coordinates,
-                doTeleportEffects: true,
-                ownerCharId: targetID,
-                houseEntry: houseEntry
-            );
+            TeleportToPlayer(queryResult.Wizard, targetID, onlinePlayer.CurrentZone);
         } else {
             Logger.Error("Failed to query the target wizard for teleportation.");
         }

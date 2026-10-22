@@ -81,7 +81,7 @@ internal class AtticService(SessionActor sessionActor) : MessageService(sessionA
             return;
         }
 
-        if (!TryGetAttic(out var attic)) {
+        if (!_atticViewer.TryOpen(wizard, SendToSocket, text => InformGameClient(text), out var attic)) {
             return;
         }
 
@@ -102,7 +102,7 @@ internal class AtticService(SessionActor sessionActor) : MessageService(sessionA
             return;
         }
 
-        if (request.m_type != HousingBlobs.BLOB_TYPE || !TryGetAttic(out var attic)) {
+        if (request.m_type != HousingBlobs.BLOB_TYPE || !_atticViewer.TryOpen(wizard, SendToSocket, text => InformGameClient(text), out var attic)) {
             Logger.Warning("Character {CharId} sent a blob request for the attic that is not a housing request.", Logger.Args(wizard.CharId));
 
             return;
@@ -152,7 +152,7 @@ internal class AtticService(SessionActor sessionActor) : MessageService(sessionA
             return;
         }
 
-        if (!TryGetAttic(out var attic)) {
+        if (!_atticViewer.TryOpen(wizard, SendToSocket, text => InformGameClient(text), out var attic)) {
             return;
         }
 
@@ -162,21 +162,14 @@ internal class AtticService(SessionActor sessionActor) : MessageService(sessionA
             return;
         }
 
-        // The backpack changes in memory only and is written together with the attic, so a crash between the
-        // two cannot lose the item or leave it in both places. The item's document stays where it is.
         var itemId = item.m_globalID;
-        AtticChange change;
-        lock (HousingItems.BackpackLock(wizard)) {
-            if (!wizard.InventoryBehavior.RemoveItem(item)) {
-                return;
-            }
-
-            var stored = new AtticItem { ItemGid = itemId, TemplateId = templateId, Custom = HousingItems.CustomDataOf(verdict.SubType, item, itemId) };
-            change = attic.TryAdd(stored, HousingItems.ATTIC_SUB_TYPE, document => AtticCollection.SaveWithBackpack(document, wizard));
-            if (!change.Done && !wizard.InventoryBehavior.AddItem(item)) {
-                Logger.Error("Could not return item {ItemId} to the backpack of character {CharId} after it failed to go in the attic.",
-                    Logger.Args(itemId, wizard.CharId));
-            }
+        AtticChange change = default;
+        var stored = new AtticItem { ItemGid = itemId, TemplateId = templateId, Custom = HousingItems.CustomDataOf(verdict.SubType, item, itemId) };
+        var transfer = BackpackTransfer.Store(wizard, item,
+            () => (change = attic.TryAdd(stored, HousingItems.ATTIC_SUB_TYPE, document => AtticCollection.SaveWithBackpack(document, wizard))).Done,
+            "go in the attic");
+        if (transfer == BackpackTransferResult.NotInBackpack) {
+            return;
         }
 
         if (!change.Done) {
@@ -206,34 +199,17 @@ internal class AtticService(SessionActor sessionActor) : MessageService(sessionA
             return;
         }
 
-        WizClientObjectItem item;
-        AtticChange change;
-        var created = false;
-        lock (HousingItems.BackpackLock(wizard)) {
-            if (CoreObjectFactory.GetCoreTemplate(stored.TemplateId) is not WizItemTemplate template
-                || wizard.InventoryBehavior.FreeSlots <= 0
-                || HousingItems.TemplateCopyLimitReached(template, HousingItems.CountInBackpack(wizard, stored.TemplateId))) {
-                InformGameClient("Your backpack cannot hold that object.");
+        // The backpack and the emptied slot are written in one transaction, so a crash between them cannot lose the item.
+        // A stored item keeps its document, and only a new item is stored with it.
+        AtticChange change = default;
+        var transfer = BackpackTransfer.Take(wizard, stored.TemplateId, stored.ItemGid,
+            added => (change = attic.TryRemove(stored.Id, document => AtticCollection.SaveWithBackpack(document, wizard, added))).Done, out var item);
+        if (transfer != BackpackTransferResult.Done) {
+            InformGameClient(transfer == BackpackTransferResult.BackpackCannotHold
+                ? "Your backpack cannot hold that object."
+                : "The object could not be taken out of the attic.");
 
-                return;
-            }
-
-            item = HousingItems.TakeItem(wizard, stored.TemplateId, stored.ItemGid, out created);
-            if (item is null || !wizard.InventoryBehavior.AddItem(item)) {
-                InformGameClient("The object could not be taken out of the attic.");
-
-                return;
-            }
-
-            // The backpack and the emptied slot are written in one transaction, so a crash between them cannot lose the item.
-            // A stored item keeps its document, and only a new item is stored with it.
-            change = attic.TryRemove(stored.Id, document => AtticCollection.SaveWithBackpack(document, wizard, created ? item : null));
-            if (!change.Done) {
-                wizard.InventoryBehavior.RemoveItem(item);
-                InformGameClient("The object could not be taken out of the attic.");
-
-                return;
-            }
+            return;
         }
 
         if (!ItemSync.SendAdded(SessionActor.ActorRef, wizard, item)) {
@@ -277,7 +253,7 @@ internal class AtticService(SessionActor sessionActor) : MessageService(sessionA
             return false;
         }
 
-        if (!TryGetAttic(out attic)) {
+        if (!_atticViewer.TryOpen(wizard, SendToSocket, text => InformGameClient(text), out attic)) {
             return false;
         }
 
@@ -293,26 +269,13 @@ internal class AtticService(SessionActor sessionActor) : MessageService(sessionA
         return true;
     }
 
-    private bool TryGetAttic(out AtticState attic) {
-        var wizard = GetActiveWizard();
-        if (!_atticViewer.TryEnter(wizard, out attic, out var opening)) {
-            InformGameClient("Your attic is not available right now. Please try again later.");
-
-            return false;
-        }
-
-        foreach (var message in opening) {
-            SendToSocket(message);
-        }
-
-        return true;
-    }
-
     private void SendDeletePatch(AtticState attic, AtticChange change)
         => SendToSocket(AtticMessages.DeletePatch(attic, change));
 
-    private void SendCount(Wizard wizard, AtticState attic)
-        => SendToSocket(AtticMessages.Count(wizard, attic));
+    private void SendCount(Wizard wizard, AtticState attic) {
+        AtticRegistry.SetSummary(wizard, attic);
+        SendToSocket(AtticMessages.Count(wizard, attic));
+    }
 
     private void SendAllBlobs(AtticState attic) {
         foreach (var subType in attic.SubTypes().Append(HousingItems.ATTIC_SUB_TYPE).Distinct()) {

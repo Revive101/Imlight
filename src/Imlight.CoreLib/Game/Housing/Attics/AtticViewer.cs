@@ -39,6 +39,7 @@
  * Last Updated: 10/21/2026
  */
 
+using System;
 using System.Collections.Generic;
 using Imcodec.MessageLayer;
 using Imlight.Common;
@@ -72,6 +73,28 @@ internal sealed class AtticViewer {
 
         _attic = attic;
         opening = AtticMessages.Opening(wizard, attic, created, audit);
+
+        return true;
+    }
+
+    /// <summary>
+    /// Gets the character's attic and sends the client what it needs to know when the attic becomes live.
+    /// </summary>
+    /// <param name="wizard">The attic's owner.</param>
+    /// <param name="send">Sends a message to the owner's client.</param>
+    /// <param name="inform">Tells the owner something in the chat window.</param>
+    /// <param name="attic">The live attic when this returns <c>true</c>.</param>
+    /// <returns><c>false</c> when the attic cannot be loaded or stored; the owner has been told.</returns>
+    internal bool TryOpen(Wizard wizard, Action<IMessage> send, Action<string> inform, out AtticState attic) {
+        if (!TryEnter(wizard, out attic, out var opening)) {
+            inform("Your attic is not available right now. Please try again later.");
+
+            return false;
+        }
+
+        foreach (var message in opening) {
+            send(message);
+        }
 
         return true;
     }

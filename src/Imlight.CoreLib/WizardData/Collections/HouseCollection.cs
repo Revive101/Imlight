@@ -183,26 +183,8 @@ public static class HouseCollection {
     /// <param name="owner">The owner, whose backpack is written as it is in memory.</param>
     /// <param name="addedItem">An item that entered the backpack and has no document yet, or <c>null</c>. An item that came out of a house keeps its document.</param>
     /// <returns><c>true</c> when both are stored; <c>false</c> when neither changed.</returns>
-    public static bool SaveWithBackpack(House house, Wizard owner, WizClientObjectItem addedItem = null) {
-        try {
-            return WizardCollection.UpdateCharacterWithSession(owner.CharId, (session, storedOwner) => {
-                var stored = session.Load<House>(house.Id);
-                if (stored is null) {
-                    return false;
-                }
-
-                CopyChanging(house, stored);
-                WizardItemCollection.StoreBackpackInSession(session, storedOwner, owner, addedItem);
-
-                return true;
-            });
-        } catch (Exception ex) {
-            Logger.Error("Failed to save house {HouseId} with the backpack of character {CharId}: {Reason}",
-                Logger.Args(house.Id, owner.CharId, ex.Message));
-
-            return false;
-        }
-    }
+    public static bool SaveWithBackpack(House house, Wizard owner, WizClientObjectItem addedItem = null)
+        => WizardItemCollection.SaveContainerWithBackpack<House>(house.Id, owner, stored => CopyChanging(house, stored), addedItem);
 
     /// <summary>
     /// Writes a house together with its owner's attic in one transaction, so objects that move between them are

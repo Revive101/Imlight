@@ -62,9 +62,10 @@ internal static class HousingBlobs {
     private const uint SERIALIZE_MASK = 1;
 
     /// <summary>
-    /// Counts the days the client stamps on a blob it caches, the way the client does.
+    /// Builds the stamp the client keeps on a blob it caches: whole minutes since the Unix epoch times 1,440, the way the
+    /// original server computes it. The field is named for epoch days, but the value is not a day count.
     /// </summary>
-    /// <returns>The epoch days of now.</returns>
+    /// <returns>The stamp for now.</returns>
     internal static uint EpochDaysNow()
         => unchecked((uint) (DateTimeOffset.UtcNow.ToUnixTimeSeconds() / 60 * 1440));
 

@@ -41,7 +41,6 @@
 
 using Imlight.Common;
 using Imlight.CoreLib.Game.Housing.Houses;
-using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Housing.Access;
@@ -75,10 +74,7 @@ internal static class HouseVisits {
             return false;
         }
 
-        var house = HouseCollection.Load(host.AttachedLotGid);
-        if (house is null || !HouseTemplates.TryGet(house.TemplateId, out var template)) {
-            Logger.Warning("Character {CharId} stands in lot {LotGid}, which is not a stored house.",
-                Logger.Args(host.CharId, host.AttachedLotGid));
+        if (!HouseLots.TryLoadAttached(host, out var house, out var template)) {
             failure = HouseVisitFailure.Unavailable;
 
             return false;

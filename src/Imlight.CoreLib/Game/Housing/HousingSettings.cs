@@ -86,7 +86,7 @@ internal static class HousingSettings {
         get {
             var starters = new List<uint>();
             foreach (var entry in ConfigurationManager.Settings[STARTER_DEEDS_KEY].AsList()) {
-                if (uint.TryParse(entry, NumberStyles.None, CultureInfo.InvariantCulture, out var templateId) && templateId != 0) {
+                if (TryParseTemplateId(entry, out var templateId)) {
                     starters.Add(templateId);
                 } else {
                     Logger.Warning("{Key} has an entry that is not a template id: {Entry}", Logger.Args(STARTER_DEEDS_KEY, entry));
@@ -96,5 +96,8 @@ internal static class HousingSettings {
             return starters;
         }
     }
+
+    private static bool TryParseTemplateId(string entry, out uint templateId)
+        => uint.TryParse(entry, NumberStyles.None, CultureInfo.InvariantCulture, out templateId) && templateId != 0;
 
 }

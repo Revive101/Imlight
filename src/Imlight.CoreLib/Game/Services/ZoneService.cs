@@ -42,6 +42,7 @@ using System.Linq;
 using Akka.Actor;
 using Imcodec.CoreObject;
 using Imcodec.Cryptography;
+using Imcodec.MessageLayer;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
@@ -62,7 +63,7 @@ using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Services;
 
-internal class ZoneService(SessionActor sessionActor) : MessageService(sessionActor) {
+internal class ZoneService(SessionActor sessionActor) : MessageService(sessionActor), IHouseZoneHost {
 
     private const int ZONE_REMOVAL_WAIT_TIME_IN_SECONDS = 8;
     private const int ZONE_HEAL_TICK_INTERVAL_IN_SECONDS = 5;
@@ -83,7 +84,7 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         = ConfigurationManager.Settings["April Fools.RandomBackFlips"].AsBool();
     private readonly ZoneTransferGate _transferGate = new();
     private uint _currentDynamicZoneId;
-    private HouseEntry _pendingHouseEntry;
+    private HouseZoneHandshake _houseZone;
 
     private const string SIGIL_ENTER_TIMER_KEY = "sigilenter";
     private const float SIGIL_COUNTDOWN_SECONDS = 10.0f;
@@ -100,6 +101,8 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
 
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new ZoneService(parentActor));
+
+    private HouseZoneHandshake HouseZone => _houseZone ??= new HouseZoneHandshake(this);
 
     protected override void OnPreDispose() {
         var gameObj = GetActiveGameObject();
@@ -213,7 +216,7 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         }
 
         // The client loads a house zone from the entry, so every way into a house has to bring one for that zone.
-        if (message.SendToClient && !IsValidHouseTransfer(message)) {
+        if (message.SendToClient && !HouseZoneHandshake.IsValidTransfer(message.HouseEntry, message.DestinationZone)) {
             Logger.Warning("Session {SessionId} refused a transfer to {Zone}: the house entry {Entry} does not fit.",
                 Logger.Args(SessionActor.SessionID, message.DestinationZone, message.HouseEntry?.Zone));
             InformGameClient("You cannot travel to that house.", true);
@@ -866,10 +869,10 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         character.QueuedZoneName = message.DestinationZone;
         character.QueuedZoneLocation = message.DestinationLocation;
         character.QueuedLotGid = message.HouseLotGid;
-        _pendingHouseEntry = message.HouseEntry;
+        HouseZone.Track(message.HouseEntry);
 
         if (message.HouseEntry is not null) {
-            SendHouseZoneRequest(character, message.HouseEntry, message.DestinationLocation);
+            HouseZone.SendRequest(message.HouseEntry, message.DestinationLocation);
             LogTransferStep($"house zone request ({message.HouseEntry.Kind}) sent", previous, true);
 
             return;
@@ -901,95 +904,46 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         return false;
     }
 
-    private bool IsValidHouseTransfer(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message) {
-        var entry = message.HouseEntry;
-        if (entry is null) {
-            return !HouseZoneIndex.IsHouseZone(message.DestinationZone);
-        }
-
-        return entry.LotGid != 0 && string.Equals(entry.Zone, message.DestinationZone, StringComparison.OrdinalIgnoreCase);
-    }
-
-    private void SendHouseZoneRequest(Wizard character, HouseEntry entry, string location) {
-        // A house transfer has no ZONETRANSFERREQUEST: the client's echo of this message is its answer.
-        foreach (var itemGid in entry.NewItemGids) {
-            var item = character.InventoryBehavior.GetItem(itemGid);
-            if (item is null || !ItemSync.SendAdded(SessionActor.ActorRef, character, item)) {
-                Logger.Error("Session {SessionId} could not send the new house item {ItemId} to the client.",
-                    Logger.Args(SessionActor.SessionID, itemGid));
-            }
-        }
-
-        SendToSocket(entry.CreateRequest(location));
-
-        StartDeedZoneTimeout();
-    }
-
-    private void StartDeedZoneTimeout() {
-        Timers.StartSingleTimer(DEED_ZONE_TIMEOUT_KEY, new SERVICE_101_PROTOCOL.MSG_DEEDZONE_TIMEOUT(), HousingSettings.DeedZoneTimeout);
-    }
-
-    private void AbortDeedZoneTransfer(string step) {
-        Timers.Cancel(DEED_ZONE_TIMEOUT_KEY);
-        var previous = _transferGate.State;
-        var accepted = _transferGate.TryNack();
-        LogTransferStep(step, previous, accepted);
-
-        _pendingHouseEntry = null;
-        GetActiveWizard().QueuedLotGid = 0;
-        InformGameClient("The house could not be prepared. Please try again.", true);
-    }
-
     [MessageHandler(typeof(WIZARDHOUSING_50_PROTOCOL.MSG_REQUESTDEEDZONE))]
     private void ReceiveDeedZoneEcho(WIZARDHOUSING_50_PROTOCOL.MSG_REQUESTDEEDZONE message)
-        => HandleHouseZoneEcho(_pendingHouseEntry?.Read(message) ?? HouseEchoStatus.NotForThisEntry, "REQUESTDEEDZONE");
+        => HouseZone.OnEcho(pending => pending.Read(message), "REQUESTDEEDZONE");
 
     [MessageHandler(typeof(WIZARDHOUSING_50_PROTOCOL.MSG_REQUESTHOUSINGZONETELEPORT))]
     private void ReceiveHousingZoneTeleportEcho(WIZARDHOUSING_50_PROTOCOL.MSG_REQUESTHOUSINGZONETELEPORT message)
-        => HandleHouseZoneEcho(_pendingHouseEntry?.Read(message) ?? HouseEchoStatus.NotForThisEntry, "REQUESTHOUSINGZONETELEPORT");
+        => HouseZone.OnEcho(pending => pending.Read(message), "REQUESTHOUSINGZONETELEPORT");
 
     [MessageHandler(typeof(WIZARDHOUSING_50_PROTOCOL.MSG_REQUESTHOUSINGZONE))]
     private void ReceiveHousingZoneEcho(WIZARDHOUSING_50_PROTOCOL.MSG_REQUESTHOUSINGZONE message)
-        => HandleHouseZoneEcho(_pendingHouseEntry?.Read(message) ?? HouseEchoStatus.NotForThisEntry, "REQUESTHOUSINGZONE");
-
-    private void HandleHouseZoneEcho(HouseEchoStatus status, string messageName) {
-        // Only the echo of the request we sent counts. Anything else the client sends under these names is ignored.
-        if (status == HouseEchoStatus.NotForThisEntry || _transferGate.State != ZoneTransferState.Requested) {
-            return;
-        }
-
-        switch (status) {
-            case HouseEchoStatus.Ready:
-                Timers.Cancel(DEED_ZONE_TIMEOUT_KEY);
-                var previous = _transferGate.State;
-                var accepted = _transferGate.TryAck();
-                LogTransferStep($"{messageName} echo received", previous, accepted);
-                if (accepted) {
-                    _pendingHouseEntry = null;
-                    DoZoneTransfer();
-                }
-
-                break;
-            case HouseEchoStatus.Patching:
-                // The client is still patching the house zone archive.
-                StartDeedZoneTimeout();
-
-                break;
-            default:
-                AbortDeedZoneTransfer($"{messageName} refused by the client");
-
-                break;
-        }
-    }
+        => HouseZone.OnEcho(pending => pending.Read(message), "REQUESTHOUSINGZONE");
 
     [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_DEEDZONE_TIMEOUT))]
-    private void OnDeedZoneTimeout(SERVICE_101_PROTOCOL.MSG_DEEDZONE_TIMEOUT _) {
-        if (_pendingHouseEntry is null || _transferGate.State != ZoneTransferState.Requested) {
-            return;
-        }
+    private void OnDeedZoneTimeout(SERVICE_101_PROTOCOL.MSG_DEEDZONE_TIMEOUT _) => HouseZone.OnTimeout();
 
-        AbortDeedZoneTransfer("house zone request timed out");
+    ZoneTransferGate IHouseZoneHost.TransferGate => _transferGate;
+
+    Wizard IHouseZoneHost.Character => GetActiveWizard();
+
+    void IHouseZoneHost.Send(IMessage message) => SendToSocket(message);
+
+    void IHouseZoneHost.SendNewItem(ulong itemGid) {
+        var character = GetActiveWizard();
+        var item = character.InventoryBehavior.GetItem(itemGid);
+        if (item is null || !ItemSync.SendAdded(SessionActor.ActorRef, character, item)) {
+            Logger.Error("Session {SessionId} could not send the new house item {ItemId} to the client.",
+                Logger.Args(SessionActor.SessionID, itemGid));
+        }
     }
+
+    void IHouseZoneHost.StartTimeout()
+        => Timers.StartSingleTimer(DEED_ZONE_TIMEOUT_KEY, new SERVICE_101_PROTOCOL.MSG_DEEDZONE_TIMEOUT(), HousingSettings.DeedZoneTimeout);
+
+    void IHouseZoneHost.CancelTimeout() => Timers.Cancel(DEED_ZONE_TIMEOUT_KEY);
+
+    void IHouseZoneHost.Inform(string text) => InformGameClient(text, true);
+
+    void IHouseZoneHost.LogStep(string step, ZoneTransferState previous, bool accepted) => LogTransferStep(step, previous, accepted);
+
+    void IHouseZoneHost.BeginTransfer() => DoZoneTransfer();
 
     private void LogTransferStep(string step, ZoneTransferState previous, bool accepted) {
         Logger.Information("Session {SessionId} {Step} -> {Zone}, gate {Previous} -> {Current}, accepted={Accepted}",

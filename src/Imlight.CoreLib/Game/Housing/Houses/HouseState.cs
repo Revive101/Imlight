@@ -105,11 +105,6 @@ internal readonly record struct HouseSnapshot(string SubType, uint Revision, uin
 /// </summary>
 internal sealed class HouseState {
 
-    /// <summary>
-    /// The most blob entries one blob holds.
-    /// </summary>
-    internal const int MAX_SLOTS = HousingGids.MAX_SLOTS;
-
     private readonly Lock _lock = new();
     private readonly House _house;
     private readonly HouseTemplateInfo _template;
@@ -146,8 +141,6 @@ internal sealed class HouseState {
             }
         }
     }
-
-    internal int CastleBlockLimit => _template.CastleBlockLimit;
 
     internal bool IsRetired => Viewers.IsRetired;
 
@@ -248,13 +241,18 @@ internal sealed class HouseState {
     /// </returns>
     internal HouseChange TryAdd(PlacedItem item, string subType, Func<House, bool> save = null) {
         lock (_lock) {
+            // A retired state is gone from the registry, and a write to it would be lost.
+            if (IsRetired) {
+                return new HouseChange(HouseEdit.NotFound);
+            }
+
             if (_house.Items.Count >= _template.ItemLimit + _house.BonusSlots) {
                 return new HouseChange(HouseEdit.LimitReached);
             }
 
             var table = _tables.For(subType);
-            if (table.Slots.Count >= MAX_SLOTS) {
-                return new HouseChange(MakeRoom(subType, table));
+            if (!table.Fits(item.Custom, placed => placed.Custom)) {
+                return new HouseChange(MakeRoom(subType, table, item.Custom));
             }
 
             var added = item with { Id = _house.NextItemId };
@@ -291,6 +289,11 @@ internal sealed class HouseState {
     /// <returns><see cref="HouseEdit.NotFound"/> when the house has no such item, <see cref="HouseEdit.SaveFailed"/> when the write failed.</returns>
     internal HouseChange TryRemove(uint itemId, Func<House, bool> save = null) {
         lock (_lock) {
+            // A retired state is gone from the registry, and a write to it would be lost.
+            if (IsRetired) {
+                return new HouseChange(HouseEdit.NotFound);
+            }
+
             if (_tables.Locate(itemId) is not { } found) {
                 return new HouseChange(HouseEdit.NotFound);
             }
@@ -330,6 +333,11 @@ internal sealed class HouseState {
     internal HouseEdit TryRemoveMany(IReadOnlyCollection<uint> itemIds, out IReadOnlyList<HouseChange> removed, Func<House, bool> save = null) {
         removed = [];
         lock (_lock) {
+            // A retired state is gone from the registry, and a write to it would be lost.
+            if (IsRetired) {
+                return HouseEdit.NotFound;
+            }
+
             if (itemIds.Count == 0 || itemIds.Distinct().Count() != itemIds.Count) {
                 return HouseEdit.NotFound;
             }
@@ -385,6 +393,11 @@ internal sealed class HouseState {
     /// </returns>
     internal HouseChange TryUpdate(uint itemId, Func<PlacedItem, PlacedItem> update) {
         lock (_lock) {
+            // A retired state is gone from the registry, and a write to it would be lost.
+            if (IsRetired) {
+                return new HouseChange(HouseEdit.NotFound);
+            }
+
             if (_tables.Locate(itemId) is not { } found) {
                 return new HouseChange(HouseEdit.NotFound);
             }
@@ -431,8 +444,8 @@ internal sealed class HouseState {
         return item with { Custom = HousingItems.LoadCustomData(ownerCharId, subType, item.ItemGid) };
     }
 
-    private HouseEdit MakeRoom(string subType, BlobTable<PlacedItem> table) {
-        if (table.Live >= table.Slots.Count) {
+    private HouseEdit MakeRoom(string subType, BlobTable<PlacedItem> table, byte[] custom) {
+        if (table.Live >= table.Slots.Count || !table.Fits(custom, placed => placed.Custom, compacted: true)) {
             return HouseEdit.LimitReached;
         }
 

@@ -132,17 +132,7 @@ internal static class HouseTravel {
             return false;
         }
 
-        HouseTemplateInfo target = default;
-        var found = false;
-        foreach (var templateId in owner.HouseLots.Keys.Order()) {
-            if (HouseTemplates.TryGet(templateId, out target) && string.Equals(target.LotZone, zone, StringComparison.OrdinalIgnoreCase)) {
-                found = true;
-
-                break;
-            }
-        }
-
-        if (!found) {
+        if (!HouseLots.TryFindInZone(owner, zone, out var target, out _)) {
             failure = HouseTravelFailure.NoPartner;
 
             return false;
@@ -160,10 +150,7 @@ internal static class HouseTravel {
         }
 
         failure = HouseTravelFailure.Unavailable;
-        var current = HouseCollection.Load(player.AttachedLotGid);
-        if (current is null || !HouseTemplates.TryGet(current.TemplateId, out template)) {
-            Logger.Warning("Character {CharId} stands in lot {LotGid}, which is not a stored house.", Logger.Args(player.CharId, player.AttachedLotGid));
-
+        if (!HouseLots.TryLoadAttached(player, out var current, out template)) {
             return false;
         }
 

@@ -50,14 +50,37 @@ namespace Imlight.CoreLib.Game.Housing.Items;
 internal static class HousingGids {
 
     /// <summary>
-    /// The most entries one blob holds: a string field is at most 65,535 bytes, the blob header takes 47 and every
-    /// entry 21.
+    /// The most bytes one blob holds: a string field is at most 65,535 bytes.
     /// </summary>
-    internal const int MAX_SLOTS = (65535 - 47) / 21;
+    internal const int MAX_BLOB_BYTES = 65535;
+
+    /// <summary>
+    /// The bytes of a blob without entries.
+    /// </summary>
+    internal const int BLOB_HEADER_BYTES = 47;
+
+    /// <summary>
+    /// The bytes of a plain entry. A custom entry adds the length of its string.
+    /// </summary>
+    internal const int ENTRY_BYTES = 21;
+
+    /// <summary>
+    /// The most plain entries one blob holds. A kind blob holds fewer, because its entries carry a string.
+    /// </summary>
+    internal const int MAX_SLOTS = (MAX_BLOB_BYTES - BLOB_HEADER_BYTES) / ENTRY_BYTES;
 
     private const int OBJECT_GID_TYPE = 9;
     private const long LOWEST_BASE = 0x80000000L;
     private const long HIGHEST_BASE = 0xFFFF0000L;
+
+    /// <summary>
+    /// Checks whether a blob of a number of entries, with a total of custom string bytes, fits a string field.
+    /// </summary>
+    /// <param name="entries">The entries, removed slots included.</param>
+    /// <param name="customBytes">The bytes of all custom strings.</param>
+    /// <returns><c>true</c> when the serialized blob stays within <see cref="MAX_BLOB_BYTES"/>.</returns>
+    internal static bool Fits(int entries, int customBytes)
+        => (long) BLOB_HEADER_BYTES + (long) ENTRY_BYTES * entries + customBytes <= MAX_BLOB_BYTES;
 
     /// <summary>
     /// Draws the base the client numbers a blob's entries from. The range leaves room for <see cref="MAX_SLOTS"/> entries
