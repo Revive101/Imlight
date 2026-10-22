@@ -39,6 +39,8 @@
  * - Every change is written before it returns. A failed write undoes the change in memory.
  * - A change that also moves an item to or from a backpack passes its own save, which writes both in one transaction.
  * - The bases of one attic are far enough apart that no two blobs share an id.
+ * - The slot tables, the revision moves and the write-or-undo step are shared with HouseState (BlobSet, Persistence); this
+ *   class owns the attic document and its limit.
  * - Creating the state numbers every blob again with a new base and a revision no client has seen, and drops the items
  *   whose template is gone. Use AtticRegistry to get a state and count viewers.
  *
@@ -54,12 +56,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Imcodec.ObjectProperty.TypeCache;
-using Imlight.Common;
 using Imlight.CoreLib.Game.Housing.Houses;
 using Imlight.CoreLib.Game.Housing.Items;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
+using Action = System.Action;
 
 namespace Imlight.CoreLib.Game.Housing.Attics;
 
@@ -114,15 +116,18 @@ internal readonly record struct AtticSnapshot(string SubType, uint Revision, uin
 /// <param name="Removed">The number of items dropped because their template is gone.</param>
 internal readonly record struct AtticAudit(int Audited, int Removed);
 
+/// <summary>
+/// The live, persisted state of one character's attic.
+/// </summary>
 internal sealed class AtticState {
 
     private readonly Lock _lock = new();
     private readonly Attic _attic;
-    private readonly Dictionary<string, Table> _tables = new(StringComparer.Ordinal);
-    private int _viewers;
-    private bool _retired;
+    private readonly BlobSet<AtticItem> _tables = new(item => item.Id);
 
     private AtticState(Attic attic) => _attic = attic;
+
+    internal ViewerCount Viewers { get; } = new();
 
     internal ulong CharId => _attic.CharId;
 
@@ -138,13 +143,7 @@ internal sealed class AtticState {
 
     internal int Limit => HousingSettings.AtticLimit;
 
-    internal bool IsRetired {
-        get {
-            lock (_lock) {
-                return _retired;
-            }
-        }
-    }
+    internal bool IsRetired => Viewers.IsRetired;
 
     /// <summary>
     /// Creates the live state of a stored attic. Items whose template is gone are dropped, the rest are numbered by their ids, every blob gets a new base,
@@ -177,7 +176,7 @@ internal sealed class AtticState {
 
         state = new AtticState(attic);
         foreach (var group in kept.GroupBy(SubTypeOf)) {
-            state.TableFor(group.Key).Slots.AddRange(group);
+            state._tables.For(group.Key).Slots.AddRange(group);
         }
 
         return true;
@@ -190,9 +189,9 @@ internal sealed class AtticState {
     /// <returns>The revision, base, live count and slots, taken together.</returns>
     internal AtticSnapshot Snapshot(string subType) {
         lock (_lock) {
-            var table = TableFor(subType);
+            var table = _tables.For(subType);
 
-            return new AtticSnapshot(subType, RevisionOf(subType), table.GidBase, table.Live, [.. table.Slots]);
+            return new AtticSnapshot(subType, Persistence.RevisionOf(_attic.Revisions, subType), table.GidBase, table.Live, [.. table.Slots]);
         }
     }
 
@@ -202,7 +201,7 @@ internal sealed class AtticState {
     /// <returns>The subtype names.</returns>
     internal IReadOnlyList<string> SubTypes() {
         lock (_lock) {
-            return [.. _tables.Where(pair => pair.Value.Live > 0).Select(pair => pair.Key).Concat(_attic.Revisions.Keys).Distinct()];
+            return [.. _tables.SubTypesWithItems().Concat(_attic.Revisions.Keys).Distinct()];
         }
     }
 
@@ -215,19 +214,8 @@ internal sealed class AtticState {
     /// <param name="subType">The subtype of the blob the GID is in.</param>
     /// <returns><c>true</c> when the GID is inside the numbering of one of the attic's blobs.</returns>
     internal bool TryFindByGid(ulong gid, out AtticItem item, out string subType) {
-        item = null;
-        subType = null;
         lock (_lock) {
-            foreach (var (name, table) in _tables) {
-                if (HousingGids.TryGetSlot(gid, table.GidBase, table.Slots.Count, out var slot)) {
-                    item = table.Slots[slot];
-                    subType = name;
-
-                    return true;
-                }
-            }
-
-            return false;
+            return _tables.TryFindByGid(gid, out item, out subType);
         }
     }
 
@@ -248,33 +236,34 @@ internal sealed class AtticState {
                 return new AtticChange(HouseEdit.LimitReached);
             }
 
-            var table = TableFor(subType);
+            var table = _tables.For(subType);
             if (table.Slots.Count >= HousingGids.MAX_SLOTS) {
-                if (table.Live >= table.Slots.Count) {
-                    return new AtticChange(HouseEdit.LimitReached);
-                }
-
-                return new AtticChange(Renumber(subType, table) ? HouseEdit.NeedsResync : HouseEdit.SaveFailed);
+                return new AtticChange(MakeRoom(subType, table));
             }
 
-            var revision = RevisionOf(subType);
-            var hadRevision = _attic.Revisions.TryGetValue(subType, out var storedRevision);
             var added = item with { Id = _attic.NextItemId };
-            _attic.Items.Add(added);
-            _attic.NextItemId = added.Id + 1;
-            _attic.Revisions[subType] = revision + 1;
-            if (!Persist(save)) {
-                _attic.Items.RemoveAt(_attic.Items.Count - 1);
-                _attic.NextItemId = added.Id;
-                RestoreRevision(subType, hadRevision, storedRevision);
-
+            Action undoRevision = null;
+            uint revision = 0;
+            var saved = Persist(
+                () => {
+                    _attic.Items.Add(added);
+                    _attic.NextItemId = added.Id + 1;
+                    undoRevision = Persistence.BumpRevision(_attic.Revisions, subType, out revision);
+                },
+                () => {
+                    _attic.Items.RemoveAt(_attic.Items.Count - 1);
+                    _attic.NextItemId = added.Id;
+                    undoRevision();
+                },
+                save);
+            if (!saved) {
                 return new AtticChange(HouseEdit.SaveFailed);
             }
 
             table.Slots.Add(added);
             var slot = table.Slots.Count - 1;
 
-            return new AtticChange(HouseEdit.Done, subType, slot, unchecked(table.GidBase + (uint) slot), revision + 1, added);
+            return new AtticChange(HouseEdit.Done, subType, slot, table.GidIdOf(slot), revision, added);
         }
     }
 
@@ -301,7 +290,7 @@ internal sealed class AtticState {
             }
 
             var crowded = additions.GroupBy(addition => addition.SubType)
-                .Select(group => (Table: TableFor(group.Key), group.Key, Count: group.Count()))
+                .Select(group => (Table: _tables.For(group.Key), group.Key, Count: group.Count()))
                 .Where(blob => blob.Table.Slots.Count + blob.Count > HousingGids.MAX_SLOTS)
                 .ToList();
             if (crowded.Any(blob => blob.Table.Live + blob.Count > HousingGids.MAX_SLOTS)) {
@@ -309,47 +298,10 @@ internal sealed class AtticState {
             }
 
             if (crowded.Count > 0) {
-                var renumbered = RenumberAll(crowded);
-
-                // A blob that was numbered again before a write failed still needs its client to fetch it.
-                return new AtticBatch(renumbered.Count == 0 ? HouseEdit.SaveFailed : HouseEdit.NeedsResync, [], renumbered);
+                return RenumberCrowded(crowded);
             }
 
-            var previousItems = _attic.Items;
-            var previousRevisions = _attic.Revisions;
-            var previousNextItemId = _attic.NextItemId;
-            var revisions = new Dictionary<string, uint>(previousRevisions);
-            var items = new List<AtticItem>(previousItems);
-            var slotCounts = new Dictionary<string, int>(StringComparer.Ordinal);
-            var changes = new List<AtticChange>(additions.Count);
-            var nextItemId = previousNextItemId;
-            foreach (var (item, subType) in additions) {
-                var table = TableFor(subType);
-                var slot = slotCounts.GetValueOrDefault(subType, table.Slots.Count);
-                slotCounts[subType] = slot + 1;
-                var revision = (revisions.TryGetValue(subType, out var current) ? current : 1) + 1;
-                revisions[subType] = revision;
-                var added = item with { Id = nextItemId++ };
-                items.Add(added);
-                changes.Add(new AtticChange(HouseEdit.Done, subType, slot, unchecked(table.GidBase + (uint) slot), revision, added));
-            }
-
-            _attic.Items = items;
-            _attic.Revisions = revisions;
-            _attic.NextItemId = nextItemId;
-            if (!Persist(save)) {
-                _attic.Items = previousItems;
-                _attic.Revisions = previousRevisions;
-                _attic.NextItemId = previousNextItemId;
-
-                return new AtticBatch(HouseEdit.SaveFailed, [], []);
-            }
-
-            foreach (var change in changes) {
-                TableFor(change.SubType).Slots.Add(change.Item);
-            }
-
-            return new AtticBatch(HouseEdit.Done, changes, []);
+            return AddAll(additions, save);
         }
     }
 
@@ -361,67 +313,31 @@ internal sealed class AtticState {
     /// <returns><see cref="HouseEdit.NotFound"/> when the attic has no such item, <see cref="HouseEdit.SaveFailed"/> when the write failed.</returns>
     internal AtticChange TryRemove(uint itemId, Func<Attic, bool> save = null) {
         lock (_lock) {
-            foreach (var (subType, table) in _tables) {
-                var slot = table.Slots.FindIndex(candidate => candidate?.Id == itemId);
-                if (slot < 0) {
-                    continue;
-                }
+            if (_tables.Locate(itemId) is not { } found) {
+                return new AtticChange(HouseEdit.NotFound);
+            }
 
-                var previous = table.Slots[slot];
-                var index = _attic.Items.FindIndex(candidate => candidate.Id == itemId);
-                var revision = RevisionOf(subType);
-                var hadRevision = _attic.Revisions.TryGetValue(subType, out var storedRevision);
-                _attic.Items.RemoveAt(index);
-                _attic.Revisions[subType] = revision + 1;
-                if (!Persist(save)) {
+            var previous = found.Table.Slots[found.Slot];
+            var index = _attic.Items.FindIndex(candidate => candidate.Id == itemId);
+            Action undoRevision = null;
+            uint revision = 0;
+            var saved = Persist(
+                () => {
+                    _attic.Items.RemoveAt(index);
+                    undoRevision = Persistence.BumpRevision(_attic.Revisions, found.SubType, out revision);
+                },
+                () => {
                     _attic.Items.Insert(index, previous);
-                    RestoreRevision(subType, hadRevision, storedRevision);
-
-                    return new AtticChange(HouseEdit.SaveFailed);
-                }
-
-                table.Slots[slot] = null;
-
-                return new AtticChange(HouseEdit.Done, subType, slot, unchecked(table.GidBase + (uint) slot), revision + 1, previous);
+                    undoRevision();
+                },
+                save);
+            if (!saved) {
+                return new AtticChange(HouseEdit.SaveFailed);
             }
 
-            return new AtticChange(HouseEdit.NotFound);
-        }
-    }
+            found.Table.Slots[found.Slot] = null;
 
-    /// <summary>
-    /// Counts a viewer into the attic.
-    /// </summary>
-    /// <returns><c>false</c> when the state was retired by its last viewer leaving; get the attic from the registry again.</returns>
-    internal bool Enter() {
-        lock (_lock) {
-            if (_retired) {
-                return false;
-            }
-
-            _viewers++;
-
-            return true;
-        }
-    }
-
-    /// <summary>
-    /// Counts a viewer out of the attic. The state is retired when the last viewer leaves.
-    /// </summary>
-    /// <returns><c>true</c> when this was the last viewer and the state is now retired.</returns>
-    internal bool Leave() {
-        lock (_lock) {
-            if (_viewers > 0) {
-                _viewers--;
-            }
-
-            if (_viewers > 0 || _retired) {
-                return false;
-            }
-
-            _retired = true;
-
-            return true;
+            return new AtticChange(HouseEdit.Done, found.SubType, found.Slot, found.Table.GidIdOf(found.Slot), revision, previous);
         }
     }
 
@@ -437,29 +353,50 @@ internal sealed class AtticState {
         return item with { Custom = HousingItems.LoadCustomData(charId, kind, item.ItemGid) };
     }
 
-    private uint RevisionOf(string subType)
-        => _attic.Revisions.TryGetValue(subType, out var revision) ? revision : 1;
-
-    private void RestoreRevision(string subType, bool hadRevision, uint storedRevision) {
-        if (hadRevision) {
-            _attic.Revisions[subType] = storedRevision;
-        } else {
-            _attic.Revisions.Remove(subType);
+    private AtticBatch AddAll(IReadOnlyList<AtticAddition> additions, Func<Attic, bool> save) {
+        var previousItems = _attic.Items;
+        var previousRevisions = _attic.Revisions;
+        var previousNextItemId = _attic.NextItemId;
+        var revisions = new Dictionary<string, uint>(previousRevisions);
+        var items = new List<AtticItem>(previousItems);
+        var slotCounts = new Dictionary<string, int>(StringComparer.Ordinal);
+        var changes = new List<AtticChange>(additions.Count);
+        var nextItemId = previousNextItemId;
+        foreach (var (item, subType) in additions) {
+            var table = _tables.For(subType);
+            var slot = slotCounts.GetValueOrDefault(subType, table.Slots.Count);
+            slotCounts[subType] = slot + 1;
+            var revision = Persistence.RevisionOf(revisions, subType) + 1;
+            revisions[subType] = revision;
+            var added = item with { Id = nextItemId++ };
+            items.Add(added);
+            changes.Add(new AtticChange(HouseEdit.Done, subType, slot, table.GidIdOf(slot), revision, added));
         }
+
+        var saved = Persist(
+            () => {
+                _attic.Items = items;
+                _attic.Revisions = revisions;
+                _attic.NextItemId = nextItemId;
+            },
+            () => {
+                _attic.Items = previousItems;
+                _attic.Revisions = previousRevisions;
+                _attic.NextItemId = previousNextItemId;
+            },
+            save);
+        if (!saved) {
+            return new AtticBatch(HouseEdit.SaveFailed, [], []);
+        }
+
+        foreach (var change in changes) {
+            _tables.For(change.SubType).Slots.Add(change.Item);
+        }
+
+        return new AtticBatch(HouseEdit.Done, changes, []);
     }
 
-    private Table TableFor(string subType) {
-        if (_tables.TryGetValue(subType, out var table)) {
-            return table;
-        }
-
-        table = new Table { GidBase = HousingGids.NewBaseApart([.. _tables.Values.Select(other => other.GidBase)]) };
-        _tables[subType] = table;
-
-        return table;
-    }
-
-    private List<string> RenumberAll(IEnumerable<(Table Table, string Key, int Count)> crowded) {
+    private AtticBatch RenumberCrowded(IEnumerable<(BlobTable<AtticItem> Table, string Key, int Count)> crowded) {
         var renumbered = new List<string>();
         foreach (var blob in crowded) {
             if (!Renumber(blob.Key, blob.Table)) {
@@ -469,44 +406,25 @@ internal sealed class AtticState {
             renumbered.Add(blob.Key);
         }
 
-        return renumbered;
+        // A blob that was numbered again before a write failed still needs its client to fetch it.
+        return new AtticBatch(renumbered.Count == 0 ? HouseEdit.SaveFailed : HouseEdit.NeedsResync, [], renumbered);
     }
 
-    private bool Renumber(string subType, Table table) {
-        var previousSlots = table.Slots;
-        var previousBase = table.GidBase;
-        var hadRevision = _attic.Revisions.TryGetValue(subType, out var storedRevision);
-        table.Slots = [.. previousSlots.Where(item => item is not null)];
-        table.GidBase = HousingGids.NewBaseApart([.. _tables.Values.Where(other => other != table).Select(other => other.GidBase)]);
-        _attic.Revisions[subType] = RevisionOf(subType) + 1;
-        if (AtticCollection.Save(_attic)) {
-            return true;
+    private HouseEdit MakeRoom(string subType, BlobTable<AtticItem> table) {
+        if (table.Live >= table.Slots.Count) {
+            return HouseEdit.LimitReached;
         }
 
-        table.Slots = previousSlots;
-        table.GidBase = previousBase;
-        RestoreRevision(subType, hadRevision, storedRevision);
-
-        return false;
+        return Renumber(subType, table) ? HouseEdit.NeedsResync : HouseEdit.SaveFailed;
     }
 
-    private bool Persist(Func<Attic, bool> save) {
-        try {
-            return (save ?? AtticCollection.Save)(_attic);
-        } catch (Exception ex) {
-            Logger.Error("Failed to write attic of character {CharId}: {Reason}", Logger.Args(_attic.CharId, ex.Message));
+    private bool Renumber(string subType, BlobTable<AtticItem> table) {
+        Action undo = null;
 
-            return false;
-        }
+        return Persist(() => undo = _tables.Renumber(subType, table, _attic.Revisions), () => undo(), null);
     }
 
-    private sealed class Table {
-
-        internal List<AtticItem> Slots = [];
-        internal uint GidBase;
-
-        internal int Live => Slots.Count(item => item is not null);
-
-    }
+    private bool Persist(Action apply, Action undo, Func<Attic, bool> save)
+        => Persistence.Persist(apply, undo, () => (save ?? AtticCollection.Save)(_attic), $"attic of character {_attic.CharId}");
 
 }

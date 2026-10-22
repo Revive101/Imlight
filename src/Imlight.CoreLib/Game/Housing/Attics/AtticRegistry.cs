@@ -38,9 +38,8 @@
  */
 
 using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
 using Imlight.Common;
+using Imlight.CoreLib.Game.Housing.Items;
 using Imlight.CoreLib.Shared.Utilities;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
@@ -52,8 +51,7 @@ namespace Imlight.CoreLib.Game.Housing.Attics;
 /// </summary>
 internal static class AtticRegistry {
 
-    private static readonly ConcurrentDictionary<ulong, AtticState> s_attics = new();
-    private static readonly StripedLocks s_creationLocks = new();
+    private static readonly LiveRegistry<ulong, AtticState> s_attics = new(state => state.CharId, state => state.Viewers);
 
     /// <summary>
     /// Fills in what the client is told about the attic when the character enters the game: the container and the item count.
@@ -74,41 +72,24 @@ internal static class AtticRegistry {
     /// <param name="audit">What the audit found when this call made the state live; nothing otherwise.</param>
     /// <returns><c>false</c> when the attic cannot be loaded or stored.</returns>
     internal static bool TryEnter(Wizard wizard, out AtticState state, out bool created, out AtticAudit audit) {
-        created = false;
-        audit = default;
-        while (true) {
-            state = null;
-            if (s_attics.TryGetValue(wizard.CharId, out var existing) && !existing.IsRetired) {
-                state = existing;
-            } else {
-                if (existing is not null) {
-                    Evict(existing);
-                }
-
-                if (!TryGetOrPublish(wizard, out state, ref created, ref audit)) {
-                    return false;
-                }
-            }
-
-            if (state.Enter()) {
-                SetSummary(wizard, state);
-
-                return true;
-            }
-
-            Evict(state);
+        var wasCreated = false;
+        var found = default(AtticAudit);
+        var entered = s_attics.TryEnter(wizard.CharId, () => TryPublish(wizard, out wasCreated, out found), out state);
+        created = wasCreated;
+        audit = found;
+        if (entered) {
+            SetSummary(wizard, state);
         }
+
+        return entered;
     }
 
     /// <summary>
     /// Counts a viewer out of an attic and drops the attic from the registry when nobody is left.
     /// </summary>
     /// <param name="state">The attic the viewer entered with <see cref="TryEnter"/>.</param>
-    internal static void Release(AtticState state) {
-        if (state.Leave()) {
-            Evict(state);
-        }
-    }
+    internal static void Release(AtticState state)
+        => s_attics.Release(state);
 
     /// <summary>
     /// Tells the character's own record what the attic holds now.
@@ -120,23 +101,7 @@ internal static class AtticRegistry {
         wizard.AtticItemCount = state.LiveCount;
     }
 
-    private static void Evict(AtticState state)
-        => s_attics.TryRemove(new KeyValuePair<ulong, AtticState>(state.CharId, state));
-
-    private static bool TryGetOrPublish(Wizard wizard, out AtticState state, ref bool created, ref AtticAudit audit) {
-        lock (s_creationLocks.For(wizard.CharId)) {
-            if (s_attics.TryGetValue(wizard.CharId, out var raced) && !raced.IsRetired) {
-                state = raced;
-
-                return true;
-            }
-
-            return TryPublish(wizard, out state, out created, out audit);
-        }
-    }
-
-    private static bool TryPublish(Wizard wizard, out AtticState state, out bool created, out AtticAudit audit) {
-        state = null;
+    private static AtticState TryPublish(Wizard wizard, out bool created, out AtticAudit audit) {
         created = false;
         audit = default;
         var attic = AtticCollection.Load(wizard.CharId);
@@ -149,7 +114,7 @@ internal static class AtticRegistry {
             };
             created = AtticCollection.TryCreate(candidate, out attic);
             if (attic is null) {
-                return false;
+                return null;
             }
 
             if (created) {
@@ -157,13 +122,7 @@ internal static class AtticRegistry {
             }
         }
 
-        if (!AtticState.TryCreate(attic, out state, out audit)) {
-            return false;
-        }
-
-        s_attics[wizard.CharId] = state;
-
-        return true;
+        return AtticState.TryCreate(attic, out var state, out audit) ? state : null;
     }
 
 }

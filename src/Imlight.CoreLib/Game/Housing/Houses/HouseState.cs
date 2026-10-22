@@ -41,7 +41,8 @@
  *   built, with new bases and revisions no client has seen, when the state is created, and a table again when it is full.
  *   Clients that still use the old base ask for the blob when a patch does not fit.
  * - The bases of one house are far enough apart that no two blobs share an id.
- * - Use HouseRegistry.TryEnter and HouseRegistry.Release to count viewers.
+ * - The slot tables, the revision moves and the write-or-undo step are shared with AtticState (BlobSet, Persistence); this
+ *   class owns the house document, its item limit and its owner. Use HouseRegistry.TryEnter and HouseRegistry.Release to count viewers.
  * 
  * TODO:
  * 
@@ -55,11 +56,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Imcodec.ObjectProperty.TypeCache;
-using Imlight.Common;
 using Imlight.CoreLib.Game.Housing.Items;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
+using Action = System.Action;
 
 namespace Imlight.CoreLib.Game.Housing.Houses;
 
@@ -105,25 +106,21 @@ internal readonly record struct HouseSnapshot(string SubType, uint Revision, uin
 internal sealed class HouseState {
 
     /// <summary>
-    /// The most blob entries one blob holds: a string field is at most 65,535 bytes, the blob header takes
-    /// 47 and every entry 21.
+    /// The most blob entries one blob holds.
     /// </summary>
     internal const int MAX_SLOTS = HousingGids.MAX_SLOTS;
 
     private readonly Lock _lock = new();
     private readonly House _house;
     private readonly HouseTemplateInfo _template;
-    private readonly Dictionary<string, Table> _tables = new(StringComparer.Ordinal);
-    private int _viewers;
-    private bool _retired;
+    private readonly BlobSet<PlacedItem> _tables = new(item => item.Id, HousingItems.LiveSubTypes);
 
     private HouseState(House house, HouseTemplateInfo template) {
         _house = house;
         _template = template;
-        foreach (var subType in HousingItems.LiveSubTypes) {
-            _tables[subType] = new Table { GidBase = HousingGids.NewBaseApart([.. _tables.Values.Select(other => other.GidBase)]) };
-        }
     }
+
+    internal ViewerCount Viewers { get; } = new();
 
     internal ulong LotGid => _house.LotGid;
 
@@ -152,13 +149,7 @@ internal sealed class HouseState {
 
     internal int CastleBlockLimit => _template.CastleBlockLimit;
 
-    internal bool IsRetired {
-        get {
-            lock (_lock) {
-                return _retired;
-            }
-        }
-    }
+    internal bool IsRetired => Viewers.IsRetired;
 
     /// <summary>
     /// Creates the live state of a stored house. The items are numbered by their ids in the blob of their kind, every blob
@@ -190,7 +181,7 @@ internal sealed class HouseState {
 
         state = new HouseState(house, template);
         foreach (var group in ordered.GroupBy(SubTypeOf)) {
-            state._tables[group.Key].Slots.AddRange(group);
+            state._tables.For(group.Key).Slots.AddRange(group);
         }
 
         return true;
@@ -203,9 +194,9 @@ internal sealed class HouseState {
     /// <returns>The revision, base, live count and slots, taken together.</returns>
     internal HouseSnapshot Snapshot(string subType) {
         lock (_lock) {
-            var table = _tables[subType];
+            var table = _tables.For(subType);
 
-            return new HouseSnapshot(subType, RevisionOf(subType), table.GidBase, table.Live, [.. table.Slots]);
+            return new HouseSnapshot(subType, Persistence.RevisionOf(_house.Revisions, subType), table.GidBase, table.Live, [.. table.Slots]);
         }
     }
 
@@ -215,7 +206,7 @@ internal sealed class HouseState {
     /// <returns>The placed items, not counting removed slots.</returns>
     internal IReadOnlyList<PlacedItem> Items() {
         lock (_lock) {
-            return [.. _tables.Values.SelectMany(table => table.Slots).Where(item => item is not null)];
+            return _tables.AllItems();
         }
     }
 
@@ -228,19 +219,8 @@ internal sealed class HouseState {
     /// <param name="subType">The subtype of the blob the GID is in.</param>
     /// <returns><c>true</c> when the GID is a housing object GID inside the numbering of one of this house's blobs.</returns>
     internal bool TryFindByGid(ulong gid, out PlacedItem item, out string subType) {
-        item = null;
-        subType = null;
         lock (_lock) {
-            foreach (var (name, table) in _tables) {
-                if (HousingGids.TryGetSlot(gid, table.GidBase, table.Slots.Count, out var slot)) {
-                    item = table.Slots[slot];
-                    subType = name;
-
-                    return true;
-                }
-            }
-
-            return false;
+            return _tables.TryFindByGid(gid, out item, out subType);
         }
     }
 
@@ -272,33 +252,34 @@ internal sealed class HouseState {
                 return new HouseChange(HouseEdit.LimitReached);
             }
 
-            var table = _tables[subType];
+            var table = _tables.For(subType);
             if (table.Slots.Count >= MAX_SLOTS) {
-                if (table.Live >= table.Slots.Count) {
-                    return new HouseChange(HouseEdit.LimitReached);
-                }
-
-                return new HouseChange(Renumber(subType, table) ? HouseEdit.NeedsResync : HouseEdit.SaveFailed);
+                return new HouseChange(MakeRoom(subType, table));
             }
 
-            var revision = RevisionOf(subType);
-            var hadRevision = _house.Revisions.TryGetValue(subType, out var storedRevision);
             var added = item with { Id = _house.NextItemId };
-            _house.Items.Add(added);
-            _house.NextItemId = added.Id + 1;
-            _house.Revisions[subType] = revision + 1;
-            if (!Persist(save)) {
-                _house.Items.RemoveAt(_house.Items.Count - 1);
-                _house.NextItemId = added.Id;
-                RestoreRevision(subType, hadRevision, storedRevision);
-
+            Action undoRevision = null;
+            uint revision = 0;
+            var saved = Persist(
+                () => {
+                    _house.Items.Add(added);
+                    _house.NextItemId = added.Id + 1;
+                    undoRevision = Persistence.BumpRevision(_house.Revisions, subType, out revision);
+                },
+                () => {
+                    _house.Items.RemoveAt(_house.Items.Count - 1);
+                    _house.NextItemId = added.Id;
+                    undoRevision();
+                },
+                save);
+            if (!saved) {
                 return new HouseChange(HouseEdit.SaveFailed);
             }
 
             table.Slots.Add(added);
             var slot = table.Slots.Count - 1;
 
-            return new HouseChange(HouseEdit.Done, subType, slot, GidIdOf(table, slot), revision + 1, added);
+            return new HouseChange(HouseEdit.Done, subType, slot, table.GidIdOf(slot), revision, added);
         }
     }
 
@@ -310,26 +291,31 @@ internal sealed class HouseState {
     /// <returns><see cref="HouseEdit.NotFound"/> when the house has no such item, <see cref="HouseEdit.SaveFailed"/> when the write failed.</returns>
     internal HouseChange TryRemove(uint itemId, Func<House, bool> save = null) {
         lock (_lock) {
-            if (Locate(itemId) is not { } found) {
+            if (_tables.Locate(itemId) is not { } found) {
                 return new HouseChange(HouseEdit.NotFound);
             }
 
             var previous = found.Table.Slots[found.Slot];
             var index = _house.Items.FindIndex(candidate => candidate.Id == itemId);
-            var revision = RevisionOf(found.SubType);
-            var hadRevision = _house.Revisions.TryGetValue(found.SubType, out var storedRevision);
-            _house.Items.RemoveAt(index);
-            _house.Revisions[found.SubType] = revision + 1;
-            if (!Persist(save)) {
-                _house.Items.Insert(index, previous);
-                RestoreRevision(found.SubType, hadRevision, storedRevision);
-
+            Action undoRevision = null;
+            uint revision = 0;
+            var saved = Persist(
+                () => {
+                    _house.Items.RemoveAt(index);
+                    undoRevision = Persistence.BumpRevision(_house.Revisions, found.SubType, out revision);
+                },
+                () => {
+                    _house.Items.Insert(index, previous);
+                    undoRevision();
+                },
+                save);
+            if (!saved) {
                 return new HouseChange(HouseEdit.SaveFailed);
             }
 
             found.Table.Slots[found.Slot] = null;
 
-            return new HouseChange(HouseEdit.Done, found.SubType, found.Slot, GidIdOf(found.Table, found.Slot), revision + 1, previous);
+            return new HouseChange(HouseEdit.Done, found.SubType, found.Slot, found.Table.GidIdOf(found.Slot), revision, previous);
         }
     }
 
@@ -348,7 +334,7 @@ internal sealed class HouseState {
                 return HouseEdit.NotFound;
             }
 
-            var located = itemIds.Select(Locate).ToList();
+            var located = itemIds.Select(_tables.Locate).ToList();
             if (located.Any(found => found is null)) {
                 return HouseEdit.NotFound;
             }
@@ -358,18 +344,23 @@ internal sealed class HouseState {
             var revisions = new Dictionary<string, uint>(previousRevisions);
             var changes = new List<HouseChange>(located.Count);
             foreach (var found in located.Select(candidate => candidate.Value)) {
-                var revision = (revisions.TryGetValue(found.SubType, out var current) ? current : 1) + 1;
+                var revision = Persistence.RevisionOf(revisions, found.SubType) + 1;
                 revisions[found.SubType] = revision;
-                changes.Add(new HouseChange(HouseEdit.Done, found.SubType, found.Slot, GidIdOf(found.Table, found.Slot), revision, found.Table.Slots[found.Slot]));
+                changes.Add(new HouseChange(HouseEdit.Done, found.SubType, found.Slot, found.Table.GidIdOf(found.Slot), revision, found.Table.Slots[found.Slot]));
             }
 
             var removedIds = itemIds.ToHashSet();
-            _house.Items = [.. previousItems.Where(candidate => !removedIds.Contains(candidate.Id))];
-            _house.Revisions = revisions;
-            if (!Persist(save)) {
-                _house.Items = previousItems;
-                _house.Revisions = previousRevisions;
-
+            var saved = Persist(
+                () => {
+                    _house.Items = [.. previousItems.Where(candidate => !removedIds.Contains(candidate.Id))];
+                    _house.Revisions = revisions;
+                },
+                () => {
+                    _house.Items = previousItems;
+                    _house.Revisions = previousRevisions;
+                },
+                save);
+            if (!saved) {
                 return HouseEdit.SaveFailed;
             }
 
@@ -394,7 +385,7 @@ internal sealed class HouseState {
     /// </returns>
     internal HouseChange TryUpdate(uint itemId, Func<PlacedItem, PlacedItem> update) {
         lock (_lock) {
-            if (Locate(itemId) is not { } found) {
+            if (_tables.Locate(itemId) is not { } found) {
                 return new HouseChange(HouseEdit.NotFound);
             }
 
@@ -406,56 +397,25 @@ internal sealed class HouseState {
             }
 
             var index = _house.Items.FindIndex(candidate => candidate.Id == itemId);
-            var revision = RevisionOf(found.SubType);
-            var hadRevision = _house.Revisions.TryGetValue(found.SubType, out var storedRevision);
-            _house.Items[index] = replacement;
-            _house.Revisions[found.SubType] = revision + 1;
-            if (!Persist(null)) {
-                _house.Items[index] = previous;
-                RestoreRevision(found.SubType, hadRevision, storedRevision);
-
+            Action undoRevision = null;
+            uint revision = 0;
+            var saved = Persist(
+                () => {
+                    _house.Items[index] = replacement;
+                    undoRevision = Persistence.BumpRevision(_house.Revisions, found.SubType, out revision);
+                },
+                () => {
+                    _house.Items[index] = previous;
+                    undoRevision();
+                },
+                null);
+            if (!saved) {
                 return new HouseChange(HouseEdit.SaveFailed);
             }
 
             found.Table.Slots[found.Slot] = replacement;
 
-            return new HouseChange(HouseEdit.Done, found.SubType, found.Slot, GidIdOf(found.Table, found.Slot), revision + 1, replacement);
-        }
-    }
-
-    /// <summary>
-    /// Counts a player into the house.
-    /// </summary>
-    /// <returns><c>false</c> when the state was retired by its last viewer leaving; get the house from the registry again.</returns>
-    internal bool Enter() {
-        lock (_lock) {
-            if (_retired) {
-                return false;
-            }
-
-            _viewers++;
-
-            return true;
-        }
-    }
-
-    /// <summary>
-    /// Counts a player out of the house. The state is retired when the last viewer leaves.
-    /// </summary>
-    /// <returns><c>true</c> when this was the last viewer and the state is now retired.</returns>
-    internal bool Leave() {
-        lock (_lock) {
-            if (_viewers > 0) {
-                _viewers--;
-            }
-
-            if (_viewers > 0 || _retired) {
-                return false;
-            }
-
-            _retired = true;
-
-            return true;
+            return new HouseChange(HouseEdit.Done, found.SubType, found.Slot, found.Table.GidIdOf(found.Slot), revision, replacement);
         }
     }
 
@@ -471,68 +431,18 @@ internal sealed class HouseState {
         return item with { Custom = HousingItems.LoadCustomData(ownerCharId, subType, item.ItemGid) };
     }
 
-    private static uint GidIdOf(Table table, int slot)
-        => unchecked(table.GidBase + (uint) slot);
-
-    private Located? Locate(uint itemId) {
-        foreach (var (subType, table) in _tables) {
-            var slot = table.Slots.FindIndex(candidate => candidate?.Id == itemId);
-            if (slot >= 0) {
-                return new Located(subType, table, slot);
-            }
+    private HouseEdit MakeRoom(string subType, BlobTable<PlacedItem> table) {
+        if (table.Live >= table.Slots.Count) {
+            return HouseEdit.LimitReached;
         }
 
-        return null;
+        Action undo = null;
+        var saved = Persist(() => undo = _tables.Renumber(subType, table, _house.Revisions), () => undo(), null);
+
+        return saved ? HouseEdit.NeedsResync : HouseEdit.SaveFailed;
     }
 
-    private uint RevisionOf(string subType)
-        => _house.Revisions.TryGetValue(subType, out var revision) ? revision : 1;
-
-    private void RestoreRevision(string subType, bool hadRevision, uint storedRevision) {
-        if (hadRevision) {
-            _house.Revisions[subType] = storedRevision;
-        } else {
-            _house.Revisions.Remove(subType);
-        }
-    }
-
-    private bool Renumber(string subType, Table table) {
-        var previousSlots = table.Slots;
-        var previousBase = table.GidBase;
-        var hadRevision = _house.Revisions.TryGetValue(subType, out var storedRevision);
-        table.Slots = [.. previousSlots.Where(item => item is not null)];
-        table.GidBase = HousingGids.NewBaseApart([.. _tables.Values.Where(other => other != table).Select(other => other.GidBase)]);
-        _house.Revisions[subType] = RevisionOf(subType) + 1;
-        if (Persist(null)) {
-            return true;
-        }
-
-        table.Slots = previousSlots;
-        table.GidBase = previousBase;
-        RestoreRevision(subType, hadRevision, storedRevision);
-
-        return false;
-    }
-
-    private bool Persist(Func<House, bool> save) {
-        try {
-            return (save ?? HouseCollection.Save)(_house);
-        } catch (Exception ex) {
-            Logger.Error("Failed to write house {LotGid}: {Reason}", Logger.Args(_house.LotGid, ex.Message));
-
-            return false;
-        }
-    }
-
-    private readonly record struct Located(string SubType, Table Table, int Slot);
-
-    private sealed class Table {
-
-        internal List<PlacedItem> Slots = [];
-        internal uint GidBase;
-
-        internal int Live => Slots.Count(item => item is not null);
-
-    }
+    private bool Persist(Action apply, Action undo, Func<House, bool> save)
+        => Persistence.Persist(apply, undo, () => (save ?? HouseCollection.Save)(_house), $"house {_house.LotGid}");
 
 }

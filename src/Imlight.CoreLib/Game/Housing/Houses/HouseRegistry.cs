@@ -42,10 +42,10 @@
  */
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using Imlight.Common;
+using Imlight.CoreLib.Game.Housing.Items;
 using Imlight.CoreLib.Shared.Utilities;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
@@ -57,15 +57,14 @@ namespace Imlight.CoreLib.Game.Housing.Houses;
 /// </summary>
 internal static class HouseRegistry {
 
-    private static readonly ConcurrentDictionary<ulong, HouseState> s_houses = new();
-    private static readonly StripedLocks s_creationLocks = new();
+    private static readonly LiveRegistry<ulong, HouseState> s_houses = new(state => state.LotGid, state => state.Viewers);
 
     /// <summary>
     /// Finds a house by its lot, loading it from the database when it is not live.
     /// </summary>
     /// <param name="lotGid">The lot to find.</param>
     /// <returns>The live house, or <c>null</c> when no house is stored under the lot or it cannot be loaded.</returns>
-    internal static HouseState Get(ulong lotGid) => Publish(lotGid);
+    internal static HouseState Get(ulong lotGid) => s_houses.Get(lotGid, () => Load(lotGid));
 
     /// <summary>
     /// Finds a character's house of a template, creating and storing it when the character has none. However many
@@ -125,7 +124,7 @@ internal static class HouseRegistry {
 
         owner.HouseLots[templateId] = house.LotGid;
 
-        return Publish(house.LotGid);
+        return Get(house.LotGid);
     }
 
     /// <summary>
@@ -134,64 +133,24 @@ internal static class HouseRegistry {
     /// <param name="lotGid">The lot to find.</param>
     /// <param name="state">The live house when this returns <c>true</c>; call <see cref="Release"/> when the viewer is gone.</param>
     /// <returns><c>false</c> when no house is stored under the lot.</returns>
-    internal static bool TryEnter(ulong lotGid, out HouseState state) {
-        while ((state = Get(lotGid)) is not null) {
-            if (state.Enter()) {
-                return true;
-            }
-
-            Evict(state);
-        }
-
-        return false;
-    }
+    internal static bool TryEnter(ulong lotGid, out HouseState state)
+        => s_houses.TryEnter(lotGid, () => Load(lotGid), out state);
 
     /// <summary>
     /// Counts a viewer out of a house and drops the house from the registry when nobody is left.
     /// </summary>
     /// <param name="state">The house the viewer entered with <see cref="TryEnter"/>.</param>
-    internal static void Release(HouseState state) {
-        if (state.Leave()) {
-            Evict(state);
+    internal static void Release(HouseState state)
+        => s_houses.Release(state);
+
+    private static HouseState Load(ulong lotGid) {
+        var house = HouseCollection.Load(lotGid);
+        if (house is null || !HouseTemplates.TryGet(house.TemplateId, out var template)
+            || !HouseState.TryCreate(house, template, out var created)) {
+            return null;
         }
-    }
 
-    /// <summary>
-    /// Drops a state from the registry, unless the registry already holds another state for its lot.
-    /// </summary>
-    /// <param name="state">The state to drop.</param>
-    internal static void Evict(HouseState state)
-        => s_houses.TryRemove(new KeyValuePair<ulong, HouseState>(state.LotGid, state));
-
-    private static HouseState Publish(ulong lotGid) {
-        while (true) {
-            if (s_houses.TryGetValue(lotGid, out var existing)) {
-                if (!existing.IsRetired) {
-                    return existing;
-                }
-
-                Evict(existing);
-
-                continue;
-            }
-
-            // The house is loaded under the lock, after any earlier state has stored its last change.
-            lock (s_creationLocks.For(lotGid)) {
-                if (s_houses.ContainsKey(lotGid)) {
-                    continue;
-                }
-
-                var house = HouseCollection.Load(lotGid);
-                if (house is null || !HouseTemplates.TryGet(house.TemplateId, out var template)
-                    || !HouseState.TryCreate(house, template, out var created)) {
-                    return null;
-                }
-
-                s_houses[lotGid] = created;
-
-                return created;
-            }
-        }
+        return created;
     }
 
 }
