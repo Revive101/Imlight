@@ -37,12 +37,6 @@ internal sealed class ResTeleportHandler : BaseResultHandler<ResTeleport> {
 
         var destinationZone = Result.m_destinationZone;
         var destinationLocation = Result.m_destinationLoc;
-        if (string.IsNullOrEmpty(destinationZone)) {
-            // The exits of a house zone name no destination, so the player leaves to the hub of the house's world.
-            if (!HouseExits.TryResolve(context.GetZonePath(), out destinationZone, out destinationLocation)) {
-                return false;
-            }
-        }
 
         var msg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
             DestinationZone = destinationZone,
