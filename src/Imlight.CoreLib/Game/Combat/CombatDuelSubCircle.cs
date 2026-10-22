@@ -138,6 +138,13 @@ public class CombatDuelSubCircle {
             return ParticipantObject.m_templateID == 1 ? CombatTeam.Player : CombatTeam.Monster;
         }
     }
+    /// <summary>
+    /// The side this participant fights for right now. Differs from <see cref="OccupiedTeam"/> while mind controlled.
+    /// </summary>
+    internal CombatTeam CurrentTeam => CombatParticipant is null
+        ? OccupiedTeam
+        : (CombatTeam) CombatParticipant.m_teamID;
+    internal bool IsMindControlled => CombatParticipant?.m_mindcontrolled > 0;
     internal bool IsAlive => ParticipantGameStats?.m_currentHitpoints > 0;
     internal bool CheatNoFizzle;
     internal CombatDeck _combatDeck;
@@ -368,6 +375,27 @@ public class CombatDuelSubCircle {
         CombatParticipant.m_stunned = rounds;
 
         return true;
+    }
+
+    internal bool TryMindControl(int turns, CombatTeam newTeam) {
+        if (IsBoss || newTeam > CombatTeam.Monster || newTeam == CurrentTeam) {
+            return false;
+        }
+
+        CombatParticipant.m_mindcontrolled = turns;
+        CombatParticipant.m_teamID = (int) newTeam;
+
+        return true;
+    }
+
+    internal void EndMindControlTick() {
+        CombatParticipant.m_mindcontrolled--;
+        if (CombatParticipant.m_mindcontrolled > 0) {
+            return;
+        }
+
+        CombatParticipant.m_mindcontrolled = 0;
+        CombatParticipant.m_teamID = CombatParticipant.m_originalTeam;
     }
 
     internal void DamageParticipant(int damage) {

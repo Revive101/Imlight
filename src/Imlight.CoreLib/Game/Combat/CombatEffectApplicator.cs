@@ -116,6 +116,9 @@ internal static class CombatEffectApplicator {
             case kSpellEffects.kStunBlock:
                 ApplyStunBlockEffect(effect, targets, context);
                 break;
+            case kSpellEffects.kMindControl:
+                ApplyMindControlEffect(effect, caster, targets);
+                break;
             case kSpellEffects.kSummonCreature:
             case kSpellEffects.kSpawnCreature:
                 ApplySummonCreature(effect, caster);
@@ -537,6 +540,19 @@ internal static class CombatEffectApplicator {
         return cinematicTime;
     }
 
+    private static void ApplyMindControlEffect(SpellEffect effect, CombatDuelSubCircle caster, CombatDuelSubCircle[] targets) {
+        foreach (var target in targets) {
+            if (!target.IsAlive) {
+                continue;
+            }
+
+            var controlled = target.TryMindControl(Math.Max(1, effect.m_effectParam), caster.CurrentTeam);
+            Logger.Debug("Duel {0} | Slot {1} | Mind control {2} turns | Team {3} | {4}",
+                Logger.Args(caster._duelActor.Duel.m_duelID.Full, target.SlotIndex, effect.m_effectParam,
+                    target.CombatParticipant.m_teamID, controlled ? "controlled" : "failed"));
+        }
+    }
+
     private static int GetStunBlockCount(CombatDuelSubCircle caster, CombatDuelSubCircle target) {
         if (caster._duelActor.Duel.m_bBattleground) {
             return 0;
@@ -547,7 +563,7 @@ internal static class CombatEffectApplicator {
         }
 
         var teamPlayers = caster._duelActor.ActiveSubCircles
-            .Count(x => x._wizard is not null && x.OccupiedTeam == caster.OccupiedTeam);
+            .Count(x => x._wizard is not null && x.CurrentTeam == caster.CurrentTeam);
 
         return Math.Max(1, teamPlayers);
     }

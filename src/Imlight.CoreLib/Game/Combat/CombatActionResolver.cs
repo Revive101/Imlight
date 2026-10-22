@@ -82,7 +82,7 @@ internal static class CombatActionResolver {
             if (spellSchool is not null) {
                 var isHealCast = action.SpellTemplate.m_effects
                     .Any(x => x.m_effectType == kSpellEffects.kHeal);
-                var isOffensiveCast = critPrimaryTarget.OccupiedTeam != action.SpellCaster.OccupiedTeam;
+                var isOffensiveCast = critPrimaryTarget.CurrentTeam != action.SpellCaster.CurrentTeam;
                 if (isHealCast || isOffensiveCast) {
                     landedCrit = CombatCriticals.RollsCritical(action.SpellCaster, critPrimaryTarget, spellSchool, isHealCast);
                     if (landedCrit) {
@@ -119,7 +119,7 @@ internal static class CombatActionResolver {
             // If the spell has any targets that are alive or on the same team as the caster, it's worth casting.
             // If the spell has a global target, it's worth casting.
             if (!spellWorthCasting && (targets.Any(x => x.IsAlive)
-                                    || targets.Any(x => x.OccupiedTeam == action.SpellCaster.OccupiedTeam))
+                                    || targets.Any(x => x.CurrentTeam == action.SpellCaster.CurrentTeam))
                                     || chosenEffect.m_effectTarget == kEffectTarget.kGlobal) {
                 spellWorthCasting = true;
             }
@@ -304,12 +304,12 @@ internal static class CombatActionResolver {
             case kEffectTarget.kFriendlyMinion:
             case kEffectTarget.kCasterMinion:
                 // The client drives minion selection; validate the pick belongs to the caster's team.
-                targets = target is not null && target.IsSummonedMinion && target.OccupiedTeam == caster.OccupiedTeam
+                targets = target is not null && target.IsSummonedMinion && target.CurrentTeam == caster.CurrentTeam
                     ? [target]
                     : [];
                 break;
             case kEffectTarget.kEnemyMinion:
-                targets = target is not null && target.IsSummonedMinion && target.OccupiedTeam != caster.OccupiedTeam
+                targets = target is not null && target.IsSummonedMinion && target.CurrentTeam != caster.CurrentTeam
                     ? [target]
                     : [];
                 break;
@@ -324,11 +324,11 @@ internal static class CombatActionResolver {
                 break;
             case kEffectTarget.kFriendlyTeam:
             case kEffectTarget.kFriendlyTeamAllAtOnce:
-                targets = [.. _activeSubCircles.Where(x => x.OccupiedTeam == caster.OccupiedTeam)];
+                targets = [.. _activeSubCircles.Where(x => x.CurrentTeam == caster.CurrentTeam)];
                 break;
             case kEffectTarget.kEnemyTeam:
             case kEffectTarget.kEnemyTeamAllAtOnce:
-                targets = [.. _activeSubCircles.Where(x => x.OccupiedTeam != caster.OccupiedTeam)];
+                targets = [.. _activeSubCircles.Where(x => x.CurrentTeam != caster.CurrentTeam)];
                 break;
             case kEffectTarget.kGlobal:
                 return [];

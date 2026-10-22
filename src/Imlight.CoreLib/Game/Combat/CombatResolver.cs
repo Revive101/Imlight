@@ -93,6 +93,7 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
     private readonly CombatDuelSubCircle[] _subCircles = actorSubCircles;
     private CombatDuelSubCircle[] ActiveSubCircles => [.. _subCircles.Where(x => x.Occupied)];
     private List<QueuedCombatAction> _queuedCombatActions;
+    private Dictionary<CombatDuelSubCircle, int> _mindControlSnapshot = [];
 
     public void Reset() =>
         _queuedCombatActions = [];
@@ -111,6 +112,10 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
         // Some subcircles may not have queued actions. Ensure they do by adding a pass action.
         AddCasterPassActionIfNeeded();
         SortQueuedActions();
+
+        _mindControlSnapshot = _subCircles
+            .Where(x => x?.CombatParticipant is not null)
+            .ToDictionary(x => x, x => x.CombatParticipant.m_mindcontrolled);
 
         var cinematicTime = ProcessQueuedActions(combatActionListObj);
 
@@ -239,6 +244,8 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
     }
 
     private float ProcessQueuedAction(QueuedCombatAction action, CombatActionListObj combatActionList, float actionStartTime) {
+        TickMindControl(action.SpellCaster);
+
         // We want to invoke the overtime effects after we check for death.
         // This is because the overtime effects can kill a participant, and we want to see the animation.
         var cinematicTime = InvokeOverTimeEffects(action.SpellCaster);
@@ -292,6 +299,20 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
         action.SpellCaster._duelActor.CurrentActionCinematicOffsetSeconds = actionStartTime + cinematicTime;
 
         return cinematicTime + HandleSuccessfulAction(action, combatActionList);
+    }
+
+    private void TickMindControl(CombatDuelSubCircle caster) {
+        var turns = caster.CombatParticipant.m_mindcontrolled;
+        if (turns < 1 || !_mindControlSnapshot.TryGetValue(caster, out var snapshot) || snapshot != turns) {
+            return;
+        }
+
+        // todo: confirm the client ticks m_mindcontrolled before the cast, and whether a controlled caster's AoE resolves by current team.
+        caster.EndMindControlTick();
+
+        Logger.Debug("Duel {0} | Slot {1} | Mind control ticked to {2} | Team {3}",
+            Logger.Args(_duel.m_duelID.Full, caster.SlotIndex, caster.CombatParticipant.m_mindcontrolled,
+                caster.CombatParticipant.m_teamID));
     }
 
     private float HandleFizzleAction(QueuedCombatAction action, CombatActionListObj combatActionList) {
