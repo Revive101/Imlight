@@ -49,6 +49,7 @@ using System.Threading.Tasks;
 using Akka.Actor;
 using Imcodec.MessageLayer;
 using Imlight.Common;
+using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.Game.Services;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Services;
@@ -362,6 +363,9 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
                 Ip = this.RemoteIp
             });
         }
+
+        // An abrupt socket drop never reaches the logout path, so the online entry is removed here.
+        OnlinePlayerCollection.RemoveOnlinePlayer(SessionID);
 
         base.PostStop();
     }

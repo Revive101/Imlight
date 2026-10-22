@@ -157,6 +157,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             return;
         }
 
+        _cachedQuestOffers.RemoveAll(q => q.m_questName == quest.m_questName);
         _cachedQuestOffers.Add(quest);
     }
 
