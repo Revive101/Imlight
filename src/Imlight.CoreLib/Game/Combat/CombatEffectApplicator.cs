@@ -166,6 +166,9 @@ internal static class CombatEffectApplicator {
             case kSpellEffects.kSwapAll:
                 cinematicTime += ApplyMoveHangingEffect(effect, caster, targets);
                 break;
+            case kSpellEffects.kDetonateOverTime:
+                cinematicTime += ApplyDetonateOverTimeEffect(effect, targets);
+                break;
             default:
                 break;
         }
@@ -387,6 +390,36 @@ internal static class CombatEffectApplicator {
             target._hangingEffects.AddRange(fromCaster);
             caster._hangingEffects.AddRange(fromTarget);
             cinematicTime += (fromTarget.Count + fromCaster.Count) * CombatHangingEffects.HANGING_EFFECT_CONSUME_TIME;
+        }
+
+        return cinematicTime;
+    }
+
+    private static float ApplyDetonateOverTimeEffect(SpellEffect effect, CombatDuelSubCircle[] targets) {
+        var cinematicTime = 0.0f;
+
+        foreach (var target in targets) {
+            cinematicTime += DetonateOverTimeOn(effect, target);
+        }
+
+        return cinematicTime;
+    }
+
+    private static float DetonateOverTimeOn(SpellEffect effect, CombatDuelSubCircle target) {
+        var detonated = CombatHangingEffects.Take(target, CombatHangingEffects.HangingKind.OverTime,
+            effect.m_disposition, effect.m_effectParam, effect.m_bypassProtection);
+        var cinematicTime = 0.0f;
+
+        foreach (var overTime in detonated) {
+            if (overTime.m_effectType == kSpellEffects.kDeferredDamage) {
+                Logger.Debug("Detonate skipped a deferred damage effect; the server does not track them.");
+
+                continue;
+            }
+
+            // todo: the client's tick flag and ward-pass argument are unread, so a ward treating a detonation differently from a tick is unconfirmed.
+            var amount = (int) (CombatHangingEffects.GetRemainingOverTime(overTime) * effect.m_healModifier);
+            cinematicTime += CombatHangingEffects.HANGING_EFFECT_CONSUME_TIME + CombatHangingEffects.ApplyOverTimeTick(target, overTime, amount);
         }
 
         return cinematicTime;

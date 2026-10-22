@@ -352,6 +352,17 @@ internal static class CombatHangingEffects {
     }
 
     /// <summary>
+    /// Gets what an over-time effect still has to deliver: the amount per tick times the ticks left, or the whole
+    /// total when it has not ticked yet.
+    /// </summary>
+    /// <param name="effect">The hanging over-time effect.</param>
+    /// <returns>The amount left to deliver.</returns>
+    internal static int GetRemainingOverTime(SpellEffect effect)
+        => effect.m_paramPerRound != 0 || effect.m_numRounds == 0
+            ? effect.m_paramPerRound * effect.m_effectParam
+            : effect.m_effectParam;
+
+    /// <summary>
     /// Delivers one over-time tick to its carrier. A damage tick goes through the carrier's wards like a hit does,
     /// a heal tick heals the carrier.
     /// </summary>
