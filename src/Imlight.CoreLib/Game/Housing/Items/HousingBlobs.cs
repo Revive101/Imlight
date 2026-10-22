@@ -100,10 +100,11 @@ internal static class HousingBlobs {
     /// Serializes a blob or a blob request.
     /// </summary>
     /// <param name="value">The object to serialize.</param>
+    /// <param name="propertyMask">The property flags a property needs to be written; the blob and its requests use the default.</param>
     /// <returns>The bytes the client reads.</returns>
     /// <exception cref="InvalidOperationException">The object cannot be serialized or does not fit a string field.</exception>
-    internal static ByteString Serialize(PropertyClass value) {
-        if (!NewSerializer().Serialize(value, SERIALIZE_MASK, out var serialized)) {
+    internal static ByteString Serialize(PropertyClass value, uint propertyMask = SERIALIZE_MASK) {
+        if (!NewSerializer().Serialize(value, propertyMask, out var serialized)) {
             throw new InvalidOperationException($"Could not serialize {value.GetType().Name}.");
         }
 

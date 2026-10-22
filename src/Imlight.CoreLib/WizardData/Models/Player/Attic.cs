@@ -30,7 +30,7 @@
  * NOTE:
  * - One document per character, id Attics/{charId}. The container id is the id the client files the attic blobs under.
  * - An item keeps the global id it had as a backpack item, and its item document stays in the items collection, so it comes
- *   back as the same item. The blob an item is in is derived from its template when the attic is loaded.
+ *   back as the same item. Every item is in the one Attic blob. A pet's or mount's Custom is the serialized item behavior its entry carries.
  * - Revisions has one number per blob subtype, the version of that blob. A subtype with no entry has not been sent.
  *
  * TODO:
@@ -55,27 +55,20 @@ public sealed record AtticItem {
     public ulong ItemGid { get; init; }
     public uint TemplateId { get; init; }
     public int Tint { get; init; }
-    public string Custom { get; init; }
+
+    /// <summary>
+    /// The serialized item behavior a pet's or mount's entry carries, or <c>null</c> for a plain item.
+    /// </summary>
+    public byte[] Custom { get; init; }
 
     /// <summary>
     /// Builds the client's blob entry for the item: the template and the colour, nothing placed.
     /// </summary>
     /// <returns>The entry; a <see cref="HousingBlobCustomObject"/> when the item carries custom data.</returns>
     public HousingBlobObject ToBlobObject() {
-        var placed = new PlacedItem { TemplateId = TemplateId, Tint = Math.Clamp(Tint, 0, PlacedItem.MAX_TINT) }.Normalize();
-        var entry = placed?.ToBlobObject() ?? new HousingBlobObject { m_gameObjectTemplateID = TemplateId };
-        if (Custom is null) {
-            return entry;
-        }
+        var placed = new PlacedItem { TemplateId = TemplateId, Tint = Math.Clamp(Tint, 0, PlacedItem.MAX_TINT), Custom = Custom }.Normalize();
 
-        return new HousingBlobCustomObject {
-            m_gameObjectTemplateID = entry.m_gameObjectTemplateID,
-            m_positionXY = entry.m_positionXY,
-            m_positionZ = entry.m_positionZ,
-            m_yaw = entry.m_yaw,
-            m_extraData1 = entry.m_extraData1,
-            m_customData = Custom,
-        };
+        return placed?.ToBlobObject() ?? new HousingBlobObject { m_gameObjectTemplateID = TemplateId };
     }
 
 }

@@ -30,11 +30,10 @@
  * }
  *
  * NOTE:
- * - The objects the client names stay in the house. So does an object whose family has no attic blob, or that the server does
- *   not support in an attic, and so does every object past the room the attic has left; the result counts the objects that
- *   could have moved but did not.
+ * - The objects the client names stay in the house. So does an object whose behavior the server does not support, and so does
+ *   every object past the room the attic has left; the result counts the objects that could have moved but did not.
  * - An object keeps the global id and the item document it was placed from, so it comes back as the same item, whether
- *   it is a pet or a chair.
+ *   it is a pet or a chair. A pet or a mount takes its entry data with it, so the attic shows its look.
  * - The house and the attic are locked in that order, and nothing takes them the other way round.
  *
  * TODO:
@@ -48,7 +47,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Imlight.CoreLib.Game.Housing.Attics;
-using Imlight.CoreLib.Game.Housing.Families;
 using Imlight.CoreLib.Game.Housing.Items;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
@@ -91,14 +89,9 @@ internal static class HousePickUpAll {
             }
         }
 
-        var movable = new List<(PlacedItem Item, HousingFamily Family)>();
-        foreach (var item in house.Snapshot().Slots) {
-            if (item is not null && !kept.Contains(item.Id)
-                && HousingItems.Check(item.TemplateId, out _, out var family) == HousingPlacement.Allowed
-                && family.AtticSubType is not null) {
-                movable.Add((item, family));
-            }
-        }
+        var movable = house.Items()
+            .Where(item => !kept.Contains(item.Id) && HousingItems.Check(item.TemplateId, out _).Placement == HousingPlacement.Allowed)
+            .ToList();
 
         var chosen = movable.Take(Math.Max(0, attic.Limit - attic.LiveCount)).ToList();
         var left = movable.Count - chosen.Count;
@@ -107,19 +100,19 @@ internal static class HousePickUpAll {
         }
 
         var additions = chosen
-            .Select(entry => new AtticAddition(
+            .Select(item => new AtticAddition(
                 new AtticItem {
-                    ItemGid = entry.Item.ItemGid,
-                    TemplateId = entry.Item.TemplateId,
-                    Tint = entry.Item.Tint,
-                    Custom = entry.Item.Custom,
+                    ItemGid = item.ItemGid,
+                    TemplateId = item.TemplateId,
+                    Tint = item.Tint,
+                    Custom = item.Custom,
                 },
-                entry.Family.AtticSubType))
+                HousingItems.ATTIC_SUB_TYPE))
             .ToList();
 
         var batchRan = false;
         var batch = new AtticBatch(HouseEdit.SaveFailed, [], []);
-        var edit = house.TryRemoveMany([.. chosen.Select(entry => entry.Item.Id)], out var removed, houseDocument => {
+        var edit = house.TryRemoveMany([.. chosen.Select(item => item.Id)], out var removed, houseDocument => {
             batchRan = true;
             batch = attic.TryAddMany(additions, atticDocument => HouseCollection.SaveWithAttic(houseDocument, atticDocument));
 

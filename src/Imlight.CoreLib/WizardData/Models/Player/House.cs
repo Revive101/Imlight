@@ -29,7 +29,8 @@
  * NOTE:
  * - A lot is one issued deed or structure item. Its global id is the document id, so a character who owns
  *   several houses has one document per lot.
- * - Revision is the number the client's blob cache compares. Every stored change moves it forward.
+ * - Revisions has one number per live blob subtype, the version the client's blob cache compares. Every stored change moves
+ *   the revision of the blob it touches forward. A subtype with no entry has not been sent. An old document's single revision is ignored.
  * - Item ids are never reused: NextItemId is the id of the next item placed.
  * 
  * TODO:
@@ -53,7 +54,7 @@ public class House {
     public ulong LotGid { get; set; }
     public ulong OwnerCharId { get; set; }
     public uint TemplateId { get; set; }
-    public uint Revision { get; set; }
+    public Dictionary<string, uint> Revisions { get; set; } = [];
     public int BonusSlots { get; set; }
     public uint NextItemId { get; set; } = 1;
     public List<PlacedItem> Items { get; set; } = [];

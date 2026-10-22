@@ -30,10 +30,12 @@
  * }
  *
  * NOTE:
- * - The attic is one blob per subtype, and an item is in the blob of its template's family. The subtype is not stored: it is
- *   derived from the template whenever the attic is loaded. Each blob has its own
- *   base, revision and slot table: GID id = base + slot, and a removed item leaves a null slot so the numbers in later
- *   patches stay valid.
+ * - Every item is in the one Attic blob (HousingItems.ATTIC_SUB_TYPE): the client loads every attic subtype the same way, so the
+ *   kind of an item does not matter. A blob has its own base, revision and slot table: GID id = base + slot, and a removed
+ *   item leaves a null slot so the numbers in later patches stay valid. An attic stored before the single blob has revisions
+ *   for the old kind blobs; they stay, and the client is sent them empty, so it drops what it cached there.
+ * - A pet or a mount carries its entry data, the serialized item behavior, so the client shows its look. An item stored
+ *   without it gets it from its item document when the attic is loaded.
  * - Every change is written before it returns. A failed write undoes the change in memory.
  * - A change that also moves an item to or from a backpack passes its own save, which writes both in one transaction.
  * - The bases of one attic are far enough apart that no two blobs share an id.
@@ -53,7 +55,6 @@ using System.Linq;
 using System.Threading;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
-using Imlight.CoreLib.Game.Housing.Families;
 using Imlight.CoreLib.Game.Housing.Houses;
 using Imlight.CoreLib.Game.Housing.Items;
 using Imlight.CoreLib.Shared.Resources;
@@ -81,7 +82,7 @@ internal readonly record struct AtticChange(HouseEdit Result, string SubType = n
 /// An item to put in an attic, with the subtype of the blob it goes in.
 /// </summary>
 /// <param name="Item">The item to store; its id is replaced by the next free one.</param>
-/// <param name="SubType">The subtype of the item's family.</param>
+/// <param name="SubType">The subtype of the blob the item goes in.</param>
 internal readonly record struct AtticAddition(AtticItem Item, string SubType);
 
 /// <summary>
@@ -157,7 +158,7 @@ internal sealed class AtticState {
         state = null;
         var previousItems = attic.Items;
         var previousRevisions = attic.Revisions;
-        var kept = previousItems.Where(item => SubTypeOf(item) is not null).OrderBy(item => item.Id).ToList();
+        var kept = previousItems.Where(item => SubTypeOf(item) is not null).OrderBy(item => item.Id).Select(item => WithCustom(attic.CharId, item)).ToList();
         audit = new AtticAudit(previousItems.Count, previousItems.Count - kept.Count);
 
         var revisions = new Dictionary<string, uint>(previousRevisions);
@@ -235,7 +236,7 @@ internal sealed class AtticState {
     /// is numbered again instead and nothing is added.
     /// </summary>
     /// <param name="item">The item to store; its id is replaced by the next free one.</param>
-    /// <param name="subType">The subtype of the item's family.</param>
+    /// <param name="subType">The subtype of the blob the item goes in.</param>
     /// <param name="save">Writes the attic; <c>null</c> writes the attic alone.</param>
     /// <returns>
     /// <see cref="HouseEdit.LimitReached"/> at the limit, <see cref="HouseEdit.NeedsResync"/> when the table was numbered again
@@ -425,7 +426,16 @@ internal sealed class AtticState {
     }
 
     private static string SubTypeOf(AtticItem item)
-        => CoreObjectFactory.GetCoreTemplate(item.TemplateId) is WizItemTemplate template ? HousingItems.AtticSubTypeOf(template) : null;
+        => CoreObjectFactory.GetCoreTemplate(item.TemplateId) is WizItemTemplate ? HousingItems.ATTIC_SUB_TYPE : null;
+
+    private static AtticItem WithCustom(ulong charId, AtticItem item) {
+        var kind = HousingItems.SubTypeOf(CoreObjectFactory.GetCoreTemplate(item.TemplateId) as WizItemTemplate);
+        if (item.Custom is not null || kind == HousingItems.ITEM_SUB_TYPE) {
+            return item;
+        }
+
+        return item with { Custom = HousingItems.LoadCustomData(charId, kind, item.ItemGid) };
+    }
 
     private uint RevisionOf(string subType)
         => _attic.Revisions.TryGetValue(subType, out var revision) ? revision : 1;

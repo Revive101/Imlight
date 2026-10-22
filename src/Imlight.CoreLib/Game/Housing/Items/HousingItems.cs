@@ -20,29 +20,36 @@
  * ========================================================================
  *
  * PURPOSE:
- * Decides from an item's own template whether it may be placed in a house, and how many copies of one item a house
- * or a backpack may hold.
+ * Picks the client blob a placed object lives in, and decides from an item's own template whether it may be placed in a
+ * house. The client names live blobs by kind: plain objects go in "Item", and a kind that carries state (a pet, a mount)
+ * goes in a blob of its own name, whose entries carry that state as a string. An add patch keeps the string only in a
+ * kind-named blob. The client never names the kind in a request, so the server decides it from the template, the way the
+ * client recognises it. Also counts copies of one item and takes the item of an object that leaves a house or an attic.
  *
  * USAGE EXAMPLE:
- * switch (HousingItems.Check(templateId, out var template, out var family)) {
- *     case HousingPlacement.Allowed: // place it
- *     case HousingPlacement.NotEnabled: // the family is declared but not switched on
+ * var verdict = HousingItems.Check(templateId, out var template);
+ * switch (verdict.Placement) {
+ *     case HousingPlacement.Allowed: // place it in the blob verdict.SubType
+ *     case HousingPlacement.NotEnabled: // the client offers it, the server cannot serve its behavior yet
  *     default: // the client never offers this item
  * }
  *
  * NOTE:
- * - The rule is the client's: it offers an item for placing when its template is an object that is not a weapon and
- *   carries the Housing adjective (ClientUtility get_item_category_name 0x140463250, FurniturePageWindow::IsFurnitureItem
- *   0x140fa56d0), and it empties a blob entry whose template has a seed behavior (BaseClientHousingBlobStrategy::CreateObject
- *   0x1422170f0). Which folder a template lives in is not part of it.
- * - A pet or a mount is furniture by its behavior, with or without the adjective.
- * - Plants, wallpapers and seeds go through their own messages, so they are not furniture.
- * - Furniture of a family that is declared but not enabled is refused without blame, because the client offers it.
+ * - The placement rule is the client's: ObjectPlacementWindow::AddPlaceableItem 0x141062200 offers an item template that
+ *   lacks the not-placeable adjective, whose object type is an object or a housing texture, or that has a pet or a mount
+ *   behavior, and it skips seeds and rental mounts. A pet or a mount is found by its behavior, as the client finds it
+ *   (GameObjectTemplate::FindPetItemBehaviorTemplate 0x14047e300, FindMountItemBehaviorTemplate 0x1404222f0).
+ * - Kind names: BaseClientBlobPatcher::MSG_PatchAddHousingObject 0x14220d580. A pet's or mount's look comes from the entry
+ *   string, the serialized item behavior: ClientHousingBlobStrategy::LoadMountOrPetBlobObject 0x140f2faf0.
+ * - The attic needs one blob: the client loads every attic subtype the same way and decides custom entries by their string
+ *   (ClientHousingBlobStrategy::LoadAtticBlobObjects 0x140f301c0, ClientBlobPatcher::MSG_PatchAddAttic 0x140f16c50).
+ * - A kind is declared only when the server builds its state string. Until then, objects with a behavior the server cannot
+ *   serve are refused without blame, because the client offers them (s_unsupportedBehaviors).
+ * - Housing textures are offered by the client, and go through their own messages, so they are refused the same way.
  * - A placed or stored object keeps its item document, so it comes back as the same item. An object that has no document, as
  *   one a layout placed, or whose document is gone, comes back as a new item of its template.
  *
  * TODO:
- * - Is the client's rule for offering a pet or a mount for placing the behavior, as it is here? No capture shows it.
  *
  * Created by: Jay
  * Version: KALI 1.0
@@ -50,26 +57,19 @@
  */
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.Types;
 using Imlight.Common;
-using Imlight.CoreLib.Game.Housing.Families;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.Shared.Utilities;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
+using Type = System.Type;
 
 namespace Imlight.CoreLib.Game.Housing.Items;
-
-/// <summary>
-/// Whether an item template is furniture.
-/// </summary>
-internal enum HousingItemKind {
-    NotFurniture,
-    Furniture,
-}
 
 /// <summary>
 /// What the server does with a request to place an item.
@@ -80,12 +80,83 @@ internal enum HousingPlacement {
     Refused,
 }
 
+/// <summary>
+/// What the server decided about an item template.
+/// </summary>
+/// <param name="Placement">Whether the item may be placed.</param>
+/// <param name="SubType">The subtype of the live blob the item's object is in: the kind of the item, whatever the placement.</param>
+internal readonly record struct HousingVerdict(HousingPlacement Placement, string SubType);
+
 internal static class HousingItems {
 
-    private const string FURNITURE_ADJECTIVE = "Housing";
-    private const string WEAPON_ADJECTIVE = "Weapon";
+    /// <summary>
+    /// The live blob of plain objects.
+    /// </summary>
+    internal const string ITEM_SUB_TYPE = "Item";
 
+    /// <summary>
+    /// The live blob of pets, whose entries carry the pet's look.
+    /// </summary>
+    internal const string PET_SUB_TYPE = "Pet";
+
+    /// <summary>
+    /// The live blob of mounts, whose entries carry the mount's look.
+    /// </summary>
+    internal const string MOUNT_SUB_TYPE = "Mount";
+
+    /// <summary>
+    /// The one blob of an attic, whatever the kind of its items.
+    /// </summary>
+    internal const string ATTIC_SUB_TYPE = "Attic";
+
+    private const string NOT_PLACEABLE_ADJECTIVE = "NotPlaceable";
+    private const uint PET_PROPERTY_MASK = 1u << 7;
+    private const uint MOUNT_PROPERTY_MASK = 1u << 16;
+
+    private static readonly string[] s_liveSubTypes = [ITEM_SUB_TYPE, PET_SUB_TYPE, MOUNT_SUB_TYPE];
     private static readonly StripedLocks s_backpackLocks = new();
+
+    // Behaviors of server features that are not built yet. The client offers such an item for placing, so the server refuses
+    // it without blame. Delete a line when the feature lands.
+    private static readonly Type[] s_unsupportedBehaviors = [
+        typeof(CastleBlocksBehaviorTemplate),
+        typeof(CastleBlockDoorBehaviorTemplate),
+        typeof(ObjectStateBehaviorTemplate),
+        typeof(InteractableBehaviorTemplate),
+        typeof(InteractiveMusicBehaviorTemplate),
+        typeof(HousingMusicBehaviorTemplate),
+        typeof(HousingTeleporterBehaviorTemplate),
+        typeof(HousingSignBehaviorTemplate),
+        typeof(CastleMagicBehaviorTemplate),
+        typeof(MonsterArenaBehaviorTemplate),
+        typeof(TrainBehaviorTemplate),
+        typeof(EquipmentBehaviorTemplate),
+        typeof(AquariumBehaviorTemplate),
+        typeof(GardeningShedBehaviorTemplate),
+        typeof(BreadCrumbBehaviorTemplate),
+        typeof(GearVaultBehaviorTemplate),
+        typeof(JewelVaultBehaviorTemplate),
+        typeof(TreasureCardPosterBehaviorTemplate),
+        typeof(TreasureCardVaultBehaviorTemplate),
+        typeof(HousingSigilBehaviorTemplate),
+        typeof(RaidKeyBehaviorTemplate),
+        typeof(ObjectRemapBehaviorTemplate),
+        typeof(ExtraHousingZoneBehaviorTemplate),
+        typeof(BasicNPCServiceBehaviorTemplate),
+        typeof(AlchemyStationBehaviorTemplate),
+        typeof(WizShoppingBehaviorTemplate),
+        typeof(WizardQuestingBehaviorTemplate),
+        typeof(ItemFinderBehaviorTemplate),
+        typeof(HousingHallOfFameBehaviorTemplate),
+        typeof(HatchmakingKioskBehaviorTemplate),
+        typeof(PvPKioskBehaviorTemplate),
+        typeof(RitualObjectBehaviorTemplate),
+    ];
+
+    /// <summary>
+    /// The subtypes of the live blobs of a house.
+    /// </summary>
+    internal static IReadOnlyList<string> LiveSubTypes => s_liveSubTypes;
 
     /// <summary>
     /// Gets the lock that keeps one character's backpack list from changing in two places at once while house items are
@@ -96,66 +167,107 @@ internal static class HousingItems {
     internal static Lock BackpackLock(Wizard wizard) => s_backpackLocks.For(wizard.CharId);
 
     /// <summary>
-    /// Checks the rules every placed object follows, whatever its family: the template is an object the client offers
-    /// for placing and is not a seed.
+    /// Decides whether the server places an item template, and in which live blob its object goes.
     /// </summary>
     /// <param name="template">An item template.</param>
-    /// <returns><see cref="HousingItemKind.Furniture"/> when the template passes.</returns>
-    internal static HousingItemKind Classify(WizItemTemplate template) {
+    /// <returns>
+    /// <see cref="HousingPlacement.Refused"/> for an item the client never offers, <see cref="HousingPlacement.NotEnabled"/>
+    /// for an item it offers but the server cannot serve yet, otherwise <see cref="HousingPlacement.Allowed"/>.
+    /// </returns>
+    internal static HousingVerdict Classify(WizItemTemplate template) {
         if (template is null) {
-            return HousingItemKind.NotFurniture;
+            return new HousingVerdict(HousingPlacement.Refused, ITEM_SUB_TYPE);
         }
 
-        if (IsPetOrMount(template) && !IsSeed(template)) {
-            return HousingItemKind.Furniture;
+        var subType = SubTypeOf(template);
+        var behaviors = (template.m_behaviors ?? []).Where(behavior => behavior is not null).ToList();
+        var adjectives = (template.m_adjectiveList ?? []).Select(adjective => adjective.ToString());
+        if (adjectives.Contains(NOT_PLACEABLE_ADJECTIVE, StringComparer.Ordinal)
+            || behaviors.OfType<SeedBehaviorTemplate>().Any()
+            || (subType == MOUNT_SUB_TYPE && behaviors.OfType<RentalBehaviorTemplate>().Any())) {
+            return new HousingVerdict(HousingPlacement.Refused, subType);
         }
 
-        if (template.m_nObjectType != ObjectType.OT_OBJECT) {
-            return HousingItemKind.NotFurniture;
+        var isObject = template.m_nObjectType is ObjectType.OT_OBJECT or ObjectType.OT_HOUSING_TEXTURE;
+        if (!isObject && subType == ITEM_SUB_TYPE) {
+            return new HousingVerdict(HousingPlacement.Refused, subType);
         }
 
-        var adjectives = (template.m_adjectiveList ?? []).Select(adjective => adjective.ToString()).ToList();
-        if (!adjectives.Contains(FURNITURE_ADJECTIVE, StringComparer.Ordinal)
-            || adjectives.Contains(WEAPON_ADJECTIVE, StringComparer.Ordinal)) {
-            return HousingItemKind.NotFurniture;
-        }
+        var supported = template.m_nObjectType != ObjectType.OT_HOUSING_TEXTURE
+            && !behaviors.Any(behavior => s_unsupportedBehaviors.Any(type => type.IsInstanceOfType(behavior)));
 
-        return IsSeed(template) ? HousingItemKind.NotFurniture : HousingItemKind.Furniture;
+        return new HousingVerdict(supported ? HousingPlacement.Allowed : HousingPlacement.NotEnabled, subType);
     }
-
-    /// <summary>
-    /// Finds the attic blob subtype of an item template: the subtype of its family, or the plain one when the client has no
-    /// attic blob for the family.
-    /// </summary>
-    /// <param name="template">An item template.</param>
-    /// <returns>The subtype of the blob the template's items are in.</returns>
-    internal static string AtticSubTypeOf(WizItemTemplate template)
-        => FamilyOf(template).AtticSubType ?? HousingFamilies.Plain.AtticSubType;
 
     /// <summary>
     /// Finds the template of an item and decides whether the server places it.
     /// </summary>
     /// <param name="templateId">The item's template id.</param>
-    /// <param name="template">The item template when it exists and is furniture.</param>
-    /// <param name="family">
-    /// The family that decided: the plain family when the item is allowed, the first family that is not enabled
-    /// otherwise. <c>null</c> when the item is refused.
-    /// </param>
-    /// <returns>
-    /// <see cref="HousingPlacement.Refused"/> for an item the client never offers, <see cref="HousingPlacement.NotEnabled"/>
-    /// for furniture of a family the server does not support yet.
-    /// </returns>
-    internal static HousingPlacement Check(uint templateId, out WizItemTemplate template, out HousingFamily family) {
-        template = null;
-        family = null;
-        if (CoreObjectFactory.GetCoreTemplate(templateId) is not WizItemTemplate item || Classify(item) != HousingItemKind.Furniture) {
-            return HousingPlacement.Refused;
+    /// <param name="template">The item template when it exists and is an item.</param>
+    /// <returns>The verdict; <see cref="HousingPlacement.Refused"/> when the template is not an item.</returns>
+    internal static HousingVerdict Check(uint templateId, out WizItemTemplate template) {
+        template = CoreObjectFactory.GetCoreTemplate(templateId) as WizItemTemplate;
+
+        return Classify(template);
+    }
+
+    /// <summary>
+    /// Finds the live blob an item template's objects are in: the pet or mount blob by the client's own behavior test,
+    /// otherwise the plain one.
+    /// </summary>
+    /// <param name="template">An item template.</param>
+    /// <returns>The blob's subtype.</returns>
+    internal static string SubTypeOf(WizItemTemplate template) {
+        var behaviors = (template?.m_behaviors ?? []).Where(behavior => behavior is not null).ToList();
+        if (behaviors.OfType<PetItemBehaviorTemplate>().Any()) {
+            return PET_SUB_TYPE;
         }
 
-        template = item;
-        family = FamilyOf(item);
+        return behaviors.OfType<MountItemBehaviorTemplate>().Any() ? MOUNT_SUB_TYPE : ITEM_SUB_TYPE;
+    }
 
-        return family.Enabled ? HousingPlacement.Allowed : HousingPlacement.NotEnabled;
+    /// <summary>
+    /// Builds what an entry of a kind blob carries: the item's own behavior, serialized the way the client reads it.
+    /// </summary>
+    /// <param name="subType">The subtype of the live blob the object is in.</param>
+    /// <param name="item">The item document, or <c>null</c> when it is gone; a new behavior stands in for it.</param>
+    /// <param name="itemGid">The global id of the item.</param>
+    /// <returns>The serialized behavior, or <c>null</c> for a plain object or when it cannot be serialized.</returns>
+    internal static byte[] CustomDataOf(string subType, WizClientObjectItem item, ulong itemGid) {
+        try {
+            return subType switch {
+                PET_SUB_TYPE => (byte[]) HousingBlobs.Serialize(PetBehaviorOf(item), PET_PROPERTY_MASK),
+                MOUNT_SUB_TYPE => (byte[]) HousingBlobs.Serialize(MountBehaviorOf(item, itemGid), MOUNT_PROPERTY_MASK),
+                _ => null,
+            };
+        } catch (InvalidOperationException exception) {
+            Logger.Warning("Could not serialize the {SubType} behavior of item {ItemId}: {Reason}", Logger.Args(subType, itemGid, exception.Message));
+
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Loads the item document of an object and builds its entry data, for an object that is stored without it.
+    /// </summary>
+    /// <param name="charId">The character who owns the item.</param>
+    /// <param name="subType">The subtype of the live blob the object is in.</param>
+    /// <param name="itemGid">The item's global id, or 0 for an object that has no document.</param>
+    /// <returns>The serialized behavior, or <c>null</c> for a plain object.</returns>
+    internal static byte[] LoadCustomData(ulong charId, string subType, ulong itemGid) {
+        if (subType == ITEM_SUB_TYPE) {
+            return null;
+        }
+
+        WizClientObjectItem item = null;
+        try {
+            item = itemGid == 0 ? null : WizardItemCollection.Load(charId, itemGid);
+        } catch (Exception exception) {
+            Logger.Warning("Could not load the stored item {ItemId} of character {CharId}: {Reason}",
+                Logger.Args(itemGid, charId, exception.Message));
+        }
+
+        return CustomDataOf(subType, item, itemGid);
     }
 
     /// <summary>
@@ -228,16 +340,12 @@ internal static class HousingItems {
         return CreateItem(wizard, templateId);
     }
 
-    private static bool IsSeed(WizItemTemplate template)
-        => (template.m_behaviors ?? []).OfType<SeedBehaviorTemplate>().Any();
+    private static ClientPetItemBehavior PetBehaviorOf(WizClientObjectItem item)
+        => item is not null && CoreObjectFactory.FindBehaviorInstance<ClientPetItemBehavior>(item, out var pet) ? pet : new ClientPetItemBehavior();
 
-    private static HousingFamily FamilyOf(WizItemTemplate template) {
-        var families = HousingFamilies.Of(template);
-
-        return families.FirstOrDefault(candidate => !candidate.Enabled) ?? families[0];
-    }
-
-    private static bool IsPetOrMount(WizItemTemplate template)
-        => HousingFamilies.Of(template).Any(family => family == HousingFamilies.Pet || family == HousingFamilies.Mount);
+    private static MountItemBehavior MountBehaviorOf(WizClientObjectItem item, ulong itemGid)
+        => item is not null && CoreObjectFactory.FindBehaviorInstance<MountItemBehavior>(item, out var mount)
+            ? mount
+            : new MountItemBehavior { m_housingMountOriginalGID = (GID) itemGid };
 
 }

@@ -100,7 +100,6 @@ internal static class HouseRegistry {
                 LotGid = lotGid,
                 OwnerCharId = owner.CharId,
                 TemplateId = templateId,
-                Revision = 1,
                 BonusSlots = 0,
                 NextItemId = (uint) items.Count + 1,
                 Items = items,

@@ -35,6 +35,7 @@
  * - ItemGid names the item document of the backpack item the object was placed from. The house holds only that id, as the
  *   backpack and the bank do, so a pet keeps its stats, name and dyes.
  * - A remap index of 0 is a set index, so the remap is null when it is not used.
+ * - Custom is the serialized item behavior of a pet or a mount, which its blob entry carries as a custom entry.
  *
  * TODO:
  *
@@ -121,7 +122,11 @@ public sealed record PlacedItem {
     public int Tint { get; init; }
     public int? WallpaperRemap { get; init; }
     public int? TileRemap { get; init; }
-    public string Custom { get; init; }
+
+    /// <summary>
+    /// The serialized item behavior a pet's or mount's blob entry carries, or <c>null</c> for a plain object.
+    /// </summary>
+    public byte[] Custom { get; init; }
 
     /// <summary>
     /// Creates the placed item of a layout object.
@@ -197,11 +202,23 @@ public sealed record PlacedItem {
             extra |= (((uint) Brightness + 1) & BRIGHTNESS_MASK) << (int) BRIGHTNESS_SHIFT;
         }
 
+        var yaw = (byte) (((uint) Tint << (int) TINT_SHIFT) | SectorCode(Yaw));
+        if (Custom is not null) {
+            return new HousingBlobCustomObject {
+                m_gameObjectTemplateID = template,
+                m_positionXY = (PackCoordinate(X) << 16) | PackCoordinate(Y),
+                m_positionZ = Z,
+                m_yaw = yaw,
+                m_extraData1 = extra,
+                m_customData = Custom,
+            };
+        }
+
         return new HousingBlobObject {
             m_gameObjectTemplateID = template,
             m_positionXY = (PackCoordinate(X) << 16) | PackCoordinate(Y),
             m_positionZ = Z,
-            m_yaw = (byte) (((uint) Tint << (int) TINT_SHIFT) | SectorCode(Yaw)),
+            m_yaw = yaw,
             m_extraData1 = extra,
         };
     }

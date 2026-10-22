@@ -27,13 +27,13 @@
  * Internal service handling attic messages within the game server session.
  *
  * NOTE:
- * - The attic is a stored list of items in Game/Housing, one blob per family's attic subtype. AtticMessages builds the
+ * - The attic is a stored list of items in Game/Housing, in one Attic blob. AtticMessages builds the
  *   blobs and the patches from the stored items with the generated Imcodec types; HousingService sends them too when
  *   "Pick Up All Items" fills the attic.
  * - The attic document is created the first time the character needs it, and the client is told its container id then.
  * - The blobs are sent when the window is opened and whenever a client that cannot apply a patch asks for one.
  * - An item keeps its global id and its item document in the attic, so it comes back as the same item, a pet with its stats,
- *   name and dyes included. Only furniture of a supported family goes in. Deleting an item from the attic deletes its document.
+ *   name and dyes included, and its entry carries the look the client shows. Only furniture the server supports goes in. Deleting an item from the attic deletes its document.
  *
  * TODO:
  * - Does the live server list the attic blobs when the player enters the game, or only when the window opens?
@@ -50,7 +50,6 @@ using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
 using Imlight.CoreLib.Game.Housing.Attics;
-using Imlight.CoreLib.Game.Housing.Families;
 using Imlight.CoreLib.Game.Housing.Houses;
 using Imlight.CoreLib.Game.Housing.Items;
 using Imlight.CoreLib.Shared.Items;
@@ -112,7 +111,7 @@ internal class AtticService(SessionActor sessionActor) : MessageService(sessionA
         // The version, count and user data in the request are the client's cache state, or 0 in a resync. Neither
         // decides what is sent.
         var subTypes = (request.m_blobRequestObjectList ?? [])
-            .Where(entry => entry is not null && entry.m_packageNumber == 0 && IsAtticSubType(entry.m_subType))
+            .Where(entry => entry is not null && entry.m_packageNumber == 0 && IsAtticSubType(attic, entry.m_subType))
             .Select(entry => (string) entry.m_subType)
             .Distinct();
         foreach (var subType in subTypes) {
@@ -138,16 +137,16 @@ internal class AtticService(SessionActor sessionActor) : MessageService(sessionA
         }
 
         var templateId = ItemHelper.GetTemplateId(item);
-        var placement = HousingItems.Check(templateId, out _, out var family);
-        if (placement == HousingPlacement.Refused) {
+        var verdict = HousingItems.Check(templateId, out _);
+        if (verdict.Placement == HousingPlacement.Refused) {
             HandleForgedRequest($"move item {message.ItemID}, template {templateId}, which is not housing furniture, to the attic");
 
             return;
         }
 
-        if (placement == HousingPlacement.NotEnabled || family.AtticSubType is null) {
-            Logger.Information("Character {CharId} tried to put item {ItemId} of the {Family} family in the attic, which is not supported.",
-                Logger.Args(wizard.CharId, message.ItemID, family.Id));
+        if (verdict.Placement == HousingPlacement.NotEnabled) {
+            Logger.Information("Character {CharId} tried to put item {ItemId}, template {TemplateId}, in the attic, which is not supported.",
+                Logger.Args(wizard.CharId, message.ItemID, templateId));
             InformGameClient("That kind of object cannot be put in the attic yet.");
 
             return;
@@ -172,8 +171,8 @@ internal class AtticService(SessionActor sessionActor) : MessageService(sessionA
                 return;
             }
 
-            change = attic.TryAdd(new AtticItem { ItemGid = itemId, TemplateId = templateId }, family.AtticSubType,
-                document => AtticCollection.SaveWithBackpack(document, wizard));
+            var stored = new AtticItem { ItemGid = itemId, TemplateId = templateId, Custom = HousingItems.CustomDataOf(verdict.SubType, item, itemId) };
+            change = attic.TryAdd(stored, HousingItems.ATTIC_SUB_TYPE, document => AtticCollection.SaveWithBackpack(document, wizard));
             if (!change.Done && !wizard.InventoryBehavior.AddItem(item)) {
                 Logger.Error("Could not return item {ItemId} to the backpack of character {CharId} after it failed to go in the attic.",
                     Logger.Args(itemId, wizard.CharId));
@@ -182,7 +181,7 @@ internal class AtticService(SessionActor sessionActor) : MessageService(sessionA
 
         if (!change.Done) {
             if (change.Result == HouseEdit.NeedsResync) {
-                SendBlob(attic, family.AtticSubType);
+                SendBlob(attic, HousingItems.ATTIC_SUB_TYPE);
             }
 
             InformGameClient(change.Result == HouseEdit.LimitReached ? "Your attic is full." : "The object could not be put in the attic.");
@@ -316,7 +315,7 @@ internal class AtticService(SessionActor sessionActor) : MessageService(sessionA
         => SendToSocket(AtticMessages.Count(wizard, attic));
 
     private void SendAllBlobs(AtticState attic) {
-        foreach (var subType in attic.SubTypes().Append(HousingFamilies.Plain.AtticSubType).Distinct()) {
+        foreach (var subType in attic.SubTypes().Append(HousingItems.ATTIC_SUB_TYPE).Distinct()) {
             SendBlob(attic, subType);
         }
     }
@@ -327,7 +326,7 @@ internal class AtticService(SessionActor sessionActor) : MessageService(sessionA
         }
     }
 
-    private static bool IsAtticSubType(string subType)
-        => HousingFamilies.All.Any(family => family.AtticSubType == subType);
+    private static bool IsAtticSubType(AtticState attic, string subType)
+        => subType == HousingItems.ATTIC_SUB_TYPE || attic.SubTypes().Contains((string) subType);
 
 }

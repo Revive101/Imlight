@@ -31,7 +31,8 @@
  *   later edits arrive as small versioned patches. The blob and the patches are built here, from the stored
  *   items, with the generated Imcodec types; the house is in Game/Housing.
  * - The service counts the player into the house at MSG_PRELOGIN and out when the session ends.
- * - A blob request that names the attic is left to AtticService.
+ * - A blob request that names the attic is left to AtticService. The house has a blob for plain objects, one for pets and one for
+ *   mounts; a pet or a mount is placed as a custom entry that carries its look.
  * - Only the owner decorates. A visitor sees the same blob and patches, and every edit they send is refused as forged.
  * - An object that is placed keeps the item document of its backpack item, and the house holds the id, so a pick up gives back
  *   the same item.
@@ -46,13 +47,13 @@
  */
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
 using Imlight.CoreLib.Game.Housing.Attics;
-using Imlight.CoreLib.Game.Housing.Families;
 using Imlight.CoreLib.Game.Housing.Houses;
 using Imlight.CoreLib.Game.Housing.Items;
 using Imlight.CoreLib.Shared.Items;
@@ -65,8 +66,6 @@ using Imlight.CoreLib.WizardData.Models.Player;
 namespace Imlight.CoreLib.Game.Services;
 
 internal class HousingService(SessionActor sessionActor) : MessageService(sessionActor) {
-
-    private const string ITEM_SUB_TYPE = "Item";
 
     private HouseState _house;
     private readonly AtticViewer _atticViewer = new();
@@ -99,19 +98,10 @@ internal class HousingService(SessionActor sessionActor) : MessageService(sessio
         _house = house;
 
         // The client compares this with its cached copy and asks for the blob only when they differ.
-        var snapshot = house.Snapshot();
         var request = new BlobRequest {
             m_type = HousingBlobs.BLOB_TYPE,
             m_associatedGID = house.LotGid,
-            m_blobRequestObjectList = [
-                new BlobRequestObject {
-                    m_subType = ITEM_SUB_TYPE,
-                    m_versionNumber = snapshot.Revision,
-                    m_packageNumber = 0,
-                    m_userData = snapshot.GidBase,
-                    m_objectCount = (uint) snapshot.LiveCount,
-                }
-            ],
+            m_blobRequestObjectList = [.. HousingItems.LiveSubTypes.Select(subType => BlobRequestOf(house.Snapshot(subType)))],
         };
         SendToSocket(new WIZARDHOUSING_50_PROTOCOL.MSG_REQUEST_BLOBS { Data = HousingBlobs.Serialize(request) });
     }
@@ -139,14 +129,17 @@ internal class HousingService(SessionActor sessionActor) : MessageService(sessio
 
         // The version, count and user data in the request are the client's cache state, or 0 in a resync. Neither
         // decides what is sent.
-        if (!RequestsItemBlob(request, house.LotGid)) {
-            Logger.Warning("Character {CharId} requested blobs that are not the item blob of lot {LotGid}.",
+        var subTypes = RequestedSubTypes(request, house.LotGid);
+        if (subTypes.Count == 0) {
+            Logger.Warning("Character {CharId} requested blobs that are not blobs of lot {LotGid}.",
                 Logger.Args(wizard.CharId, house.LotGid));
 
             return;
         }
 
-        SendBlob(house);
+        foreach (var subType in subTypes) {
+            SendBlob(house, subType);
+        }
     }
 
     [MessageHandler(typeof(WIZARDHOUSING_50_PROTOCOL.MSG_PLACEHOUSINGOBJECT))]
@@ -165,17 +158,16 @@ internal class HousingService(SessionActor sessionActor) : MessageService(sessio
         }
 
         var templateId = ItemHelper.GetTemplateId(item);
-        var placement = HousingItems.Check(templateId, out var template, out var family);
-        if (placement == HousingPlacement.Refused) {
+        var verdict = HousingItems.Check(templateId, out var template);
+        if (verdict.Placement == HousingPlacement.Refused) {
             HandleForgedRequest($"place item {message.ObjectID}, template {templateId}, which is not placeable furniture");
 
             return;
         }
 
-        var switchesBlock = message.SwitchCastleBlock != 0 && !HousingFamilies.CastleBlock.Enabled;
-        if (placement == HousingPlacement.NotEnabled || switchesBlock) {
-            Logger.Information("Character {CharId} tried to place item {ItemId} of the {Family} family, which is not enabled.",
-                Logger.Args(wizard.CharId, message.ObjectID, placement == HousingPlacement.NotEnabled ? family.Id : HousingFamilies.CastleBlock.Id));
+        if (verdict.Placement == HousingPlacement.NotEnabled || message.SwitchCastleBlock != 0) {
+            Logger.Information("Character {CharId} tried to place item {ItemId}, template {TemplateId}, which the server cannot place yet.",
+                Logger.Args(wizard.CharId, message.ObjectID, templateId));
             InformGameClient("That kind of object cannot be placed in a house yet.");
 
             return;
@@ -188,6 +180,7 @@ internal class HousingService(SessionActor sessionActor) : MessageService(sessio
             Y = message.LocY,
             Z = message.LocZ,
             Yaw = message.Yaw,
+            Custom = HousingItems.CustomDataOf(verdict.SubType, item, item.m_globalID),
         }.Normalize();
         if (placed is null) {
             HandleForgedRequest($"place item {message.ObjectID} at a position that is not valid");
@@ -211,7 +204,7 @@ internal class HousingService(SessionActor sessionActor) : MessageService(sessio
                 return;
             }
 
-            change = house.TryAdd(placed, document => HouseCollection.SaveWithBackpack(document, wizard));
+            change = house.TryAdd(placed, verdict.SubType, document => HouseCollection.SaveWithBackpack(document, wizard));
             if (!change.Done && !wizard.InventoryBehavior.AddItem(item)) {
                 Logger.Error("Could not return item {ItemId} to the backpack of character {CharId} after it failed to be placed.",
                     Logger.Args(itemId, wizard.CharId));
@@ -220,7 +213,7 @@ internal class HousingService(SessionActor sessionActor) : MessageService(sessio
 
         if (!change.Done) {
             if (change.Result == HouseEdit.NeedsResync) {
-                SendBlob(house);
+                SendBlobs(house);
             }
 
             InformGameClient("The object could not be placed.");
@@ -235,10 +228,11 @@ internal class HousingService(SessionActor sessionActor) : MessageService(sessio
             LocY = change.Item.Y,
             LocZ = change.Item.Z,
             Yaw = change.Item.Yaw,
-            SubType = ITEM_SUB_TYPE,
+            SubType = change.SubType,
             PackageNumber = 0,
             VersionNumber = change.Revision,
             GIDID = change.GidId,
+            Data = change.Item.Custom ?? [],
             ColorBits = (sbyte) change.Item.Tint,
         }, isSelfless: false, ZoneBroadcastTarget.Players);
     }
@@ -258,21 +252,21 @@ internal class HousingService(SessionActor sessionActor) : MessageService(sessio
         if (!house.TryFindByGid(message.ObjectGID, out var current, out _)) {
             // A client that has not applied a renumbered blob yet sends exactly this, so it gets the real state.
             Logger.Debug("Move of object {ObjectGid}, which is not in the current blob of lot {LotGid}.", Logger.Args(message.ObjectGID, house.LotGid));
-            SendBlob(house);
+            SendBlobs(house);
 
             return;
         }
 
         if (current is null) {
             // The object is gone. The client moved it already, so give it the real state.
-            SendBlob(house);
+            SendBlobs(house);
 
             return;
         }
 
-        if (message.SwitchCastleBlock != 0 && !HousingFamilies.CastleBlock.Enabled) {
+        if (message.SwitchCastleBlock != 0) {
             InformGameClient("That kind of object cannot be changed in a house yet.");
-            SendBlob(house);
+            SendBlobs(house);
 
             return;
         }
@@ -300,7 +294,7 @@ internal class HousingService(SessionActor sessionActor) : MessageService(sessio
 
         if (!change.Done) {
             // The object is gone or the write failed. The client moved it already, so give it the real state.
-            SendBlob(house);
+            SendBlobs(house);
 
             return;
         }
@@ -310,7 +304,7 @@ internal class HousingService(SessionActor sessionActor) : MessageService(sessio
             LocY = change.Item.Y,
             LocZ = change.Item.Z,
             Yaw = change.Item.Yaw,
-            SubType = ITEM_SUB_TYPE,
+            SubType = change.SubType,
             PackageNumber = 0,
             VersionNumber = change.Revision,
             GIDID = change.GidId,
@@ -374,7 +368,7 @@ internal class HousingService(SessionActor sessionActor) : MessageService(sessio
         }
 
         ZoneBroadcast(new WIZARDHOUSING_50_PROTOCOL.MSG_PATCHDELETEHOUSINGOBJECT {
-            SubType = ITEM_SUB_TYPE,
+            SubType = change.SubType,
             PackageNumber = 0,
             VersionNumber = change.Revision,
             GIDID = change.GidId,
@@ -417,7 +411,7 @@ internal class HousingService(SessionActor sessionActor) : MessageService(sessio
             Logger.Warning("Character {CharId} could not pick up every object of lot {LotGid}: {Edit}.",
                 Logger.Args(wizard.CharId, house.LotGid, result.Edit));
             InformGameClient("The objects could not be picked up.");
-            SendBlob(house);
+            SendBlobs(house);
 
             return;
         }
@@ -428,7 +422,7 @@ internal class HousingService(SessionActor sessionActor) : MessageService(sessio
 
         foreach (var change in result.Removed) {
             ZoneBroadcast(new WIZARDHOUSING_50_PROTOCOL.MSG_PATCHDELETEHOUSINGOBJECT {
-                SubType = ITEM_SUB_TYPE,
+                SubType = change.SubType,
                 PackageNumber = 0,
                 VersionNumber = change.Revision,
                 GIDID = change.GidId,
@@ -484,7 +478,7 @@ internal class HousingService(SessionActor sessionActor) : MessageService(sessio
     private void RefusePickUp(HouseState house) {
         // The client has faded the object already and the refusal does not bring it back, so the blob rebuilds it.
         SendToSocket(new WIZARDHOUSING_50_PROTOCOL.MSG_HOUSINGOBJECTNOPICKUP());
-        SendBlob(house);
+        SendBlobs(house);
     }
 
     private void LeaveHouse() {
@@ -496,19 +490,41 @@ internal class HousingService(SessionActor sessionActor) : MessageService(sessio
         _house = null;
     }
 
-    private void SendBlob(HouseState house) {
-        var snapshot = house.Snapshot();
-        try {
-            SendToSocket(HousingBlobs.CreateBlobMessage(ITEM_SUB_TYPE, snapshot.Revision, house.LotGid, snapshot.GidBase,
-                snapshot.Slots.Select(item => item?.ToBlobObject() ?? new HousingBlobObject())));
-        } catch (InvalidOperationException exception) {
-            Logger.Error("Could not build the blob of lot {LotGid}: {Reason}", Logger.Args(house.LotGid, exception.Message));
+    private void SendBlobs(HouseState house) {
+        foreach (var subType in HousingItems.LiveSubTypes) {
+            SendBlob(house, subType);
         }
     }
 
-    private static bool RequestsItemBlob(BlobRequest request, ulong lotGid)
-        => request.m_type == HousingBlobs.BLOB_TYPE && request.m_associatedGID == lotGid
-            && request.m_blobRequestObjectList?.Any(entry => entry is not null
-                && entry.m_subType == ITEM_SUB_TYPE && entry.m_packageNumber == 0) == true;
+    private void SendBlob(HouseState house, string subType) {
+        var snapshot = house.Snapshot(subType);
+        try {
+            SendToSocket(HousingBlobs.CreateBlobMessage(subType, snapshot.Revision, house.LotGid, snapshot.GidBase,
+                snapshot.Slots.Select(item => item?.ToBlobObject() ?? new HousingBlobObject())));
+        } catch (InvalidOperationException exception) {
+            Logger.Error("Could not build the {SubType} blob of lot {LotGid}: {Reason}", Logger.Args(subType, house.LotGid, exception.Message));
+        }
+    }
+
+    private static BlobRequestObject BlobRequestOf(HouseSnapshot snapshot)
+        => new() {
+            m_subType = snapshot.SubType,
+            m_versionNumber = snapshot.Revision,
+            m_packageNumber = 0,
+            m_userData = snapshot.GidBase,
+            m_objectCount = (uint) snapshot.LiveCount,
+        };
+
+    private static List<string> RequestedSubTypes(BlobRequest request, ulong lotGid) {
+        if (request.m_type != HousingBlobs.BLOB_TYPE || request.m_associatedGID != lotGid) {
+            return [];
+        }
+
+        return [.. (request.m_blobRequestObjectList ?? [])
+            .Where(entry => entry is not null && entry.m_packageNumber == 0)
+            .Select(entry => (string) entry.m_subType)
+            .Where(subType => HousingItems.LiveSubTypes.Contains(subType))
+            .Distinct()];
+    }
 
 }

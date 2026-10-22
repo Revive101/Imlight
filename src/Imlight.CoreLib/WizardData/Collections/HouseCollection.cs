@@ -151,7 +151,7 @@ public static class HouseCollection {
     }
 
     /// <summary>
-    /// Writes the changing parts of a house: its revision, bonus slots, next item id and items.
+    /// Writes the changing parts of a house: its revisions, bonus slots, next item id and items.
     /// </summary>
     /// <param name="house">The house to save.</param>
     /// <returns><c>true</c> when the stored house now matches <paramref name="house"/>.</returns>
@@ -241,7 +241,7 @@ public static class HouseCollection {
     }
 
     private static void CopyChanging(House from, House to) {
-        to.Revision = from.Revision;
+        to.Revisions = new(from.Revisions);
         to.BonusSlots = from.BonusSlots;
         to.NextItemId = from.NextItemId;
         to.Items = [.. from.Items];
