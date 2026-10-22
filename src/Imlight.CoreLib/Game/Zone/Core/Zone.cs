@@ -125,6 +125,8 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     private readonly HashSet<IActorRef> _players = [];
     private const string IDLE_EXPIRE_TIMER = "instance-idle-expire";
     private const int DEFAULT_INSTANCE_IDLE_MINUTES = 10;
+    private const int PUBLIC_ZONE_IDLE_MINUTES = 10; // todo: tune
+    private bool _activitySinceIdleRequest;
     private readonly List<ZONE_102_PROTOCOL.MSG_PLAYERMOVE> _pendingPlayerMoves = [];
     private readonly List<ZONE_102_PROTOCOL.MSG_CREATUREMOVE> _pendingCreatureMoves = [];
 
@@ -227,6 +229,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         }
 
         _players.Add(message.PlayerActor);
+        _activitySinceIdleRequest = true;
         Timers.Cancel(IDLE_EXPIRE_TIMER);
         InformZoneSupervisors(message.PlayerActor, message);
         RestoreRememberedSpawns(message.Wizard);
@@ -570,6 +573,10 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         rsp.Location = (Vector3) actualLocation;
         rsp.Orientation = actualLocation.W;
         sender.Tell(rsp);
+
+        // The transferring player is not counted until they join, so the idle clock restarts here.
+        _activitySinceIdleRequest = true;
+        ScheduleIdleExpiryIfEmpty();
     }
 
     private void ProcessQueue() {
@@ -579,6 +586,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
             }
             else if (pendingEvent is ZONE_102_PROTOCOL.MSG_ADDPLAYER addPlayer) {
                 _players.Add(playerActor);
+                _activitySinceIdleRequest = true;
                 Timers.Cancel(IDLE_EXPIRE_TIMER);
                 InformZoneSupervisors(playerActor, addPlayer);
                 RestoreRememberedSpawns(addPlayer.Wizard);
@@ -598,12 +606,14 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     private void ScheduleIdleExpiryIfEmpty() {
-        // Instance.IdleMinutes of 0 or less disables the expiry; a join cancels the timer.
-        if (!IsInstance || _players.Count > 0 || _isLoading) {
+        if (_players.Count > 0 || _isLoading) {
             return;
         }
 
-        var minutes = ConfigurationManager.GetValue("Instance.IdleMinutes", DEFAULT_INSTANCE_IDLE_MINUTES);
+        // Instance.IdleMinutes of 0 or less disables the instance expiry; a join cancels the timer.
+        var minutes = IsInstance
+            ? ConfigurationManager.GetValue("Instance.IdleMinutes", DEFAULT_INSTANCE_IDLE_MINUTES)
+            : PUBLIC_ZONE_IDLE_MINUTES;
         if (minutes <= 0) {
             return;
         }
@@ -614,12 +624,32 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_INSTANCEIDLEEXPIRE))]
     private void ReceiveInstanceIdleExpire(ZONE_102_PROTOCOL.MSG_INSTANCEIDLEEXPIRE message) {
-        if (!IsInstance || _players.Count > 0) {
+        if (_players.Count > 0 || _isLoading) {
+            return;
+        }
+
+        if (!IsInstance) {
+            // A public zone only stops once its parent has stopped sending it transfers: see MSG_PUBLICZONESTOPCHECK.
+            _activitySinceIdleRequest = false;
+            Context.Parent.Tell(new ZONE_102_PROTOCOL.MSG_PUBLICZONEIDLE { ZoneName = ZonePath });
+
             return;
         }
 
         Logger.Information("Instance zone {ZoneName} idle with no players, dropping it.", Logger.Args(ZoneName));
         Context.Parent.Tell(new ZONE_102_PROTOCOL.MSG_DROPINSTANCEZONE { ZoneName = ZonePath });
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PUBLICZONESTOPCHECK))]
+    private void ReceivePublicZoneStopCheck(ZONE_102_PROTOCOL.MSG_PUBLICZONESTOPCHECK message) {
+        if (_players.Count > 0 || _isLoading || _activitySinceIdleRequest) {
+            Context.Parent.Tell(new ZONE_102_PROTOCOL.MSG_PUBLICZONEKEEP { ZoneName = ZonePath });
+
+            return;
+        }
+
+        Logger.Information("Public zone {ZoneName} idle with no players, stopping it.", Logger.Args(ZoneName));
+        CloseZone();
     }
 
     private ushort GenerateObjectIdentifier() {

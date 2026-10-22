@@ -1287,4 +1287,65 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
 
     }
 
+    /// <summary>
+    /// Sent by an empty public <see cref="Zone"/> to <see cref="World.GameWorld"/>: it has been idle long enough to
+    /// stop. The game world holds new transfers for it and answers with <see cref="MSG_PUBLICZONESTOPCHECK"/>.
+    /// </summary>
+    public sealed class MSG_PUBLICZONEIDLE : IServerMessage {
+
+        public byte MessageOrder { get; } = 90;
+        public byte ServiceID { get; } = 102;
+
+        public string ZoneName;
+
+    }
+
+    /// <summary>
+    /// Sent by <see cref="World.GameWorld"/> to a public <see cref="Zone"/> that asked to stop: every transfer sent
+    /// before this message has arrived. The zone stops, or answers with <see cref="MSG_PUBLICZONEKEEP"/>.
+    /// </summary>
+    public sealed class MSG_PUBLICZONESTOPCHECK : IServerMessage {
+
+        public byte MessageOrder { get; } = 91;
+        public byte ServiceID { get; } = 102;
+
+    }
+
+    /// <summary>
+    /// Sent by a public <see cref="Zone"/> to <see cref="World.GameWorld"/>: it got a player or a transfer after
+    /// asking to stop, so it stays and the held transfers go to it.
+    /// </summary>
+    public sealed class MSG_PUBLICZONEKEEP : IServerMessage {
+
+        public byte MessageOrder { get; } = 92;
+        public byte ServiceID { get; } = 102;
+
+        public string ZoneName;
+
+    }
+
+    /// <summary>
+    /// Timer-fired message to an <see cref="World.InstanceContainer"/> that holds no zones: it tells
+    /// <see cref="World.GameWorld"/> with <see cref="MSG_INSTANCECONTAINEREMPTY"/>.
+    /// </summary>
+    public sealed class MSG_INSTANCECONTAINERIDLE : IServerMessage {
+
+        public byte MessageOrder { get; } = 93;
+        public byte ServiceID { get; } = 102;
+
+    }
+
+    /// <summary>
+    /// Sent by an empty <see cref="World.InstanceContainer"/> to <see cref="World.GameWorld"/>, which stops the
+    /// container unless a load or transfer for its owner is still pending.
+    /// </summary>
+    public sealed class MSG_INSTANCECONTAINEREMPTY : IServerMessage {
+
+        public byte MessageOrder { get; } = 94;
+        public byte ServiceID { get; } = 102;
+
+        public ulong OwnerCharId;
+
+    }
+
 }
