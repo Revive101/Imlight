@@ -73,8 +73,8 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
     // The official server sends MSG_SERVERTRANSFER about 400 ms after the ACK; saving the wizard adds about 50 ms.
     private const int ZoneTransferDelayMs = 350;
 
-    private const string DeedZoneTimeoutKey = "deedzone-timeout";
-    private const string BackpackFullForHouseText = "Your backpack is full. Make room for your house deed and try again.";
+    private const string DEED_ZONE_TIMEOUT_KEY = "deedzone-timeout";
+    private const string BACKPACK_FULL_FOR_HOUSE_TEXT = "Your backpack is full. Make room for your house deed and try again.";
 
     public IActorRef ZoneActor;
 
@@ -445,7 +445,7 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
 
         if (!HouseDeeds.TryPrepareHome(wizard, out var entry, out var failure)) {
             InformGameClient(failure == HouseGrantFailure.BackpackFull
-                ? BackpackFullForHouseText
+                ? BACKPACK_FULL_FOR_HOUSE_TEXT
                 : "Your house is not available right now. Please try again later.", true);
 
             return;
@@ -477,7 +477,7 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         // The door sits in a house zone, and the house the player is in decides what is on the other side.
         if (!HouseTravel.TryEnterByDoor(GetActiveWizard(), message.DoorGid, out var entry, out var failure)) {
             if (failure == HouseTravelFailure.BackpackFull) {
-                InformGameClient(BackpackFullForHouseText, true);
+                InformGameClient(BACKPACK_FULL_FOR_HOUSE_TEXT, true);
             }
 
             return;
@@ -896,7 +896,7 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
 
         Logger.Information("Session {SessionId} cannot teleport into house zone {Zone}: {Failure}.",
             Logger.Args(SessionActor.SessionID, message.DestinationZone, failure));
-        InformGameClient(failure == HouseTravelFailure.BackpackFull ? BackpackFullForHouseText : "You cannot travel to that house.", true);
+        InformGameClient(failure == HouseTravelFailure.BackpackFull ? BACKPACK_FULL_FOR_HOUSE_TEXT : "You cannot travel to that house.", true);
 
         return false;
     }
@@ -926,11 +926,11 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
     }
 
     private void StartDeedZoneTimeout() {
-        Timers.StartSingleTimer(DeedZoneTimeoutKey, new SERVICE_101_PROTOCOL.MSG_DEEDZONE_TIMEOUT(), HousingSettings.DeedZoneTimeout);
+        Timers.StartSingleTimer(DEED_ZONE_TIMEOUT_KEY, new SERVICE_101_PROTOCOL.MSG_DEEDZONE_TIMEOUT(), HousingSettings.DeedZoneTimeout);
     }
 
     private void AbortDeedZoneTransfer(string step) {
-        Timers.Cancel(DeedZoneTimeoutKey);
+        Timers.Cancel(DEED_ZONE_TIMEOUT_KEY);
         var previous = _transferGate.State;
         var accepted = _transferGate.TryNack();
         LogTransferStep(step, previous, accepted);
@@ -960,7 +960,7 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
 
         switch (status) {
             case HouseEchoStatus.Ready:
-                Timers.Cancel(DeedZoneTimeoutKey);
+                Timers.Cancel(DEED_ZONE_TIMEOUT_KEY);
                 var previous = _transferGate.State;
                 var accepted = _transferGate.TryAck();
                 LogTransferStep($"{messageName} echo received", previous, accepted);

@@ -23,7 +23,7 @@
  * A chat command that gives the caller a house of any template, so every house zone can be reached and tested.
  * 
  * USAGE EXAMPLE:
- * .housegrant 164117
+ * .housegrant <templateId>
  * 
  * NOTE:
  * - The template is a deed or a structure. A deed that names a structure brings the structure too.

@@ -87,9 +87,7 @@ internal class AtticService(SessionActor sessionActor) : MessageService(sessionA
         }
 
         // The window lists what the blobs hold, so they go first.
-        foreach (var subType in attic.SubTypes().Append(HousingFamilies.Plain.AtticSubType).Distinct()) {
-            SendBlob(attic, subType);
-        }
+        SendAllBlobs(attic);
 
         SendCount(wizard, attic);
         SendToSocket(new WIZARDHOUSING_50_PROTOCOL.MSG_REQUESTATTIC { GlobalID = message.GlobalID });
@@ -284,7 +282,10 @@ internal class AtticService(SessionActor sessionActor) : MessageService(sessionA
         }
 
         if (!attic.TryFindByGid(itemId, out stored, out _)) {
-            HandleForgedRequest($"{what} attic item {itemId}, which is not an object of their attic");
+            // A client that has not applied a renumbered blob yet sends exactly this, so it gets the real state.
+            Logger.Debug("Character {CharId} tried to {What} attic item {ItemId}, which is not in the current blobs.",
+                Logger.Args(wizard.CharId, what, itemId));
+            SendAllBlobs(attic);
 
             return false;
         }
@@ -312,6 +313,12 @@ internal class AtticService(SessionActor sessionActor) : MessageService(sessionA
 
     private void SendCount(Wizard wizard, AtticState attic)
         => SendToSocket(AtticMessages.Count(wizard, attic));
+
+    private void SendAllBlobs(AtticState attic) {
+        foreach (var subType in attic.SubTypes().Append(HousingFamilies.Plain.AtticSubType).Distinct()) {
+            SendBlob(attic, subType);
+        }
+    }
 
     private void SendBlob(AtticState attic, string subType) {
         if (AtticMessages.BlobMessage(attic, subType) is { } blob) {

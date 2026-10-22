@@ -28,8 +28,8 @@
  * var isHouse = HouseZoneIndex.IsHouseZone(zoneName);
  * 
  * NOTE:
- * - The list holds the lot zone of every deed and structure template, nothing else. The zone name prefix
- *   "Housing" is not a test: the disposable Housing_*_Gauntlet dungeons are ordinary zones.
+ * - The list holds the lot zone of every deed and structure template, nothing else. A zone name prefix
+ *   is not a test: some dungeon zones whose names start the same way are ordinary zones.
  * - Every house zone is registered as an always-private attach target.
  * 
  * TODO:

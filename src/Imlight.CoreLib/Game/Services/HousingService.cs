@@ -250,8 +250,16 @@ internal class HousingService(SessionActor sessionActor) : MessageService(sessio
             return;
         }
 
-        if (message.UseExtendedYaw is not (0 or 1) || !house.TryFindByGid(message.ObjectGID, out var current, out _)) {
-            HandleForgedRequest($"move object {message.ObjectGID}, which is not an object of this house");
+        if (message.UseExtendedYaw is not (0 or 1)) {
+            HandleForgedRequest("move an object with an invalid yaw flag");
+
+            return;
+        }
+
+        if (!house.TryFindByGid(message.ObjectGID, out var current, out _)) {
+            // A client that has not applied a renumbered blob yet sends exactly this, so it gets the real state.
+            Logger.Debug("Move of object {ObjectGid}, which is not in the current blob of lot {LotGid}.", Logger.Args(message.ObjectGID, house.LotGid));
+            SendBlob(house);
 
             return;
         }
