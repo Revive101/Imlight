@@ -142,6 +142,10 @@ internal static class CombatEffectApplicator {
                 // If you're looking for the implementation, we don't do it here. It happens in the CombatEffectProcessor, when the
                 // actor is informed an effect has happened. The handler is in the CombatAIActor.
                 break;
+            case kSpellEffects.kAddSpellToHand:
+            case kSpellEffects.kAddSpellToDeck:
+                ApplyAddSpellEffect(effect, targets);
+                break;
             case kSpellEffects.kReshuffle:
                 ApplyReshuffleEffect(targets[0]);
                 break;
@@ -331,6 +335,16 @@ internal static class CombatEffectApplicator {
         // Apply heal to each target
         foreach (var target in targets) {
             _ = DoHealToTarget(target, healFromCaster);
+        }
+    }
+
+    private static void ApplyAddSpellEffect(SpellEffect effect, CombatDuelSubCircle[] targets) {
+        var onTop = effect.m_effectType == kSpellEffects.kAddSpellToHand;
+
+        foreach (var target in targets) {
+            if (!target.AddBattleCards((uint) effect.m_effectParam, effect.m_numRounds, onTop)) {
+                Logger.Warning("Could not add spell {0} to a participant's deck.", Logger.Args(effect.m_effectParam));
+            }
         }
     }
 

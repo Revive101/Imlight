@@ -512,6 +512,16 @@ public class CombatDuelSubCircle {
     internal void Reshuffle() => _combatDeck.Reshuffle();
 
     /// <summary>
+    /// Adds copies of a battle card to this participant's deck.
+    /// </summary>
+    /// <param name="templateId">The template id of the spell to add.</param>
+    /// <param name="copies">How many copies to add.</param>
+    /// <param name="onTop">Whether the copies go on top of the draw pile instead of the random pool.</param>
+    /// <returns>True if the copies were added.</returns>
+    internal bool AddBattleCards(uint templateId, int copies, bool onTop)
+        => _combatDeck is not null && _combatDeck.AddBattleCards(templateId, copies, onTop);
+
+    /// <summary>
     /// Draws a random treasure card from the vault and adds it to the current hand.
     /// </summary>
     /// <returns>The drawn spell, or null if no vault cards available or hand is full.</returns>
