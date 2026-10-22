@@ -1268,4 +1268,18 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
 
     }
 
+    /// <summary>
+    /// PipeTo reply carrying a player's wizard (or null on timeout or failure) back to an NPC's service component.
+    /// </summary>
+    public sealed class MSG_SERVICEOPTIONS_RESULT : IServerMessage {
+
+        public byte MessageOrder { get; } = 89;
+        public byte ServiceID { get; } = 102;
+
+        public IActorRef PlayerActor;
+        public Wizard Wizard;
+        public int Reinteract;
+
+    }
+
 }

@@ -300,13 +300,15 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         if (_pendingPlayerMoves.Count > 0) {
             var moves = _pendingPlayerMoves.Where(move => _players.Contains(move.PlayerActor)).ToArray();
             _pendingPlayerMoves.Clear();
-            DispatchBroadcast(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
-                Messages = moves,
-                Targets = ZoneBroadcastTarget.Objects
-                        | ZoneBroadcastTarget.Volumes
-                        | ZoneBroadcastTarget.Sigils
-                        | ZoneBroadcastTarget.Paths,
-            });
+            if (moves.Length > 0) {
+                DispatchBroadcast(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+                    Messages = moves,
+                    Targets = ZoneBroadcastTarget.Objects
+                            | ZoneBroadcastTarget.Volumes
+                            | ZoneBroadcastTarget.Sigils
+                            | ZoneBroadcastTarget.Paths,
+                });
+            }
         }
 
         if (_pendingCreatureMoves.Count > 0) {
