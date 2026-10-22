@@ -355,15 +355,16 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity)
 
     private void SetMadLibBlock() {
         // NPCs normally have a madlib of first name, last name, and title.
-        // To avoid hardcoding these values, we use the display name of the template.
+        // To avoid hardcoding these values, we use the entity's madlib name.
         // We'll also set the madlib token to just "NAME" so the client displays the name as-is.
-        if (Entity.Template is not GameObjectTemplate gameObjTemplate) {
+        var madlibName = Entity.GetMadlibName();
+        if (madlibName is null) {
             return;
         }
 
         var madlibList = new List<MadlibArg> {
             new MadlibArgT_ByteString() {
-                m_madlibArgument = gameObjTemplate.m_displayName,
+                m_madlibArgument = madlibName,
                 m_madlibToken = "NAME"
             },
         };

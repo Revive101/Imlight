@@ -442,6 +442,11 @@ public class ZoneEntity(
         _ => GetClientBehaviorInstance(),
     };
 
+    /// <summary>
+    /// Gets the name the interaction prompt shows for this entity.
+    /// </summary>
+    public virtual string GetMadlibName() => (Template as GameObjectTemplate)?.m_displayName;
+
     private WizClientPet BuildClientPet(WizClientPet pet) {
         var petCopy = BuildClientObject<WizClientPet>();
 

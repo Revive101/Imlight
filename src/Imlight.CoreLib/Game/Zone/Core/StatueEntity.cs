@@ -26,7 +26,7 @@
  * Created by ZoneStatueSupervisor for each enabled statue definition of a zone.
  *
  * NOTE:
- * Only the render and interact components attach, so a statue has no quest, vendor, combat or path
+ * Only the render, interact and plaque components attach, so a statue has no quest, vendor, combat or path
  * behavior, whatever its base template is.
  *
  * TODO:
@@ -65,9 +65,12 @@ internal sealed class StatueEntity(
         return clientObject;
     }
 
+    public override string GetMadlibName() => Statue.Name;
+
     protected override void AutoAttachComponents() {
         AddComponent(typeof(RenderComponent));
         AddComponent(typeof(InteractServiceMementoComponent));
+        AddComponent(typeof(StatueComponent));
     }
 
 }
