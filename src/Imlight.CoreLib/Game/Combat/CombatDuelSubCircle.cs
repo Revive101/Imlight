@@ -81,6 +81,7 @@ public class CombatDuelSubCircle {
     private const float AGGRO_TIME_IN_SECONDS = 0.75f;
     internal const byte MAX_PIP_COUNT = 7;
     private const byte PLAYER_HAND_SIZE = 7;
+    private const int PARTICIPANT_QUERY_TIMEOUT_SECONDS = 5;
 
     internal string SlotName { get; set; }
     internal CombatSlotType SlotType { get; set; }
@@ -163,12 +164,16 @@ public class CombatDuelSubCircle {
 
         var isHumanPlayer = participantObject.m_templateID == 1;
 
-        // Set the CombatParticipant based on what team they are.
-        if (isHumanPlayer) {
-            InitializePlayerSubCircle();
-        }
-        else {
-            InitializeCreatureSubCircle(isSummonedMinion, minionOwnerSubCircle);
+        // Set the CombatParticipant based on what team they are. A participant that does not answer is dropped.
+        var initialized = isHumanPlayer
+            ? InitializePlayerSubCircle()
+            : InitializeCreatureSubCircle(isSummonedMinion, minionOwnerSubCircle);
+        if (!initialized) {
+            Logger.Warning("Duel {0} | Slot {1} | Participant did not answer its stats query; slot left empty.",
+                Logger.Args(_duelActor.Duel?.m_duelID.Full, SlotIndex));
+            RemoveParticipant();
+
+            return null;
         }
 
         // Inform the actor that they've been added to a duel.
@@ -466,13 +471,15 @@ public class CombatDuelSubCircle {
     /// </summary>
     internal uint ConsumeFromVault(Spell spell) => _combatDeck.ConsumeFromVault(spell);
 
-    private void InitializePlayerSubCircle() {
+    private bool InitializePlayerSubCircle() {
         // todo: this method is a mess.
+        // todo: the duel flow needs the participant before it continues, so this still waits (bounded) on the player.
         var queryCharacterMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
-        _wizard = ParticipantActor
-            .Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(queryCharacterMsg)
-            .Result
-            .Wizard;
+        if (!TryAskParticipant<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(queryCharacterMsg, out var characterResponse)) {
+            return false;
+        }
+
+        _wizard = characterResponse.Wizard;
 
         // Dyanmic symbols start at 9 for players.
         var dynamicSymbol = (DynamicSigilSymbol) (SlotIndex + 9);
@@ -572,13 +579,29 @@ public class CombatDuelSubCircle {
             m_rotation = _rotation,
             m_radius = _radius,
         };
+
+        return true;
     }
 
-    private void InitializeCreatureSubCircle(bool asMinion = false, int minionOwnerSubCircle = 0) {
+    private bool TryAskParticipant<T>(object message, out T response) where T : class {
+        try {
+            response = ParticipantActor
+                .Ask<T>(message, TimeSpan.FromSeconds(PARTICIPANT_QUERY_TIMEOUT_SECONDS))
+                .GetAwaiter()
+                .GetResult();
+        }
+        catch (Exception) {
+            response = null;
+        }
+
+        return response is not null;
+    }
+
+    private bool InitializeCreatureSubCircle(bool asMinion = false, int minionOwnerSubCircle = 0) {
         var queryGameStatsMsg = new COMBAT_106_PROTOCOL.MSG_QUERYCREATURESTATS();
-        var creatureStats = ParticipantActor
-            .Ask<COMBAT_106_PROTOCOL.MSG_CREATURESTATS>(queryGameStatsMsg)
-            .Result;
+        if (!TryAskParticipant<COMBAT_106_PROTOCOL.MSG_CREATURESTATS>(queryGameStatsMsg, out var creatureStats)) {
+            return false;
+        }
 
         // Dynamic symbols start 1-4 for creatures.
         var dynamicSymbol = (DynamicSigilSymbol) (SlotIndex + 1);
@@ -631,6 +654,8 @@ public class CombatDuelSubCircle {
             m_rotation = _rotation,
             m_radius = _radius,
         };
+
+        return true;
     }
 
     private async Task PlayEntranceAnimation(CoreObject participantObject, IActorRef participantActor) {

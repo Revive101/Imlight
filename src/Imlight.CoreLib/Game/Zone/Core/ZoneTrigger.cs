@@ -65,7 +65,7 @@ public sealed class ZoneTrigger(IActorRef zoneRef, Zone zone, Trigger trigger)
     : ZoneEntity(null, null, null, zoneRef, zone) {
 
     public Trigger TriggerData { get; init; } = trigger;
-    private readonly Dictionary<IActorRef, DateTime> _cooldowns = [];
+    private readonly Dictionary<ulong, DateTime> _cooldowns = [];
 
     // Unsure why this override is required, but it fails without it present.
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN))]
@@ -79,26 +79,28 @@ public sealed class ZoneTrigger(IActorRef zoneRef, Zone zone, Trigger trigger)
             return;
         }
 
+        var needsRequirements = !message.RequirementsChecked
+            && TriggerData.m_requirements?.m_requirements is { Count: > 0 };
+
+        // Ask for the wizard without blocking; the event comes back with it attached.
+        if (needsRequirements && !PostEventWizardQuery.TryResolve(Self, Sender, message)) {
+            return;
+        }
+
         // Early-out for per-player cooldowns.
-        if (TriggerData.m_cooldown > 0 && !CooldownCheck(message.PlayerActor)) {
+        if (TriggerData.m_cooldown > 0 && !CooldownCheck(message.PlayerGameObject)) {
             return;
         }
 
         // Evaluate requirements when present.
-        if (!message.RequirementsChecked
-            && TriggerData.m_requirements is not null
-            && TriggerData.m_requirements.m_requirements is not null
-            && TriggerData.m_requirements.m_requirements.Count > 0) {
-            var queryWizardMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
-            var wizardResponse = message.PlayerActor.Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(queryWizardMsg).Result;
-
+        if (needsRequirements) {
             var requirementsMet = RequirementDispatcher.EvaluateRequirements(
                 requirements: TriggerData.m_requirements,
                 context: new ZoneRequirementContext(
                     TriggerData.m_requirements,
                     message.PlayerActor,
                     message.PlayerGameObject,
-                    wizardResponse.Wizard,
+                    message.PlayerWizard,
                     ZoneRef,
                     TriggerData.m_triggerName
                 ) {
@@ -145,21 +147,16 @@ public sealed class ZoneTrigger(IActorRef zoneRef, Zone zone, Trigger trigger)
     private bool IsSelfPost(Result result)
         => result is ResPostEvent post && TriggerData.m_fireEvents.Any(x => x == post.m_eventName);
 
-    private bool CooldownCheck(IActorRef playerRef) {
-        if (_cooldowns.TryGetValue(playerRef, out var lastTriggered)) {
-            if (DateTime.Now - lastTriggered < TimeSpan.FromSeconds(TriggerData.m_cooldown)) {
-                return false;
-            }
-            else {
-                _cooldowns[playerRef] = DateTime.Now;
-            }
+    private bool CooldownCheck(CoreObject playerObject) {
+        var key = playerObject?.m_globalID ?? 0;
+        if (_cooldowns.TryGetValue(key, out var lastTriggered)
+            && DateTime.Now - lastTriggered < TimeSpan.FromSeconds(TriggerData.m_cooldown)) {
+            return false;
         }
-        else {
-            _cooldowns.Add(playerRef, DateTime.Now);
-        }
+
+        _cooldowns[key] = DateTime.Now;
 
         return true;
     }
-
 
 }

@@ -604,8 +604,13 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
             return;
         }
 
-        AssignParticipantToSubCircle(availableCreatureSubCircle, startingCreatureActor.Key, startingCreatureObject);
-        AssignParticipantToSubCircle(availablePlayerSubCircle, startingPlayerActor.Key, startingPlayerObject);
+        var creatureAssigned = AssignParticipantToSubCircle(availableCreatureSubCircle, startingCreatureActor.Key, startingCreatureObject);
+        var playerAssigned = AssignParticipantToSubCircle(availablePlayerSubCircle, startingPlayerActor.Key, startingPlayerObject);
+        if (!creatureAssigned || !playerAssigned) {
+            Logger.Error("Duel {0} | A starting participant did not answer; the duel was not started.", Logger.Args(SigilId));
+
+            return;
+        }
 
         _isActive = true;
         ReserveCirclesForGroupOf(startingPlayerObject);
@@ -716,9 +721,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
             return false;
         }
 
-        subCircle.AssignParticipant(actorRef, coreObject, isSummonedMinion, minionOwnerSubCircle);
-
-        return true;
+        return subCircle.AssignParticipant(actorRef, coreObject, isSummonedMinion, minionOwnerSubCircle) is not null;
     }
 
     internal void SummonMinion(uint creatureTid, CombatDuelSubCircle caster) {

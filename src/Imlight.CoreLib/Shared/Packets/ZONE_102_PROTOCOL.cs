@@ -557,6 +557,11 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         /// </summary>
         public IReadOnlyList<string> Adjectives;
 
+        /// <summary>
+        /// The posting player's wizard, filled in by <see cref="PostEventWizardQuery"/> when requirements need it.
+        /// </summary>
+        public Wizard PlayerWizard;
+
     }
 
     /// <summary>

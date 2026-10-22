@@ -115,7 +115,7 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
         }
 
         _isDisposed = true;
-        _sessionActorRef.Ask("Close");
+        _sessionActorRef.Tell("Close");
 
         _socket?.Close();
         _socket?.Dispose();
