@@ -256,6 +256,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         // The leaver is counted until the supervisors are told: the Players target is gated on a non-empty set.
         InformZoneSupervisors(message.PlayerActor, message);
         _players.Remove(message.PlayerActor);
+        _pendingPlayerMoves.RemoveAll(move => move.PlayerActor.Equals(message.PlayerActor));
         ReleaseObjectIdentifier(message.MobileId);
         ScheduleIdleExpiryIfEmpty();
         Sender.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYERRSP());
@@ -265,6 +266,12 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     protected virtual void ReceivePlayerMove(ZONE_102_PROTOCOL.MSG_PLAYERMOVE message) {
         if (_isLoading) {
             _pendingPlayerEvents[message.PlayerActor] = message;
+            return;
+        }
+
+        if (!_players.Contains(message.PlayerActor)) {
+            Logger.Debug("Zone {ZoneName} dropped a move from a player who is not in the zone.", Logger.Args(ZoneName));
+
             return;
         }
 
@@ -291,7 +298,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_FLUSHMOVES))]
     private void ReceiveFlushMoves(ZONE_102_PROTOCOL.MSG_FLUSHMOVES _) {
         if (_pendingPlayerMoves.Count > 0) {
-            var moves = _pendingPlayerMoves.ToArray();
+            var moves = _pendingPlayerMoves.Where(move => _players.Contains(move.PlayerActor)).ToArray();
             _pendingPlayerMoves.Clear();
             DispatchBroadcast(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
                 Messages = moves,
