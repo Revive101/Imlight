@@ -1065,7 +1065,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
             var genericPips = circle.CombatParticipant.m_pipCount.m_genericPips;
             var powerPips = circle.CombatParticipant.m_pipCount.m_powerPips;
             var participantPipData = new ParticipantPipData {
-                m_acq = 1,
+                m_acq = circle.AcquiredPipType,
                 m_partID = (GID) circle.ParticipantObject.m_globalID,
                 m_pips = new PipCount() {
                     m_genericPips = genericPips,

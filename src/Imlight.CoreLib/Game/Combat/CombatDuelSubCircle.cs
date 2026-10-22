@@ -270,16 +270,29 @@ public class CombatDuelSubCircle {
         return _combatDeck.LastGivenHand[index];
     }
 
+    /// <summary>
+    /// The pip type gained at the last pip gain: 1 generic, 2 power, 5 none.
+    /// </summary>
+    internal uint AcquiredPipType { get; private set; } = 1;
+
     internal void DoPipGain() {
-        // If the participant has the maximum amount of pips, do not gain any more.
+        // todo: at max pips the client rolls a pip conversion; the server tracks no conversion, so nothing happens.
+        // todo: the pip round rate (auras and effects) is not tracked, so the rate is always 1.
         var genericPips = CombatParticipant.m_pipCount.m_genericPips;
         var powerPips = CombatParticipant.m_pipCount.m_powerPips;
+        AcquiredPipType = 1;
         if (genericPips + powerPips >= MAX_PIP_COUNT) {
             return;
         }
 
-        var gainedPowerPip = DeterminePowerPipGain(CombatParticipant);
+        var chance = DeterminePowerPipChance(genericPips + powerPips);
+        var roll = Random.Shared.NextSingle() * 100.0f;
+        var gainedPowerPip = roll < chance;
+        Logger.Debug("Slot {0} | Pip gain | Chance {1} | Roll {2} | Type {3}",
+            Logger.Args(SlotIndex, chance, roll, gainedPowerPip ? 2 : 1));
+
         if (gainedPowerPip) {
+            AcquiredPipType = 2;
             CombatParticipant.m_pipCount.m_powerPips++;
         }
         else {
@@ -769,12 +782,26 @@ public class CombatDuelSubCircle {
         return pipCount;
     }
 
-    private bool DeterminePowerPipGain(CombatParticipant participant) {
-        var stats = participant.m_pGameStats;
-        var powerPipChance = 100 * (stats.m_powerPipBase + stats.m_powerPipBonusPercentAll);
+    private float DeterminePowerPipChance(int totalPips) {
+        // Scripted duels never grant power pips.
+        if (_duelActor.IsScriptedDuel()) {
+            return -0.0001f;
+        }
 
-        var powerPipRoll = Random.Shared.Next(0, 100);
-        return powerPipRoll <= powerPipChance;
+        var globalEffects = CombatEffectApplicator.GetCurrentGlobalEffects(_duelActor.Duel).ToList();
+        var cap = globalEffects.FirstOrDefault(x => x.m_effectType == kSpellEffects.kDampen)?.m_effectParam ?? 0;
+        if (cap != 0 && totalPips >= cap) {
+            return 0.0f;
+        }
+
+        // todo: auras are not tracked server-side, so aura chance adds 0.
+        var stats = CombatParticipant.m_pGameStats;
+        var chance = 100.0f * (stats.m_powerPipBase + stats.m_powerPipBonusPercentAll);
+        foreach (var effect in globalEffects.Where(x => x.m_effectType == kSpellEffects.kModifyPowerPipChance)) {
+            chance += effect.m_effectParam;
+        }
+
+        return chance;
     }
 
 }

@@ -131,6 +131,9 @@ internal static class CombatEffectApplicator {
             case kSpellEffects.kModifyPips:
                 ApplyModifyPipsEffect(effect, targets);
                 break;
+            case kSpellEffects.kModifyPowerPips:
+                ApplyModifyPowerPipsEffect(effect, targets);
+                break;
             case kSpellEffects.kMaxHealthDamage:
                 cinematicTime += ApplyMaxHealthDamageEffect(effect, targets);
                 break;
@@ -467,6 +470,25 @@ internal static class CombatEffectApplicator {
         }
     }
 
+    private static void ApplyModifyPowerPipsEffect(SpellEffect effect, CombatDuelSubCircle[] targets) {
+        // Adds or removes power pips (signed m_effectParam). Skipped while pips are suspended; gains clamp
+        // to the remaining pip capacity and losses clamp at zero.
+        if (effect.m_effectParam == 0) {
+            return;
+        }
+
+        foreach (var target in targets) {
+            if (!target.IsAlive || target.CombatParticipant.m_PipsSuspended) {
+                continue;
+            }
+
+            var pipCount = target.CombatParticipant.m_pipCount;
+            var capacity = CombatDuelSubCircle.MAX_PIP_COUNT - pipCount.m_genericPips - pipCount.m_powerPips;
+            var change = Math.Min(effect.m_effectParam, capacity);
+            pipCount.m_powerPips = (byte) Math.Max(pipCount.m_powerPips + change, 0);
+        }
+    }
+
     // Kills the effect's targets outright; the round cleanup sends MSG_COMBATDEATH for the corpse.
     // kKillCreature only kills the named creature: m_effectParam is the template id to match.
     private static float ApplyKillCreatureEffect(SpellEffect effect, CombatDuelSubCircle[] targets) {
@@ -671,7 +693,7 @@ internal static class CombatEffectApplicator {
     private static float GetPercentIncomingHealIncrease(CombatDuelSubCircle target) 
         => target.ParticipantGameStats.m_healIncBonusPercentAll;
 
-    private static IEnumerable<SpellEffect> GetCurrentGlobalEffects(Duel duel) {
+    internal static IEnumerable<SpellEffect> GetCurrentGlobalEffects(Duel duel) {
         foreach (var effect in duel.m_duelModifier.m_battlefieldEffects) {
             var children = effect switch {
                 RandomSpellEffect random => random.m_effectList,
