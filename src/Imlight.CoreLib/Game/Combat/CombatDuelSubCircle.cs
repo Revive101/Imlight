@@ -93,6 +93,7 @@ public class CombatDuelSubCircle {
     internal CoreObject ParticipantObject { get; private set; }
     internal ServerWizGameStats ParticipantGameStats { get; private set; }
     internal CombatParticipant CombatParticipant { get; private set; }
+    internal bool IsBoss => CombatParticipant?.m_bossMob == true;
     internal bool AddedToDuel { get; set;}
     internal bool IsSummonedMinion { get; private set; }
     internal List<SpellEffect> _hangingEffects { get {
@@ -646,7 +647,8 @@ public class CombatDuelSubCircle {
             m_isMonster = 0, // Live server sends 0
             // Minions are creatures on the player team; m_isPlayer stays false.
             m_teamID = asMinion ? 0 : 1,
-            m_originalTeam = 0,
+            m_originalTeam = asMinion ? 0 : 1,
+            m_bossMob = creatureStats.IsBoss,
             m_isMinion = asMinion,
             m_maxHandSize = PLAYER_HAND_SIZE,
             m_primaryMagicSchoolID = (int) creatureStats.MagicSchool,
@@ -670,6 +672,9 @@ public class CombatDuelSubCircle {
             m_rotation = _rotation,
             m_radius = _radius,
         };
+
+        Logger.Debug("Slot {0} | Creature added | Team {1} | Original team {2} | Boss {3}",
+            Logger.Args(SlotIndex, CombatParticipant.m_teamID, CombatParticipant.m_originalTeam, CombatParticipant.m_bossMob));
 
         return true;
     }

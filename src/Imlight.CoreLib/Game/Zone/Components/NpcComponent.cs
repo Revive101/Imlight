@@ -194,6 +194,7 @@ internal sealed class NpcComponent : ZoneEntityComponent, IComponentFactory, ICl
             CombatLevel = Level,
             MagicSchool = MagicSchool,
             SpellList = _deckComponent?.Spells ?? [],
+            IsBoss = IsBossMonster,
         };
 
         Sender.Tell(rsp);

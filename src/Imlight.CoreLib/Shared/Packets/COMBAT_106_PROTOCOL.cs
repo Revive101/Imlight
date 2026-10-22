@@ -154,6 +154,7 @@ public sealed class COMBAT_106_PROTOCOL : IServerProtocol {
         public int CombatLevel;
         public MagicSchool MagicSchool;
         public List<SpellData> SpellList;
+        public bool IsBoss;
 
     }
 
