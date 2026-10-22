@@ -43,6 +43,7 @@ internal static class StatueRegistry {
             Orientation: new Vector3(), // todo: owner fills in
             BaseTemplateId: 0, // todo: owner fills in
             Name: "", // todo: owner fills in
+            NameKeys: 0, // todo: owner fills in: only the pedestal kind shows a name, and only from keys
             PlaqueTitle: "", // todo: owner fills in
             PlaqueText: "", // todo: owner fills in
             Appearance: new WizardCharacterBehavior(), // todo: owner fills in

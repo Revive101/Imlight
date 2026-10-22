@@ -44,6 +44,7 @@ public static class BehaviorCache {
         // ObjectStateBehavior must be loaded alongside NPCBehavior. Otherwise, the game crashes.
         0x28CE8984 => new ObjectStateBehavior(),
         0x2AFFDE72 => new NPCBehavior(),
+        0x56D754BC => new ClientPlayerStatueBehavior(),  // The client's own pedestal statue.
         0x29E13F05 => new EffectsBehavior(),
         0x0A5CA5EE => new RenderBehavior(),
         0x2808A0BF => new CollisionBehaviorClient(),

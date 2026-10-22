@@ -20,7 +20,7 @@
  * ========================================================================
  *
  * PURPOSE:
- * Decides whether a template can be a statue base, and puts a statue's captured look on its client object.
+ * Decides how a template can be a statue base, and puts a statue's captured look on its client object.
  *
  * USAGE EXAMPLE:
  * StatueEntity.GetClientObject calls StatueLook.Apply on top of the base object.
@@ -57,11 +57,37 @@ internal static class StatueLook {
             && behaviors.Any(x => x?.m_behaviorName.ToString() == WIZARD_EQUIPMENT_BEHAVIOR_NAME);
         var canFight = behaviors.OfType<DuelistBehaviorTemplate>().Any()
             || behaviors.OfType<MobDeckBehaviorTemplate>().Any();
+        if (looksLikeWizardNpc && !canFight) {
+            return StatueBaseKind.WizardNpc;
+        }
 
-        return looksLikeWizardNpc && !canFight ? StatueBaseKind.WizardNpc : StatueBaseKind.None;
+        var hasPedestalBehavior = behaviors.OfType<PlayerStatueBehaviorTemplate>()
+            .Any(x => x.m_settings is { Count: > 0 });
+
+        return hasPedestalBehavior ? StatueBaseKind.Pedestal : StatueBaseKind.None;
     }
 
-    internal static void Apply(ClientObject clientObject, StatueDefinition statue) {
+    internal static void Apply(ClientObject clientObject, StatueDefinition statue, StatueBaseKind kind) {
+        if (kind == StatueBaseKind.Pedestal) {
+            ApplyPedestal(clientObject, statue);
+        } else if (kind == StatueBaseKind.WizardNpc) {
+            ApplyWizardNpc(clientObject, statue);
+        }
+    }
+
+    private static void ApplyPedestal(ClientObject clientObject, StatueDefinition statue) {
+        if (!StatueBlob.TryBuild(statue, out var blob)) {
+            return;
+        }
+
+        ReplaceBehavior<ClientPlayerStatueBehavior>(clientObject, pedestal => {
+            pedestal.m_visualBlobs = [blob];
+
+            return pedestal;
+        });
+    }
+
+    private static void ApplyWizardNpc(ClientObject clientObject, StatueDefinition statue) {
         ReplaceBehavior<WizardCharacterBehavior>(clientObject, avatar => statue.Appearance with {
             m_behaviorTemplateNameID = avatar.m_behaviorTemplateNameID,
         });

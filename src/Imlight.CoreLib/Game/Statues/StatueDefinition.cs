@@ -30,6 +30,7 @@ internal sealed record StatueDefinition(
     Vector3 Orientation,
     uint BaseTemplateId,
     string Name,
+    uint NameKeys,
     string PlaqueTitle,
     string PlaqueText,
     WizardCharacterBehavior Appearance,

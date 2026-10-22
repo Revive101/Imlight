@@ -41,5 +41,6 @@ internal enum StatueBaseKind {
 
     None,
     WizardNpc,
+    Pedestal,
 
 }
