@@ -37,6 +37,11 @@ public class DropTable {
     public int TrainingPoints { get; set; } = 0;
     public bool GrantsPotionSlot { get; set; } = false;
     public List<DropItem> Items { get; set; } = [];
+
+    /// <summary>
+    /// The mini-game reward form: exactly one of these is rolled by weight. The quest and mob rollers ignore it.
+    /// </summary>
+    public List<DropOutcome> Outcomes { get; set; } = [];
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime ModifiedAt { get; set; } = DateTime.UtcNow;
     public string CreatedBy { get; set; } = Environment.UserName;
@@ -50,6 +55,19 @@ public class DropItem {
     public string ItemName { get; set; } = string.Empty;
     public string Notes { get; set; } = string.Empty;
     public RequirementList? Requirements { get; set; } = null;
+
+}
+
+public class DropOutcome {
+
+    public string Kind { get; set; } = string.Empty;
+    public double DropRate { get; set; } = 0.0;
+    public double ManaPercent { get; set; } = 0.0;
+    public int ManaFlat { get; set; } = 0;
+    public int MinGold { get; set; } = 0;
+    public int MaxGold { get; set; } = 0;
+    public string ItemId { get; set; } = string.Empty;
+    public int Quantity { get; set; } = 1;
 
 }
 

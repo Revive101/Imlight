@@ -17,6 +17,7 @@
  */
 
 using Akka.Actor;
+using Imlight.CoreLib.Game.Minigames;
 using Imlight.CoreLib.Shared.Networking;
 
 namespace Imlight.CoreLib.Shared.Packets;
@@ -36,6 +37,7 @@ internal sealed class PROCESS_107_PROTOCOL : IServerProtocol {
         public byte MinigameIndex;
         public string MinigameName;
         public IActorRef Owner;
+        public ChestGameContext ChestGame;
 
     }
 
@@ -63,6 +65,17 @@ internal sealed class PROCESS_107_PROTOCOL : IServerProtocol {
         public byte ServiceID { get; } = 107;
 
         public uint ProcessId;
+
+    }
+
+    /// <summary>
+    /// Sent by a silver chest to the minigame process of a chest game that started while another player held the
+    /// chest, so the process pays nothing for that game.
+    /// </summary>
+    internal sealed class MSG_CHEST_GAME_REFUSED : IServerMessage {
+
+        public byte MessageOrder { get; } = 5;
+        public byte ServiceID { get; } = 107;
 
     }
 

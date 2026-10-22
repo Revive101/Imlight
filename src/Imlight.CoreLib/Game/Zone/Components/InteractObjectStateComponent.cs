@@ -35,11 +35,12 @@
  * hold and the object is in the option's visible state. The client gets one press-X entry per object; each
  * use applies the option that fits the current state (see ChooseOption), so two- and four-state objects step
  * through their states. Options whose results show dialog make a readable object (a book) attach too.
+ * A chest whose option runs a minigame result attaches too: ResMinigameHandler starts the game.
  *
  * TODO:
  *
  * Version: KALI 1.0
- * Last Updated: 09/30/2026
+ * Last Updated: 10/14/2026
  */
 
 using System;
@@ -233,7 +234,7 @@ internal sealed class InteractObjectStateComponent(ZoneEntity entity)
     private static bool ChangesWorld(InteractOptionTemplate option)
         => !string.IsNullOrEmpty(EnterState(option))
         || !string.IsNullOrEmpty(option.m_questEvent)
-        || Results(option)?.m_results?.Any(r => r is ResPostEvent or ResModifyTriggerObject or ResActorDialog) == true;
+        || Results(option)?.m_results?.Any(r => r is ResPostEvent or ResModifyTriggerObject or ResActorDialog or ResMinigame) == true;
 
     private static string EnterState(InteractOptionTemplate option)
         => (option as InteractStateOptionTemplate)?.m_enterState.ToString();
@@ -246,6 +247,9 @@ internal sealed class InteractObjectStateComponent(ZoneEntity entity)
 
     private static ResultList Results(InteractOptionTemplate option)
         => (option as InteractStateOptionTemplate)?.m_results;
+
+    internal static IEnumerable<Result> GetResults(GameObjectTemplate template)
+        => GetStateOptions(template).SelectMany(option => Results(option)?.m_results ?? []);
 
     private static IEnumerable<InteractOptionTemplate> GetStateOptions(GameObjectTemplate template)
         => template?.m_behaviors?

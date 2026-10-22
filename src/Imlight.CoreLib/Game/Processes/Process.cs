@@ -99,7 +99,7 @@ internal abstract class Process : ReceiveProtocolDispatcher, IWithTimers {
         }
     }
 
-    private void KillProcess() {
+    protected void KillProcess() {
         // Inform the supervisor that the process has been killed.
         var supervisor = Context.Parent;
         var killedMsg = new PROCESS_107_PROTOCOL.MSG_PROCESS_KILLED {

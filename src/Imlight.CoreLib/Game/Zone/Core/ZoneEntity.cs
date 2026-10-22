@@ -245,7 +245,8 @@ public class ZoneEntity(
     /// </summary>
     internal void ExecuteResults(ResultList results, IActorRef playerActor, CoreObject playerObject, string triggerName = null)
         => Imlight.CoreLib.Game.Results.ResultDispatcher.ExecuteResults(
-            Context, results, playerActor, playerObject, zoneActor: ZoneRef, triggerName: triggerName);
+            Context, results, playerActor, playerObject, zoneActor: ZoneRef, triggerName: triggerName,
+            sourceRef: Self, sourceTemplateId: (Template as GameObjectTemplate)?.m_templateID ?? 0, sourceIsInstance: Zone.IsInstance);
 
     #region Message Handlers
 

@@ -57,6 +57,9 @@ public static class ResultDispatcher {
     /// <param name="triggerName">The trigger name (if applicable)</param>
     /// <param name="skipWorldEffects">Drops the results that change the zone itself (another player's step already ran them)</param>
     /// <param name="xpScale">Multiplies the experience of drop tables among the results</param>
+    /// <param name="sourceRef">The zone entity whose interact option runs the results (if applicable)</param>
+    /// <param name="sourceTemplateId">The template id of that entity</param>
+    /// <param name="sourceIsInstance">Whether that entity lives in an instance</param>
     public static void ExecuteResults(IActorContext actorContext,
                                      ResultList results,
                                      IActorRef playerRef,
@@ -69,7 +72,10 @@ public static class ResultDispatcher {
                                      Zone.Core.ZoneScriptState scriptState = null,
                                      bool skipWorldEffects = false,
                                      float xpScale = 1f,
-                                     bool playerSpawned = false) {
+                                     bool playerSpawned = false,
+                                     IActorRef sourceRef = null,
+                                     ulong sourceTemplateId = 0,
+                                     bool sourceIsInstance = false) {
         if (skipWorldEffects && results?.m_results is not null) {
             results = new ResultList { m_results = results.m_results.Where(r => !ChangesZone(r)).ToList() };
         }
@@ -81,6 +87,9 @@ public static class ResultDispatcher {
         var context = new GenericResultContext(filteredResults, playerRef, playerObj, replyTo, zoneActor, questName, goalName, triggerName) {
             XpScale = xpScale,
             PlayerSpawned = playerSpawned,
+            SourceRef = sourceRef,
+            SourceTemplateId = sourceTemplateId,
+            SourceIsInstance = sourceIsInstance,
         };
         var executor = CreateExecutorInstance(actorContext, context);
 
