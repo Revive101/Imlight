@@ -67,11 +67,7 @@ internal class PetService(SessionActor sessionActor) : MessageService(sessionAct
     private void ReceivePostAttach(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE message) {
         var wizard = GetActiveWizard();
         var petOwnerBehavior = wizard.PetOwnerBehavior;
-
-        var magicSchool = wizard.MagicSchoolBehavior.MagicSchool;
-        var level = wizard.MagicSchoolBehavior.Level;
-        var baseStats = MagicLevelsConfig.GetPlayerLevelInfo(magicSchool, level);
-        var normMaxEnergy = baseStats.m_petEnergy;
+        var clientMaxEnergy = wizard.GameStats.GetClientTypeAlternative().m_energyMax;
 
         var tickTime = petOwnerBehavior.LastEnergyTickEpoch;
         if (tickTime <= DateTimeOffset.UtcNow.ToUnixTimeSeconds()) {
@@ -81,7 +77,7 @@ internal class PetService(SessionActor sessionActor) : MessageService(sessionAct
         var tickMsg = new PET_9_PROTOCOL.MSG_PETENERGYTICK() {
             GlobalID = wizard.GameObjectID,
             Energy = petOwnerBehavior.Energy,
-            MaxEnergy = normMaxEnergy,
+            MaxEnergy = clientMaxEnergy,
             TickTime = (int) tickTime
         };
 
@@ -98,20 +94,17 @@ internal class PetService(SessionActor sessionActor) : MessageService(sessionAct
     private void ReceiveDoEnergyTick(CHARACTER_103_PROTOCOL.MSG_DOENERGYTICK message) {
         var wizard = GetActiveWizard();
         var petOwnerBehavior = wizard.PetOwnerBehavior;
-
-        var magicSchool = wizard.MagicSchoolBehavior.MagicSchool;
-        var level = wizard.MagicSchoolBehavior.Level;
-        var baseStats = MagicLevelsConfig.GetPlayerLevelInfo(magicSchool, level);
-        var normMaxEnergy = baseStats.m_petEnergy;
+        var maxEnergy = wizard.GameStats.m_energyMax;
+        var clientMaxEnergy = wizard.GameStats.GetClientTypeAlternative().m_energyMax;
 
         var tickTime = (int) (DateTimeOffset.UtcNow.ToUnixTimeSeconds() + s_petEnergyTickIntervalInSeconds);
 
-        if (petOwnerBehavior.Energy < normMaxEnergy) {
+        if (petOwnerBehavior.Energy < maxEnergy) {
             wizard.UpdateEnergy(petOwnerBehavior.Energy + 1);
             var tickMsg = new PET_9_PROTOCOL.MSG_PETENERGYTICK() {
                 GlobalID = wizard.GameObjectID,
                 Energy = petOwnerBehavior.Energy,
-                MaxEnergy = normMaxEnergy,
+                MaxEnergy = clientMaxEnergy,
                 TickTime = tickTime
             };
 

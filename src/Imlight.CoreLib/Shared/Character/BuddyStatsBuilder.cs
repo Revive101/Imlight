@@ -69,11 +69,6 @@ internal static class BuddyStatsBuilder {
     private static readonly uint s_equipmentWireHash = StringHash.Compute("class WizEquipmentBehavior");
     private static readonly uint s_petWireHash = StringHash.Compute("class PetItemBehavior");
 
-    // Magic, version, an unknown 16-bit 1, then a 16-bit entry count of 0.
-    private static readonly byte[] s_emptyWishlist = [
-        0xE7, 0xAC, 0xCE, 0xFA, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
-    ];
-
     internal static GAME_5_PROTOCOL.MSG_BUDDYSTATS Build(Wizard buddy,
                                                          GAME_5_PROTOCOL.MSG_BUDDYSTATS request,
                                                          ulong targetCharacterGid)
@@ -100,7 +95,7 @@ internal static class BuddyStatsBuilder {
         AttachEquipmentBlock(reply, source.Equipment, request);
         AttachEffectBlock(reply, source.Effects, request);
         AttachPetBlock(reply, source, request);
-        AttachWishlistBlock(reply, request);
+        AttachWishlistBlock(reply, source.Wishlist, request);
 
         return reply;
     }
@@ -126,6 +121,7 @@ internal static class BuddyStatsBuilder {
             Effects = buddy.GameEffects ?? [],
             Pet = pet,
             PetTemplateId = (uint) (petItem?.m_templateID ?? 0),
+            Wishlist = buddy.CrownShopWishlist.IsEmpty ? WishlistData.Empty : buddy.CrownShopWishlist,
             Level = (uint) buddy.MagicSchoolBehavior.Level,
             School = (uint) buddy.MagicSchoolBehavior.MagicSchool,
         };
@@ -224,12 +220,14 @@ internal static class BuddyStatsBuilder {
     }
 
     private static void AttachWishlistBlock(GAME_5_PROTOCOL.MSG_BUDDYSTATS reply,
+                                            ByteString wishlist,
                                             GAME_5_PROTOCOL.MSG_BUDDYSTATS request) {
-        if (BuddyStatsCrc.ForWishlist(s_emptyWishlist) == request.WishlistBlockCRC) {
+        var wishlistBlock = wishlist.IsEmpty ? WishlistData.Empty : wishlist;
+        if (BuddyStatsCrc.ForWishlist(wishlistBlock) == request.WishlistBlockCRC) {
             return;
         }
 
-        reply.WishlistBlock = s_emptyWishlist;
+        reply.WishlistBlock = wishlistBlock;
         reply.WishlistBlockCRC = BlockAttached;
     }
 
@@ -344,6 +342,7 @@ internal sealed class BuddyStatsSource {
     public List<GameEffectBase> Effects { get; init; } = [];
     public ClientPetItemBehavior Pet { get; init; }
     public uint PetTemplateId { get; init; }
+    public ByteString Wishlist { get; init; }
     public uint Level { get; init; }
     public uint School { get; init; }
 

@@ -21,15 +21,16 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using Raven.Client.Documents;
-using Raven.Client.Exceptions;
-using Raven.Client.Documents.Linq;
-using Raven.Client.Documents.Session;
+using Imcodec.Math;
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
+using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models.Player;
-using Imcodec.ObjectProperty.TypeCache;
-using Imcodec.Math;
+using Raven.Client.Documents;
+using Raven.Client.Documents.Linq;
+using Raven.Client.Documents.Session;
+using Raven.Client.Exceptions;
 
 namespace Imlight.CoreLib.WizardData.Collections;
 
@@ -310,6 +311,7 @@ public static class WizardCollection {
             existingCharacter.EquipmentBehavior = wizard.EquipmentBehavior;
             existingCharacter.PetSnackBehavior = wizard.PetSnackBehavior;
             existingCharacter.AlchemyBehavior = wizard.AlchemyBehavior;
+            existingCharacter.WizardAvatar = wizard.WizardAvatar;
         });
     }
 
@@ -331,6 +333,26 @@ public static class WizardCollection {
     public static void UpdateCharacterMount(Wizard wizard) {
         UpdateCharacter(wizard.CharId, existingCharacter =>
             existingCharacter.MountOwnerBehavior = wizard.MountOwnerBehavior);
+    }
+
+    /// <summary>
+    /// Updates the equipped teleport effect for a wizard.
+    /// </summary>
+    /// <param name="wizard">The wizard whose equipped teleport effect is being updated.</param>
+    public static void UpdateCharacterTeleportEffect(Wizard wizard) {
+        UpdateCharacter(wizard.CharId, existingCharacter => {
+            existingCharacter.MagicSchoolBehavior.EquippedTeleportEffect = wizard.MagicSchoolBehavior.EquippedTeleportEffect;
+            existingCharacter.GameStats.m_equippedTeleportEffect = wizard.GameStats.m_equippedTeleportEffect;
+        });
+    }
+
+    /// <summary>
+    /// Updates the character victory dance for a wizard.
+    /// </summary>
+    /// <param name="wizard">The wizard whose character victory dance is being updated.</param>
+    public static void UpdateCharacterVictoryDance(Wizard wizard) {
+        UpdateCharacter(wizard.CharId, existingCharacter =>
+            existingCharacter.WizardAvatar = wizard.WizardAvatar);
     }
 
     /// <summary>
@@ -403,6 +425,23 @@ public static class WizardCollection {
     public static void UpdateCharacterLastLoginTime(Wizard wizard) {
         UpdateCharacter(wizard.CharId, existingCharacter =>
             existingCharacter.LastLoginTime = wizard.LastLoginTime);
+    }
+
+    /// <summary>
+    /// Updates the character radial menu data for a wizard.
+    /// </summary>
+    public static void UpdateCharacterRadialMenuData(Wizard wizard) {
+        UpdateCharacter(wizard.CharId, existingCharacter => {
+            existingCharacter.RadialMenuData = wizard.RadialMenuData;
+            existingCharacter.RadialMenu2Data = wizard.RadialMenu2Data;
+            existingCharacter.RadialMenu3Data = wizard.RadialMenu3Data;
+        });
+    }
+
+    public static void UpdateCharacterCSWishlist(Wizard wizard) {
+        UpdateCharacter(wizard.CharId, character =>
+            character.CrownShopWishlist = wizard.CrownShopWishlist
+        );
     }
 
     /// <summary>
@@ -555,18 +594,31 @@ public static class WizardCollection {
             .Any(e => i.m_globalID == e))
         ];
 
-        // `AlchemyBehavior` only keeps track of the reagent global IDs.
-        // The actual reagent items are stored in the `WizardReagents` collection.
-        var reagents = session.Query<ClientReagentItem>(collectionName: WizardReagentCollection.CollectionName)
-            .Where(x => x.m_characterId == wizard.CharId)
-            .ToList();
+        // Synchronize active elixir behaviors with their remaining playtime seconds from SlotList.
+        wizard.EquipmentBehavior?.SyncActiveElixirTimes();
 
+        // Load the character's snacks.
+        wizard.PetSnackBehavior ??= new();
+        if (WizardPetSnackCollection.TryGetWizardSnackBag(wizard.CharId, out var snacks)) {
+            wizard.PetSnackBehavior.Snacks = snacks;
+        }
+        else {
+            wizard.PetSnackBehavior.Snacks = [];
+        }
+        wizard.PetSnackBehavior.SnackItemIds = wizard.PetSnackBehavior.Snacks.Select(s => (ulong) s.m_globalID).ToList();
+
+        // Load the character's reagents.
         wizard.AlchemyBehavior ??= new();
-        wizard.AlchemyBehavior.ReagentItemIds ??= [];
-        wizard.AlchemyBehavior.Reagents = [.. reagents
-            .Where(r => wizard.AlchemyBehavior.ReagentItemIds
-            .Contains(r.m_globalID))
-        ];
+        if (WizardReagentCollection.TryGetWizardReagentBag(wizard.CharId, out var reagents)) {
+            wizard.AlchemyBehavior.Reagents = reagents;
+        }
+        else {
+            wizard.AlchemyBehavior.Reagents = [];
+        }
+        wizard.AlchemyBehavior.ReagentItemIds = wizard.AlchemyBehavior.Reagents.Select(r => (ulong) r.m_globalID).ToList();
+
+        // Migrate any snacks or reagents mistakenly placed in InventoryBehavior / WizardItemCollection.
+        MigrateMisplacedInventoryItems(wizard);
 
         // The friends list is expanded to include a 'relationship' model
         // which helps keep track of the relationship between two players for moderation purposes.
@@ -604,10 +656,48 @@ public static class WizardCollection {
         return wizard;
     }
 
+    private static void MigrateMisplacedInventoryItems(Wizard wizard) {
+        var misplacedItems = wizard.InventoryBehavior.Items
+            .Where(i => i is ClientPetSnackItem or ClientReagentItem)
+            .ToList();
+
+        if (misplacedItems.Count == 0) {
+            return;
+        }
+
+        Logger.Information("Migrating {0} misplaced snack/reagent items from player {1}'s inventory.",
+            Logger.Args(misplacedItems.Count, wizard.CharId));
+
+        var anyMigrated = false;
+        foreach (var item in misplacedItems) {
+            var added = item switch {
+                ClientPetSnackItem => wizard.AddSnack(item.m_templateID, out _),
+                ClientReagentItem => wizard.AddReagent(item.m_templateID, out _),
+                _ => false
+            };
+
+            if (added) {
+                wizard.InventoryBehavior.Items.Remove(item);
+                wizard.InventoryBehavior.InventoryItemIds.Remove(item.m_globalID);
+                WizardItemCollection.RemoveItem(wizard.CharId, item.m_globalID);
+                anyMigrated = true;
+            }
+            else {
+                Logger.Warning("Failed to migrate misplaced item {0} (template {1}) to bag for player {2}.",
+                    Logger.Args(item.m_globalID, item.m_templateID, wizard.CharId));
+            }
+        }
+
+        if (anyMigrated) {
+            UpdateCharacterItems(wizard);
+        }
+    }
+
     private static Wizard GetCharacterByCharId(IDocumentSession session, ulong charId) {
         var character = session.Query<Wizard>(collectionName: CollectionName)
             .Customize(query => query.WaitForNonStaleResults(s_nonStaleWaitTimeout))
             .FirstOrDefault(c => c.CharId == charId);
+
         if (character is not null) {
             s_documentIdByCharId[charId] = session.Advanced.GetDocumentId(character);
         }

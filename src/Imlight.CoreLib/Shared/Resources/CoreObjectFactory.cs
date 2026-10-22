@@ -217,22 +217,36 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
     }
 
     /// <summary>
+    /// Gets the ID of the core template that matches the specified predicate, or 0 if not found.
+    /// </summary>
+    /// <param name="predicate">The predicate used to match the template.</param>
+    /// <param name="templateId">The ID of the matching core template, or 0 if not found.</param>
+    /// <returns>True if a matching template is found; otherwise, false.</returns>
+    public static bool TryGetCoreTemplateID(Func<TemplateLocation, bool> predicate, out uint templateId) {
+        templateId = 0;
+        var template = TemplateManifest?.m_serializedTemplates
+            .AsParallel()
+            .FirstOrDefault(predicate);
+
+        if (template is null) {
+            return false;
+        }
+
+        templateId = template.m_id;
+        return true;
+    }
+
+    /// <summary>
     /// Gets the ID of the core template that matches the specified predicate.
     /// </summary>
     /// <param name="predicate">The predicate used to match the template.</param>
     /// <returns>The ID of the matching core template.</returns>
     public static uint GetCoreTemplateID(Func<TemplateLocation, bool> predicate) {
-        var templateOrNull = TemplateManifest.m_serializedTemplates
-            .AsParallel()
-            .FirstOrDefault(predicate);
-
-        if (templateOrNull is null) {
+        if (!TryGetCoreTemplateID(predicate, out uint templateId)) {
             Logger.Error("Could not find CoreTemplate by predicate.");
-
-            return 0;
         }
 
-        return templateOrNull.m_id;
+        return templateId;
     }
 
     /// <summary>

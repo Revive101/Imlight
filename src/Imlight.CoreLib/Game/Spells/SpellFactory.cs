@@ -104,9 +104,7 @@ internal class SpellFactory : RootDirectoryResourceSingleton<SpellFactory>, IMem
         }
 
         var spellTemplateActualPath = s_spellTemplatePaths[stringHash];
-        var templateId = CoreObjectFactory.GetCoreTemplateID(x => x.m_filename == spellTemplateActualPath);
-
-        if (templateId == 0) {
+        if (!CoreObjectFactory.TryGetCoreTemplateID(x => x.m_filename == spellTemplateActualPath, out uint templateId)) {
             Logger.Warning("Could not find template ID for spell {0}.", Logger.Args(spellName));
             return null;
         }
@@ -178,7 +176,8 @@ internal class SpellFactory : RootDirectoryResourceSingleton<SpellFactory>, IMem
             return 0;
         }
 
-        return CoreObjectFactory.GetCoreTemplateID(x => x.m_filename == path);
+        CoreObjectFactory.TryGetCoreTemplateID(x => x.m_filename == path, out uint templateId);
+        return templateId;
     }
 
     /// <summary>

@@ -364,7 +364,6 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
 
         public string ObjectName;
         public string StateName;
-
     }
 
     /// <summary>
@@ -385,7 +384,29 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
         /// The quest name, or empty for the only active quest.
         /// </summary>
         public string QuestName;
+    }
+  
+    /// <summary>
+    /// Fired every second to tick down active elixir playtime.
+    /// </summary>
+    public sealed class MSG_DOELIXIRTICK : IServerMessage {
 
+        public byte MessageOrder { get; } = 31;
+        public byte ServiceID { get; } = 103;
+
+    }
+
+    /// <summary>
+    /// Synchronizes an updated Crown Shop wishlist to an online character's session.
+    /// </summary>
+    public sealed class MSG_UPDATE_WISHLIST : IServerMessage {
+
+        public byte MessageOrder { get; } = 32;
+        public byte ServiceID { get; } = 103;
+
+        public ulong CharId;
+        public ByteString WishlistData;
+        public uint RemovedTemplateId;
     }
 
 }
