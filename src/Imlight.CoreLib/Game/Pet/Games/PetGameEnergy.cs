@@ -63,6 +63,21 @@ internal static class PetGameEnergy {
     private const int PERCENT_DIVISOR = 100;
 
     /// <summary>
+    /// Checks whether the wizard can pay for a game, without charging anything.
+    /// </summary>
+    /// <param name="wizard">The owner.</param>
+    /// <param name="gameName">The game name as it appears in PetGames.xml.</param>
+    /// <param name="petLevel">The pet's level.</param>
+    /// <returns>Charged if the wizard can pay, otherwise why not.</returns>
+    internal static PetGameEnergyResult CheckCost(Wizard wizard, string gameName, int petLevel) {
+        if (!PetGameConfig.TryGetEnergyCost(gameName, petLevel, out var cost)) {
+            return PetGameEnergyResult.UnknownGame;
+        }
+
+        return wizard.PetOwnerBehavior.Energy < cost ? PetGameEnergyResult.NotEnoughEnergy : PetGameEnergyResult.Charged;
+    }
+
+    /// <summary>
     /// Charges the cost of a game to the wizard. Nothing is charged unless the result is Charged.
     /// </summary>
     /// <param name="wizard">The owner.</param>

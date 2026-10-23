@@ -38,8 +38,11 @@
 
 using System;
 using System.Linq;
+using Imcodec.IO;
+using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.WizardData.Models.Player;
+using PetGameConfig = Imlight.CoreLib.Game.Pet.Config.PetGameConfig;
 
 namespace Imlight.CoreLib.Game.Pet.Games;
 
@@ -59,7 +62,7 @@ internal enum PetGameSessionState {
 /// <param name="gameName">The game name as it appears in PetGames.xml.</param>
 /// <param name="trackIndex">The index of the track choice.</param>
 /// <param name="track">The track choice: its stat changes and score factors.</param>
-/// <param name="zone">The zone the player joined from.</param>
+/// <param name="zone">The zone the game plays in.</param>
 /// <param name="game">The play of the game.</param>
 internal sealed class PetGameSession(Wizard wizard,
                                      WizClientObjectItem pet,
@@ -68,6 +71,8 @@ internal sealed class PetGameSession(Wizard wizard,
                                      PetStatModificationSet track,
                                      string zone,
                                      IPetGame game) {
+
+    private const PropertyFlags GAME_INFO_PROPERTY_MASK = PropertyFlags.Prop_Save | PropertyFlags.Prop_Copy | PropertyFlags.Prop_Public;
 
     /// <summary>
     /// The player.
@@ -95,7 +100,7 @@ internal sealed class PetGameSession(Wizard wizard,
     internal PetStatModificationSet Track { get; } = track;
 
     /// <summary>
-    /// The zone the player joined from. Leaving it aborts the game.
+    /// The zone the game plays in. Leaving it aborts the game.
     /// </summary>
     internal string Zone { get; } = zone;
 
@@ -152,6 +157,17 @@ internal sealed class PetGameSession(Wizard wizard,
         var factor = Track?.m_gameScoreFactor?.Count(threshold => score >= threshold) ?? 0;
 
         return (uint) Math.Min(Math.Round((double) score * factor), uint.MaxValue);
+    }
+
+    /// <summary>
+    /// Serializes the game's own PetGameInfo, which the client's game window loads from MSG_PETGAMEINIT.
+    /// </summary>
+    /// <returns>The serialized info, empty if the game is not in PetGames.xml.</returns>
+    internal ByteString SerializeGameInfo() {
+        var info = PetGameConfig.FindGame(GameName);
+        var serializer = new ObjectSerializer(Versionable: false, Behaviors: SerializerFlags.None);
+
+        return info is not null && serializer.Serialize(info, GAME_INFO_PROPERTY_MASK, out var data) ? data : ByteString.Empty;
     }
 
 }

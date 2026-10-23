@@ -68,7 +68,7 @@ internal sealed class PetGameDance : IPetGame {
     public float SkipScore => MAX_SCORE / 2f;
 
     public ByteString CreateInitData(PetGameSession session)
-        => ByteString.Empty;
+        => session.SerializeGameInfo();
 
     public ByteString CreateStartData(PetGameSession session)
         => ByteString.Empty;

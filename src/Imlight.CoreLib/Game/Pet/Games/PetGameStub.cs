@@ -47,7 +47,7 @@ internal sealed class PetGameStub : IPetGame {
     public float SkipScore => 0;
 
     public ByteString CreateInitData(PetGameSession session)
-        => ByteString.Empty;
+        => session.SerializeGameInfo();
 
     public ByteString CreateStartData(PetGameSession session)
         => ByteString.Empty;

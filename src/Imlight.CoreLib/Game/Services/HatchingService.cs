@@ -40,7 +40,7 @@
  *
  * Created by: Jay
  * Version: KALI 1.0
- * Last Updated: 10/22/2026
+ * Last Updated: 10/23/2026
  */
 
 using System;
@@ -56,6 +56,7 @@ using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.Types;
 using Imlight.Common;
 using Imlight.CoreLib.Game.Pet.Config;
+using Imlight.CoreLib.Game.Pet.Games;
 using Imlight.CoreLib.Game.Pet.Hatching;
 using Imlight.CoreLib.Game.Pet.Progression;
 using Imlight.CoreLib.Shared.Networking;
@@ -108,6 +109,11 @@ internal class HatchingService(SessionActor sessionActor) : MessageService(sessi
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PETGAMEROOMJOINED))]
     private void ReceivePetGameRoomJoined(ZONE_102_PROTOCOL.MSG_PETGAMEROOMJOINED message) {
         if (string.IsNullOrEmpty(message.GameName)) {
+            return;
+        }
+
+        // A pet game's zone is PetGamesService's to run.
+        if (_room is null && PetGameVisits.Contains(GetActiveWizard().CharId)) {
             return;
         }
 
