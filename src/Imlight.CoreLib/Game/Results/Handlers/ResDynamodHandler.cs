@@ -30,11 +30,6 @@ internal sealed class ResDynamodHandler : BaseResultHandler<ResAddDynaMod> {
             ContextActor = context.GetPlayerRef()
         };
 
-        var zoneActor = context.GetZoneActor();
-        if (zoneActor != null) {
-            zoneActor.Tell(msg);
-        }
-
         context.GetPlayerRef().Tell(msg);
 
         return true;
@@ -49,11 +44,6 @@ internal sealed class RemoveDynamodHandler : BaseResultHandler<ResRemoveDynaMod>
             DynaMod = Result,
             ContextActor = context.GetPlayerRef()
         };
-
-        var zoneActor = context.GetZoneActor();
-        if (zoneActor != null) {
-            zoneActor.Tell(msg);
-        }
 
         context.GetPlayerRef().Tell(msg);
         

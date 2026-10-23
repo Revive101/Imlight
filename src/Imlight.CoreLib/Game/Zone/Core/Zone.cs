@@ -404,9 +404,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     private void ReceiveTriggerPost(ZONE_102_PROTOCOL.MSG_POSTEVENT message) {
         Logger.Verbose("Zone {ZoneName} received post event {EventName}.", Logger.Args(ZoneName, message.EventName));
 
-        foreach (var supervisor in _supervisors) {
-            supervisor.Tell(message);
-        }
+        _triggerSupervisor.Tell(message);
 
         // Goals that list the event complete for every player in this zone instance.
         DispatchBroadcast(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
