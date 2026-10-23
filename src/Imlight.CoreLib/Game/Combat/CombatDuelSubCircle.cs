@@ -82,6 +82,7 @@ public class CombatDuelSubCircle {
     internal const byte MAX_PIP_COUNT = 7;
     private const byte PLAYER_HAND_SIZE = 7;
     private const int PARTICIPANT_QUERY_TIMEOUT_SECONDS = 5;
+    private const int FIRST_PLAYER_SLOT_INDEX = 4;
 
     internal string SlotName { get; set; }
     internal CombatSlotType SlotType { get; set; }
@@ -496,8 +497,8 @@ public class CombatDuelSubCircle {
 
         _wizard = characterResponse.Wizard;
 
-        // Dyanmic symbols start at 9 for players.
-        var dynamicSymbol = (DynamicSigilSymbol) (SlotIndex + 9);
+        // Player slots 4-7 show the sun, eye, star and moon icons; the symbol after the moon is the shadow-self icon.
+        var dynamicSymbol = DynamicSigilSymbol.Sun + (SlotIndex - FIRST_PLAYER_SLOT_INDEX);
 
         ParticipantGameStats = _wizard.GameStats;
         var combatStats = ParticipantGameStats.GetCombatGameStats();
