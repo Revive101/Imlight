@@ -22,6 +22,7 @@ using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Game.Statues;
+using Imlight.CoreLib.WizardData.Models.World;
 using Imlight.CoreLib.Game.WizBang;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.WizardData.Models.Player;
@@ -43,7 +44,7 @@ internal sealed class StatueComponent(ZoneEntity entity)
     public string InteractWizBang => null;
     public string DisplayKey      => null;
 
-    private StatueDefinition Statue => ((StatueEntity) Entity).Statue;
+    private PlayerStatue Statue => ((StatueEntity) Entity).Statue;
 
     public IEnumerable<ServiceOptionBase> GetServiceOptions(Wizard playerCharacter) {
         if (string.IsNullOrWhiteSpace(Statue.PlaqueText)) {

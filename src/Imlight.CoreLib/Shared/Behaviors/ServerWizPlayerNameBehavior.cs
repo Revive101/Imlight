@@ -17,6 +17,7 @@
  */
 
 using System;
+using System.Linq;
 using System.Text;
 using Imcodec.IO;
 using Imcodec.ObjectProperty.TypeCache;
@@ -30,6 +31,11 @@ public class ServerWizPlayerNameBehavior : IClientBehaviorProvider<ClientWizPlay
 
     private const string FemaleSourcePrefix = "80";
     private const string MaleSourcePrefix = "82";
+    private const int MAX_PACKED_OVERRIDE_BYTES = 31;
+    private const byte PACKED_OVERRIDE_BIT = 0x01;
+    private const byte PACKED_NARROW_BIT = 0x02;
+    private const byte PACKED_VALID_BIT = 0x80;
+    private const int PACKED_LENGTH_SHIFT = 2;
 
     [JsonIgnore] public bool NoTransfer { get; set; } = false;
 
@@ -54,6 +60,30 @@ public class ServerWizPlayerNameBehavior : IClientBehaviorProvider<ClientWizPlay
         var actualName = WizardNameBank.GetEnglishName(NameIndices, Gender);
         
         return actualName;
+    }
+
+    /// <summary>
+    /// Gets the custom name in the packed form the client reads from statue blobs.
+    /// </summary>
+    /// <returns>The packed custom name, or null when there is no usable custom name.</returns>
+    public byte[] GetPackedOverrideBytes() {
+        if (NameOverride.Length == 0) {
+            return null;
+        }
+
+        string name = NameOverride;
+        var narrow = name.All(c => c is >= ' ' and <= '~');
+        var data = narrow ? Encoding.ASCII.GetBytes(name) : Encoding.Unicode.GetBytes(name);
+        if (data.Length > MAX_PACKED_OVERRIDE_BYTES) {
+            return null;
+        }
+
+        var header = PACKED_OVERRIDE_BIT | PACKED_VALID_BIT | (data.Length << PACKED_LENGTH_SHIFT);
+        if (narrow) {
+            header |= PACKED_NARROW_BIT;
+        }
+
+        return [(byte) header, .. data];
     }
 
     public string GetWizardNameAsByteHexString() {

@@ -33,13 +33,14 @@
  *
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/22/2026
+ * Last Updated: 10/23/2026
  */
 
 using Akka.Actor;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Game.Statues;
+using Imlight.CoreLib.WizardData.Models.World;
 using Imlight.CoreLib.Game.Zone.Components;
 
 namespace Imlight.CoreLib.Game.Zone.Core;
@@ -53,10 +54,10 @@ internal sealed class StatueEntity(
     CoreObjectInfo info,
     IActorRef zoneRef,
     Zone zone,
-    StatueDefinition statue)
+    PlayerStatue statue)
     : ZoneEntity(activeGameObject, template, info, zoneRef, zone) {
 
-    public StatueDefinition Statue { get; } = statue;
+    public PlayerStatue Statue { get; } = statue;
 
     private readonly StatueBaseKind _kind = StatueLook.GetBaseKind(template);
 

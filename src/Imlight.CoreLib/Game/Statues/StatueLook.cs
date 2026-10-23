@@ -32,13 +32,14 @@
  *
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/22/2026
+ * Last Updated: 10/23/2026
  */
 
 using System;
 using System.Linq;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
+using Imlight.CoreLib.WizardData.Models.World;
 
 namespace Imlight.CoreLib.Game.Statues;
 
@@ -67,7 +68,7 @@ internal static class StatueLook {
         return hasPedestalBehavior ? StatueBaseKind.Pedestal : StatueBaseKind.None;
     }
 
-    internal static void Apply(ClientObject clientObject, StatueDefinition statue, StatueBaseKind kind) {
+    internal static void Apply(ClientObject clientObject, PlayerStatue statue, StatueBaseKind kind) {
         if (kind == StatueBaseKind.Pedestal) {
             ApplyPedestal(clientObject, statue);
         } else if (kind == StatueBaseKind.WizardNpc) {
@@ -75,7 +76,7 @@ internal static class StatueLook {
         }
     }
 
-    private static void ApplyPedestal(ClientObject clientObject, StatueDefinition statue) {
+    private static void ApplyPedestal(ClientObject clientObject, PlayerStatue statue) {
         if (!StatueBlob.TryBuild(statue, out var blob)) {
             return;
         }
@@ -87,7 +88,7 @@ internal static class StatueLook {
         });
     }
 
-    private static void ApplyWizardNpc(ClientObject clientObject, StatueDefinition statue) {
+    private static void ApplyWizardNpc(ClientObject clientObject, PlayerStatue statue) {
         ReplaceBehavior<WizardCharacterBehavior>(clientObject, avatar => statue.Appearance with {
             m_behaviorTemplateNameID = avatar.m_behaviorTemplateNameID,
         });

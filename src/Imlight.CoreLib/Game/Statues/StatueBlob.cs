@@ -33,7 +33,7 @@
  *
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/22/2026
+ * Last Updated: 10/23/2026
  */
 
 using System.Buffers.Binary;
@@ -45,6 +45,7 @@ using Imlight.Common;
 using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Utilities;
+using Imlight.CoreLib.WizardData.Models.World;
 
 namespace Imlight.CoreLib.Game.Statues;
 
@@ -57,7 +58,7 @@ internal static class StatueBlob {
 
     private static readonly uint s_equipmentWireHash = StringHash.Compute("class WizEquipmentBehavior");
 
-    internal static bool TryBuild(StatueDefinition statue, out ByteString blob) {
+    internal static bool TryBuild(PlayerStatue statue, out ByteString blob) {
         blob = default;
         if (!TrySerialize(statue.Appearance, AVATAR_MASK, null, out var avatarBuffer)
             || !TrySerialize(CreateEquipment(statue), EQUIPMENT_MASK, s_equipmentWireHash, out var equipmentBuffer)) {
@@ -83,19 +84,21 @@ internal static class StatueBlob {
         return true;
     }
 
-    private static ClientWizEquipmentBehavior CreateEquipment(StatueDefinition statue)
+    private static ClientWizEquipmentBehavior CreateEquipment(PlayerStatue statue)
         => new() {
             m_behaviorTemplateNameID = BuddyStatsBuilder.EquipmentBehaviorTemplateNameId,
             m_publicItemList = [.. statue.Equipment],
         };
 
-    private static byte[] CreatePackedName(StatueDefinition statue) {
+    private static byte[] CreatePackedName(PlayerStatue statue) {
         var name = new ServerWizPlayerNameBehavior {
             NameIndices = statue.NameKeys,
             Gender = statue.Appearance.m_eGender,
+            NameOverride = statue.NameKeys == 0 ? statue.Name : default,
         };
 
-        return DataManipulation.SpacedHexStringToBytes(name.GetWizardNameAsByteHexString());
+        return name.GetPackedOverrideBytes()
+            ?? DataManipulation.SpacedHexStringToBytes(name.GetWizardNameAsByteHexString());
     }
 
     private static bool TrySerialize(PropertyClass source, PropertyFlags mask, uint? wireHash, out byte[] bytes) {

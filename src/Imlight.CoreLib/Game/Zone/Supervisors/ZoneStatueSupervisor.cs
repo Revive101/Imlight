@@ -32,7 +32,7 @@
  *
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/22/2026
+ * Last Updated: 10/23/2026
  */
 
 using System.Collections.Generic;
@@ -42,15 +42,17 @@ using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
 using Imlight.CoreLib.Game.Statues;
+using Imlight.CoreLib.WizardData.Models.World;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Collections;
 
 namespace Imlight.CoreLib.Game.Zone.Supervisors;
 
 /// <summary>
-/// Spawns the statues of a zone from <see cref="StatueRegistry"/> and forwards zone messages to them.
+/// Spawns the statues of a zone from SpiralDB and forwards zone messages to them.
 /// </summary>
 internal sealed class ZoneStatueSupervisor(Core.Zone zone) : ZoneEntitySupervisor(zone) {
 
@@ -60,7 +62,7 @@ internal sealed class ZoneStatueSupervisor(Core.Zone zone) : ZoneEntitySuperviso
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS))]
     public override void ReceiveZoneLoadResults(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS message) {
-        foreach (var statue in StatueRegistry.InZone(Zone.ZonePath)) {
+        foreach (var statue in PlayerStatueCollection.GetInZone(Zone.ZonePath)) {
             SpawnStatue(statue);
         }
 
@@ -73,7 +75,7 @@ internal sealed class ZoneStatueSupervisor(Core.Zone zone) : ZoneEntitySuperviso
         }
     }
 
-    private void SpawnStatue(StatueDefinition statue) {
+    private void SpawnStatue(PlayerStatue statue) {
         var template = CoreObjectFactory.GetCoreTemplate(statue.BaseTemplateId);
         if (StatueLook.GetBaseKind(template) == StatueBaseKind.None) {
             Logger.Warning("Statue {0} has a base template that cannot be a statue; skipping.",
