@@ -209,6 +209,11 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         if (IsInRadius(creature, _combatSigilObjectInfo.m_radius) && !_entitiesInRange.Contains(suspect)) {
             _entitiesInRange.Add(suspect);
 
+            // The creature that started the fight, or one that joined and walked back in, already holds a circle.
+            if (IsParticipant(suspect)) {
+                return;
+            }
+
             var npcComponent = entity.GetComponentOfType<NpcComponent>();
             if (npcComponent != null && !npcComponent.IsMonster) {
                 return;
@@ -1502,6 +1507,9 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         };
         circle.ParticipantActor.Tell(stateMsg);
     });
+
+    private bool IsParticipant(IActorRef actor)
+        => SubCircles.Any(x => x is not null && x.ParticipantActor == actor);
 
     private bool IsSlotAvailable(CombatTeam team) {
         if (team == CombatTeam.Player) {
