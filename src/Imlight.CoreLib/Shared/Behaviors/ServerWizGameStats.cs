@@ -22,6 +22,7 @@ using System.Text.Json.Serialization;
 using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Game.Combat;
+using Imlight.CoreLib.Game.Effects;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.IO;
 using Imlight.Common;
@@ -179,6 +180,12 @@ public class ServerWizGameStats : IClientTypeProvider<WizGameStats> {
         this.m_baseMana = baseStats.m_mana;
         this.m_powerPipBase = baseStats.m_pipChance;
         this.m_energyMax = baseStats.m_petEnergy;
+        this.m_shadowPipMax = m_shadowMagicUnlocked ? WizStatisticEffectConfigLoader.GetShadowPipMax() : 0;
+    }
+
+    internal void UnlockShadowMagic() {
+        m_shadowMagicUnlocked = true;
+        m_shadowPipMax = WizStatisticEffectConfigLoader.GetShadowPipMax();
     }
 
     /// <summary>
@@ -223,6 +230,9 @@ public class ServerWizGameStats : IClientTypeProvider<WizGameStats> {
             m_blockRatingAll = m_blockRatingAll,
             m_criticalHitPercentAll = CombatCriticals.RatingToChance(m_criticalHitRatingAll, Level),
             m_blockPercentAll = CombatCriticals.RatingToChance(m_blockRatingAll, Level),
+            // The client shows the combat shadow gauge only when this cap is above zero.
+            m_shadowMagicUnlocked = m_shadowMagicUnlocked,
+            m_shadowPipMax = m_shadowPipMax,
         };
     }
 

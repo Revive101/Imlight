@@ -119,6 +119,8 @@ internal sealed class NpcComponent : ZoneEntityComponent, IComponentFactory, ICl
 
         _statsComponent.Stats.m_currentHitpoints = StartingHealth;
         _statsComponent.Stats.m_baseHitpoints = StartingHealth;
+        _statsComponent.Stats.m_shadowPipMax = _npcBehaviorTemplate.m_maxShadowPips;
+        _statsComponent.Stats.m_shadowMagicUnlocked = _npcBehaviorTemplate.m_maxShadowPips > 0;
 
         // Boss mobs will sometimes have base effects in their NPC template.
         if (_npcBehaviorTemplate.m_baseEffects.Count > 0) {
