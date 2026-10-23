@@ -235,6 +235,13 @@ internal abstract class MessageService(SessionActor sessionActor) : ReceiveProto
 
         var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
         var response = AskOtherService<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
+
+        if (response?.Wizard is null) {
+            Logger.Warning("{0} found no active wizard; skipping the cache.", Logger.Args(GetType().Name));
+
+            return;
+        }
+
         _cachedWizard = response.Wizard;
         _cachedWizardGameObject = response.WizardGameObject;
     }
