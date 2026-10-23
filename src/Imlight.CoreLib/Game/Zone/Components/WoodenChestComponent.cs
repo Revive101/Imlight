@@ -78,15 +78,7 @@ internal sealed class WoodenChestComponent(ZoneEntity entity) : ZoneEntityCompon
         && s_treasureChestTemplateIDs.Contains(goTemplate.m_templateID);
 
     public IEnumerable<ServiceOptionBase> GetServiceOptions(Wizard _)
-        => [
-            new ServiceOptionBase() {
-                m_displayKey = DisplayKey,
-                m_forceInteract = false,
-                m_iconKey = NpcIcon,
-                m_serviceName = ServiceName,
-                m_serviceIndex = 0
-            }
-         ];
+        => [new InteractableOption { m_serviceName = ServiceName }];
 
     public void OnServiceInteraction(IActorRef playerActor, Wizard playerCharacter, CoreObject playerObject, uint serviceOptionIndex) {
         if (_hasInteracted) {
