@@ -140,19 +140,21 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
             CharacterID = wizard.CharId,
             CacheBalanceForCSSegmentation = 1
         };
-        ZoneActor.Tell(crownMsg);
+        SendToSocket(crownMsg);
 
         return;
     }
 
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_CROWNBALANCE))]
-    private void ReceiveCrownBalanceTimer(WIZARD_12_PROTOCOL.MSG_CROWNBALANCE message) {
+    private void ReceiveCrownBalance(WIZARD_12_PROTOCOL.MSG_CROWNBALANCE message) {
         var wizard = GetActiveWizard();
-        if (wizard != null) {
-            message.TotalCrowns = wizard.Account.Crowns;
-            message.CharacterID = wizard.CharId;
-            SendToSocket(message);
+        if (wizard == null) {
+            return;
         }
+
+        message.TotalCrowns = wizard.Account.Crowns;
+        message.CharacterID = wizard.CharId;
+        SendToSocket(message);
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_POSTZONEEVENTFROMCLIENT))]
