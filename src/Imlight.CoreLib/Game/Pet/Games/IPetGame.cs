@@ -39,6 +39,7 @@
  */
 
 using Imcodec.IO;
+using Imcodec.MessageLayer;
 
 namespace Imlight.CoreLib.Game.Pet.Games;
 
@@ -79,5 +80,12 @@ internal interface IPetGame {
     /// <param name="command">The type at the start of the data.</param>
     /// <param name="payload">The rest of the data, after the type.</param>
     void ReceiveData(IPetGameHost host, byte command, BitReader payload);
+
+    /// <summary>
+    /// Takes a client message of the game's own, one that is not MSG_PETGAMEDATA.
+    /// </summary>
+    /// <param name="host">The session the game runs in.</param>
+    /// <param name="message">The message.</param>
+    void ReceiveMessage(IPetGameHost host, IMessage message) { }
 
 }

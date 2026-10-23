@@ -52,12 +52,20 @@ internal static class PetRules {
     private const int DEFAULT_MAXIMUM_HAPPINESS = 100;
     private const int DEFAULT_MEMBER_XP_MULTIPLIER = 2;
     private const int DEFAULT_GAME_ABORT_REFUND_PERCENT = 100;
+    private const int DEFAULT_DANCE_ROUNDS = 5;
+    private const int DEFAULT_DANCE_WIN_SCORE = 2;
 
     internal static int StartingHappiness { get; } = Math.Max(0, ConfigurationManager.GetValue("Pets.StartingHappiness", DEFAULT_STARTING_HAPPINESS));
     internal static int MaximumHappiness { get; } = Math.Max(1, ConfigurationManager.GetValue("Pets.MaximumHappiness", DEFAULT_MAXIMUM_HAPPINESS));
     internal static int MemberXpMultiplier { get; } = Math.Max(1, ConfigurationManager.GetValue("Pets.MemberXpMultiplier", DEFAULT_MEMBER_XP_MULTIPLIER));
 
     internal static int GameAbortRefundPercent { get; } = Math.Clamp(ConfigurationManager.GetValue("Pets.GameAbortRefundPercent", DEFAULT_GAME_ABORT_REFUND_PERCENT), 0, 100);
+
+    // todo: confirm the number of dance rounds against live.
+    internal static int DanceRounds { get; } = Math.Max(1, ConfigurationManager.GetValue("Pets.DanceRounds", DEFAULT_DANCE_ROUNDS));
+
+    // todo: confirm the dance score that counts as a win against live.
+    internal static int DanceWinScore { get; } = Math.Max(0, ConfigurationManager.GetValue("Pets.DanceWinScore", DEFAULT_DANCE_WIN_SCORE));
 
     /// <summary>
     /// Gets the factor applied to XP from a source, for a wizard who counts as a member.

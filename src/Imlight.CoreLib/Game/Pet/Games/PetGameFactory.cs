@@ -48,6 +48,9 @@ internal static class PetGameFactory {
     /// <param name="gameName">The game name as it appears in PetGames.xml.</param>
     /// <returns>The game, never null.</returns>
     internal static IPetGame Create(string gameName)
-        => new PetGameStub();
+        => gameName switch {
+            PetGameDance.GAME_NAME => new PetGameDance(),
+            _ => new PetGameStub(),
+        };
 
 }

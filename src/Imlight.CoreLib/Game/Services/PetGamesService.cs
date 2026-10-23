@@ -137,6 +137,15 @@ internal class PetGamesService(SessionActor sessionActor) : MessageService(sessi
         }
     }
 
+    [MessageHandler(typeof(PET_9_PROTOCOL.MSG_PETGAMEDANCE))]
+    private void ReceivePetGameDance(PET_9_PROTOCOL.MSG_PETGAMEDANCE message) {
+        if (_session is not { State: PetGameSessionState.Playing } session) {
+            return;
+        }
+
+        session.Game.ReceiveMessage(this, message);
+    }
+
     [MessageHandler(typeof(PET_9_PROTOCOL.MSG_PETGAMEENDING))]
     private void ReceivePetGameEnding(PET_9_PROTOCOL.MSG_PETGAMEENDING message) {
         if (_session is null || !_session.IsGame(message.Game)) {
