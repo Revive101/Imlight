@@ -245,13 +245,13 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     protected virtual void ReceiveRemovePlayer(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message) {
         if (_isLoading) {
             _pendingPlayerEvents.Remove(message.PlayerActor);
-            Sender.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYERRSP());
+            ReplyToRemovePlayer();
 
             return;
         }
 
         if (!_players.Contains(message.PlayerActor)) {
-            Sender.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYERRSP());
+            ReplyToRemovePlayer();
 
             return;
         }
@@ -262,6 +262,15 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         _pendingPlayerMoves.RemoveAll(move => move.PlayerActor.Equals(message.PlayerActor));
         ReleaseObjectIdentifier(message.MobileId);
         ScheduleIdleExpiryIfEmpty();
+        ReplyToRemovePlayer();
+    }
+
+    private void ReplyToRemovePlayer() {
+        // A zone transfer asks and waits for the removal; a disconnecting session tells it with no sender.
+        if (Sender.IsNobody()) {
+            return;
+        }
+
         Sender.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYERRSP());
     }
 

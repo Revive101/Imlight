@@ -26,7 +26,8 @@
  * USAGE EXAMPLE:
  * 
  * NOTE:
- * Supports multiple path traversal types (chain, loop, random).
+ * Supports multiple path traversal types (chain, loop, random). An entity whose path details never
+ * arrive stops moving and stays in place.
  * 
  * TODO:
  * 
@@ -348,8 +349,8 @@ internal sealed class PathMovementComponent(ZoneEntity entity) : ZoneEntityCompo
             _pathDetailsFailureCount++;
 
             if (_pathDetailsFailureCount > PATH_DETAILS_FAILURE_COUNT_MAXIMUM) {
-                Logger.Error(
-                    "Creature {0} in zone {1} tried moving but still has not received path details after {2} seconds.",
+                Logger.Warning(
+                    "Creature {0} in zone {1} has not received path details after {2} seconds, so it stays where it stands.",
                     Logger.Args(
                         Entity.ActiveGameObject.m_debugName,
                         Entity.Zone.ZoneName,
@@ -357,8 +358,11 @@ internal sealed class PathMovementComponent(ZoneEntity entity) : ZoneEntityCompo
                     )
                 );
 
-                Entity.DeleteObject();
-                
+                // An object placed in the zone rather than spawned by a path never gets path details. It keeps
+                // standing instead of being deleted, which also left its movement timers firing at a dead actor.
+                Stop();
+                Timers.CancelAll();
+
                 return false;
             }
 

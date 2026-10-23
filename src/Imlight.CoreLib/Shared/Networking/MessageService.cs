@@ -405,6 +405,9 @@ internal abstract class MessageService(SessionActor sessionActor) : ReceiveProto
     [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_DISPOSE))]
     public void ReceiveDispose(SERVICE_101_PROTOCOL.MSG_DISPOSE message) {
         OnDispose();
+
+        // The session waits for this before it stops, so a stop never drops a service's dispose.
+        Sender.Tell(message);
     }
 
     #endregion

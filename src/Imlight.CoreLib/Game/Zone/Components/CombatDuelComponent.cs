@@ -241,17 +241,15 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         Message = message
     });
 
-    internal void DuelBroadcast(IMessage message)
-        => EnactActionOnSubCircles(circle => circle.ParticipantActor.Tell(message));
-
     internal void CreatureBroadcast(IMessage message) => EnactActionOnSubCircles(circle => {
         if (circle.OccupiedTeam == CombatTeam.Monster) {
             circle.ParticipantActor.Tell(message);
         }
     });
 
+    // Client packets go to the players only: creatures and summoned minions are server entities that read none.
     internal new void PlayerBroadcast(IMessage message) => EnactActionOnSubCircles(circle => {
-        if (circle.OccupiedTeam == CombatTeam.Player) {
+        if (circle.OccupiedTeam == CombatTeam.Player && !circle.IsSummonedMinion) {
             circle.ParticipantActor.Tell(message);
         }
     });
@@ -944,7 +942,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
             Data = phase == 1 ? upFirstData : "",
         };
 
-        DuelBroadcast(msg);
+        PlayerBroadcast(msg);
     }
 
     private void SendUpFirst(int roundNum) {
@@ -996,7 +994,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
             StatsData = buffer,
         };
 
-        DuelBroadcast(msg);
+        PlayerBroadcast(msg);
     });
 
     private void SendCombatHand() {
