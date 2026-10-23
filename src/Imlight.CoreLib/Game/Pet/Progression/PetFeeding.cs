@@ -36,11 +36,13 @@
  *
  * Created by: Jay
  * Version: KALI 1.0
- * Last Updated: 10/14/2026
+ * Last Updated: 10/23/2026
  */
 
 using System.Linq;
 using System;
+using Imcodec.MessageLayer;
+using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
 using Imlight.CoreLib.Game.Pet.Config;
@@ -102,6 +104,33 @@ internal static class PetFeeding {
         wizard.SavePet(pet);
 
         return new PetFeedResult(left, count);
+    }
+
+    /// <summary>
+    /// Creates the message that shows the client what a feed took from the snack bag.
+    /// </summary>
+    /// <param name="wizard">The owner.</param>
+    /// <param name="result">The feed.</param>
+    /// <param name="update">The new quantity of the stack, or its removal once the last snack went.</param>
+    /// <returns>False if the pet ate nothing.</returns>
+    internal static bool TryCreateSnackBagUpdate(Wizard wizard, PetFeedResult result, out IMessage update) {
+        update = null;
+        if (!result.Fed) {
+            return false;
+        }
+
+        update = result.Snack.m_quantity > 0
+            ? new PET_9_PROTOCOL.MSG_PETSNACKUPDATE {
+                GlobalID = wizard.GameObjectID,
+                ItemID = result.Snack.m_globalID,
+                Quantity = result.Snack.m_quantity
+            }
+            : new PET_9_PROTOCOL.MSG_PETSNACKREMOVE {
+                GlobalID = wizard.GameObjectID,
+                ItemID = result.Snack.m_globalID
+            };
+
+        return true;
     }
 
 }

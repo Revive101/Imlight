@@ -50,6 +50,7 @@ using Imlight.Common;
 using PetGameConfig = Imlight.CoreLib.Game.Pet.Config.PetGameConfig;
 using Imlight.CoreLib.Game.WizBang;
 using Imlight.CoreLib.Game.Zone.Core;
+using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
@@ -97,7 +98,8 @@ internal sealed class InteractPetGameKioskComponent(ZoneEntity entity)
         ];
 
     public void OnServiceInteraction(IActorRef playerActor, Wizard playerCharacter, CoreObject playerObject, uint serviceOptionIndex) {
-        if (playerCharacter.GetEquippedPetItem() is null) {
+        var pet = playerCharacter.GetEquippedPetItem();
+        if (pet is null) {
             playerActor.Tell(new GAME_5_PROTOCOL.MSG_CLIENTNOTIFYTEXT {
                 NotifyText = NO_EQUIPPED_PET_TEXT,
                 Type = NO_EQUIPPED_PET_NOTIFY_TYPE
@@ -109,8 +111,7 @@ internal sealed class InteractPetGameKioskComponent(ZoneEntity entity)
         playerActor.Tell(new WIZARD_12_PROTOCOL.MSG_PETGAMEKIOSK {
             GlobalID = Entity.ActiveGameObject.m_globalID.Full,
             GameInfo = SerializeGame(_game),
-            // todo: the wins of the equipped pet, once they are stored per pet.
-            GamesWon = 0
+            GamesWon = _game is null ? 0 : WizardPetCollection.GetGamesWon(playerCharacter.CharId, pet.m_globalID.Full, _game.m_name.ToString())
         });
     }
 

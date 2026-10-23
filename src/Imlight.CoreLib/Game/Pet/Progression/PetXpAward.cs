@@ -33,9 +33,10 @@
  *
  * Created by: Jay
  * Version: KALI 1.0
- * Last Updated: 10/14/2026
+ * Last Updated: 10/23/2026
  */
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
@@ -72,20 +73,13 @@ internal static class PetXpAward {
         }
 
         wizard.SavePet(pet);
-
-        foreach (var message in CreateMessages(pet, result)) {
-            session.Tell(message, null);
-        }
-
-        foreach (var levelUp in result.LevelUps) {
-            PetLevelLoot.Grant(session, playerObj, wizard, pet, levelUp.Level);
-        }
+        SendProgress(session, playerObj, wizard, pet, result);
 
         return result;
     }
 
     /// <summary>
-    /// Applies a set of stat changes to a pet, then gives it the XP those points are worth: 
+    /// Applies a set of stat changes to a pet, then gives it the XP those points are worth plus any extra XP:
     /// the stats are saved and sent even if the pet cannot gain XP.
     /// </summary>
     /// <param name="session">The owner's session, which receives the messages.</param>
@@ -94,21 +88,32 @@ internal static class PetXpAward {
     /// <param name="pet">The pet item.</param>
     /// <param name="mods">The stat changes. The set itself is left as it is.</param>
     /// <param name="source">Where the points come from, which decides the XP bonus.</param>
+    /// <param name="extraXp">XP on top of the points, such as a game score's, before any bonus for the source.</param>
+    /// <param name="createSummary">Builds the message the client gets before the pet's new state, such as a game's
+    /// end screen. May be null.</param>
     /// <returns>The stat result, whose Mods copy is what a game result sends, and the XP result.</returns>
     internal static (PetStatModResult Stats, PetXpResult Xp) GiveStatMods(IActorRef session,
                                                                           CoreObject playerObj,
                                                                           Wizard wizard,
                                                                           WizClientObjectItem pet,
                                                                           PetStatModificationSet mods,
-                                                                          PetXpSource source) {
+                                                                          PetXpSource source,
+                                                                          uint extraXp = 0,
+                                                                          Func<PetStatModResult, PetXpResult, IMessage> createSummary = null) {
         var stats = PetProgression.ApplyStatMods(pet, mods);
-        var xp = Give(session, playerObj, wizard, pet, stats.Xp, source);
-        if (stats.Applied > 0 && !xp.Applied) {
+        var xp = PetProgression.AddXp(pet, (uint) Math.Min((ulong) stats.Xp + extraXp, uint.MaxValue), source);
+        if (stats.Applied > 0 || xp.Applied) {
             wizard.SavePet(pet);
+        }
 
-            if (PetBehaviorUpdate.TryCreate(pet, out var update)) {
-                session.Tell(update, null);
-            }
+        if (createSummary is not null) {
+            session.Tell(createSummary(stats, xp), null);
+        }
+
+        if (xp.Applied) {
+            SendProgress(session, playerObj, wizard, pet, xp);
+        } else if (stats.Applied > 0 && PetBehaviorUpdate.TryCreate(pet, out var update)) {
+            session.Tell(update, null);
         }
 
         return (stats, xp);
@@ -142,6 +147,16 @@ internal static class PetXpAward {
         messages.Add(new WIZARD2_53_PROTOCOL.MSG_GAINPETXP { PetGID = pet.m_globalID, XP = result.Granted });
 
         return messages;
+    }
+
+    private static void SendProgress(IActorRef session, CoreObject playerObj, Wizard wizard, WizClientObjectItem pet, PetXpResult result) {
+        foreach (var message in CreateMessages(pet, result)) {
+            session.Tell(message, null);
+        }
+
+        foreach (var levelUp in result.LevelUps) {
+            PetLevelLoot.Grant(session, playerObj, wizard, pet, levelUp.Level);
+        }
     }
 
 }

@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/22/2026
+ * Last Updated: 10/23/2026
  */
 
 using System;
@@ -174,17 +174,8 @@ internal class PetService(SessionActor sessionActor) : MessageService(sessionAct
         }
 
         var result = PetFeeding.Feed(wizard, pet, message.SnackTemplateID, message.FeedStack != 0);
-        if (result.Fed && result.Snack.m_quantity > 0) {
-            SendToSocket(new PET_9_PROTOCOL.MSG_PETSNACKUPDATE {
-                GlobalID = wizard.GameObjectID,
-                ItemID = result.Snack.m_globalID,
-                Quantity = result.Snack.m_quantity
-            });
-        } else if (result.Fed) {
-            SendToSocket(new PET_9_PROTOCOL.MSG_PETSNACKREMOVE {
-                GlobalID = wizard.GameObjectID,
-                ItemID = result.Snack.m_globalID
-            });
+        if (PetFeeding.TryCreateSnackBagUpdate(wizard, result, out var bagUpdate)) {
+            SendToSocket(bagUpdate);
         }
 
         // The client takes this as the pet's happiness, so a refused feed answers with it unchanged.
