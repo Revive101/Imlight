@@ -116,8 +116,16 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
 
         foreach (var qInstance in wizard.QuestBehavior.CurrentQuestInstances) {
             var qTemplate = QuestTemplateCollection.GetQuestByName(qInstance.QuestName);
+            if (qTemplate is null) {
+                Logger.Warning("Quest '{0}' held by {1} has no template; skipping it.",
+                    Logger.Args(qInstance.QuestName, wizard.CharId));
 
-            SendQuestResumeMessage(qTemplate, qInstance);
+                continue;
+            }
+
+            if (IsVisibleToClient(qTemplate)) {
+                SendQuestResumeMessage(qTemplate, qInstance);
+            }
 
             // Cache the quest template so we can reference it later if needed.
             if (!_cachedQuestTemplates.Contains(qTemplate)) {
@@ -713,7 +721,9 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
                 return;
             }
 
-            SendToSocket(new QUEST_MESSAGES_52_PROTOCOL.MSG_REMOVEQUEST { QuestID = questId });
+            if (IsVisibleToClient(qInstance.QuestName)) {
+                SendToSocket(new QUEST_MESSAGES_52_PROTOCOL.MSG_REMOVEQUEST { QuestID = questId });
+            }
         }
 
         var cleared = wizard.QuestBehavior.RemoveAllQuestRegistryEntries(registryName);
@@ -821,6 +831,15 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         }
     }
 
+    private static bool IsVisibleToClient(QuestTemplate qTemplate)
+        => !string.IsNullOrEmpty(qTemplate.m_questTitle);
+
+    private static bool IsVisibleToClient(string questName) {
+        var qTemplate = QuestTemplateCollection.GetQuestByName(questName);
+
+        return qTemplate is not null && IsVisibleToClient(qTemplate);
+    }
+
     private void SendQuestStartingMessage(QuestTemplate qTemplate, QuestInstance questInstance) {
         var qMadLibs = QuestMadlibs.GetMadLibForQuest(qTemplate);
         if (!_goalSerializer.Serialize(qMadLibs, 1, out var madLibData)) {
@@ -867,7 +886,10 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             ActivityType = 0, // ?
         };
 
-        SendToSocket(qSendMsg);
+        if (IsVisibleToClient(qTemplate)) {
+            SendToSocket(qSendMsg);
+        }
+
         ShowQuestStartDialogue(qTemplate);
 
         // Send the quest starting goals now.
@@ -1118,7 +1140,10 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             return;
         }
 
-        SendCompleteGoal(questInstance.ID, gInstance.ID);
+        if (IsVisibleToClient(questInstance.QuestName)) {
+            SendCompleteGoal(questInstance.ID, gInstance.ID);
+        }
+
         if (completion != GoalCompletion.CatchUp) {
             if (showCompletionDialogue) {
                 ShowGoalCompletionDialogue(goalTemplate, questInstance.ID, gInstance.ID);
@@ -1199,7 +1224,9 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
 
         TellOtherServices(new CHARACTER_103_PROTOCOL.MSG_BADGEEVENT { Kind = BadgeEventKind.Recheck });
 
-        SendCompleteQuest(questInstance.ID);
+        if (IsVisibleToClient(questInstance.QuestName)) {
+            SendCompleteQuest(questInstance.ID);
+        }
 
         var qTemplate = _cachedQuestTemplates.FirstOrDefault(q => q.m_questName == questInstance.QuestName);
         if (qTemplate == null) {
@@ -1241,6 +1268,10 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
     }
 
     private void SendGoalMessage(GoalTemplate gTemplate, QuestInstance qInstance, byte sendType = 0, bool forceSendDestZone = true) {
+        if (!IsVisibleToClient(qInstance.QuestName)) {
+            return;
+        }
+
         var gInstance = qInstance.GoalProgress
             .FirstOrDefault(g => g.GoalName == gTemplate.m_goalName);
         if (gInstance == null) {
@@ -1814,6 +1845,10 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             .ToList();
         if (!wizard.RemoveQuest(questName)) {
             return false;
+        }
+
+        if (!IsVisibleToClient(questName)) {
+            return true;
         }
 
         foreach (var questId in questIds) {
