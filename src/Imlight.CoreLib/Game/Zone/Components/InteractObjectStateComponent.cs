@@ -36,11 +36,13 @@
  * use applies the option that fits the current state (see ChooseOption), so two- and four-state objects step
  * through their states. Options whose results show dialog make a readable object (a book) attach too.
  * A chest whose option runs a minigame result attaches too: ResMinigameHandler starts the game.
+ * A wooden treasure chest never attaches: WoodenChestComponent owns it, and a second press-X entry would
+ * make the client show the service menu instead of opening the chest.
  *
  * TODO:
  *
  * Version: KALI 1.0
- * Last Updated: 10/14/2026
+ * Last Updated: 10/23/2026
  */
 
 using System;
@@ -74,7 +76,9 @@ internal sealed class InteractObjectStateComponent(ZoneEntity entity)
         : (Entity.Template as GameObjectTemplate)?.m_objectName.ToString();
 
     public static bool ShouldAttachToEntity(CoreTemplate template)
-        => template is GameObjectTemplate go && GetStateOptions(go).Any(ChangesWorld);
+        => template is GameObjectTemplate go
+            && !WoodenChestComponent.IsTreasureChest(go)
+            && GetStateOptions(go).Any(ChangesWorld);
 
     public IEnumerable<ServiceOptionBase> GetServiceOptions(Wizard playerCharacter)
         => GetOfferedOptions(playerCharacter).Any()

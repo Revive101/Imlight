@@ -26,12 +26,15 @@
  * USAGE EXAMPLE:
  * 
  * NOTE:
+ * The chest offers exactly one option, and InteractObjectStateComponent stays off these templates even though
+ * their interact option names the Open state: with one option the client opens the chest at once, with two it
+ * shows the service menu.
  * 
  * TODO:
  * 
  * Created by: Phill
  * Version: KALI 1.0
- * Last Updated: 10/09/2025
+ * Last Updated: 10/23/2026
  */
 
 using System;
@@ -73,9 +76,15 @@ internal sealed class WoodenChestComponent(ZoneEntity entity) : ZoneEntityCompon
 
     private bool _hasInteracted = false;
 
-    public static bool ShouldAttachToEntity(CoreTemplate template) =>
-        template is GameObjectTemplate goTemplate
-        && s_treasureChestTemplateIDs.Contains(goTemplate.m_templateID);
+    public static bool ShouldAttachToEntity(CoreTemplate template)
+        => template is GameObjectTemplate goTemplate && IsTreasureChest(goTemplate);
+
+    /// <summary>
+    /// True for the wooden treasure chest templates this component owns. The client opens an object at once only
+    /// when it offers exactly one option, so no other press-X component may attach to these.
+    /// </summary>
+    internal static bool IsTreasureChest(GameObjectTemplate template)
+        => s_treasureChestTemplateIDs.Contains(template.m_templateID);
 
     public IEnumerable<ServiceOptionBase> GetServiceOptions(Wizard _)
         => [new InteractableOption { m_serviceName = ServiceName }];
