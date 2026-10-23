@@ -112,7 +112,7 @@ internal abstract class MessageService(SessionActor sessionActor) : ReceiveProto
     /// </summary>
     protected void ZoneBroadcast(IMessage originalMessage,
                                  bool isSelfless = true,
-                                 ZoneBroadcastTarget targets = ZoneBroadcastTarget.All) {
+                                 ZoneBroadcastTarget targets = ZoneBroadcastTarget.Players) {
         if (SessionActor is null) {
             throw new ActorKilledException($"{GetType()} attempted to send message to undefined SessionActor.");
         }

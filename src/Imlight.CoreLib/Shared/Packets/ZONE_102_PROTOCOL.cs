@@ -414,7 +414,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         /// <summary>
         /// Which supervisors the zone should forward this message to.
         /// </summary>
-        public ZoneBroadcastTarget Targets = ZoneBroadcastTarget.All;
+        public ZoneBroadcastTarget Targets = ZoneBroadcastTarget.Players;
 
     }
 

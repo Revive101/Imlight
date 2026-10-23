@@ -141,6 +141,7 @@ public class ZoneEntity(
         var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
             Message = despawnMsg,
             Sender = SelfRef,
+            Targets = ZoneBroadcastTarget.Players | ZoneBroadcastTarget.Paths,
         };
         ZoneRef.Tell(broadcastMsg);
 

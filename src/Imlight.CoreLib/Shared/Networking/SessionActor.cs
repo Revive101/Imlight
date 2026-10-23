@@ -297,8 +297,6 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
         SendPreDisposeToServices();
         SendDisposeToServices();
 
-        Sender.Tell("DoneDisposing");
-
         if (waitForClientClose) {
             // The client closes its end after the logout echo. The timer only covers a client that never does.
             Logger.Debug("SessionActor {Id} waiting up to {Seconds}s for the client to close.",
