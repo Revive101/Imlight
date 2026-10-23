@@ -95,6 +95,12 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
         // Trigger requirements on an object's state ("Snake obelisk is Idle_On") start from the state it is placed in.
         Entity.Zone.ScriptState.SeedObjectDefault(Entity.Info?.m_zoneTag, Entity.Info?.m_startState);
 
+        // A path creature hears each player's join right after loading and sends itself to them there;
+        // broadcasting it here as well gives every client the object twice.
+        if (Entity.PlayersJoinAfterLoad) {
+            return;
+        }
+
         CreateObjectForAllPlayers();
     }
 

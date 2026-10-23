@@ -86,6 +86,11 @@ public class ZoneEntity(
     public virtual bool IsCombatOnlyMinion => false;
     public IActorRef ZoneRef { get; protected set; } = zoneRef;
     public bool NoTransfer { get; set; } = false;
+
+    /// <summary>
+    /// Gets whether every player in the zone is sent to this entity as a join once it has loaded.
+    /// </summary>
+    public bool PlayersJoinAfterLoad { get; private set; }
     public ushort MobileID { 
         get => ActiveGameObject.m_nMobileID; 
         private set => ActiveGameObject.m_nMobileID = value; 
@@ -254,8 +259,9 @@ public class ZoneEntity(
     #region Message Handlers
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN))]
-    protected virtual void ReceiveObjectLoadBegin() {
+    protected virtual void ReceiveObjectLoadBegin(ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN message) {
         this.SelfRef = Self;
+        PlayersJoinAfterLoad = message.PlayersJoinAfterLoad;
 
         if (ActiveGameObject is not null) {
             MobileID = ReserveMobileId();

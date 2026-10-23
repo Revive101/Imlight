@@ -179,6 +179,12 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte MessageOrder { get; } = 5;
         public byte ServiceID { get; } = 102;
 
+        /// <summary>
+        /// True when the sender tells the entity about every player in the zone once it has loaded, so the
+        /// entity introduces itself to each of them then instead of broadcasting its spawn.
+        /// </summary>
+        public bool PlayersJoinAfterLoad;
+
     }
 
     /// <summary>

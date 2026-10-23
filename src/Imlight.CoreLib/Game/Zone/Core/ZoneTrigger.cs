@@ -69,8 +69,8 @@ public sealed class ZoneTrigger(IActorRef zoneRef, Zone zone, Trigger trigger)
 
     // Unsure why this override is required, but it fails without it present.
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN))]
-    protected override void ReceiveObjectLoadBegin() 
-        => base.ReceiveObjectLoadBegin();
+    protected override void ReceiveObjectLoadBegin(ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN message)
+        => base.ReceiveObjectLoadBegin(message);
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_POSTEVENT))]
     private void ReceivePostEvent(ZONE_102_PROTOCOL.MSG_POSTEVENT message) {
