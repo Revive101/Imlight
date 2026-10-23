@@ -153,6 +153,8 @@ public class ZoneEntity(
     /// Despawns this entity from the zone, without destroying it.
     /// </summary>
     public void DespawnObject() {
+        GetComponentOfType<PathMovementComponent>()?.Stop();
+
         var removeMsg = new GAME_5_PROTOCOL.MSG_REMOVEOBJECT {
             GameObjectID = ActiveGameObject.m_globalID
         };

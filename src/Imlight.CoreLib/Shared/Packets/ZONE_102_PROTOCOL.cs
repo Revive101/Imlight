@@ -1348,4 +1348,15 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
 
     }
 
+    /// <summary>
+    /// Called by a <see cref="PathMovementComponent"/> to itself while a creature travels between nodes, to send
+    /// its interpolated position.
+    /// </summary>
+    public sealed class MSG_CREATURETRAVELUPDATEINTERVAL : IServerMessage {
+
+        public byte MessageOrder { get; } = 95;
+        public byte ServiceID { get; } = 102;
+
+    }
+
 }
