@@ -91,6 +91,9 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     private const string PREPLANNING_TIME_KEY = "PrePlanningPhase";
     private const string RESOUTION_TIME_KEY = "ResolutionPhase";
     private const double MINION_SUMMON_ANIMATION_DELAY = 5.5;
+    private const int TEAM_SLOT_COUNT = 4;
+    private const int DEFAULT_BASE_ENEMY_COUNT = 2;
+    private const int ONE_ENEMY_PER_PLAYER_MARKER = -1;
     private const string GroupJoinPromptKey = "GUI_GotoFriendQuestion";
 
     public bool NoTransfer { get; set; } = false;
@@ -1501,20 +1504,23 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     });
 
     private bool IsSlotAvailable(CombatTeam team) {
-        var IsNewbieZone = _combatSigilObjectInfo is { m_unknown_uint_4: not 0 };
-        var IsDangerousZone = false;
+        if (team == CombatTeam.Player) {
+            return PlayerCount < TEAM_SLOT_COUNT;
+        }
 
-        // Newbie sigils (marked in the sigil info) can only have 1 creature as a base.
-        // Dangerous zones (like Sunken City) can have 3 creatures as a base.
-        // Every player in the duel also allocates 1 more creature slot.
-        var baseCreatureCount = IsNewbieZone ? 1 : IsDangerousZone ? 3 : 2;
-        var maxCreatures = baseCreatureCount + (PlayerCount - 1);
+        // Every player past the first lets one more enemy join.
+        var maxCreatures = GetBaseEnemyCount() + PlayerCount - 1;
 
-        var slotAvailable = (team == CombatTeam.Player)
-            ? PlayerCount < 4
-            : CreatureCount < 4 && (CreatureCount < maxCreatures);
+        return CreatureCount < TEAM_SLOT_COUNT && CreatureCount < maxCreatures;
+    }
 
-        return slotAvailable;
+    private int GetBaseEnemyCount() {
+        var baseEnemyCount = _combatSigilObjectInfo?.m_baseEnemyCount ?? 0;
+        if (baseEnemyCount == ONE_ENEMY_PER_PLAYER_MARKER) {
+            return 1;
+        }
+
+        return baseEnemyCount > 0 ? baseEnemyCount : DEFAULT_BASE_ENEMY_COUNT;
     }
 
     private void ResendMinionMoveSelections() {
