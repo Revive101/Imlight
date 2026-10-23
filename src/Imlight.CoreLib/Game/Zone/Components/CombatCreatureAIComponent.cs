@@ -233,7 +233,7 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
 
         // A minion has no world to return to: remove and delete now, no death-animation timer.
         if (_currentSubCircle?.IsSummonedMinion == true) {
-            _currentDuelComponent.DuelBroadcast(new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATREMOVE {
+            _currentDuelComponent.ZoneBroadcast(new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATREMOVE {
                 DuelID = _currentDuelComponent.SigilId,
                 ParticipantID = _currentSubCircle.ParticipantObject.m_globalID
             });
@@ -247,7 +247,7 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
         }
 
         // I have died. Remove myself from the current duel.
-        _currentDuelComponent.DuelBroadcast(new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATREMOVE {
+        _currentDuelComponent.ZoneBroadcast(new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATREMOVE {
             DuelID = _currentDuelComponent.SigilId,
             ParticipantID = _currentSubCircle.ParticipantObject.m_globalID
         });
