@@ -64,6 +64,7 @@ public static class SpiralDB {
     private static ConcurrentDictionary<string, WizardZoneData> s_zoneData
         = new(StringComparer.OrdinalIgnoreCase);
     private static ConcurrentDictionary<ulong, NpcTreasureCardInventory> s_treasureCardInventories = new();
+    private static ConcurrentDictionary<ulong, NpcSeamstress> s_npcSeamstresses = new();
     private static ConcurrentDictionary<uint, BadgeDefinition> s_badgeDefinitions = new();
 
     public static IReadOnlyDictionary<string, CreatureSpellbook> CreatureSpellbooks => s_creatureSpellbooks;
@@ -75,6 +76,7 @@ public static class SpiralDB {
     public static IReadOnlyList<QuestTemplate> QuestTemplates => s_questTemplates;
     public static IReadOnlyDictionary<string, WizardZoneData> ZoneData => s_zoneData;
     public static IReadOnlyDictionary<ulong, NpcTreasureCardInventory> TreasureCardInventories => s_treasureCardInventories;
+    public static IReadOnlyDictionary<ulong, NpcSeamstress> NpcSeamstresses => s_npcSeamstresses;
     public static IReadOnlyDictionary<uint, BadgeDefinition> BadgeDefinitions => s_badgeDefinitions;
 
     /// <summary>
@@ -143,6 +145,7 @@ public static class SpiralDB {
             var questTemplatesByName = new ConcurrentDictionary<string, QuestTemplate>(StringComparer.OrdinalIgnoreCase);
             var zoneData = new ConcurrentDictionary<string, WizardZoneData>(StringComparer.OrdinalIgnoreCase);
             var treasureCardInventories = new ConcurrentDictionary<ulong, NpcTreasureCardInventory>();
+            var npcSeamstresses = new ConcurrentDictionary<ulong, NpcSeamstress>();
             var badgeDefinitions = new ConcurrentDictionary<uint, BadgeDefinition>();
 
             var filesLoaded = 0;
@@ -155,6 +158,7 @@ public static class SpiralDB {
                 () => Interlocked.Add(ref filesLoaded, LoadNpcSpellInventories(basePath, npcSpellInventories)),
                 () => Interlocked.Add(ref filesLoaded, LoadNpcDropTables(basePath, npcDropTables)),
                 () => Interlocked.Add(ref filesLoaded, LoadTreasureCardInventories(basePath, treasureCardInventories)),
+                () => Interlocked.Add(ref filesLoaded, LoadNpcSeamstresses(basePath, npcSeamstresses)),
                 () => Interlocked.Add(ref filesLoaded, LoadQuestTemplates(basePath, questTemplatesBag, questTemplatesByName)),
                 () => Interlocked.Add(ref filesLoaded, LoadZoneData(basePath, zoneData)),
                 () => Interlocked.Add(ref filesLoaded, LoadBadgeDefinitions(basePath, badgeDefinitions))
@@ -171,12 +175,13 @@ public static class SpiralDB {
             s_questTemplatesByName = questTemplatesByName;
             s_zoneData = zoneData;
             s_treasureCardInventories = treasureCardInventories;
+            s_npcSeamstresses = npcSeamstresses;
             s_badgeDefinitions = badgeDefinitions;
 
             Logger.Information(
                 "SpiralDB loaded {0} files: {1} spellbooks, {2} drop tables, {3} NPC inventories, " +
                 "{4} NPC spell inventories, {5} NPC drop tables, {6} treasure card inventories, " +
-                "{7} quest templates, {8} zone data entries, {9} badge definitions.",
+                "{7} quest templates, {8} zone data entries, {9} seamstress NPCs, {10} badge definitions.",
                 Logger.Args(
                     filesLoaded,
                     s_creatureSpellbooks.Count,
@@ -187,6 +192,7 @@ public static class SpiralDB {
                     s_treasureCardInventories.Count,
                     s_questTemplates.Count,
                     s_zoneData.Count,
+                    s_npcSeamstresses.Count,
                     s_badgeDefinitions.Count));
         }
         catch (Exception ex) {
@@ -200,6 +206,7 @@ public static class SpiralDB {
                 s_npcSpellInventories.Clear();
                 s_npcDropTables.Clear();
                 s_treasureCardInventories.Clear();
+                s_npcSeamstresses.Clear();
                 s_questTemplates.Clear();
                 s_questTemplatesByName.Clear();
                 s_zoneData.Clear();
@@ -312,6 +319,9 @@ public static class SpiralDB {
 
     public static bool TryGetTreasureCardInventory(ulong templateID, out NpcTreasureCardInventory inventory)
         => s_treasureCardInventories.TryGetValue(templateID, out inventory);
+
+    public static bool TryGetNpcSeamstress(ulong templateID, out NpcSeamstress npcSeamstress)
+        => s_npcSeamstresses.TryGetValue(templateID, out npcSeamstress);
 
     public static bool TryGetBadgeDefinition(uint badgeId, out BadgeDefinition badgeDefinition)
         => s_badgeDefinitions.TryGetValue(badgeId, out badgeDefinition);
@@ -500,6 +510,31 @@ public static class SpiralDB {
                 }
             } catch (Exception e) {
                 Logger.Warning("Failed to load treasure card inventory {0}: {1}",
+                    Logger.Args(Path.GetFileName(file), e.Message));
+            }
+        });
+
+        return count;
+    }
+
+    private static int LoadNpcSeamstresses(string basePath, ConcurrentDictionary<ulong, NpcSeamstress> target) {
+        var dir = Path.Combine(basePath, "NpcSeamstress");
+        if (!Directory.Exists(dir)) {
+            return 0;
+        }
+        var files = Directory.GetFiles(dir, "*.json");
+        var count = 0;
+
+        Parallel.ForEach(files, file => {
+            try {
+                using var stream = File.OpenRead(file);
+                var seamstress = JsonSerializer.Deserialize<NpcSeamstress>(stream, s_jsonOptions);
+                if (seamstress != null) {
+                    target[seamstress.TemplateID] = seamstress;
+                    Interlocked.Increment(ref count);
+                }
+            } catch (Exception e) {
+                Logger.Warning("Failed to load NPC seamstress {0}: {1}",
                     Logger.Args(Path.GetFileName(file), e.Message));
             }
         });

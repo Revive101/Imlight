@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Operations;
+using Raven.Client.Documents.Session;
 using Imlight.Common;
 using Imlight.CoreLib.Game.Pet;
 using Imlight.CoreLib.Shared.Resources;
@@ -162,6 +163,39 @@ public static class WizardItemCollection {
             $"update {{ this.{nameof(Wizard.InventoryBehavior.InventoryItemIds)}.Remove('{itemId}'); }}");
 
         session.SaveChanges();
+
+        return true;
+    }
+
+    /// <summary>
+    /// Stores a new item through a session the caller saves, so the item commits together with the caller's
+    /// other changes. Unlike <see cref="AddItem"/> it does not touch the character document.
+    /// </summary>
+    /// <param name="session">The open session of the caller.</param>
+    /// <param name="item">The item to store.</param>
+    internal static void StoreInSession(IDocumentSession session, WizClientObjectItem item) {
+        session.Store(item);
+        var metadata = session.Advanced.GetMetadataFor(item);
+        metadata[Raven.Client.Constants.Documents.Metadata.Collection] = CollectionName;
+    }
+
+    /// <summary>
+    /// Deletes a stored item through a session the caller saves, so the deletion commits together with the
+    /// caller's other changes. Unlike <see cref="RemoveItem(ulong, ulong)"/> it does not touch the character document.
+    /// </summary>
+    /// <param name="session">The open session of the caller.</param>
+    /// <param name="charId">The ID of the player.</param>
+    /// <param name="itemId">The ID of the item to delete.</param>
+    /// <returns>True if the stored item was found and marked for deletion, false otherwise.</returns>
+    internal static bool DeleteInSession(IDocumentSession session, ulong charId, ulong itemId) {
+        var storedItem = session.Query<WizClientObjectItem>(collectionName: CollectionName)
+            .Customize(query => query.WaitForNonStaleResults())
+            .FirstOrDefault(x => x.m_characterId == charId && x.m_globalID == itemId);
+        if (storedItem is null) {
+            return false;
+        }
+
+        session.Delete(storedItem);
 
         return true;
     }
