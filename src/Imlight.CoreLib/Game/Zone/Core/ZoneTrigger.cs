@@ -53,7 +53,6 @@ using Imlight.CoreLib.Game.Results;
 using Imlight.CoreLib.Game.Results.Contexts;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
-using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Zone.Core;
 
@@ -67,15 +66,14 @@ public sealed class ZoneTrigger(IActorRef zoneRef, Zone zone, Trigger trigger)
     : ZoneEntity(null, null, null, zoneRef, zone) {
 
     private const double MIN_PACED_WAIT_SECONDS = 1;
-    private const float QUERY_WIZARD_TIMEOUT_SECONDS = 5.0f;
 
     public Trigger TriggerData { get; init; } = trigger;
-    private readonly Dictionary<IActorRef, DateTime> _cooldowns = [];
+    private readonly Dictionary<ulong, DateTime> _cooldowns = [];
 
     // Unsure why this override is required, but it fails without it present.
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN))]
-    protected override void ReceiveObjectLoadBegin() 
-        => base.ReceiveObjectLoadBegin();
+    protected override void ReceiveObjectLoadBegin(ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN message)
+        => base.ReceiveObjectLoadBegin(message);
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_POSTEVENT))]
     private void ReceivePostEvent(ZONE_102_PROTOCOL.MSG_POSTEVENT message) {
@@ -84,23 +82,28 @@ public sealed class ZoneTrigger(IActorRef zoneRef, Zone zone, Trigger trigger)
             return;
         }
 
+        var needsRequirements = !message.RequirementsChecked
+            && TriggerData.m_requirements?.m_requirements is { Count: > 0 };
+
+        // Ask for the wizard without blocking; the event comes back with it attached.
+        if (needsRequirements && !PostEventWizardQuery.TryResolve(Self, Sender, message)) {
+            return;
+        }
+
         // Early-out for per-player cooldowns.
-        if (TriggerData.m_cooldown > 0 && !CooldownCheck(message.PlayerActor)) {
+        if (TriggerData.m_cooldown > 0 && !CooldownCheck(message.PlayerGameObject)) {
             return;
         }
 
         // Evaluate requirements when present.
-        if (!message.RequirementsChecked
-            && TriggerData.m_requirements is not null
-            && TriggerData.m_requirements.m_requirements is not null
-            && TriggerData.m_requirements.m_requirements.Count > 0) {
+        if (needsRequirements) {
             var requirementsMet = RequirementDispatcher.EvaluateRequirements(
                 requirements: TriggerData.m_requirements,
                 context: new ZoneRequirementContext(
                     TriggerData.m_requirements,
                     message.PlayerActor,
                     message.PlayerGameObject,
-                    QueryWizard(message.PlayerActor),
+                    message.PlayerWizard,
                     ZoneRef,
                     TriggerData.m_triggerName
                 ) {
@@ -126,7 +129,7 @@ public sealed class ZoneTrigger(IActorRef zoneRef, Zone zone, Trigger trigger)
         results = WithoutNonLoopSelfPosts(results, TriggerData);
 
         ResultDispatcher.ExecuteResults(Context, results, message.PlayerActor, message.PlayerGameObject,
-                                       Sender, ZoneRef, triggerName: TriggerData.m_triggerName,
+                                       zoneActor: ZoneRef, triggerName: TriggerData.m_triggerName,
                                        scriptState: Zone.ScriptState, playerSpawned: message.PlayerSpawned);
     }
 
@@ -153,7 +156,7 @@ public sealed class ZoneTrigger(IActorRef zoneRef, Zone zone, Trigger trigger)
                 paced = true;
             }
 
-            if (!(paced && isLoop) && result is ResPostEvent post && fireEvents.Any(x => x == post.m_eventName)) {
+            if (!(paced && isLoop) && IsSelfPost(result, trigger)) {
                 continue;
             }
 
@@ -173,42 +176,26 @@ public sealed class ZoneTrigger(IActorRef zoneRef, Zone zone, Trigger trigger)
         return canStop || changesSomething;
     }
 
-    internal static Wizard QueryWizard(IActorRef playerActor) {
-        // A loop outlives its player, and an Ask with no timeout never returns for a stopped actor.
-        if (playerActor is null || playerActor is IInternalActorRef { IsTerminated: true }) {
-            return null;
-        }
-
-        try {
-            return playerActor
-                .Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD(),
-                    TimeSpan.FromSeconds(QUERY_WIZARD_TIMEOUT_SECONDS)).Result?.Wizard;
-        }
-        catch (Exception ex) {
-            Logger.Warning("Could not query the wizard of a trigger event's player: {Error}", Logger.Args(ex.Message));
-
-            return null;
-        }
-    }
+    private static bool IsSelfPost(Result result, Trigger trigger)
+        => result switch {
+            ResPostEvent post => trigger.m_fireEvents.Any(x => x == post.m_eventName),
+            ResModifyTriggerObject modify => trigger.m_fireEvents.Any(x => x == $"{modify.m_triggerObjName}.{modify.m_triggerObjState}.EnterState"),
+            _ => false
+        };
 
     private static bool HasRequirements(RequirementList requirements)
         => requirements?.m_requirements is { Count: > 0 };
 
-    private bool CooldownCheck(IActorRef playerRef) {
-        if (_cooldowns.TryGetValue(playerRef, out var lastTriggered)) {
-            if (DateTime.Now - lastTriggered < TimeSpan.FromSeconds(TriggerData.m_cooldown)) {
-                return false;
-            }
-            else {
-                _cooldowns[playerRef] = DateTime.Now;
-            }
+    private bool CooldownCheck(CoreObject playerObject) {
+        var key = playerObject?.m_globalID ?? 0;
+        if (_cooldowns.TryGetValue(key, out var lastTriggered)
+            && DateTime.Now - lastTriggered < TimeSpan.FromSeconds(TriggerData.m_cooldown)) {
+            return false;
         }
-        else {
-            _cooldowns.Add(playerRef, DateTime.Now);
-        }
+
+        _cooldowns[key] = DateTime.Now;
 
         return true;
     }
-
 
 }

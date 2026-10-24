@@ -81,6 +81,10 @@ internal class BadgeService(SessionActor sessionActor) : MessageService(sessionA
 
         // An award that is due at login is already in the full list, so the changes are not sent on their own.
         var wizard = GetActiveWizard();
+        if (wizard is null) {
+            return;
+        }
+
         var changes = Recheck(wizard, catalog);
         FinishChanges(wizard, changes, sendBatches: false);
 
@@ -95,6 +99,10 @@ internal class BadgeService(SessionActor sessionActor) : MessageService(sessionA
         }
 
         var wizard = GetActiveWizard();
+        if (wizard is null) {
+            return;
+        }
+
         var changes = message.Kind switch {
             BadgeEventKind.Award => new BadgeEngine(wizard, catalog).Execute(engine => engine.Award(message.BadgeId)),
             BadgeEventKind.Recheck => Recheck(wizard, catalog),
@@ -126,6 +134,10 @@ internal class BadgeService(SessionActor sessionActor) : MessageService(sessionA
         }
 
         var wizard = GetActiveWizard();
+        if (wizard is null) {
+            return;
+        }
+
         var changes = new BadgeEngine(wizard, catalog).Execute(engine => {
             foreach (var (counterKey, count) in kills) {
                 engine.Increment(counterKey, count);
@@ -143,6 +155,10 @@ internal class BadgeService(SessionActor sessionActor) : MessageService(sessionA
         }
 
         var wizard = GetActiveWizard();
+        if (wizard is null) {
+            return;
+        }
+
         var state = wizard.BadgeBehavior;
         var requestedId = message.BadgeNameID == BadgeCatalog.s_noTitleId ? 0 : message.BadgeNameID;
 
@@ -180,6 +196,10 @@ internal class BadgeService(SessionActor sessionActor) : MessageService(sessionA
         }
 
         var wizard = GetActiveWizard();
+        if (wizard is null) {
+            return;
+        }
+
         if (message.GlobalID != wizard.CharId) {
             Logger.Warning("{0} asked for a badge on behalf of character {1}.",
                 Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), message.GlobalID));
@@ -202,6 +222,10 @@ internal class BadgeService(SessionActor sessionActor) : MessageService(sessionA
     [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_BADGECOMMAND))]
     private void ReceiveBadgeCommand(CHARACTER_103_PROTOCOL.MSG_BADGECOMMAND message) {
         var wizard = GetActiveWizard();
+        if (wizard is null) {
+            return;
+        }
+
         var argument = message.Argument?.Trim() ?? string.Empty;
         if (message.Action == "title") {
             wizard.SetBadgeOverride(argument);
@@ -246,6 +270,10 @@ internal class BadgeService(SessionActor sessionActor) : MessageService(sessionA
 
         // The client sends this for each complete badge it has just been told about; no reply is expected.
         var wizard = GetActiveWizard();
+        if (wizard is null) {
+            return;
+        }
+
         var state = wizard.BadgeBehavior;
         if (!catalog.TryGet(message.BadgeID, out var definition) || !BadgeView.IsComplete(state, definition)) {
             Logger.Warning("{0} acknowledged badge {1}, which they do not hold complete.",

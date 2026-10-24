@@ -95,6 +95,7 @@ public class Account {
     public string LastLoginIp { get; set; }
     public bool IsLocked { get; set; }
     public int PurchasedCharacterSlots { get; set; }
+    public int Crowns { get; set; }
 
     [JsonIgnore] public List<Wizard> Characters = new();
     [JsonIgnore] public InfractionHistory InfractionHistory { get; set; }
@@ -332,4 +333,8 @@ public class Account {
         .OrderByDescending(c => c.GameStats.Level)
         .FirstOrDefault();
 
+    public bool SetCrowns(int crownsAmount) {
+        this.Crowns = crownsAmount;
+        return AccountCollection.UpdateCrowns(this.AccountId, crownsAmount);
+    }
 }

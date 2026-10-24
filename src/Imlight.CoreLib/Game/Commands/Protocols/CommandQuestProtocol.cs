@@ -183,7 +183,7 @@ internal class CommandQuest : CommandProtocol {
 
     private void SendActorDialog(ActorDialog dialogEntry, string completionType, ulong questId = 0, ulong goalId = 0) {
         var serializer = new ObjectSerializer(Versionable: false);
-        if (!serializer.Serialize(dialogEntry, 16, out var serializedData)) {
+        if (!serializer.Serialize(DialogSpeakers.ForClient(dialogEntry), 16, out var serializedData)) {
             Logger.Error("Failed to serialize '{0}' dialog.", Logger.Args(completionType));
             return;
         }

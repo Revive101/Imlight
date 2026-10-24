@@ -37,6 +37,7 @@
  */
 
 using System.Collections.Generic;
+using System;
 using System.Linq;
 using Imcodec.ObjectProperty;
 using Imlight.Common;
@@ -54,6 +55,7 @@ internal sealed class MinigameConfig : RootSingleResourceSingleton<MinigameConfi
     protected override string ResourceName => "MinigameConfig.xml";
 
     private static Imcodec.ObjectProperty.TypeCache.MinigameConfig s_minigameConfig;
+    private static IReadOnlyList<Imcodec.ObjectProperty.TypeCache.MinigameInfo> s_chestGames = [];
 
     protected override void AfterLoad() {
         var serializer = new BindSerializer();
@@ -70,6 +72,10 @@ internal sealed class MinigameConfig : RootSingleResourceSingleton<MinigameConfi
         if (invalidCount > 0) {
             Logger.Error("{Count} minigame configurations failed validation", Logger.Args(invalidCount));
         }
+
+        s_chestGames = [.. s_minigameConfig.m_minigames.Where(x => x.m_iconArt.IsEmpty && IsValid(x))];
+        Logger.Information("Found {Count} chest games, the configurations without an arcade icon",
+            Logger.Args(s_chestGames.Count));
     }
 
     private static bool IsValid(Imcodec.ObjectProperty.TypeCache.MinigameInfo minigame) {
@@ -115,6 +121,18 @@ internal sealed class MinigameConfig : RootSingleResourceSingleton<MinigameConfi
         }
 
         return minigames[index];
+    }
+
+    public static bool TryGetMinigameByName(string name, out Imcodec.ObjectProperty.TypeCache.MinigameInfo info) {
+        info = s_minigameConfig?.m_minigames?.FirstOrDefault(x => x.m_name == name);
+
+        return info is not null;
+    }
+
+    public static bool TryGetRandomChestGame(out Imcodec.ObjectProperty.TypeCache.MinigameInfo info) {
+        info = s_chestGames.Count == 0 ? null : s_chestGames[Random.Shared.Next(s_chestGames.Count)];
+
+        return info is not null;
     }
 
     public static string GetMinigameScript(string zoneName) {

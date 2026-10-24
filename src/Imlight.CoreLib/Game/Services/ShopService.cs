@@ -182,7 +182,7 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
             }
         }
 
-        var template = CoreObjectFactory.GetCoreTemplate(item.m_templateID) as WizItemTemplate;
+        var template = ItemHelper.GetDisplayTemplate(item);
         if (template is null || !IsValidDye(item, template, message.texture, message.decal, message.decal2)) {
             Logger.Warning("Rejected dye {0}/{1}/{2} for item {3} (template {4})",
                 Logger.Args(message.texture, message.decal, message.decal2, item.m_globalID, item.m_templateID.Full));

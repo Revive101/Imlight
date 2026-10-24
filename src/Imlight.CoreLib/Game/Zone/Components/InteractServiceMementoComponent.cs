@@ -82,6 +82,7 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity)
     private const string DEFAULT_TEXT_KEY = "GUI_NPCInteractText";
     private const string WIZBANG_UPDATE_TIMER_KEY = "WIZBANG_UPDATE_TIMER";
     private const double WIZBANG_UPDATE_INTERVAL_SECONDS = 1.0;
+    private const int WIZARD_QUERY_TIMEOUT_SECONDS = 5;
     private const float DEFAULT_RENDER_DISTANCE = 5000.0f; // Default wizbang render distance.
 
     private readonly float _interactionRadius = 300.0f;
@@ -116,16 +117,7 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity)
     }
 
     public override void OnPlayerLeave(IActorRef playerActor, ulong id) {
-        if (_playersInInteractionRange.Any(x => x.Value == playerActor)) {
-            var playerObj = _playersInInteractionRange.First(x => x.Value == playerActor).Key;
-            _playersInInteractionRange.Remove(playerObj);
-        }
-        
-        if (_playersInRenderRange.Any(x => x.Value == playerActor)) {
-            var playerObj = _playersInRenderRange.First(x => x.Value == playerActor).Key;
-            _playersInRenderRange.Remove(playerObj);
-        }
-
+        DropPlayer(playerActor);
     }
 
     public override void OnPlayerMove(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) {
@@ -139,6 +131,15 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity)
         var interactionRadius = _serviceComponents.Count > 0
             ? _serviceComponents.Min(c => c.DEFAULT_INTERACTION_RADIUS)
             : _interactionRadius;
+
+        // The same character can come back with a new session actor; never keep the stale one.
+        if (_playersInInteractionRange.TryGetValue(playerId, out var knownActor) && knownActor != playerActor) {
+            _playersInInteractionRange[playerId] = playerActor;
+        }
+
+        if (_playersInRenderRange.TryGetValue(playerId, out var knownRenderActor) && knownRenderActor != playerActor) {
+            _playersInRenderRange[playerId] = playerActor;
+        }
 
         // Handle interaction range (for service options).
         if (IsInHorizontalRadius(playerObj, interactionRadius)
@@ -217,7 +218,7 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity)
         var queryTasks = playerActors.Select(async playerActor => {
             try {
                 var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
-                var rsp = await playerActor.Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
+                var rsp = await playerActor.Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg, TimeSpan.FromSeconds(WIZARD_QUERY_TIMEOUT_SECONDS));
                 return rsp.Wizard;
             }
             catch {
@@ -240,19 +241,51 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity)
     private void HandleWizBangUpdateResult(ZONE_102_PROTOCOL.MSG_WIZBANG_UPDATE_RESULT result) {
         for (int i = 0; i < result.PlayerActors.Length; i++) {
             var wizard = result.Wizards[i];
-            if (wizard != null) {
-                SendWizBang(result.PlayerActors[i], wizard);
+            if (wizard == null) {
+                // Timed out or failed: the player is gone or unresponsive.
+                DropPlayer(result.PlayerActors[i]);
+
+                continue;
             }
+
+            SendWizBang(result.PlayerActors[i], wizard);
+        }
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_SERVICEOPTIONS_RESULT))]
+    private void HandleServiceOptionsResult(ZONE_102_PROTOCOL.MSG_SERVICEOPTIONS_RESULT result) {
+        if (result.Wizard == null) {
+            DropPlayer(result.PlayerActor);
+
+            return;
+        }
+
+        SendServiceOptions(result.PlayerActor, result.Wizard, result.Reinteract);
+    }
+
+    private void DropPlayer(IActorRef playerActor) {
+        foreach (var key in _playersInInteractionRange.Where(x => x.Value == playerActor).Select(x => x.Key).ToArray()) {
+            _playersInInteractionRange.Remove(key);
+        }
+
+        foreach (var key in _playersInRenderRange.Where(x => x.Value == playerActor).Select(x => x.Key).ToArray()) {
+            _playersInRenderRange.Remove(key);
         }
     }
 
     private void SendActorServiceOptions(IActorRef playerActor, int reinteract = 0) {
         var queryCharacterMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
-        var wizard = playerActor
-            .Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(queryCharacterMsg)
-            .Result
-            .Wizard;
+        playerActor
+            .Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(queryCharacterMsg, TimeSpan.FromSeconds(WIZARD_QUERY_TIMEOUT_SECONDS))
+            .ContinueWith(t => new ZONE_102_PROTOCOL.MSG_SERVICEOPTIONS_RESULT {
+                PlayerActor = playerActor,
+                Wizard = t.IsCompletedSuccessfully ? t.Result.Wizard : null,
+                Reinteract = reinteract
+            })
+            .PipeTo(Self);
+    }
 
+    private void SendServiceOptions(IActorRef playerActor, Wizard wizard, int reinteract) {
         RefreshServiceMomento(wizard);
 
         // If we have no service options, do not send anything.
@@ -355,15 +388,16 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity)
 
     private void SetMadLibBlock() {
         // NPCs normally have a madlib of first name, last name, and title.
-        // To avoid hardcoding these values, we use the display name of the template.
+        // To avoid hardcoding these values, we use the entity's madlib name.
         // We'll also set the madlib token to just "NAME" so the client displays the name as-is.
-        if (Entity.Template is not GameObjectTemplate gameObjTemplate) {
+        var madlibName = Entity.GetMadlibName();
+        if (madlibName is null) {
             return;
         }
 
         var madlibList = new List<MadlibArg> {
             new MadlibArgT_ByteString() {
-                m_madlibArgument = gameObjTemplate.m_displayName,
+                m_madlibArgument = madlibName,
                 m_madlibToken = "NAME"
             },
         };

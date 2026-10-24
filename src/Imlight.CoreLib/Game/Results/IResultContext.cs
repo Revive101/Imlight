@@ -74,4 +74,22 @@ public interface IResultContext {
     /// </summary>
     void EndPlayerSpawn() { }
 
+    /// <summary>
+    /// Gets the zone entity whose interact option runs the results.
+    /// </summary>
+    /// <returns>The entity's actor reference, or null when the results do not come from an entity</returns>
+    IActorRef GetSourceRef() => null;
+
+    /// <summary>
+    /// Gets the template id of the zone entity whose interact option runs the results.
+    /// </summary>
+    /// <returns>The template id, or 0 when the results do not come from an entity</returns>
+    ulong GetSourceTemplateId() => 0;
+
+    /// <summary>
+    /// Gets whether the zone entity that runs the results lives in an instance.
+    /// </summary>
+    /// <returns>True for an entity in an instance</returns>
+    bool IsSourceInstance() => false;
+
 }

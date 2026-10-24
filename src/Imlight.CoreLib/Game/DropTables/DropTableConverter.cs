@@ -121,7 +121,7 @@ public static class DropTableConverter {
     public static bool HasRewards(DropTableResult dropResult) 
         => dropResult?.HasRewards ?? false;
 
-    private static bool TryParseItemId(string itemId, out GID gid) {
+    internal static bool TryParseItemId(string itemId, out GID gid) {
         gid = 0;
         
         if (string.IsNullOrWhiteSpace(itemId)) {

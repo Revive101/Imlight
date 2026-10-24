@@ -26,22 +26,51 @@ namespace Imlight.CoreLib.WizardData.Collections;
 public static class ScoreTrackingCollection {
 
     public const string CollectionName = "ScoreTracking";
+    public const int LeaderboardSize = 10;
     private static readonly IDocumentStore s_store;
 
     static ScoreTrackingCollection() => s_store = PlayerDatabase.Instance.Store;
 
     /// <summary>
-    /// Adds a highscore to the collection.
+    /// Records a score for a gamer in a minigame. The collection keeps one document per gamer and minigame,
+    /// holding the best score; a lower score leaves the stored one in place.
     /// </summary>
-    /// <param name="highscore">The highscore to add.</param>
-    public static void AddScoreTracking(ScoreTracking highscore) {
+    /// <param name="highscore">The score to record.</param>
+    /// <returns>The gamer's best entry for the minigame, which is what the leaderboard shows.</returns>
+    public static ScoreTracking AddScoreTracking(ScoreTracking highscore) {
         using var session = s_store.OpenSession();
 
-        session.Store(highscore);
-        var metadata = session.Advanced.GetMetadataFor(highscore);
-        metadata[Raven.Client.Constants.Documents.Metadata.Collection] = CollectionName;
+        // Waits for the index, so a score stored a moment ago is found too.
+        var entries = session.Query<ScoreTracking>(collectionName: CollectionName)
+            .Customize(query => query.WaitForNonStaleResults())
+            .Where(x => x.MinigameName == highscore.MinigameName && x.GamerId == highscore.GamerId)
+            .ToList();
 
+        var best = entries.MaxBy(x => x.GameScore);
+        if (best is null) {
+            session.Store(highscore);
+            var metadata = session.Advanced.GetMetadataFor(highscore);
+            metadata[Raven.Client.Constants.Documents.Metadata.Collection] = CollectionName;
+            session.SaveChanges();
+
+            return highscore;
+        }
+
+        // Older builds stored every finished game, so a gamer may still have several documents.
+        foreach (var duplicate in entries.Where(x => !ReferenceEquals(x, best))) {
+            session.Delete(duplicate);
+        }
+
+        if (highscore.GameScore > best.GameScore) {
+            best.GameScore = highscore.GameScore;
+        }
+
+        best.GamerNameIndices = highscore.GamerNameIndices;
+        best.GamerNameOverride = highscore.GamerNameOverride;
+        best.GamerGender = highscore.GamerGender;
         session.SaveChanges();
+
+        return best;
     }
 
     /// <summary>
@@ -52,10 +81,12 @@ public static class ScoreTrackingCollection {
     public static ScoreTracking[] GetLeaderboard(string minigameName) {
         using var session = s_store.OpenSession();
 
+        // Waits for the index, so the score stored by the last finished game is on the board.
         var highscores = session.Query<ScoreTracking>(collectionName: CollectionName)
+            .Customize(query => query.WaitForNonStaleResults())
             .Where(x => x.MinigameName == minigameName)
             .OrderByDescending(x => x.GameScore)
-            .Take(10)
+            .Take(LeaderboardSize)
             .ToList();
 
         return [.. highscores];
