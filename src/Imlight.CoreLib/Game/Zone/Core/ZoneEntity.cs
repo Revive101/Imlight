@@ -444,12 +444,17 @@ public class ZoneEntity(
     /// Gets the object sent to clients in MSG_NEWOBJECT. Its class follows the entity's own object, because
     /// the client builds the object from the template and reads that class's properties from the payload.
     /// </summary>
-    public ClientObject GetClientObject() => ActiveGameObject switch {
+    public virtual ClientObject GetClientObject() => ActiveGameObject switch {
         ClientReagentItem => BuildClientObject<ClientReagentItem>(),
         ClientPetSnackItem => BuildClientObject<ClientPetSnackItem>(),
         WizClientObjectItem => BuildClientObject<WizClientObjectItem>(),
         _ => GetClientBehaviorInstance(),
     };
+
+    /// <summary>
+    /// Gets the name the interaction prompt shows for this entity.
+    /// </summary>
+    public virtual string GetMadlibName() => (Template as GameObjectTemplate)?.m_displayName;
 
     private WizClientPet BuildClientPet(WizClientPet pet) {
         var petCopy = BuildClientObject<WizClientPet>();
