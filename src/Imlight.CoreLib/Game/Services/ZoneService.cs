@@ -56,6 +56,7 @@ using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
+using Imlight.PluginApi;
 using Imlight.PluginApi.Events;
 
 namespace Imlight.CoreLib.Game.Services;
@@ -78,6 +79,7 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         = ConfigurationManager.Settings["April Fools.RandomBackFlips"].AsBool();
     private readonly ZoneTransferGate _transferGate = new();
     private uint _currentDynamicZoneId;
+    private bool _zoneLeaveFired;
 
     private const string SIGIL_ENTER_TIMER_KEY = "sigilenter";
     private const float SIGIL_COUNTDOWN_SECONDS = 10.0f;
@@ -106,9 +108,10 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
 
         // A session that sent its server transfer is changing zones, not quitting.
         if (ZoneActor is not null && _transferGate.State != ZoneTransferState.Sent) {
-            var player = PluginPlayer.For(GetActiveWizard(), SessionActor.ActorRef, ZoneActor);
-            _ = PluginManager.Events.Fire(new OnPlayerQuit(player));
+            _ = PluginManager.Events.Fire(new OnPlayerQuit(CurrentPluginPlayer()));
         }
+
+        FireZoneLeave();
 
         // If the zone reference is not null, we'll tell the zone to remove the player.
         ZoneActor?.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER() {
@@ -135,6 +138,11 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
             SendCantGoHomeEffect(timeHomeLastClicked);
         }
 
+        if (PluginManager.Events.Fire(new OnPlayerZoneEvent(CurrentPluginPlayer(), ENTER_ZONE_EVENT_NAME,
+                                                            ZoneEventSource.EnterZone)).IsCancelled) {
+            return;
+        }
+
         var postEventMsg = new ZONE_102_PROTOCOL.MSG_POSTEVENT {
             EventName = ENTER_ZONE_EVENT_NAME,
             PlayerActor = SessionActor.ActorRef,
@@ -150,6 +158,11 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         // An event the client's own scripting posts (e.g. the end of a cutscene): quest goals that list it
         // in their generic events complete for every player in the zone.
         if (string.IsNullOrEmpty(message.EventName) || ZoneActor is null) {
+            return;
+        }
+
+        if (PluginManager.Events.Fire(new OnPlayerZoneEvent(CurrentPluginPlayer(), message.EventName,
+                                                            ZoneEventSource.Client)).IsCancelled) {
             return;
         }
 
@@ -170,6 +183,11 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
             return;
         }
 
+        if (PluginManager.Events.Fire(new OnPlayerZoneEvent(CurrentPluginPlayer(), entryEvent,
+                                                            ZoneEventSource.Dialog)).IsCancelled) {
+            return;
+        }
+
         ZoneActor.Tell(new ZONE_102_PROTOCOL.MSG_POSTEVENT {
             EventName = entryEvent,
             PlayerActor = SessionActor.ActorRef,
@@ -183,12 +201,9 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
             return;
         }
 
-        // Only a client-facing transfer to another zone can be cancelled; the attach path waits on the reply.
-        if (message.SendToClient && message.DestinationZone != GetActiveWizard().Zone) {
-            var player = PluginPlayer.For(GetActiveWizard(), SessionActor.ActorRef, ZoneActor);
-            if (PluginManager.Events.Fire(new OnPlayerZoneChange(player, message.DestinationZone)).IsCancelled) {
-                return;
-            }
+        // Only a client-facing transfer can be cancelled; the attach path waits on the reply.
+        if (message.SendToClient && !message.PluginEventFired && !FireTransferEvent(message)) {
+            return;
         }
 
         // Sending the server transfer request to the server will allocate and load the zone.
@@ -206,6 +221,9 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         else if (zoneDetails.ErrorCode != 0) {
             // The server has returned an error code. This means the zone transfer failed.
             InformGameClient("Failed to transfer to zone: " + zoneDetails.ErrorMessage, true);
+            if (message.SendToClient) {
+                FireZoneChangeFailed(message.DestinationZone, ZoneChangeFailReason.ServerError);
+            }
         }
         else {
             // If we're not sending this message to the client, it means the zone is being loaded
@@ -235,6 +253,9 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         var previous = _transferGate.State;
         var accepted = _transferGate.TryNack();
         LogTransferStep("ZONETRANSFERNACK received", previous, accepted);
+        if (accepted) {
+            FireZoneChangeFailed(GetActiveWizard().QueuedZoneName, ZoneChangeFailReason.ClientDeclined);
+        }
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_STARTSIGILENTRY))]
@@ -244,6 +265,11 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         }
 
         if (string.IsNullOrEmpty(message.DestinationZone)) {
+            return;
+        }
+
+        if (PluginManager.Events.Fire(new OnPlayerDungeonCountdownStart(CurrentPluginPlayer(),
+                                                                        message.DestinationZone)).IsCancelled) {
             return;
         }
 
@@ -297,11 +323,6 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         }
 
         var entry = _activeSigilEntry;
-        _activeSigilEntry = null;
-
-        Logger.Information("Entering dungeon instance '{0}' (owner {1})",
-            Logger.Args(entry.DestinationZone, wizard.CharId));
-
         var tpMsg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
             DestinationZone = entry.DestinationZone,
             DestinationLocation = entry.DestinationLoc,
@@ -309,7 +330,20 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
             IsPrivate = true,
             OwnerCharId = wizard.CharId,
             ResetInstance = true,
+            Cause = ZoneChangeCause.Dungeon,
         };
+
+        // Fired before the sigil is released so a cancel can still end the countdown cleanly.
+        if (!FireTransferEvent(tpMsg)) {
+            CancelSigilCountdown();
+
+            return;
+        }
+
+        _activeSigilEntry = null;
+
+        Logger.Information("Entering dungeon instance '{0}' (owner {1})",
+            Logger.Args(entry.DestinationZone, wizard.CharId));
 
         SendTeleportEffects();
         ReceiveZoneTransferRequest(tpMsg);
@@ -331,6 +365,9 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         var previous = _transferGate.State;
         var accepted = _transferGate.TryNack();
         LogTransferStep("PATCHINGBLOCKED received", previous, accepted);
+        if (accepted) {
+            FireZoneChangeFailed(GetActiveWizard().QueuedZoneName, ZoneChangeFailReason.PatchingBlocked);
+        }
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_RETRYTELEPORT))]
@@ -372,8 +409,6 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
     private void ReceiveGoHome(WIZARD_12_PROTOCOL.MSG_GOHOME message) {
         // this teleports the wizard to the world hub, NOT their home/dorm. for that you want MSG_GOTODORM. goofy ahh naming scheme
         var wizard = GetActiveWizard();
-        SendTeleportEffects();
-
         var currentZone = wizard.Zone;
         var zoneMap = WorldHubZones.GetHubForZone(currentZone);
         var tpmsg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
@@ -381,8 +416,15 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
             DestinationLocation = zoneMap.m_location,
             SendToClient = true,
             OwnerCharId = wizard.CharId,
+            Cause = ZoneChangeCause.Recall,
         };
 
+        // Fired before the effects and cooldown, so a cancelled recall leaves no trace.
+        if (!FireTransferEvent(tpmsg)) {
+            return;
+        }
+
+        SendTeleportEffects();
         wizard.SetTimeHomeLastClicked(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
 
         var delay = TimeSpan.FromSeconds(TELEPORT_EFFECTS_TIME);
@@ -394,15 +436,19 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_GOTODORM))]
     private void ReceiveGotoDorm(WIZARD_12_PROTOCOL.MSG_GOTODORM message) {
         var wizard = GetActiveWizard();
-        SendTeleportEffects();
-
         var tpmsg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
             DestinationZone = "WizardCity/QA_SpawnRate", // just teleporting to gm for now
             DestinationLocation = "Start",
             SendToClient = true,
             OwnerCharId = wizard.CharId,
+            Cause = ZoneChangeCause.Dorm,
         };
 
+        if (!FireTransferEvent(tpmsg)) {
+            return;
+        }
+
+        SendTeleportEffects();
         wizard.SetTimeHomeLastClicked(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
 
         var delay = TimeSpan.FromSeconds(TELEPORT_EFFECTS_TIME);
@@ -436,7 +482,8 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         var msg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER() {
             DestinationZone = zoneName,
             DestinationLocation = zoneLocation,
-            SendToClient = true
+            SendToClient = true,
+            Cause = ZoneChangeCause.WorldTeleport,
         };
         ReceiveZoneTransferRequest(msg);
     }
@@ -583,7 +630,8 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         var msg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER() {
             DestinationZone = destinationZoneName,
             DestinationLocation = destinationZoneLocation,
-            SendToClient = true
+            SendToClient = true,
+            Cause = ZoneChangeCause.Defeat,
         };
 
         ReceiveZoneTransferRequest(msg);
@@ -608,7 +656,13 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         // Update our Wizard server side.
         var healPercent = message.MaxHealthPercent;
         float healAmount = healPercent / 100 * maxWizardHealth;
-        var newHealth = Math.Min(currentWizardHealth + (int) healAmount, maxWizardHealth);
+        var regen = PluginManager.Events.Fire(new OnPlayerRegenerate(CurrentPluginPlayer(), (int) healAmount));
+        if (regen.IsCancelled || regen.Amount <= 0) {
+            return;
+        }
+
+        // Capped before adding so a plugin's huge amount can't overflow.
+        var newHealth = currentWizardHealth + Math.Min(regen.Amount, maxWizardHealth - currentWizardHealth);
 
         wizard.UpdateHealth(newHealth);
 
@@ -697,6 +751,10 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
             return;
         }
 
+        if (PluginManager.Events.Fire(new OnPlayerRealmTransfer(CurrentPluginPlayer(), message.RealmName)).IsCancelled) {
+            return;
+        }
+
         // Ask the LoginServer to create a session key on the target realm's game server.
         var createKeyMsg = new SERVER_100_PROTOCOL.MSG_CREATEPLAYERKEY {
             Account = account,
@@ -768,6 +826,50 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
 
     private void SetZone(IActorRef actorRef) {
         ZoneActor = actorRef;
+        _zoneLeaveFired = false;
+    }
+
+    private IPlayer CurrentPluginPlayer()
+        => PluginPlayer.For(GetActiveWizard(), SessionActor.ActorRef, ZoneActor);
+
+    /// <summary>
+    /// Fires <see cref="OnPlayerZoneChange"/>, or <see cref="OnPlayerTeleport"/> for a spot in the current zone,
+    /// and marks the transfer so it isn't fired again. Returns false if a plugin cancelled it.
+    /// </summary>
+    private bool FireTransferEvent(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message) {
+        message.PluginEventFired = true;
+        var player = CurrentPluginPlayer();
+        if (message.DestinationZone != GetActiveWizard().Zone) {
+            var change = new OnPlayerZoneChange(player, message.DestinationZone, message.Cause);
+
+            return !PluginManager.Events.Fire(change).IsCancelled;
+        }
+
+        var coords = Util.GetVectorFromCompactString(message.DestinationLocation);
+        var teleport = new OnPlayerTeleport(player, new System.Numerics.Vector3(coords.X, coords.Y, coords.Z),
+                                            coords.W, message.Cause);
+
+        return !PluginManager.Events.Fire(teleport).IsCancelled;
+    }
+
+    private void FireZoneChangeFailed(string destinationZone, ZoneChangeFailReason reason) {
+        // A zone hop reloads the current zone and never fired OnPlayerZoneChange.
+        if (destinationZone is null || destinationZone == GetActiveWizard().Zone) {
+            return;
+        }
+
+        _ = PluginManager.Events.Fire(new OnPlayerZoneChangeFailed(CurrentPluginPlayer(), destinationZone, reason));
+    }
+
+    private void FireZoneLeave() {
+        // A retried transfer, or a session closing after its transfer, has already left.
+        var zone = PluginZone.Of(ZoneActor);
+        if (_zoneLeaveFired || zone is null) {
+            return;
+        }
+
+        _zoneLeaveFired = true;
+        _ = PluginManager.Events.Fire(new OnPlayerZoneLeave(CurrentPluginPlayer(), zone));
     }
 
     private void ReadyClientForZoneTransfer(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message) {
@@ -797,6 +899,8 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
     }
 
     private void DoZoneTransfer() {
+        FireZoneLeave();
+
         // Remove the player from their current zone. We're awaiting a reply so the zone can properly clean up
         // before we continue on potentially a different thread.
         try {
@@ -1036,7 +1140,8 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         // Give the player their mount back.
         SessionActor.ActorRef.Tell(new ZONE_102_PROTOCOL.MSG_ENFORCEINTERIORMOUNT());
 
-        Logger.Information("Dungeon sigil countdown cancelled (stepped off pad)");
+        Logger.Information("Dungeon sigil countdown cancelled -> '{0}'", Logger.Args(entry.DestinationZone));
+        _ = PluginManager.Events.Fire(new OnPlayerDungeonCountdownCancel(CurrentPluginPlayer(), entry.DestinationZone));
     }
 
     private void SnapPlayerToSigilFace(ZONE_102_PROTOCOL.MSG_STARTSIGILENTRY entry) {

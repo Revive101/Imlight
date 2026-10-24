@@ -30,6 +30,7 @@ using Imlight.CoreLib.Game.Zone.Components;
 using Imcodec.MessageLayer;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.Types;
+using Imlight.PluginApi.Events;
 
 namespace Imlight.CoreLib.Shared.Packets;
 
@@ -692,6 +693,15 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         /// rejoining the old one. Never set by re-attach or recall transfers.
         /// </summary>
         public bool ResetInstance;
+
+        /// <summary>What sent the player, as reported to plugins.</summary>
+        public ZoneChangeCause Cause = ZoneChangeCause.Other;
+
+        /// <summary>
+        /// Set when the sender already fired OnPlayerZoneChange or OnPlayerTeleport for this transfer, before
+        /// its own side effects, so the session doesn't fire it again.
+        /// </summary>
+        public bool PluginEventFired;
 
     }
 

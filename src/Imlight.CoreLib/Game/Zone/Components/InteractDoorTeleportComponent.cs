@@ -51,6 +51,7 @@ using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
+using Imlight.PluginApi.Events;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 
@@ -99,7 +100,8 @@ internal sealed class InteractDoorTeleportComponent(ZoneEntity entity)
             DestinationZone = teleport.m_destinationZone,
             DestinationLocation = teleport.m_destinationLoc,
             SendToClient = true,
-            OwnerCharId = playerCharacter.CharId
+            OwnerCharId = playerCharacter.CharId,
+            Cause = ZoneChangeCause.Door,
         });
     }
 

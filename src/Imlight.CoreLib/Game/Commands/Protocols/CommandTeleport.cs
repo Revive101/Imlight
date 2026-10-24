@@ -21,6 +21,7 @@ using Imlight.Common;
 using Imlight.CoreLib.Game.World;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Player;
+using Imlight.PluginApi.Events;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -72,7 +73,8 @@ internal class CommandTeleport : CommandProtocol {
             DestinationZone = actualZoneName,
             DestinationLocation = "Start",
             SendToClient = true,
-            OwnerCharId = Context.Character.CharId
+            OwnerCharId = Context.Character.CharId,
+            Cause = ZoneChangeCause.Command,
         };
         Context.SessionActor.Tell(msg);
     }

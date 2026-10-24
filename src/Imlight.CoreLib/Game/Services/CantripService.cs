@@ -269,7 +269,8 @@ internal class CantripService(SessionActor sessionActor) : MessageService(sessio
             DestinationLocation = "Start",
             DestinationZone = cantrip.m_effectParameter,
             SendToClient = true,
-            OwnerCharId = GetActiveWizard().CharId
+            OwnerCharId = GetActiveWizard().CharId,
+            Cause = ZoneChangeCause.Cantrip,
         };
         Timers.StartSingleTimer("zonetransfer", tpmsg, _cantripCastTimeSpan);
     }

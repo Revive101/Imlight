@@ -94,9 +94,13 @@ public sealed class OnPlayerQuit(IPlayer player) : ImlightEvent {
 
 /// <summary>
 /// Fired when a player is about to leave their zone for a different one, before the destination is loaded.
-/// Teleports within the same zone don't fire it. Cancelling it keeps the player where they are.
+/// For recalls, dorm trips and dungeon sigils it fires before the teleport effects play or the recall cooldown
+/// starts. Teleports within the same zone fire <see cref="OnPlayerTeleport"/> instead.
+/// Cancelling it keeps the player where they are. Cancelling a <see cref="ZoneChangeCause.Defeat"/> leaves them
+/// standing where the duel was, at whatever health they had.
 /// </summary>
-public sealed class OnPlayerZoneChange(IPlayer player, string destinationZone) : ImlightEvent, ICancellable {
+public sealed class OnPlayerZoneChange(IPlayer player, string destinationZone, ZoneChangeCause cause)
+    : ImlightEvent, ICancellable {
 
     /// <summary>
     /// The player who is changing zones. <see cref="IPlayer.Zone"/> is the zone they are leaving.
@@ -107,6 +111,199 @@ public sealed class OnPlayerZoneChange(IPlayer player, string destinationZone) :
     /// The internal name of the zone the player is going to, e.g. <c>WizardCity/WC_Hub</c>.
     /// </summary>
     public string DestinationZone { get; } = destinationZone;
+
+    /// <summary>
+    /// What sent the player.
+    /// </summary>
+    public ZoneChangeCause Cause { get; } = cause;
+
+    /// <inheritdoc />
+    public bool IsCancelled { get; set; }
+
+}
+
+/// <summary>
+/// Fired when a player has agreed to a zone change and is about to be removed from their zone. Unlike
+/// <see cref="OnPlayerZoneChange"/>, the player is definitely leaving. Also fires when their session ends,
+/// right after <see cref="OnPlayerQuit"/>.
+/// </summary>
+public sealed class OnPlayerZoneLeave(IPlayer player, IZone zone) : ImlightEvent {
+
+    /// <summary>
+    /// The player who is leaving the zone.
+    /// </summary>
+    public IPlayer Player { get; } = player;
+
+    /// <summary>
+    /// The zone the player is leaving. <see cref="IZone.Players"/> still includes them.
+    /// </summary>
+    public IZone Zone { get; } = zone;
+
+}
+
+/// <summary>
+/// Fired when a zone change the player was about to make doesn't happen, after <see cref="OnPlayerZoneChange"/>
+/// fired for it. A client that declined or had to patch may still retry, in which case
+/// <see cref="OnPlayerZoneLeave"/> fires without another <see cref="OnPlayerZoneChange"/>.
+/// </summary>
+public sealed class OnPlayerZoneChangeFailed(IPlayer player, string destinationZone, ZoneChangeFailReason reason)
+    : ImlightEvent {
+
+    /// <summary>
+    /// The player who stayed where they were.
+    /// </summary>
+    public IPlayer Player { get; } = player;
+
+    /// <summary>
+    /// The internal name of the zone the player was going to.
+    /// </summary>
+    public string DestinationZone { get; } = destinationZone;
+
+    /// <summary>
+    /// Why the change didn't happen.
+    /// </summary>
+    public ZoneChangeFailReason Reason { get; } = reason;
+
+}
+
+/// <summary>
+/// Fired when a player is about to be moved to another spot in the zone they are already in, for example by
+/// pressing Go Home while in the hub. Cancelling it keeps the player where they are.
+/// </summary>
+public sealed class OnPlayerTeleport(IPlayer player, System.Numerics.Vector3 destination, float orientation,
+    ZoneChangeCause cause) : ImlightEvent, ICancellable {
+
+    /// <summary>
+    /// The player who is teleporting. <see cref="IPlayer.Location"/> is where they are now.
+    /// </summary>
+    public IPlayer Player { get; } = player;
+
+    /// <summary>
+    /// Where the player is going.
+    /// </summary>
+    public System.Numerics.Vector3 Destination { get; } = destination;
+
+    /// <summary>
+    /// The direction the player will face, in radians.
+    /// </summary>
+    public float Orientation { get; } = orientation;
+
+    /// <summary>
+    /// What sent the player.
+    /// </summary>
+    public ZoneChangeCause Cause { get; } = cause;
+
+    /// <inheritdoc />
+    public bool IsCancelled { get; set; }
+
+}
+
+/// <summary>
+/// Fired when a player steps onto a dungeon sigil, before its countdown starts and before they are dismounted.
+/// Cancelling it leaves the player on the sigil with no countdown.
+/// </summary>
+public sealed class OnPlayerDungeonCountdownStart(IPlayer player, string destinationZone)
+    : ImlightEvent, ICancellable {
+
+    /// <summary>
+    /// The player who stepped onto the sigil.
+    /// </summary>
+    public IPlayer Player { get; } = player;
+
+    /// <summary>
+    /// The internal name of the dungeon the sigil leads to.
+    /// </summary>
+    public string DestinationZone { get; } = destinationZone;
+
+    /// <inheritdoc />
+    public bool IsCancelled { get; set; }
+
+}
+
+/// <summary>
+/// Fired when a dungeon sigil's countdown ends without the player entering: they stepped off the sigil, or a
+/// handler cancelled the <see cref="OnPlayerZoneChange"/> for the dungeon.
+/// </summary>
+public sealed class OnPlayerDungeonCountdownCancel(IPlayer player, string destinationZone) : ImlightEvent {
+
+    /// <summary>
+    /// The player whose countdown ended.
+    /// </summary>
+    public IPlayer Player { get; } = player;
+
+    /// <summary>
+    /// The internal name of the dungeon the sigil leads to.
+    /// </summary>
+    public string DestinationZone { get; } = destinationZone;
+
+}
+
+/// <summary>
+/// Fired when a zone's out-of-combat regeneration is about to heal a player. Players at full health don't fire it.
+/// Cancelling it skips this heal.
+/// </summary>
+public sealed class OnPlayerRegenerate(IPlayer player, int amount) : ImlightEvent, ICancellable {
+
+    /// <summary>
+    /// The player being healed.
+    /// </summary>
+    public IPlayer Player { get; } = player;
+
+    /// <summary>
+    /// The health the player will gain. Handlers can change it; the result is capped at the player's max health,
+    /// and zero or less heals nothing.
+    /// </summary>
+    public int Amount { get; set; } = amount;
+
+    /// <inheritdoc />
+    public bool IsCancelled { get; set; }
+
+}
+
+/// <summary>
+/// Fired when a player posts a named event to their zone, before the zone's triggers and quest goals see it.
+/// Cancelling it drops the event, so nothing in the zone reacts to it.
+/// </summary>
+public sealed class OnPlayerZoneEvent(IPlayer player, string eventName, ZoneEventSource source)
+    : ImlightEvent, ICancellable {
+
+    /// <summary>
+    /// The player who posted the event.
+    /// </summary>
+    public IPlayer Player { get; } = player;
+
+    /// <summary>
+    /// The event's name.
+    /// </summary>
+    public string EventName { get; } = eventName;
+
+    /// <summary>
+    /// Where the event came from. <see cref="ZoneEventSource.Client"/> events complete quest goals for every
+    /// player in the zone and are entirely client-controlled.
+    /// </summary>
+    public ZoneEventSource Source { get; } = source;
+
+    /// <inheritdoc />
+    public bool IsCancelled { get; set; }
+
+}
+
+/// <summary>
+/// Fired when a player asks to move to another realm, before the target realm is contacted.
+/// Cancelling it keeps them on this realm. If the transfer goes ahead, <see cref="OnPlayerQuit"/> fires as the
+/// session ends.
+/// </summary>
+public sealed class OnPlayerRealmTransfer(IPlayer player, string realmName) : ImlightEvent, ICancellable {
+
+    /// <summary>
+    /// The player who is transferring.
+    /// </summary>
+    public IPlayer Player { get; } = player;
+
+    /// <summary>
+    /// The name of the realm they asked for.
+    /// </summary>
+    public string RealmName { get; } = realmName;
 
     /// <inheritdoc />
     public bool IsCancelled { get; set; }

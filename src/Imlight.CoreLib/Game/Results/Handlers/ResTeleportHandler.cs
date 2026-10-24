@@ -19,6 +19,7 @@
 using Akka.Actor;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.PluginApi.Events;
 
 namespace Imlight.CoreLib.Game.Results.Handlers;
 
@@ -42,7 +43,8 @@ internal sealed class ResTeleportHandler : BaseResultHandler<ResTeleport> {
             DestinationZone = Result.m_destinationZone,
             DestinationLocation = Result.m_destinationLoc,
             SendToClient = true,
-            OwnerCharId = playerObj.m_characterId
+            OwnerCharId = playerObj.m_characterId,
+            Cause = ZoneChangeCause.Door,
         };
 
         context.GetPlayerRef().Tell(msg);
