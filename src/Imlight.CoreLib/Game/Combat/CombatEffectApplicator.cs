@@ -39,8 +39,8 @@
 
 using System.Collections.Generic;
 using Imlight.Common;
-using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Game.Spells;
+using Imcodec.ObjectProperty.TypeCache;
 using System;
 using System.Linq;
 
@@ -115,7 +115,7 @@ internal static class CombatEffectApplicator {
                 cinematicTime += ApplyStunEffect(effect, caster, targets, context);
                 break;
             case kSpellEffects.kStunBlock:
-                ApplyStunBlockEffect(effect, targets, context);
+                cinematicTime += ApplyStunBlockEffect(effect, targets, context);
                 break;
             case kSpellEffects.kMindControl:
                 ApplyMindControlEffect(effect, caster, targets);
@@ -533,6 +533,7 @@ internal static class CombatEffectApplicator {
                                          CombatDuelSubCircle[] targets,
                                          CombatEffectContext context) {
         var stunResistRoll = context.StunResistRoll;
+        var cinematicName = SpellFactory.GetBaseSpellName(context.SpellTemplateId);
         var cinematicTime = 0.0f;
 
         foreach (var target in targets) {
@@ -551,12 +552,14 @@ internal static class CombatEffectApplicator {
             }
 
             if (resist >= stunResistRoll) {
+                cinematicTime += SpellCinematics.GetStunResistedTime(cinematicName);
                 LogStunAttempt(caster, target, stunResistRoll, resist, "resisted");
 
                 continue;
             }
 
             if (!target.TryStun(Math.Max(1, effect.m_effectParam))) {
+                cinematicTime += SpellCinematics.GetStunImmuneTime(cinematicName);
                 LogStunAttempt(caster, target, stunResistRoll, resist, "immune");
 
                 continue;
@@ -610,7 +613,7 @@ internal static class CombatEffectApplicator {
         };
     }
 
-    private static void ApplyStunBlockEffect(SpellEffect effect, CombatDuelSubCircle[] targets, CombatEffectContext context) {
+    private static float ApplyStunBlockEffect(SpellEffect effect, CombatDuelSubCircle[] targets, CombatEffectContext context) {
         var blockCount = Math.Max(1, effect.m_effectParam);
 
         foreach (var target in targets) {
@@ -618,6 +621,8 @@ internal static class CombatEffectApplicator {
                 target._hangingEffects.Add(CreateStunBlock(context.SpellTemplateId));
             }
         }
+
+        return targets.Count(x => x.IsAlive) * blockCount * CombatHangingEffects.HANGING_EFFECT_ADD_TIME;
     }
 
     private static void LogStunAttempt(CombatDuelSubCircle caster,
