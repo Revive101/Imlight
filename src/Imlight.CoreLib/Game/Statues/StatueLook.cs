@@ -102,7 +102,6 @@ internal static class StatueLook {
         });
         ReplaceBehavior<NPCBehavior>(clientObject, npc => {
             npc.m_isMonster = false;
-            npc.m_wsNameOverride = statue.Name;
 
             return npc;
         });
