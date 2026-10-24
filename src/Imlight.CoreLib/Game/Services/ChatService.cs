@@ -256,6 +256,12 @@ internal class ChatService(SessionActor sessionActor) : MessageService(sessionAc
             return;
         }
 
+        var player = PluginPlayer.For(myWizard, SessionActor.ActorRef, SessionActor.GetZoneActor());
+        var text = message.Message.ToString() ?? string.Empty;
+        if (PluginManager.Events.Fire(new PlayerWhisperEvent(player, targetID, text)).IsCancelled) {
+            return;
+        }
+
         // Send the directed chat to the target player.
         var hexName = myWizard.PlayerNameBehavior.GetWizardNameAsByteHexString();
         var sourceName = DataManipulation.SpacedHexStringToBytes(hexName);

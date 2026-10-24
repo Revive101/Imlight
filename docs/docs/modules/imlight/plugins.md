@@ -42,8 +42,13 @@ public sealed class GreeterPlugin : ImlightPlugin {
 
 | Event | Cancellable | Fired |
 | --- | --- | --- |
+| `PlayerLoginEvent` | Yes | When a player's client attaches from login or after a dropped connection, before they are placed in a zone. `Player.Zone` is null. Cancelling rejects the attach and closes the session. Not fired for zone changes. |
+| `PlayerQuitEvent` | No | When a player's session ends (logout, disconnect or kick), before they are removed from their zone. Not fired for zone changes. A player who reconnects after a dropped connection may log in again before the old session's quit fires. |
+| `PlayerZoneChangeEvent` | Yes | When a player is about to leave for a different zone, before the destination loads. `Player.Zone` is the zone they are leaving. Cancelling keeps them where they are. Not fired for teleports within a zone. |
 | `PlayerZoneEnterEvent` | No | When a player is added to a zone: on first login to a wizard, and after every zone change. |
+| `PlayerLevelUpEvent` | Yes | When a player is about to go up a level, from experience or `SetLevel`. `Player.Level` is still the old level. Cancelling keeps them at it; experience that caused it is granted only up to one point short of the next level. |
 | `PlayerChatEvent` | Yes | When a player sends zone chat, before it is logged and broadcast. Cancelling drops the message. Not fired for muted players, chat commands, whispers, group chat or quick chat. |
+| `PlayerWhisperEvent` | Yes | When a player whispers to an online player, before it is delivered. Cancelling drops the message. Not fired for muted players, blocked or offline targets, quick chat whispers or group chat. |
 
 Handlers are matched on the event's exact type, so subscribing to `ImlightEvent` or another base type receives nothing. Handlers for the same event run in the order they subscribed.
 

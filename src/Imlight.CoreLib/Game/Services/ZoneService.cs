@@ -49,12 +49,14 @@ using Imlight.Common;
 using Imlight.CoreLib.Game.Sigils;
 using Imlight.CoreLib.Game.WizBang;
 using Imlight.CoreLib.Game.World;
+using Imlight.CoreLib.Plugins;
 using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
+using Imlight.PluginApi.Events;
 
 namespace Imlight.CoreLib.Game.Services;
 
@@ -101,6 +103,12 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         }
 
         var globalId = gameObj.m_globalID;
+
+        // A session that sent its server transfer is changing zones, not quitting.
+        if (ZoneActor is not null && _transferGate.State != ZoneTransferState.Sent) {
+            var player = PluginPlayer.For(GetActiveWizard(), SessionActor.ActorRef, ZoneActor);
+            _ = PluginManager.Events.Fire(new PlayerQuitEvent(player));
+        }
 
         // If the zone reference is not null, we'll tell the zone to remove the player.
         ZoneActor?.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER() {
@@ -173,6 +181,14 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
     private void ReceiveZoneTransferRequest(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message) {
         if (_transferGate.IsQueued) {
             return;
+        }
+
+        // Only a client-facing transfer to another zone can be cancelled; the attach path waits on the reply.
+        if (message.SendToClient && message.DestinationZone != GetActiveWizard().Zone) {
+            var player = PluginPlayer.For(GetActiveWizard(), SessionActor.ActorRef, ZoneActor);
+            if (PluginManager.Events.Fire(new PlayerZoneChangeEvent(player, message.DestinationZone)).IsCancelled) {
+                return;
+            }
         }
 
         // Sending the server transfer request to the server will allocate and load the zone.

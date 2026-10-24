@@ -52,6 +52,8 @@ using Imcodec.Math;
 using Microsoft.Extensions.ObjectPool;
 using System;
 using Imlight.Common;
+using Imlight.CoreLib.Plugins;
+using Imlight.PluginApi.Events;
 
 namespace Imlight.CoreLib.Game.Services;
 
@@ -100,6 +102,10 @@ internal class WizardService(SessionActor sessionActor) : MessageService(session
     [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_LEVELUP))]
     private void ReceiveSetLevel(CHARACTER_103_PROTOCOL.MSG_LEVELUP message) {
         // This is the internal level up message. It most likely happened due to a developer command.
+        if (message.NewLevel > _activeWizard.MagicSchoolBehavior.Level && IsLevelUpCancelled(message.NewLevel)) {
+            return;
+        }
+
         var levelUpSuccess = _activeWizard.SetLevel(message.NewLevel);
         if (!levelUpSuccess) {
             return;
@@ -150,11 +156,26 @@ internal class WizardService(SessionActor sessionActor) : MessageService(session
         AnnounceLevelChange();
     }
 
+    private bool IsLevelUpCancelled(int newLevel) {
+        var player = PluginPlayer.For(_activeWizard, SessionActor.ActorRef, SessionActor.GetZoneActor());
+
+        return PluginManager.Events.Fire(new PlayerLevelUpEvent(player, newLevel)).IsCancelled;
+    }
+
     [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_GAINXP))]
     private void ReceiveGainXP(CHARACTER_103_PROTOCOL.MSG_GAINXP message) {
         var beforeLevel = _activeWizard.MagicSchoolBehavior.Level;
         var beforeXP = _activeWizard.MagicSchoolBehavior.ExperiencePoints;
         var xpGained = message.XP;
+
+        // A cancelled level up still grants the XP, up to one point short of the next level.
+        var levelAtXp = MagicLevelsConfig.GetPlayerLevelAtExperience(beforeXP + xpGained);
+        if (levelAtXp > beforeLevel && IsLevelUpCancelled(levelAtXp)) {
+            xpGained = Math.Max(0, MagicLevelsConfig.GetExperiencePointsAtLevel(beforeLevel + 1) - 1 - beforeXP);
+            if (xpGained == 0) {
+                return;
+            }
+        }
 
         _activeWizard.AddExperiencePoints(xpGained);
         var afterLevel = _activeWizard.MagicSchoolBehavior.Level;

@@ -95,11 +95,18 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
         // The key will be associated with the account they're trying to log into.
         ValidateAttach(message);
 
+        // A pending transfer for this character means the attach finishes a zone change, not a login.
+        var pendingTransfer = QueryFallback(countTimeout: false);
+        var isTransfer = pendingTransfer is not null && pendingTransfer.Found && pendingTransfer.CharId == _wizard.CharId;
+        if (!isTransfer && IsLoginCancelled()) {
+            return;
+        }
+
         // A reattach means the client's earlier connection dropped, so the saved position is the truth.
         var zoneName = (string) message.ZoneName;
         var location = (string) message.Location;
         if (message.Reattach == 1) {
-            (zoneName, location) = GetReattachDestination(zoneName, location);
+            (zoneName, location) = GetReattachDestination(zoneName, location, pendingTransfer);
             CloseStaleSession();
         }
 
@@ -251,9 +258,27 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
         });
     }
 
-    private (string ZoneName, string Location) GetReattachDestination(string zoneName, string location) {
+    private bool IsLoginCancelled() {
+        var player = PluginPlayer.For(_wizard, SessionActor.ActorRef, null);
+        if (!PluginManager.Events.Fire(new PlayerLoginEvent(player)).IsCancelled) {
+            return false;
+        }
+
+        Logger.Information("Session {SessionId} MSG_ATTACH rejected by a plugin: character {CharId}",
+            Logger.Args(SessionActor.SessionID, _wizard.CharId));
+
+        SendToSocket(new GAME_5_PROTOCOL.MSG_ATTACHFAILED {
+            Error = 1,
+            Rejected = 1,
+        });
+        CloseSession();
+
+        return true;
+    }
+
+    private (string ZoneName, string Location) GetReattachDestination(string zoneName, string location,
+        SERVICE_101_PROTOCOL.MSG_QUERY_FALLBACK_RSP pendingTransfer) {
         // A pending transfer saves the source zone until its attach succeeds, so the message names the truth.
-        var pendingTransfer = QueryFallback(countTimeout: false);
         if (pendingTransfer is not null && pendingTransfer.Found) {
             Logger.Information("Session {SessionId} Reattach=1: transfer from {SourceZone} is pending, keeping destination {Zone}",
                 Logger.Args(SessionActor.SessionID, pendingTransfer.FallbackZone, zoneName));
