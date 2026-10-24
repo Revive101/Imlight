@@ -397,6 +397,24 @@ public static class WizardItemCollection {
     }
 
     /// <summary>
+    /// Stores the archmastery school a player picked for a deck.
+    /// </summary>
+    /// <param name="deckId">The ID of the deck.</param>
+    /// <param name="school">The school hash.</param>
+    public static void SetDeckArchmasterySchool(ulong deckId, uint school) {
+        using var session = s_store.OpenSession();
+
+        var associatedDeck = session.Query<WizClientObjectItem>(collectionName: CollectionName)
+            .FirstOrDefault(x => x.m_globalID == deckId);
+        if (associatedDeck is null || !CoreObjectFactory.FindBehaviorInstance<DeckBehavior>(associatedDeck, out var deckBehavior)) {
+            return;
+        }
+
+        deckBehavior.m_archmasterySchool = school;
+        session.SaveChanges();
+    }
+
+    /// <summary>
     /// Tries to retrieve the entire inventory of a player.
     /// </summary>
     /// <param name="playerId">The ID of the player.</param>

@@ -90,6 +90,11 @@ internal class WizStatisticEffectConfigLoader : RootSingleResourceSingleton<WizS
     internal static int GetShadowPipMax()
         => s_config?.m_shadowPipMax ?? 0;
 
+    /// <summary>
+    /// The loaded config, or null when it failed to load.
+    /// </summary>
+    internal static WizStatisticEffectConfig Config => s_config;
+
     public void DisposeStream()
         => base.Stream.Dispose();
 

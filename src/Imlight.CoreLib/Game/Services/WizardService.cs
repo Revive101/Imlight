@@ -147,6 +147,7 @@ internal class WizardService(SessionActor sessionActor) : MessageService(session
         // Update power pips
         var powerPipsMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEPOWERPIP() { PowerPip = baseStats.m_pipChance };
         SendToSocket(powerPipsMessage);
+        SendToSocket(new WIZARD3_56_PROTOCOL.MSG_UPDATEARCHMASTERY { Stat = baseStats.m_archmastery });
 
         // Update energy.
         _activeWizard.UpdateEnergy(baseStats.m_petEnergy);
@@ -203,6 +204,7 @@ internal class WizardService(SessionActor sessionActor) : MessageService(session
                 PowerPip = baseStats.m_pipChance
             };
             SendToSocket(powerPipsMessage);
+            SendToSocket(new WIZARD3_56_PROTOCOL.MSG_UPDATEARCHMASTERY { Stat = baseStats.m_archmastery });
 
             _activeWizard.UpdateEnergy(baseStats.m_petEnergy);
             var petEnergyMessage = new PET_9_PROTOCOL.MSG_PETENERGYMAX() {

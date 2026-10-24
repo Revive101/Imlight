@@ -255,4 +255,14 @@ public sealed class COMBAT_106_PROTOCOL : IServerProtocol {
 
     }
 
+    internal sealed class MSG_ACTORSETARCHMASTERYSCHOOL : IServerMessage {
+
+        public byte MessageOrder => 26;
+        public byte ServiceID => 106;
+
+        public IActorRef Actor;
+        public uint School;
+
+    }
+
 }

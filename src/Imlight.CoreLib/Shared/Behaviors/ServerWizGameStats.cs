@@ -179,6 +179,7 @@ public class ServerWizGameStats : IClientTypeProvider<WizGameStats> {
         this.m_baseHitpoints = baseStats.m_hitpoints;
         this.m_baseMana = baseStats.m_mana;
         this.m_powerPipBase = baseStats.m_pipChance;
+        this.m_archmasteryBase = baseStats.m_archmastery;
         this.m_energyMax = baseStats.m_petEnergy;
         this.m_shadowPipRating = baseStats.m_shadowPipRating;
         this.m_shadowPipMax = m_shadowMagicUnlocked ? WizStatisticEffectConfigLoader.GetShadowPipMax() : 0;
@@ -239,6 +240,8 @@ public class ServerWizGameStats : IClientTypeProvider<WizGameStats> {
             m_shadowPipRateAccumulated = m_shadowPipRateAccumulated,
             m_shadowPipRateThreshold = m_shadowPipRateThreshold,
             m_shadowPipRatePercentage = m_shadowPipRatePercentage,
+            m_archmasteryBase = m_archmasteryBase,
+            m_archmasteryBonusFlat = m_archmasteryBonus,
         };
     }
 
@@ -271,6 +274,7 @@ public class ServerWizGameStats : IClientTypeProvider<WizGameStats> {
             m_baseMana = baseStats.m_mana,
             m_energyMax = baseStats.m_petEnergy,
             m_powerPipBase = baseStats.m_pipChance,
+            m_archmasteryBase = baseStats.m_archmastery,
 
             m_baseGoldPouch = m_baseGoldPouch,
             m_currentHitpoints = m_currentHitpoints,

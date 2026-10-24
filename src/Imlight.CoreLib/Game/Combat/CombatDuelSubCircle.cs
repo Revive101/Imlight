@@ -278,14 +278,12 @@ public class CombatDuelSubCircle {
     internal void DoPipGain() {
         // todo: at max pips the client rolls a pip conversion; the server tracks no conversion, so nothing happens.
         // todo: the pip round rate (auras and effects) is not tracked, so the rate is always 1.
-        var genericPips = CombatParticipant.m_pipCount.m_genericPips;
-        var powerPips = CombatParticipant.m_pipCount.m_powerPips;
         AcquiredPipType = 1;
-        if (genericPips + powerPips >= MAX_PIP_COUNT) {
+        if (CombatPipPayment.TotalPips(CombatParticipant.m_pipCount) >= MAX_PIP_COUNT) {
             return;
         }
 
-        var chance = DeterminePowerPipChance(genericPips + powerPips);
+        var chance = DeterminePowerPipChance(CombatPipPayment.TotalPips(CombatParticipant.m_pipCount));
         var roll = Random.Shared.NextSingle() * 100.0f;
         var gainedPowerPip = roll < chance;
         Logger.Debug("Slot {0} | Pip gain | Chance {1} | Roll {2} | Type {3}",
@@ -356,17 +354,7 @@ public class CombatDuelSubCircle {
             return true;
         }
 
-        var spellRank = spell.m_pipCost.m_spellRank;
-        var genericPips = CombatParticipant.m_pipCount.m_genericPips;
-        var powerPips = CombatParticipant.m_pipCount.m_powerPips;
-        var isMastered = HasSchoolMastery(spell.m_magicSchoolID);
-
-        // Power pips count as 2 generic pips if the spell is mastered.
-        var totalPips = isMastered
-            ? genericPips + (powerPips * 2)
-            : genericPips + powerPips;
-
-        return totalPips >= spellRank;
+        return CombatPipPayment.CanPay(this, spell);
     }
 
     /// <summary>
@@ -487,34 +475,14 @@ public class CombatDuelSubCircle {
     }
 
     internal void DeductPips(MagicSchool school, byte spellRank) {
-        var isMastered = HasSchoolMastery((uint) school);
-        var pipCount = CombatParticipant.m_pipCount;
-
-        // Deduct pips based on the spell rank.
-        // We have a second conditional here incase of byte overflow.
-        while (spellRank is > 0 and < (MAX_PIP_COUNT * 2)) {
-            if (isMastered && pipCount.m_powerPips > 0) {
-                pipCount.m_powerPips--;
-                spellRank -= 2;
-            }
-            else if (!isMastered && pipCount.m_powerPips > 0) {
-                pipCount.m_powerPips--;
-                spellRank--;
-            }
-            else if (pipCount.m_powerPips == 0 && pipCount.m_genericPips > 0) {
-                pipCount.m_genericPips--;
-                spellRank--;
-            }
-            else if (pipCount.m_powerPips == 0 && pipCount.m_genericPips == 0) {
-                break;
-            }
-        }
+        CombatPipPayment.Pay(this, (uint) school, spellRank);
     }
 
     internal void DeductAllPips() {
         var ourPipCount = CombatParticipant.m_pipCount;
         ourPipCount.m_powerPips = 0;
         ourPipCount.m_genericPips = 0;
+        CombatPipPayment.ClearSchoolPips(ourPipCount);
     }
 
     internal void Reshuffle() => _combatDeck.Reshuffle();
@@ -658,6 +626,7 @@ public class CombatDuelSubCircle {
             m_rotation = _rotation,
             m_radius = _radius,
         };
+        CombatArchmastery.InitializeForPlayer(this);
 
         return true;
     }
@@ -734,6 +703,7 @@ public class CombatDuelSubCircle {
             m_rotation = _rotation,
             m_radius = _radius,
         };
+        CombatArchmastery.InitializeForCreature(this, spellData);
 
         Logger.Debug("Slot {0} | Creature added | Team {1} | Original team {2} | Boss {3}",
             Logger.Args(SlotIndex, CombatParticipant.m_teamID, CombatParticipant.m_originalTeam, CombatParticipant.m_bossMob));
