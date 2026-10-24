@@ -59,12 +59,10 @@ internal sealed record PvPPlayerProfile(
     string Location) {
 
     public static PvPPlayerProfile FromWizard(Wizard wizard, IActorRef zoneActor, string realmName) {
-        var nameHex = wizard.PlayerNameBehavior.GetWizardNameAsByteHexString();
-
         return new PvPPlayerProfile(
             CharId: wizard.CharId,
             GameObjectId: wizard.GameObjectID,
-            NameBlob: DataManipulation.SpacedHexStringToBytes(nameHex),
+            NameBlob: wizard.PlayerNameBehavior.GetPackedNameBytes(),
             SchoolId: MagicSchoolIndex.ToSocialIndex(wizard.MagicSchoolBehavior.MagicSchool),
             Level: (uint) wizard.MagicSchoolBehavior.Level,
             RealmName: realmName ?? string.Empty,

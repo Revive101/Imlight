@@ -95,6 +95,12 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
         // Trigger requirements on an object's state ("Snake obelisk is Idle_On") start from the state it is placed in.
         Entity.Zone.ScriptState.SeedObjectDefault(Entity.Info?.m_zoneTag, Entity.Info?.m_startState);
 
+        // A path creature hears each player's join right after loading and sends itself to them there;
+        // broadcasting it here as well gives every client the object twice.
+        if (Entity.PlayersJoinAfterLoad) {
+            return;
+        }
+
         CreateObjectForAllPlayers();
     }
 
@@ -270,6 +276,12 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
                 // players who joined while a dynamod hid the object: they
                 // never received MSG_NEWOBJECT and are not in
                 // _playersWithRequirementsMet, only in the ignore list.
+                // A player who already holds the object (an "On" mod re-applied on entering the zone) must
+                // not be sent it again: the client rejects a second MSG_NEWOBJECT for an id it has.
+                if (HoldsObject(player)) {
+                    return;
+                }
+
                 var wizard = _playersWithRequirementsMet.FirstOrDefault(x => x.Value == player).Key;
                 if (wizard is null && _playerIgnoreBecauseDynamod.TryGetValue(player, out var hiddenWizard)) {
                     wizard = hiddenWizard;
@@ -299,6 +311,11 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
         }
     }
 
+    private bool HoldsObject(IActorRef player)
+        => _playersInRange.Contains(player)
+        && _playersWithRequirementsMet.ContainsValue(player)
+        && !_playerIgnoreBecauseDynamod.ContainsKey(player);
+
     private static bool IsDespawnState(string stateName) {
         // A dynamod with no state hides its object for the player, as "Off" does (client triggers use both).
         return string.IsNullOrEmpty(stateName)
@@ -323,6 +340,9 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
         if (CreateCurrentStateMessage() is { } stateMsg) {
             player.Tell(stateMsg);
         }
+
+        // A path creature's move state rides on the object: a fresh object is idle on the client.
+        Entity.GetComponentOfType<PathMovementComponent>()?.SendMovementTo(player);
     }
 
     private void CreateObjectForAllPlayers() {
@@ -342,6 +362,8 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
         if (CreateCurrentStateMessage() is { } stateMsg) {
             PlayerBroadcast(stateMsg);
         }
+
+        Entity.GetComponentOfType<PathMovementComponent>()?.BroadcastMovement();
     }
 
     // The client builds an object in its template's default state, so the state the zone holds for it

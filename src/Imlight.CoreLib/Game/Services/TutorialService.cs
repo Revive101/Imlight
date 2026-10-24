@@ -65,6 +65,7 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
         Versionable: false,
         Behaviors: SerializerFlags.None
     );
+    private bool _controlQuestsRemoved;
     private readonly TutorialInfo _tutorialInfo = new() {
         m_tutorialNameID = TUTORIAL_NAME_STRING_ID,
         m_tutorialStage = 0,
@@ -237,7 +238,13 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
         return true;
     }
 
-    private static bool HandleCommandAddQuest(Wizard wizard, string questName) {
+    private bool HandleCommandAddQuest(Wizard wizard, string questName) {
+        if (_controlQuestsRemoved && Array.IndexOf(s_controlQuests, questName) >= 0) {
+            Logger.Debug("Refused re-add of control quest '{0}' after the tutorial ended.", Logger.Args(questName));
+
+            return true;
+        }
+
         // The client re-adds quests it already holds (add/remove flickers); re-adds are idempotent.
         if (wizard.QuestBehavior.CurrentQuestInstances.Any(q => q.QuestName == questName)) {
             return true;
@@ -267,7 +274,8 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
         var questId = instance?.ID ?? 0;
         wizard.RemoveQuest(questName);
 
-        if (questId != 0) {
+        var template = QuestTemplateCollection.GetQuestByName(questName);
+        if (questId != 0 && !string.IsNullOrEmpty(template?.m_questTitle)) {
             SendToSocket(new QUEST_MESSAGES_52_PROTOCOL.MSG_REMOVEQUEST {
                 QuestID = questId,
             });
@@ -431,6 +439,7 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
     }
 
     private void RemoveControlQuests(Wizard wizard) {
+        _controlQuestsRemoved = true;
         foreach (var questName in s_controlQuests) {
             RemoveQuestAndClearFromJournal(wizard, questName);
         }

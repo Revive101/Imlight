@@ -115,10 +115,18 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
         }
 
         _isDisposed = true;
-        _sessionActorRef.Ask("Close");
 
         _socket?.Close();
         _socket?.Dispose();
+    }
+
+    private void DisposeAfterSocketEnded() {
+        if (_isDisposed) {
+            return;
+        }
+
+        _sessionActorRef.Tell("Close");
+        Dispose();
     }
 
     protected override void PostStop() {
@@ -133,7 +141,7 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
 
         // The sender shares this socket and may have closed it already.
         if (_socket.SafeHandle.IsClosed) {
-            Dispose();
+            DisposeAfterSocketEnded();
 
             return;
         }
@@ -155,7 +163,7 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
                 .PipeTo(Self);
         }
         catch (ObjectDisposedException) {
-            Dispose();
+            DisposeAfterSocketEnded();
         }
     }
 
@@ -171,7 +179,7 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
         if (_closeOnSocketException) {
             Logger.Error("SessionActor {Id} receive operation failed: {Message}",
                 Logger.Args(_sessionid, result.Error.Message));
-            Dispose();
+            DisposeAfterSocketEnded();
             return;
         }
 
@@ -182,7 +190,7 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
         try {
             if (bytesReceived <= 0) {
                 // If the bytes transferred is 0, the socket has disconnected.
-                this.Dispose();
+                DisposeAfterSocketEnded();
                 
                 return;
             }
@@ -191,7 +199,7 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
             if (packets.Count > MaxFramesPerRead || _decoder.PendingBytes > MaxPendingBytes) {
                 Logger.Warning("SessionActor {SessionId} exceeded the receive limits: {FrameCount} frames, {PendingBytes} pending bytes.",
                     Logger.Args(_sessionid, packets.Count, _decoder.PendingBytes));
-                this.Dispose();
+                DisposeAfterSocketEnded();
 
                 return;
             }
@@ -210,7 +218,7 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
                             Logger.Args(_sessionid, failedAcquisitionCount));
 
                         // The session has exceeded the failed acquisition limit. We'll dispose of the session.
-                        this.Dispose();
+                        DisposeAfterSocketEnded();
 
                         return;
                     }
@@ -227,7 +235,7 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
 
         }
         catch {
-            this.Dispose();
+            DisposeAfterSocketEnded();
         }
         finally {
             StartReceive();

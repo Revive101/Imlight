@@ -88,7 +88,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
     private const byte PLANNING_TIME = 30;
     private const float DUEL_GRACE_PERIOD_IN_SECONDS = 3.75f;
-    private const float DUEL_NEW_ROUND_DELAY = 2.5f;
+    private const float DUEL_NEW_ROUND_DELAY = 1.86f;
     private const float YAW_ERROR_COMPENSATION = 1.58f;
     private const string GRACE_TIME_KEY = "GracePeriod";
     private const string PLANNING_TIME_KEY = "PlanningPhase";
@@ -97,7 +97,10 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     private const double MINION_SUMMON_ANIMATION_DELAY = 5.5;
     private const string GROUP_JOIN_PROMPT_KEY = "GUI_GotoFriendQuestion";
     private const string PVP_RETURN_GRACE_KEY = "PvPReturnGrace";
-    private const double PVP_RETURN_GRACE_SECONDS = 0; // todo: measure in game
+    private const double PVP_RETURN_GRACE_SECONDS = 0;
+    private const int TEAM_SLOT_COUNT = 4;
+    private const int DEFAULT_BASE_ENEMY_COUNT = 2;
+    private const int ONE_ENEMY_PER_PLAYER_MARKER = -1;
 
     public bool NoTransfer { get; set; } = false;
     public ITimerScheduler Timers { get; set; }
@@ -223,6 +226,11 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         if (IsInRadius(creature, _combatSigilObjectInfo.m_radius) && !_entitiesInRange.Contains(suspect)) {
             _entitiesInRange.Add(suspect);
 
+            // The creature that started the fight, or one that joined and walked back in, already holds a circle.
+            if (IsParticipant(suspect)) {
+                return;
+            }
+
             var npcComponent = entity.GetComponentOfType<NpcComponent>();
             if (npcComponent != null && !npcComponent.IsMonster) {
                 return;
@@ -250,17 +258,15 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         Message = message
     });
 
-    internal void DuelBroadcast(IMessage message)
-        => EnactActionOnSubCircles(circle => circle.ParticipantActor.Tell(message));
-
     internal void CreatureBroadcast(IMessage message) => EnactActionOnSubCircles(circle => {
         if (circle.OccupiedTeam == CombatTeam.Monster) {
             circle.ParticipantActor.Tell(message);
         }
     });
 
+    // Client packets go to the players only: creatures and summoned minions are server entities that read none.
     internal new void PlayerBroadcast(IMessage message) => EnactActionOnSubCircles(circle => {
-        if (circle.OccupiedTeam == CombatTeam.Player) {
+        if (circle.OccupiedTeam == CombatTeam.Player && !circle.IsSummonedMinion) {
             circle.ParticipantActor.Tell(message);
         }
     });
@@ -815,8 +821,13 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
             return;
         }
 
-        AssignParticipantToSubCircle(availableCreatureSubCircle, startingCreatureActor.Key, startingCreatureObject);
-        AssignParticipantToSubCircle(availablePlayerSubCircle, startingPlayerActor.Key, startingPlayerObject);
+        var creatureAssigned = AssignParticipantToSubCircle(availableCreatureSubCircle, startingCreatureActor.Key, startingCreatureObject);
+        var playerAssigned = AssignParticipantToSubCircle(availablePlayerSubCircle, startingPlayerActor.Key, startingPlayerObject);
+        if (!creatureAssigned || !playerAssigned) {
+            Logger.Error("Duel {0} | A starting participant did not answer; the duel was not started.", Logger.Args(SigilId));
+
+            return;
+        }
 
         _isActive = true;
         ReserveCirclesForGroupOf(startingPlayerObject);
@@ -1011,9 +1022,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
             return false;
         }
 
-        subCircle.AssignParticipant(actorRef, coreObject, isSummonedMinion, minionOwnerSubCircle);
-
-        return true;
+        return subCircle.AssignParticipant(actorRef, coreObject, isSummonedMinion, minionOwnerSubCircle) is not null;
     }
 
     internal void SummonMinion(uint creatureTid, CombatDuelSubCircle caster) {
@@ -1229,7 +1238,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
             Data = phase == 1 ? upFirstData : "",
         };
 
-        DuelBroadcast(msg);
+        PlayerBroadcast(msg);
     }
 
     private void SendUpFirst(int roundNum) {
@@ -1288,7 +1297,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
             StatsData = buffer,
         };
 
-        DuelBroadcast(msg);
+        PlayerBroadcast(msg);
     });
 
     private void SendCombatHand() {
@@ -1481,6 +1490,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
                 Logger.Args(Duel.m_duelID.Full, caster.SlotIndex, spell.m_templateID));
 
             CombatResolver.AddCombatMove(CombatMoveType.Pass, caster, null, null);
+
+            return;
         }
 
         // Find the target sub circle. Valid targets are 1-8.
@@ -1979,21 +1990,27 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         circle.ParticipantActor.Tell(stateMsg);
     });
 
+    private bool IsParticipant(IActorRef actor)
+        => SubCircles.Any(x => x is not null && x.ParticipantActor == actor);
+
     private bool IsSlotAvailable(CombatTeam team) {
-        var IsNewbieZone = _combatSigilObjectInfo is { m_unknown_uint_4: not 0 };
-        var IsDangerousZone = false;
+        if (team == CombatTeam.Player) {
+            return PlayerCount < TEAM_SLOT_COUNT;
+        }
 
-        // Newbie sigils (marked in the sigil info) can only have 1 creature as a base.
-        // Dangerous zones (like Sunken City) can have 3 creatures as a base.
-        // Every player in the duel also allocates 1 more creature slot.
-        var baseCreatureCount = IsNewbieZone ? 1 : IsDangerousZone ? 3 : 2;
-        var maxCreatures = baseCreatureCount + (PlayerCount - 1);
+        // Every player past the first lets one more enemy join.
+        var maxCreatures = GetBaseEnemyCount() + PlayerCount - 1;
 
-        var slotAvailable = (team == CombatTeam.Player)
-            ? PlayerCount < 4
-            : CreatureCount < 4 && (CreatureCount < maxCreatures);
+        return CreatureCount < TEAM_SLOT_COUNT && CreatureCount < maxCreatures;
+    }
 
-        return slotAvailable;
+    private int GetBaseEnemyCount() {
+        var baseEnemyCount = _combatSigilObjectInfo?.m_baseEnemyCount ?? 0;
+        if (baseEnemyCount == ONE_ENEMY_PER_PLAYER_MARKER) {
+            return 1;
+        }
+
+        return baseEnemyCount > 0 ? baseEnemyCount : DEFAULT_BASE_ENEMY_COUNT;
     }
 
     private void ResendMinionMoveSelections() {

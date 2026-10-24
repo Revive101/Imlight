@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/26/2026
+ * Last Updated: 10/22/2026
  */
 
 using Imcodec.ObjectProperty.TypeCache;
@@ -139,12 +139,17 @@ internal static class CombatActionResolver {
                 }
             }
 
+            var effectContext = new CombatEffectContext(action.Spell.m_templateID, critMultiplier);
             cinematicTime += CombatEffectApplicator.ApplyEffect(chosenEffect,
                                                                 [.. charmsAffectingThisSpell],
                                                                 action.SpellCaster,
                                                                 targets,
-                                                                critMultiplier);
+                                                                effectContext);
+            CombatHangingEffects.LogHangingState(action.SpellCaster, targets);
         }
+
+        // A charm is spent once per cast however many of the spell's effects it boosts.
+        cinematicTime += charmsAffectingThisSpell.Count * CombatHangingEffects.HANGING_EFFECT_CONSUME_TIME;
 
         if (critEligibleTargetSlots.Count > 0) {
             combatAction.m_CritHitList = [.. critEligibleTargetSlots.Select(slot => new TargetCritHit {
