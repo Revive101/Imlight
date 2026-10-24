@@ -34,7 +34,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 10/22/2026
  */
 
 using System;
@@ -88,10 +88,10 @@ internal static class CombatWards {
         foreach (var ward in wards) {
             if (ward.m_effectType == kSpellEffects.kAbsorbDamage) {
                 // Absorbs will absorb the flat damage, up to the effect param.
-                var absorbAmount = ward.m_paramPerRound;
+                var absorbAmount = ward.m_effectParam;
                 var absorbedDamage = Math.Min(initialDamage, absorbAmount);
 
-                ward.m_paramPerRound -= absorbedDamage;
+                ward.m_effectParam -= absorbedDamage;
 
                 initialDamage -= absorbedDamage;
                 continue;
@@ -122,7 +122,7 @@ internal static class CombatWards {
 
         foreach (var ward in wards) {
             if (ward.m_effectType == kSpellEffects.kModifyIncomingDamageType) {
-                finalSchool = MagicSchools.GetMagicSchool(ward.m_effectParam)?.m_schoolName ?? school;
+                finalSchool = MagicSchools.GetMagicSchool((uint) ward.m_effectParam)?.m_schoolName ?? school;
             }
 
             if (ward.m_sDamageType == finalSchool.ToString() || ward.m_sDamageType == "All") {
@@ -133,14 +133,27 @@ internal static class CombatWards {
         return schoolWards;
     }
 
-    private static List<SpellEffect> GetBeneficialWards(CombatDuelSubCircle target) => [.. target._hangingEffects
-            .Where(x => x.m_effectType is kSpellEffects.kModifyIncomingDamage && x.m_effectParam > 0
-                                       || x.m_effectType == kSpellEffects.kAbsorbDamage)
+    /// <summary>
+    /// Removes the wards a hit used from the target: every used ward except absorbs, which stay until their pool is spent.
+    /// </summary>
+    /// <param name="target">The combat participant that carries the wards.</param>
+    /// <param name="usedWards">The wards that were applied to the hit.</param>
+    internal static void RemoveSpentWards(CombatDuelSubCircle target, List<SpellEffect> usedWards) {
+        target._hangingEffects.RemoveAll(x => usedWards.Any(ward => ReferenceEquals(ward, x))
+                                           && (x.m_effectType != kSpellEffects.kAbsorbDamage || x.m_effectParam < 1));
+    }
+
+    private static List<SpellEffect> GetBeneficialWards(CombatDuelSubCircle target) => [.. GetDamageWards(target)
+            .Where(x => !CombatHangingEffects.IsHarmful(x))
             .Reverse()];
 
-    private static List<SpellEffect> GetHarmfulWards(CombatDuelSubCircle target) => [.. target._hangingEffects
-            .Where(x => x.m_effectType is kSpellEffects.kModifyIncomingDamage && x.m_effectParam < 0 ||
-                        x.m_effectType == kSpellEffects.kModifyIncomingDamageType)
+    private static List<SpellEffect> GetHarmfulWards(CombatDuelSubCircle target) => [.. GetDamageWards(target)
+            .Where(CombatHangingEffects.IsHarmful)
             .Reverse()];
+
+    private static IEnumerable<SpellEffect> GetDamageWards(CombatDuelSubCircle target) => target._hangingEffects
+            .Where(x => x.m_effectType is kSpellEffects.kModifyIncomingDamage
+                                       or kSpellEffects.kAbsorbDamage
+                                       or kSpellEffects.kModifyIncomingDamageType);
 
 }

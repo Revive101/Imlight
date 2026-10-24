@@ -41,7 +41,7 @@
  *
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/27/2026
+ * Last Updated: 10/23/2026
  */
 
 using System;
@@ -58,6 +58,7 @@ using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.Types;
 using Imlight.Common;
 using Imlight.CoreLib.Game.Cinematics;
+using Imlight.CoreLib.Game.Madlibs;
 using Imlight.CoreLib.Game.States;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
@@ -351,7 +352,7 @@ internal class CinematicService(SessionActor sessionActor) : MessageService(sess
     }
 
     private void SendDialog(ActorDialog dialog) {
-        if (!_dialogSerializer.Serialize(dialog, 16, out var dialogData)) {
+        if (!_dialogSerializer.Serialize(DialogSpeakers.ForClient(dialog), 16, out var dialogData)) {
             Logger.Error("Failed to serialize cinematic dialog {Tag}.", Logger.Args(dialog.m_dialogTag));
 
             return;

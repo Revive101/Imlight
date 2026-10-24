@@ -78,6 +78,11 @@ public class Logger {
         .WriteTo.Seq(s_seqUrl)
         .CreateLogger();
 
+    static Logger() {
+        // Akka's Serilog logger writes to the global logger, so dead letters and crashes only show up if it is set.
+        Serilog.Log.Logger = Log;
+    }
+
     /// <summary>
     /// Returns an array of objects that can be used to format a log message.
     /// </summary>

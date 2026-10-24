@@ -102,12 +102,13 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
 
         var globalId = gameObj.m_globalID;
 
-        // If the zone reference is not null, we'll tell the zone to remove the player.
+        // If the zone reference is not null, we'll tell the zone to remove the player. The service is going away,
+        // so it sends no sender and the zone sends no reply.
         ZoneActor?.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER() {
             PlayerActor = SessionActor.ActorRef,
             GlobalId = globalId,
             MobileId = gameObj.m_nMobileID,
-        });
+        }, ActorRefs.NoSender);
         ZoneActor = null;
 
         // Remove the player from the online player collection.
@@ -197,23 +198,36 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
 
         // Sending the server transfer request to the server will allocate and load the zone.
         var zoneDetails = AskServer<ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP>(message);
-        if (message.SendToClient && zoneDetails.ErrorCode == 0) {
-            // Check if the destination zone is the same as the current zone. If so, just teleport the player.
-            if (message.DestinationZone == GetActiveWizard().Zone) {
-                DoTeleport(message.DestinationLocation);
-
-                return;
-            }
-
-            ReadyClientForZoneTransfer(message);
-        }
-        else if (zoneDetails.ErrorCode != 0) {
+        var failed = zoneDetails.ErrorCode != 0;
+        if (failed) {
             // The server has returned an error code. This means the zone transfer failed.
             InformGameClient("Failed to transfer to zone: " + zoneDetails.ErrorMessage, true);
         }
-        else {
-            // If we're not sending this message to the client, it means the zone is being loaded
-            // for MSG_ATTACH. In which case, the client is already prepared for the zone transfer.
+
+        // Only the attach asks for the zone details; every other transfer is told and expects no reply.
+        if (!message.SendToClient) {
+            ReplyToAttachTransfer(zoneDetails, failed);
+
+            return;
+        }
+
+        if (failed) {
+            return;
+        }
+
+        // Check if the destination zone is the same as the current zone. If so, just teleport the player.
+        if (message.DestinationZone == GetActiveWizard().Zone) {
+            DoTeleport(message.DestinationLocation);
+
+            return;
+        }
+
+        ReadyClientForZoneTransfer(message);
+    }
+
+    private void ReplyToAttachTransfer(ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP zoneDetails, bool failed) {
+        // The zone is being loaded for MSG_ATTACH, so the client is already prepared for the zone transfer.
+        if (!failed) {
             SetZone(zoneDetails.ZoneActorRef);
             _currentDynamicZoneId = zoneDetails.DynamicZoneId;
         }
@@ -922,8 +936,11 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         var addMsg = new GAME_5_PROTOCOL.MSG_NEWOBJECT {
             Data = gameObjData,
         };
+        // The player's own client already built this object from MSG_LOGINCOMPLETE and rejects a second copy.
         var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
-            Message = addMsg
+            Message = addMsg,
+            Selfless = true,
+            Sender = SessionActor.ActorRef,
         };
 
         ZoneActor.Tell(broadcastMsg);

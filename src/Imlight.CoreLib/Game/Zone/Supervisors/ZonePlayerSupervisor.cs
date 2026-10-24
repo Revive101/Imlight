@@ -118,10 +118,8 @@ internal sealed class ZonePlayerSupervisor(Core.Zone zone) : ZoneEntitySuperviso
     }
 
     private void HandleRemovePlayer(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message) {
+        // The zone answers the remover, so the supervisor only updates its own set.
         EntityActors.Remove(message.PlayerActor);
-
-        var rsp = new ZONE_102_PROTOCOL.MSG_REMOVEPLAYERRSP();
-        Sender.Tell(rsp);
 
         // Inform the player that they have been removed from the zone.
         Logger.Debug("Player {Name} removed from zone {ZoneName}.",

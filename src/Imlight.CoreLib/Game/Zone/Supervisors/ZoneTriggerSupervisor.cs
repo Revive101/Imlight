@@ -108,6 +108,11 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_POSTEVENT))]
     private void ReceivePostEvent(ZONE_102_PROTOCOL.MSG_POSTEVENT message) {
+        // Ask for the wizard without blocking; the event comes back with it attached.
+        if (NeedsWizard(message) && !PostEventWizardQuery.TryResolve(Self, Sender, message)) {
+            return;
+        }
+
         // Client wads pair multiple triggers on the same event; every passing trigger fires
         // (their results are independent), but paired teleporter triggers must not both win:
         // only one ResTeleport trigger may execute (see PickTeleportTrigger).
@@ -158,6 +163,7 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
                 SuppressTeleportResults = hasTeleportResult && !ReferenceEquals(trigger, teleportWinner),
                 PlayerSpawned = message.PlayerSpawned,
                 Adjectives = message.Adjectives,
+                PlayerWizard = message.PlayerWizard,
                 RequirementsChecked = true,
             });
         }
@@ -322,10 +328,8 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
         }
 
         HashSet<string> activeQuests = [];
-        if (message.PlayerActor is not null) {
-            var wizardResponse = message.PlayerActor
-                .Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD()).Result;
-            activeQuests = wizardResponse.Wizard.QuestBehavior.CurrentQuestInstances
+        if (message.PlayerWizard is not null) {
+            activeQuests = message.PlayerWizard.QuestBehavior.CurrentQuestInstances
                 .Select(q => q.QuestName).ToHashSet();
         }
 
@@ -417,7 +421,13 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
             return;
         }
 
-        Zone.ScriptState.SetObjectState(objectName, stateName);
+        // Setting an object to the state it already has must not rebroadcast or re-post its EnterState, or a trigger cycle loops forever.
+        if (!Zone.ScriptState.SetObjectState(objectName, stateName)) {
+            Logger.Debug("Zone {0}: object {1} is already in state {2}, nothing to broadcast.",
+                Logger.Args(Zone.ZonePath, objectName, stateName));
+
+            return;
+        }
 
         ZoneRef.Tell(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
             Messages = [new ZONE_102_PROTOCOL.MSG_ENTERSTATE {
@@ -445,13 +455,15 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
         });
     }
 
+    private bool NeedsWizard(ZONE_102_PROTOCOL.MSG_POSTEVENT message)
+        => message.PlayerActor is not null
+        && _orderedTriggers.Any(x => x.Trigger.m_fireEvents?.Any(e => e == message.EventName) == true
+                                     && x.Trigger.m_requirements?.m_requirements is { Count: > 0 });
+
     private bool EvaluateRequirements(Trigger trigger, ZONE_102_PROTOCOL.MSG_POSTEVENT message) {
         if (trigger.m_requirements?.m_requirements is null || trigger.m_requirements.m_requirements.Count == 0) {
             return true;
         }
-
-        var queryWizardMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
-        var wizardResponse = message.PlayerActor.Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(queryWizardMsg).Result;
 
         return RequirementDispatcher.EvaluateRequirements(
             requirements: trigger.m_requirements,
@@ -459,7 +471,7 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
                 trigger.m_requirements,
                 message.PlayerActor,
                 message.PlayerGameObject,
-                wizardResponse.Wizard,
+                message.PlayerWizard,
                 ZoneRef,
                 trigger.m_triggerName) {
                 ScriptState = Zone.ScriptState,
