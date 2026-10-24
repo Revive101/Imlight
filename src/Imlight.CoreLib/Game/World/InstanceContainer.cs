@@ -51,15 +51,24 @@ namespace Imlight.CoreLib.Game.World;
 /// </summary>
 internal sealed class InstanceContainer(ulong instanceOwnerId) : ReceiveProtocolDispatcher, IWithTimers {
 
+    private const string IDLE_TIMER = "container-idle";
+    private const int EMPTY_CONTAINER_MINUTES = 5; // todo: tune
+
     public ITimerScheduler Timers { get; set; }
 
     private readonly ulong _instanceOwnerId = instanceOwnerId;
     private readonly List<uint> _dynamicZoneIds = [];
     private readonly Dictionary<string, IActorRef> _zones = [];
+    private readonly Dictionary<string, uint> _zoneDynamicIds = [];
     private readonly Zone.Core.InstanceQuestProgress _questProgress = new();
 
     public static Props Props(ulong instanceOwnerId) 
         => Akka.Actor.Props.Create(() => new InstanceContainer(instanceOwnerId));
+
+    protected override void PreStart() {
+        base.PreStart();
+        ArmEmptyTimer();
+    }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONETRANSFER))]
     public void ReceiveZoneTransfer(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message) {
@@ -83,6 +92,7 @@ internal sealed class InstanceContainer(ulong instanceOwnerId) : ReceiveProtocol
 
         _zones[zoneName] = zoneActor;
         _questProgress.AddZone(zoneName);
+        Timers.Cancel(IDLE_TIMER);
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_INSTANCECONTAINERHASZONE))]
@@ -117,15 +127,42 @@ internal sealed class InstanceContainer(ulong instanceOwnerId) : ReceiveProtocol
 
         _questProgress.RemoveZone(message.ZoneName);
 
+        if (_zoneDynamicIds.Remove(message.ZoneName, out var dynamicId)) {
+            _dynamicZoneIds.Remove(dynamicId);
+        }
+
         Logger.Information("Dropping instance zone {ZoneName} (owner {OwnerId})",
             Logger.Args(message.ZoneName, _instanceOwnerId));
 
         Context.Stop(zoneActor);
+        ArmEmptyTimer();
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_INSTANCECONTAINERIDLE))]
+    public void ReceiveContainerIdle(ZONE_102_PROTOCOL.MSG_INSTANCECONTAINERIDLE message) {
+        if (_zones.Count > 0) {
+            return;
+        }
+
+        Context.Parent.Tell(new ZONE_102_PROTOCOL.MSG_INSTANCECONTAINEREMPTY { OwnerCharId = _instanceOwnerId });
+
+        // The game world may refuse while a transfer for this owner is pending; ask again later.
+        ArmEmptyTimer();
+    }
+
+    private void ArmEmptyTimer() {
+        if (_zones.Count > 0) {
+            return;
+        }
+
+        Timers.StartSingleTimer(IDLE_TIMER, new ZONE_102_PROTOCOL.MSG_INSTANCECONTAINERIDLE(),
+            TimeSpan.FromMinutes(EMPTY_CONTAINER_MINUTES));
     }
 
     private IActorRef CreateZone(string zoneName) {
         var zoneActorName = SanitizeZoneName(zoneName);
         var zoneId = GetNextDynamicZoneId();
+        _zoneDynamicIds[zoneName] = zoneId;
 
         // Every zone created under an instance container is, by definition, instanced.
         var zone = Context.ActorOf(Zone.Core.Zone.Props(zoneName, zoneId, true, _questProgress), zoneActorName);

@@ -37,7 +37,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 10/14/2026
  */
 
 using System;
@@ -64,6 +64,7 @@ internal static class ItemHelper {
             m_pattern = (Bui5) item.m_pattern,
             m_baseColor = (Bui5) item.m_primaryColor,
             m_trimColor = (Bui5) item.m_secondaryColor,
+            m_displayID = (uint) item.m_displayID,
         };
 
         return publicItem;
@@ -79,6 +80,30 @@ internal static class ItemHelper {
 
         return (WizItemTemplate) template;
     }
+
+    /// <summary>
+    /// Whether the item was stitched, meaning it shows the look of a different item template.
+    /// </summary>
+    /// <param name="item">The item in question.</param>
+    /// <returns>True when the item carries an appearance template.</returns>
+    internal static bool IsStitched(WizClientObjectItem item) => (uint) item.m_displayID != 0;
+
+    /// <summary>
+    /// Gets the id of the template that decides how an item looks: the appearance template of a stitched
+    /// item, otherwise the item's own template.
+    /// </summary>
+    /// <param name="item">The item in question.</param>
+    /// <returns>The template id used for the item's look and dye layers.</returns>
+    internal static uint GetDisplayTemplateId(WizClientObjectItem item)
+        => IsStitched(item) ? (uint) item.m_displayID : (uint) item.m_templateID;
+
+    /// <summary>
+    /// Gets the template that decides how an item looks. See <see cref="GetDisplayTemplateId"/>.
+    /// </summary>
+    /// <param name="item">The item in question.</param>
+    /// <returns>The appearance template. Null, if it wasn't found.</returns>
+    internal static WizItemTemplate GetDisplayTemplate(WizClientObjectItem item)
+        => CoreObjectFactory.GetCoreTemplate(GetDisplayTemplateId(item)) as WizItemTemplate;
 
     /// <summary>
     /// Gets the slot of a WizClientObjectItem from the template adjectives.

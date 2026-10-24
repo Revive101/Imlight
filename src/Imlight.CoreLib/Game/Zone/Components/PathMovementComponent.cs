@@ -26,7 +26,8 @@
  * USAGE EXAMPLE:
  * 
  * NOTE:
- * Supports multiple path traversal types (chain, loop, random).
+ * Supports multiple path traversal types (chain, loop, random). An entity whose path details never
+ * arrive stops moving and stays in place.
  * 
  * TODO:
  * 
@@ -46,7 +47,6 @@ using Imlight.Common;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
-using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 
@@ -54,11 +54,18 @@ internal sealed class PathMovementComponent(ZoneEntity entity) : ZoneEntityCompo
 
     private const string CREATURE_SPAWN_INTERVAL_LOCK = "CREATURE_SPAWN_INTERVAL_LOCK";
     private const string CREATURE_FISH_INTERVAL_LOCK = "CREATURE_FISH_INTERVAL_LOCK";
+    private const string CREATURE_TRAVEL_UPDATE_INTERVAL_LOCK = "CREATURE_TRAVEL_UPDATE_INTERVAL_LOCK";
     private const uint INITIAL_MOVEMENT_DELAY_MINIMUM_IN_MS = 1000;
     private const uint INITIAL_MOVEMENT_DELAY_MAXIMUM_IN_MS = 3000;
     private const uint TRAVEL_TIME_CLAMP_MINIMUM_IN_MS = 1000;
     private const uint CREATURE_FISH_INTERVAL_IN_MS = 250;
     private const uint PATH_DETAILS_FAILURE_COUNT_MAXIMUM = 5;
+    private const uint TRAVEL_UPDATE_INTERVAL_IN_MS = 380;
+    private const sbyte MOVE_STATE_IDLE = 0;
+    private const sbyte MOVE_STATE_TRAVELLING = 1;
+    private const float DIRECTION_UNITS_PER_RADIAN = 40.0f;
+    private const int DIRECTION_UNITS_MAXIMUM = 251;
+    private const float COORDINATE_UNITS_PER_WIRE_UNIT = 4.0f;
 
     public bool Stopped { get; set; }
     public ITimerScheduler Timers { get; set; }
@@ -77,6 +84,8 @@ internal sealed class PathMovementComponent(ZoneEntity entity) : ZoneEntityCompo
     private uint _pathDetailsFailureCount;
     private DateTime _lastMoveTime;
     private Vector3 _lastStartLocation;
+    private bool _isTravelling;
+    private byte _segmentDirection;
     // todo: do actions
 
     public static bool ShouldAttachToEntity(CoreTemplate template)
@@ -116,29 +125,40 @@ internal sealed class PathMovementComponent(ZoneEntity entity) : ZoneEntityCompo
         Timers.StartPeriodicTimer(CREATURE_FISH_INTERVAL_LOCK, fishInteractionMsg, fishInteractionInterval);
     }
 
-    public override void OnPlayerJoin(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) {
+    /// <summary>
+    /// Tells a player who was just sent this creature's MSG_NEWOBJECT where it is and whether it is travelling.
+    /// </summary>
+    public void SendMovementTo(IActorRef playerActor) {
+        // The client drops a move for an object it does not have yet, so this must follow the object itself.
         if (_currentNode is null) {
             return;
         }
 
-        // Inform the player of where the creature is moving to.
-        var movestateMsg = new GAME_5_PROTOCOL.MSG_MOVESTATE {
-            GlobalID = Entity.ActiveGameObject.m_globalID,
-            NewState = 0
-        };
-        playerActor.Tell(movestateMsg);
-
-        var movementMsg = new GAME_5_PROTOCOL.MSG_SERVERMOVE {
-            Direction = (byte) (_currentNode.m_direction / Math.PI / 2 * 250),
-            LocationX = (ushort) (_currentNode.m_location.X / 4.0f),
-            LocationY = (ushort) (_currentNode.m_location.Y / 4.0f),
-            LocationZ = (ushort) (_currentNode.m_location.Z / 4.0f),
-            MobileID = Entity.MobileID
-        };
-        playerActor.Tell(movementMsg);
+        playerActor.Tell(CreateMoveStateMessage(_isTravelling ? MOVE_STATE_TRAVELLING : MOVE_STATE_IDLE));
+        playerActor.Tell(CreateServerMoveMessage(GetPosition()));
     }
 
-    public void Stop() => Stopped = true;
+    /// <summary>
+    /// Tells every player in the zone, just sent this creature's MSG_NEWOBJECT, where it is and whether it is travelling.
+    /// </summary>
+    public void BroadcastMovement() {
+        if (_currentNode is null) {
+            return;
+        }
+
+        BroadcastMoveState(_isTravelling ? MOVE_STATE_TRAVELLING : MOVE_STATE_IDLE);
+        BroadcastServerMove(GetPosition());
+    }
+
+    public void Stop() {
+        Stopped = true;
+        if (_isTravelling) {
+            Entity.ActiveGameObject.m_location = GetPosition();
+        }
+
+        _isTravelling = false;
+        Timers.Cancel(CREATURE_TRAVEL_UPDATE_INTERVAL_LOCK);
+    }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PATHDETAILS))]
     private void ReceivePathDetails(ZONE_102_PROTOCOL.MSG_PATHDETAILS message) {
@@ -175,35 +195,80 @@ internal sealed class PathMovementComponent(ZoneEntity entity) : ZoneEntityCompo
             return;
         }
 
+        var arrived = _isTravelling;
+        if (arrived) {
+            ArriveAtNode();
+        }
+
         // Creatures have a chance to pause at each node. This stops them from clumping together.
         // If the creature is already paused, then don't pause again.
         if (ShouldPause() && !_justPaused) {
             _justPaused = true;
-            RestartMoveInterval(_pauseDuration);
+            PauseAtNode(arrived);
+            RestartMoveInterval(_pauseDuration * 1000);
 
             return;
         }
         _justPaused = false;
 
-        // Target a new node and begin moving towards it.
-        // Capture the current position as the start of this movement segment for
-        // interpolation before UpdateGameObjectLocation overwrites m_location.
+        StartSegment(arrived);
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_CREATURETRAVELUPDATEINTERVAL))]
+    private void ReceiveTravelUpdateInterval() {
+        if (Stopped || !_isTravelling) {
+            Timers.Cancel(CREATURE_TRAVEL_UPDATE_INTERVAL_LOCK);
+
+            return;
+        }
+
+        BroadcastServerMove(GetPosition());
+    }
+
+    private void ArriveAtNode() {
+        _isTravelling = false;
+        Timers.Cancel(CREATURE_TRAVEL_UPDATE_INTERVAL_LOCK);
+        Entity.ActiveGameObject.m_location = _currentNode.m_location;
+    }
+
+    private void PauseAtNode(bool arrived) {
+        if (!arrived) {
+            return;
+        }
+
+        // todo: confirm, live showed no pauses
+        BroadcastServerMove(_currentNode.m_location);
+        BroadcastMoveState(MOVE_STATE_IDLE);
+    }
+
+    private void StartSegment(bool arrived) {
+        // At a node the client gets the arrival with the old direction, then the next segment's first update.
+        BroadcastMoveState(MOVE_STATE_TRAVELLING);
+        if (arrived) {
+            BroadcastServerMove(_currentNode.m_location);
+        }
+
         _lastStartLocation = Entity.ActiveGameObject.m_location;
         _currentNode = GetNextNode();
+        _segmentDirection = EncodeDirection(_currentNode.m_location - _lastStartLocation, _segmentDirection);
 
         // Determine how long it will take to reach the new node.
         var distanceToNewNode = Vector3.Distance(_lastStartLocation, _currentNode.m_location);
         var travelTimeInSeconds = distanceToNewNode / (_movementSpeed * _movementScale);
-        var travelTimeInMilli = (uint) travelTimeInSeconds * 1000;
+        var travelTimeInMilli = (uint) (travelTimeInSeconds * 1000);
 
         if (travelTimeInMilli < TRAVEL_TIME_CLAMP_MINIMUM_IN_MS) {
             travelTimeInMilli = TRAVEL_TIME_CLAMP_MINIMUM_IN_MS;
         }
 
-        UpdateGameObjectLocation(_currentNode);
-        BroadcastMovement(_currentNode);
-        RestartMoveInterval(travelTimeInMilli);
         _lastMoveTime = DateTime.Now;
+        _isTravelling = true;
+        BroadcastServerMove(_lastStartLocation);
+        RestartMoveInterval(travelTimeInMilli);
+
+        var travelUpdateInterval = TimeSpan.FromMilliseconds(TRAVEL_UPDATE_INTERVAL_IN_MS);
+        var travelUpdateMsg = new ZONE_102_PROTOCOL.MSG_CREATURETRAVELUPDATEINTERVAL();
+        Timers.StartPeriodicTimer(CREATURE_TRAVEL_UPDATE_INTERVAL_LOCK, travelUpdateMsg, travelUpdateInterval);
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_CREATUREFISHINTERACTIONINTERVAL))]
@@ -281,40 +346,38 @@ internal sealed class PathMovementComponent(ZoneEntity entity) : ZoneEntityCompo
         throw new NotImplementedException($"Path type {_pathType} is not implemented.");
     }
 
-    private void BroadcastMovement(NodeObject nodeObject) {
-        // Send the move state message to the zone.
-        var movestateMsg = new GAME_5_PROTOCOL.MSG_MOVESTATE {
-            GlobalID = Entity.ActiveGameObject.m_globalID,
-            NewState = 0
-        };
-        var movestateMsgBroadcast = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
-            Message = movestateMsg,
-            Targets = ZoneBroadcastTarget.Players,
-        };
-        Entity.ZoneRef.Tell(movestateMsgBroadcast);
+    private void BroadcastMoveState(sbyte newState) => PlayerBroadcast(CreateMoveStateMessage(newState));
 
-        // Send the actual movement message to the zone.
-        // The direction is in radians and the coordinates are compressed by a factor of 4.
-        var movementMsg = new GAME_5_PROTOCOL.MSG_SERVERMOVE {
-            Direction = (byte) (nodeObject.m_direction / Math.PI / 2 * 250),
-            LocationX = (ushort) (nodeObject.m_location.X / 4.0f),
-            LocationY = (ushort) (nodeObject.m_location.Y / 4.0f),
-            LocationZ = (ushort) (nodeObject.m_location.Z / 4.0f),
+    private void BroadcastServerMove(Vector3 location) => PlayerBroadcast(CreateServerMoveMessage(location));
+
+    private GAME_5_PROTOCOL.MSG_MOVESTATE CreateMoveStateMessage(sbyte newState)
+        => new() {
+            GlobalID = Entity.ActiveGameObject.m_globalID,
+            NewState = newState
+        };
+
+    private GAME_5_PROTOCOL.MSG_SERVERMOVE CreateServerMoveMessage(Vector3 location)
+        => new() {
+            Direction = _segmentDirection,
+            LocationX = EncodeCoordinate(location.X),
+            LocationY = EncodeCoordinate(location.Y),
+            LocationZ = EncodeCoordinate(location.Z),
             MobileID = Entity.MobileID
         };
-        var movementMsgBroadcast = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
-            Message = movementMsg,
-            Targets = ZoneBroadcastTarget.Players,
-        };
-        Entity.ZoneRef.Tell(movementMsgBroadcast);
+
+    private static byte EncodeDirection(Vector3 travelDelta, byte stationaryDirection) {
+        if (travelDelta.X == 0 && travelDelta.Y == 0) {
+            return stationaryDirection;
+        }
+
+        var radians = (MathF.Atan2(-travelDelta.X, -travelDelta.Y) + MathF.Tau) % MathF.Tau;
+        var units = (int) MathF.Round(radians * DIRECTION_UNITS_PER_RADIAN);
+
+        return (byte) Math.Min(units, DIRECTION_UNITS_MAXIMUM);
     }
 
-    private void UpdateGameObjectLocation(NodeObject nodeObject)
-        => Entity.ActiveGameObject.m_location = new Vector3(
-            nodeObject.m_location.X,
-            nodeObject.m_location.Y,
-            nodeObject.m_location.Z
-        );
+    private static ushort EncodeCoordinate(float coordinate)
+        => unchecked((ushort) (short) MathF.Round(coordinate / COORDINATE_UNITS_PER_WIRE_UNIT));
 
     private Vector3 GetPosition() {
         if (_currentNode is null) {
@@ -348,8 +411,8 @@ internal sealed class PathMovementComponent(ZoneEntity entity) : ZoneEntityCompo
             _pathDetailsFailureCount++;
 
             if (_pathDetailsFailureCount > PATH_DETAILS_FAILURE_COUNT_MAXIMUM) {
-                Logger.Error(
-                    "Creature {0} in zone {1} tried moving but still has not received path details after {2} seconds.",
+                Logger.Warning(
+                    "Creature {0} in zone {1} has not received path details after {2} seconds, so it stays where it stands.",
                     Logger.Args(
                         Entity.ActiveGameObject.m_debugName,
                         Entity.Zone.ZoneName,
@@ -357,8 +420,11 @@ internal sealed class PathMovementComponent(ZoneEntity entity) : ZoneEntityCompo
                     )
                 );
 
-                Entity.DeleteObject();
-                
+                // An object placed in the zone rather than spawned by a path never gets path details. It keeps
+                // standing instead of being deleted, which also left its movement timers firing at a dead actor.
+                Stop();
+                Timers.CancelAll();
+
                 return false;
             }
 

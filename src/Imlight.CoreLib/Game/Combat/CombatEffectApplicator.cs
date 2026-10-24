@@ -25,7 +25,7 @@
  * 
  * USAGE EXAMPLE:
  * float cinematicTime = CombatEffectApplicator.ApplyEffect(
- *     effect, charms, caster, targets);
+ *     effect, charms, caster, targets, context);
  * 
  * NOTE:
  * 
@@ -34,10 +34,11 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 08/14/2026
+ * Last Updated: 10/22/2026
  */
 
 using Imcodec.ObjectProperty.TypeCache;
+using Imlight.CoreLib.Game.Spells;
 using System;
 using System.Linq;
 
@@ -54,7 +55,6 @@ namespace Imlight.CoreLib.Game.Combat;
 internal static class CombatEffectApplicator {
 
     private const float DAMAGE_PERCENT_MAX = 2.45f; // todo: not correct. this should be a limit function
-    private const float HANGING_EFFECT_CONSUME_TIME = 1.0f;
 
     /// <summary>
     /// Applies the specified spell effect to the targets, modifying their stats and applying damage or healing as necessary.
@@ -63,35 +63,34 @@ internal static class CombatEffectApplicator {
     /// <param name="charms">The charms currently applied to the caster.</param>
     /// <param name="caster">The caster of the spell.</param>
     /// <param name="targets">The targets of the spell effect.</param>
+    /// <param name="context">The per-action values: source spell template id and crit multiplier.</param>
     /// <returns>The cinematic time required for the effect to be applied.</returns>
     internal static float ApplyEffect(SpellEffect effect,
                                       SpellEffect[] charms,
                                       CombatDuelSubCircle caster,
                                       CombatDuelSubCircle[] targets,
-                                      float critMultiplier = 1) {
+                                      CombatEffectContext context) {
         var cinematicTime = 0.0f;
 
         if (effect.m_effectTarget == kEffectTarget.kGlobal) {
-            ApplyGlobalEffect(effect, caster._duelActor.Duel);
-
-            return cinematicTime;
+            return ApplyGlobalEffect(effect, caster._duelActor.Duel, context);
         }
 
         switch (effect.m_effectType) {
             case kSpellEffects.kDamage:
-                cinematicTime += ApplyFlatDamageEffect(effect, charms, caster, targets, critMultiplier);
+                cinematicTime += ApplyFlatDamageEffect(effect, charms, caster, targets, context.CritMultiplier);
                 break;
             case kSpellEffects.kDamagePerTotalPipPower:
-                cinematicTime += ApplyFlatDamageEffect(effect, charms, caster, targets, critMultiplier);
+                cinematicTime += ApplyFlatDamageEffect(effect, charms, caster, targets, context.CritMultiplier);
                 break;
             case kSpellEffects.kDamageOverTime:
-                cinematicTime += ApplyDamageOverTime(effect, charms, caster, targets);
+                cinematicTime += ApplyDamageOverTime(effect, charms, caster, targets, context);
                 break;
             case kSpellEffects.kHeal:
-                cinematicTime += ApplyFlatHealEffect(effect, charms, caster, targets, critMultiplier);
+                ApplyFlatHealEffect(effect, charms, caster, targets, context.CritMultiplier);
                 break;
             case kSpellEffects.kHealOverTime:
-                cinematicTime += ApplyHealOverTime(effect, charms, caster, targets);
+                cinematicTime += ApplyHealOverTime(effect, charms, caster, targets, context);
                 break;
             case kSpellEffects.kStealHealth:
                 cinematicTime += ApplyStealHealthEffect(effect, charms, caster, targets);
@@ -108,7 +107,7 @@ internal static class CombatEffectApplicator {
             case kSpellEffects.kAbsorbDamage:
             case kSpellEffects.kCritBoost:
             case kSpellEffects.kCritBlock:
-                ApplyHangingEffect(effect, targets);
+                cinematicTime += ApplyHangingEffect(effect, targets, context);
                 break;
             case kSpellEffects.kStun:
                 cinematicTime += ApplyStunEffect(effect, targets);
@@ -167,9 +166,9 @@ internal static class CombatEffectApplicator {
     private static float ApplyDamageOverTime(SpellEffect effect,
                                              SpellEffect[] charms,
                                              CombatDuelSubCircle caster,
-                                             CombatDuelSubCircle[] targets) {
+                                             CombatDuelSubCircle[] targets,
+                                             CombatEffectContext context) {
         var damageFromCaster = effect.m_effectParam;
-        var cinematicTime = 0.0f;
 
         // Calculate damage increase from caster stats.
         var damageFlatIncrease = GetFlatDamageIncrease(caster, effect.m_sDamageType);
@@ -178,7 +177,6 @@ internal static class CombatEffectApplicator {
         damageFromCaster = (int) Math.Floor(damageFromCaster * (1 + damagePercentIncrease) + damageFlatIncrease);
 
         // Calculate damage changes from hanging effects.
-        cinematicTime += charms.Length * HANGING_EFFECT_CONSUME_TIME;
         damageFromCaster = CombatCharms.GetOutgoingDamageFromCharms(charms, damageFromCaster);
 
         // Calculate damage from current bubble
@@ -196,34 +194,30 @@ internal static class CombatEffectApplicator {
 
             // Ensure that damage isn't negative.
             reducedDamage = Math.Max(reducedDamage, 0);
-            reducedDamage /= effect.m_numRounds;
 
-            var effectClone = new SpellEffect {
-                m_disposition = effect.m_disposition,
-                m_numRounds = effect.m_numRounds,
-                m_paramPerRound = reducedDamage,
-                m_sDamageType = effect.m_sDamageType,
-                m_effectType = effect.m_effectType,
-            };
+            // The hanging copy holds the total; the first tick works out the per-round amount.
+            var effectClone = CombatHangingEffects.CopyForTarget(effect, context.SpellTemplateId);
+            effectClone.m_effectParam = reducedDamage;
+            effectClone.m_numRounds = Math.Max(effect.m_numRounds, 1);
+            effectClone.m_paramPerRound = 0;
             target._hangingEffects.Add(effectClone);
         }
 
-        return cinematicTime;
+        return targets.Count(x => x.IsAlive) * CombatHangingEffects.HANGING_EFFECT_ADD_TIME;
     }
 
     private static float ApplyHealOverTime(SpellEffect effect,
                                            SpellEffect[] charms,
                                            CombatDuelSubCircle caster,
-                                           CombatDuelSubCircle[] targets) {
+                                           CombatDuelSubCircle[] targets,
+                                           CombatEffectContext context) {
         var healFromCaster = effect.m_effectParam;
-        var cinematicTime = 0.0f;
 
         // Calculate heal increase from gear
         var percentOutgoingHealIncrease = GetPercentOutgoingHealIncrease(caster);
         healFromCaster = (int) Math.Ceiling(healFromCaster * (1 + percentOutgoingHealIncrease));
 
         // Calculate heal increase/decrease from hanging effects on caster
-        cinematicTime += charms.Length * HANGING_EFFECT_CONSUME_TIME;
         healFromCaster = ApplyHealingCharms(charms, healFromCaster);
 
         // Calculate heal increase from current bubble
@@ -235,19 +229,16 @@ internal static class CombatEffectApplicator {
             // Calculate heal increase from target stats
             var percentIncomingHealIncrease = GetPercentIncomingHealIncrease(target);
             var healPerTarget = (int) Math.Ceiling(healFromCaster * (1 + percentIncomingHealIncrease));
-            healPerTarget /= effect.m_numRounds;
 
-            var effectClone = new SpellEffect {
-                m_disposition = effect.m_disposition,
-                m_numRounds = effect.m_numRounds,
-                m_paramPerRound = healPerTarget,
-                m_effectType = effect.m_effectType,
-            };
-
+            // The hanging copy holds the total; the first tick works out the per-round amount.
+            var effectClone = CombatHangingEffects.CopyForTarget(effect, context.SpellTemplateId);
+            effectClone.m_effectParam = healPerTarget;
+            effectClone.m_numRounds = Math.Max(effect.m_numRounds, 1);
+            effectClone.m_paramPerRound = 0;
             target._hangingEffects.Add(effectClone);
         }
 
-        return cinematicTime;
+        return targets.Count(x => x.IsAlive) * CombatHangingEffects.HANGING_EFFECT_ADD_TIME;
     }
 
     private static float ApplyStealHealthEffect(SpellEffect effect,
@@ -275,7 +266,6 @@ internal static class CombatEffectApplicator {
         damageFromCaster = (int) Math.Floor((damageFromCaster * damagePercentIncrease) + damageFlatIncrease);
 
         // Calculate damage changes from hanging effects.
-        cinematicTime += charms.Length * HANGING_EFFECT_CONSUME_TIME;
         damageFromCaster = CombatCharms.GetOutgoingDamageFromCharms(charms, damageFromCaster);
 
         var duel = caster._duelActor.Duel;
@@ -294,32 +284,29 @@ internal static class CombatEffectApplicator {
             // Calculate damage changes from target hanging effects.
             var wards = CombatWards.FindAppliedWards(target, effect);
             wards = CombatWards.GetWardsBySchool([.. wards], effect.m_sDamageType, out var finalSchool);
-            cinematicTime += wards.Count * HANGING_EFFECT_CONSUME_TIME;
+            cinematicTime += wards.Count * CombatHangingEffects.HANGING_EFFECT_CONSUME_TIME;
             damage = CombatWards.GetIncomingDamageFromWards(wards, damage);
 
             damageDealt += DoDamageToTarget(target, damage, finalSchool);
 
-            // Remove the wards that were applied to this spell from the target's hanging effects.
-            target._hangingEffects.RemoveAll(x => wards.Contains(x) && x.m_paramPerRound <= 0);
+            CombatWards.RemoveSpentWards(target, wards);
         }
 
         return (cinematicTime, damageDealt);
     }
 
-    private static float ApplyFlatHealEffect(SpellEffect effect,
-                                             SpellEffect[] charms,
-                                             CombatDuelSubCircle caster,
-                                             CombatDuelSubCircle[] targets,
-                                             float critMultiplier = 1) {
+    private static void ApplyFlatHealEffect(SpellEffect effect,
+                                            SpellEffect[] charms,
+                                            CombatDuelSubCircle caster,
+                                            CombatDuelSubCircle[] targets,
+                                            float critMultiplier = 1) {
         int healFromCaster = effect.m_effectParam;
-        var cinematicTime = 0.0f;
 
         // Calculate heal increase from gear
         var percentOutgoingHealIncrease = GetPercentOutgoingHealIncrease(caster);
         healFromCaster = (int) Math.Ceiling(healFromCaster * (1 + percentOutgoingHealIncrease));
 
         // Calculate heal increase/decrease from hanging effects on caster
-        cinematicTime += charms.Length * HANGING_EFFECT_CONSUME_TIME;
         healFromCaster = ApplyHealingCharms(charms, healFromCaster);
 
         // Calculate heal increase from current bubble
@@ -334,8 +321,6 @@ internal static class CombatEffectApplicator {
         foreach (var target in targets) {
             _ = DoHealToTarget(target, healFromCaster);
         }
-
-        return cinematicTime;
     }
 
     private static void ApplyReshuffleEffect(CombatDuelSubCircle caster) 
@@ -344,15 +329,15 @@ internal static class CombatEffectApplicator {
     private static float ApplyRemoveCharmEffect(SpellEffect effect, CombatDuelSubCircle[] targets) {
         var cinematicTime = 0.0f;
 
-        // -1 is a special value that means remove all charms.
-        var charmRemoveCount = effect.m_effectParam == -1 ? effect.m_effectParam = int.MaxValue : effect.m_effectParam;
+        // A negative count means no limit.
+        var charmRemoveCount = effect.m_effectParam < 0 ? int.MaxValue : effect.m_effectParam;
 
         foreach (var target in targets) {
             var hangingEffects = target._hangingEffects.ToArray();
             var charmsInQuesiton = CombatCharms.FindAppliedCharms(target, hangingEffects, effect.m_disposition)
                                                .Take(charmRemoveCount);
 
-            cinematicTime += charmsInQuesiton.Count() * HANGING_EFFECT_CONSUME_TIME;
+            cinematicTime += charmsInQuesiton.Count() * CombatHangingEffects.HANGING_EFFECT_CONSUME_TIME;
 
             target._hangingEffects.RemoveAll(x => charmsInQuesiton.Contains(x));
         }
@@ -363,8 +348,8 @@ internal static class CombatEffectApplicator {
     private static float ApplyRemoveWardEffect(SpellEffect effect, CombatDuelSubCircle[] targets) {
         var cinematicTime = 0.0f;
 
-        // -1 is a special value that means remove all wards.
-        var wardRemoveCount = effect.m_effectParam == -1 ? effect.m_effectParam = int.MaxValue : effect.m_effectParam;
+        // A negative count means no limit.
+        var wardRemoveCount = effect.m_effectParam < 0 ? int.MaxValue : effect.m_effectParam;
 
         foreach (var target in targets) {
             // Remove all wards except for stun blocks.
@@ -372,7 +357,7 @@ internal static class CombatEffectApplicator {
                                    .Where(x => x.m_effectType != kSpellEffects.kStunBlock)
                                    .Take(wardRemoveCount);
 
-            cinematicTime += wards.Count() * HANGING_EFFECT_CONSUME_TIME;
+            cinematicTime += wards.Count() * CombatHangingEffects.HANGING_EFFECT_CONSUME_TIME;
 
             target._hangingEffects.RemoveAll(x => wards.Contains(x));
         }
@@ -383,8 +368,8 @@ internal static class CombatEffectApplicator {
     private static float ApplyStealCharmEffect(SpellEffect effect, CombatDuelSubCircle caster, CombatDuelSubCircle[] targets) {
         var cinematicTime = 0.0f;
 
-        // -1 is a special value that means remove all charms.
-        var charmRemoveCount = effect.m_effectParam == -1 ? effect.m_effectParam = int.MaxValue : effect.m_effectParam;
+        // A negative count means no limit.
+        var charmRemoveCount = effect.m_effectParam < 0 ? int.MaxValue : effect.m_effectParam;
 
         // This is the same as the remove charm function, but we're moving the charms from the target to the caster.
 
@@ -393,7 +378,7 @@ internal static class CombatEffectApplicator {
             var charmsInQuesiton = CombatCharms.FindAppliedCharms(target, hangingEffects, effect.m_disposition)
                                                .Take(charmRemoveCount);
 
-            cinematicTime += charmsInQuesiton.Count() * HANGING_EFFECT_CONSUME_TIME;
+            cinematicTime += charmsInQuesiton.Count() * CombatHangingEffects.HANGING_EFFECT_CONSUME_TIME;
 
             target._hangingEffects.RemoveAll(x => charmsInQuesiton.Contains(x));
             caster._hangingEffects.AddRange(charmsInQuesiton);
@@ -405,8 +390,8 @@ internal static class CombatEffectApplicator {
     private static float ApplyStealWardEffect(SpellEffect effect, CombatDuelSubCircle caster, CombatDuelSubCircle[] targets) {
         var cinematicTime = 0.0f;
 
-        // -1 is a special value that means remove all wards.
-        var wardRemoveCount = effect.m_effectParam == -1 ? effect.m_effectParam = int.MaxValue : effect.m_effectParam;
+        // A negative count means no limit.
+        var wardRemoveCount = effect.m_effectParam < 0 ? int.MaxValue : effect.m_effectParam;
 
         // This is the same as the remove ward function, but we're moving the wards from the target to the caster.
 
@@ -414,7 +399,7 @@ internal static class CombatEffectApplicator {
             var wards = CombatWards.FindAppliedWards(target, effect)
                                    .Take(wardRemoveCount);
 
-            cinematicTime += wards.Count() * HANGING_EFFECT_CONSUME_TIME;
+            cinematicTime += wards.Count() * CombatHangingEffects.HANGING_EFFECT_CONSUME_TIME;
 
             target._hangingEffects.RemoveAll(x => wards.Contains(x));
             caster._hangingEffects.AddRange(wards);
@@ -423,15 +408,19 @@ internal static class CombatEffectApplicator {
         return cinematicTime;
     }
 
-    private static void ApplyHangingEffect(SpellEffect effect, CombatDuelSubCircle[] targets) {
+    private static float ApplyHangingEffect(SpellEffect effect, CombatDuelSubCircle[] targets, CombatEffectContext context) {
         foreach (var target in targets) {
-            // If this is an absorb ward, set the initial value.
-            if (effect.m_effectType == kSpellEffects.kAbsorbDamage) {
-                effect.m_paramPerRound = effect.m_effectParam;
+            var hangingCopy = CombatHangingEffects.CopyForTarget(effect, context.SpellTemplateId);
+
+            // An absorb keeps its pool in m_effectParam, so each copy shrinks on its own.
+            if (hangingCopy.m_effectType == kSpellEffects.kAbsorbDamage) {
+                hangingCopy.m_paramPerRound = 0;
             }
 
-            target._hangingEffects.Add(effect);
+            target._hangingEffects.Add(hangingCopy);
         }
+
+        return targets.Count(x => x.IsAlive) * CombatHangingEffects.HANGING_EFFECT_ADD_TIME;
     }
 
     // Deals a percentage of the target's maximum health; m_effectParam is the percent.
@@ -512,7 +501,7 @@ internal static class CombatEffectApplicator {
             if (spellBlock is not null) {
                 // Remove the stun block and do nothing else.
                 target._hangingEffects.Remove(spellBlock);
-                cinematicTime += HANGING_EFFECT_CONSUME_TIME;
+                cinematicTime += CombatHangingEffects.HANGING_EFFECT_CONSUME_TIME;
 
                 continue;
             }
@@ -531,10 +520,13 @@ internal static class CombatEffectApplicator {
         return cinematicTime;
     }
 
-    private static void ApplyGlobalEffect(SpellEffect spellEffect, Duel duel) {
+    private static float ApplyGlobalEffect(SpellEffect spellEffect, Duel duel, CombatEffectContext context) {
         // todo: not good. some bubbles give two effects.
+        var replacesGlobal = duel.m_duelModifier.m_battlefieldEffects.Count > 0;
         duel.m_duelModifier.m_battlefieldEffects.Clear();
         duel.m_duelModifier.m_battlefieldEffects.Add(spellEffect);
+
+        return SpellCinematics.GetGlobalEffectTime(SpellFactory.GetBaseSpellName(context.SpellTemplateId), replacesGlobal);
     }
 
     private static int ApplyHealingCharms(SpellEffect[] charms, int heal) {

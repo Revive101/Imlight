@@ -86,6 +86,11 @@ public class ZoneEntity(
     public virtual bool IsCombatOnlyMinion => false;
     public IActorRef ZoneRef { get; protected set; } = zoneRef;
     public bool NoTransfer { get; set; } = false;
+
+    /// <summary>
+    /// Gets whether every player in the zone is sent to this entity as a join once it has loaded.
+    /// </summary>
+    public bool PlayersJoinAfterLoad { get; private set; }
     public ushort MobileID { 
         get => ActiveGameObject.m_nMobileID; 
         private set => ActiveGameObject.m_nMobileID = value; 
@@ -141,6 +146,7 @@ public class ZoneEntity(
         var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
             Message = despawnMsg,
             Sender = SelfRef,
+            Targets = ZoneBroadcastTarget.Players | ZoneBroadcastTarget.Paths,
         };
         ZoneRef.Tell(broadcastMsg);
 
@@ -152,6 +158,8 @@ public class ZoneEntity(
     /// Despawns this entity from the zone, without destroying it.
     /// </summary>
     public void DespawnObject() {
+        GetComponentOfType<PathMovementComponent>()?.Stop();
+
         var removeMsg = new GAME_5_PROTOCOL.MSG_REMOVEOBJECT {
             GameObjectID = ActiveGameObject.m_globalID
         };
@@ -251,8 +259,9 @@ public class ZoneEntity(
     #region Message Handlers
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN))]
-    protected virtual void ReceiveObjectLoadBegin() {
+    protected virtual void ReceiveObjectLoadBegin(ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN message) {
         this.SelfRef = Self;
+        PlayersJoinAfterLoad = message.PlayersJoinAfterLoad;
 
         if (ActiveGameObject is not null) {
             MobileID = ReserveMobileId();
@@ -435,12 +444,17 @@ public class ZoneEntity(
     /// Gets the object sent to clients in MSG_NEWOBJECT. Its class follows the entity's own object, because
     /// the client builds the object from the template and reads that class's properties from the payload.
     /// </summary>
-    public ClientObject GetClientObject() => ActiveGameObject switch {
+    public virtual ClientObject GetClientObject() => ActiveGameObject switch {
         ClientReagentItem => BuildClientObject<ClientReagentItem>(),
         ClientPetSnackItem => BuildClientObject<ClientPetSnackItem>(),
         WizClientObjectItem => BuildClientObject<WizClientObjectItem>(),
         _ => GetClientBehaviorInstance(),
     };
+
+    /// <summary>
+    /// Gets the name the interaction prompt shows for this entity.
+    /// </summary>
+    public virtual string GetMadlibName() => (Template as GameObjectTemplate)?.m_displayName;
 
     private WizClientPet BuildClientPet(WizClientPet pet) {
         var petCopy = BuildClientObject<WizClientPet>();

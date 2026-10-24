@@ -90,6 +90,7 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
     private bool _determinedSelfishThisTurn;
 
     private Hand _roundHand;
+    private string _passReason = "nothing castable";
     private CombatDuelSubCircle[] _friendlySubcircles
         => [.. _currentDuelComponent.ActiveSubCircles.Where(x => x.OccupiedTeam == _currentSubCircle.OccupiedTeam)];
     private bool _isHealingViable
@@ -173,6 +174,7 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
         }
 
         _roundHand = _currentSubCircle.DrawHand();
+        DiscardDeadCards();
 
         DetermineAttitude();
         var action = DetermineTurnAction();
@@ -231,7 +233,7 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
 
         // A minion has no world to return to: remove and delete now, no death-animation timer.
         if (_currentSubCircle?.IsSummonedMinion == true) {
-            _currentDuelComponent.DuelBroadcast(new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATREMOVE {
+            _currentDuelComponent.ZoneBroadcast(new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATREMOVE {
                 DuelID = _currentDuelComponent.SigilId,
                 ParticipantID = _currentSubCircle.ParticipantObject.m_globalID
             });
@@ -245,7 +247,7 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
         }
 
         // I have died. Remove myself from the current duel.
-        _currentDuelComponent.DuelBroadcast(new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATREMOVE {
+        _currentDuelComponent.ZoneBroadcast(new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATREMOVE {
             DuelID = _currentDuelComponent.SigilId,
             ParticipantID = _currentSubCircle.ParticipantObject.m_globalID
         });
@@ -256,6 +258,23 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
         var delay = TimeSpan.FromMilliseconds(COMBAT_DEATH_ANIMATION_IN_MS);
         Timers.StartSingleTimer("FinalKill", new COMBAT_106_PROTOCOL.MSG_COMBATDEATH(), delay);
     }
+
+    private void DiscardDeadCards() {
+        var deadCards = _roundHand.m_spellList.Where(IsDeadCard).ToList();
+        if (deadCards.Count == 0) {
+            return;
+        }
+
+        foreach (var card in deadCards) {
+            _currentSubCircle.DiscardCard(card);
+        }
+
+        // Refill once only, so a deck of nothing but dead cards cannot loop.
+        _roundHand = _currentSubCircle.DrawHand();
+    }
+
+    private bool IsDeadCard(Spell spell)
+        => !SpellEffectFilter.HasAiRole(spell) || !_currentSubCircle.CanEverAffordSpell(spell);
 
     private void DetermineAttitude() {
         _determinedSmartThisTurn = _random.NextDouble() < _intelligenceFactor;
@@ -286,14 +305,47 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
             };
         }
 
+        _passReason = "nothing castable";
+        var action = ChooseCastAction();
+        if (action.MoveType == (byte) CombatMoveType.Pass) {
+            LogPass();
+        }
+
+        return action;
+    }
+
+    private COMBAT_106_PROTOCOL.MSG_ACTORCOMBATMOVE ChooseCastAction() {
         // If we want to be aggressive and we have something to cast, do it.
         var hasDamageSpells = GetCastableDamageSpells(_roundHand.m_spellList).Count > 0;
         if (_determinedAggressiveThisTurn && hasDamageSpells) {
             return DetermineAggressiveBehavior();
         }
-        else {
-            return DetermineDefensiveBehavior();
-        }
+
+        return DetermineDefensiveBehavior();
+    }
+
+    private void LogPass() {
+        var hand = _roundHand.m_spellList;
+        var dead = hand.Count(IsDeadCard);
+        var notAffordable = hand.Count(x => !IsDeadCard(x) && !_currentSubCircle.HasPipsForSpell(x));
+
+        Logger.Debug(
+            "Duel {0} | Slot {1} | Passing ({2}) | Smart: {3} | Aggressive: {4} | Selfish: {5} | Generic pips: {6} | Power pips: {7} | Hand: {8} | Castable damage: {9}, heal: {10}, buff: {11}, debuff: {12} | Dead: {13} | Not affordable: {14}",
+            Logger.Args(_currentDuelComponent.SigilId,
+                _currentSubCircle.SlotIndex,
+                _passReason,
+                _determinedSmartThisTurn,
+                _determinedAggressiveThisTurn,
+                _determinedSelfishThisTurn,
+                _currentSubCircle.CombatParticipant.m_pipCount.m_genericPips,
+                _currentSubCircle.CombatParticipant.m_pipCount.m_powerPips,
+                hand.Count,
+                GetCastableDamageSpells(hand).Count,
+                GetCastableHealingSpells(hand).Count,
+                GetCastableBuffSpells(hand).Count,
+                GetCastableDebuffSpells(hand).Count,
+                dead,
+                notAffordable));
     }
 
     private COMBAT_106_PROTOCOL.MSG_ACTORCOMBATMOVE DetermineAggressiveBehavior() {
@@ -312,6 +364,7 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
             Logger.Debug("Duel {0} | Slot {1} | No castable damage spells.",
                 Logger.Args(_currentDuelComponent.SigilId, _currentSubCircle.SlotIndex));
 
+            _passReason = "no castable damage";
             msg.MoveType = (byte) CombatMoveType.Pass;
             return msg;
         }
@@ -351,6 +404,7 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
             Logger.Debug("Duel {0} | Slot {1} | Preparing, but passing.",
                 Logger.Args(_currentDuelComponent.SigilId, _currentSubCircle.SlotIndex));
 
+            _passReason = "defensive pass roll";
             msg.MoveType = (byte) CombatMoveType.Pass;
             
             return msg;
@@ -379,6 +433,7 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
             Logger.Debug("Duel {0} | Slot {1} | Preparing, but passing.",
                 Logger.Args(_currentDuelComponent.SigilId, _currentSubCircle.SlotIndex));
 
+            _passReason = "defensive pass roll";
             msg.MoveType = (byte) CombatMoveType.Pass;
             return msg;
         }

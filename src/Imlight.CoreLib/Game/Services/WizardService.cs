@@ -100,10 +100,18 @@ internal class WizardService(SessionActor sessionActor) : MessageService(session
     [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_LEVELUP))]
     private void ReceiveSetLevel(CHARACTER_103_PROTOCOL.MSG_LEVELUP message) {
         // This is the internal level up message. It most likely happened due to a developer command.
+        var xpBeforeSet = _activeWizard.MagicSchoolBehavior.ExperiencePoints;
         var levelUpSuccess = _activeWizard.SetLevel(message.NewLevel);
         if (!levelUpSuccess) {
             return;
         }
+
+        _activeWizard.ResetExperiencePointsToLevel();
+        SendToSocket(new WIZARD_12_PROTOCOL.MSG_UPDATEXP {
+            GlobalID = _activeWizard.GameObjectID,
+            XP = _activeWizard.MagicSchoolBehavior.ExperiencePoints - xpBeforeSet,
+            OldXP = xpBeforeSet,
+        });
 
         var levelUpMessage = new WIZARD_12_PROTOCOL.MSG_LEVELUP {
             GlobalID = _activeWizard.GameObjectID,

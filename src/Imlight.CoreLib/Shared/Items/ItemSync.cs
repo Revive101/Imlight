@@ -54,6 +54,8 @@ internal static class ItemSync {
 
     private const uint ItemSerializationFlags =
         (uint) (PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit);
+    private const int TEMPLATE_GID_TYPE_BIT_SHIFT = 40;
+    private const ulong ITEM_TEMPLATE_GID_TYPE = 9;
     private static readonly CoreObjectSerializer s_itemSerializer = new(behaviors: SerializerFlags.None);
 
     /// <summary>
@@ -62,8 +64,16 @@ internal static class ItemSync {
     /// <param name="item">The item to serialize.</param>
     /// <param name="serialized">The item blob.</param>
     /// <returns>False if the item could not be serialized.</returns>
-    internal static bool TrySerialize(WizClientObjectItem item, out ByteString serialized)
-        => s_itemSerializer.Serialize(item, ItemSerializationFlags, out serialized);
+    internal static bool TrySerialize(WizClientObjectItem item, out ByteString serialized) {
+        // The client compares the item's template id as a full 64-bit id with the item type set, for example to
+        // match a loot toast to the item it offers to equip. A copy carries that id, so the stored item keeps
+        // the plain template id the server looks templates up with.
+        var clientItem = item with {
+            m_templateID = item.m_templateID.Full | (ITEM_TEMPLATE_GID_TYPE << TEMPLATE_GID_TYPE_BIT_SHIFT)
+        };
+
+        return s_itemSerializer.Serialize(clientItem, ItemSerializationFlags, out serialized);
+    }
 
     /// <summary>
     /// Tells the client that an item entered the wizard's inventory.
