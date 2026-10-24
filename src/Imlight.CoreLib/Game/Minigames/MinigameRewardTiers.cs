@@ -28,8 +28,6 @@
  * var tables = MinigameRewardTiers.GetLootTableNames(info.m_rewardTable, k);
  *
  * NOTE:
- * The rules mirror MinigameConfig::GetThresholdFromIndex and GetLootTableNames in the client, which
- * draws the rewards window from the same two functions.
  *
  * TODO:
  *
@@ -42,9 +40,6 @@ using System.Collections.Generic;
 
 namespace Imlight.CoreLib.Game.Minigames;
 
-/// <summary>
-/// Score to threshold index, drop table and reward slot rules shared by the minigame reward paths.
-/// </summary>
 internal static class MinigameRewardTiers {
 
     private const int ThresholdsPerSlot = 3;

@@ -56,7 +56,8 @@ public enum ZoneBroadcastTarget : byte {
     Triggers = 1 << 3,
     Paths   = 1 << 4,
     Sigils  = 1 << 5,
-    All         = Players | Objects | Volumes | Triggers | Paths | Sigils,
+    Statues = 1 << 6,
+    All         = Players | Objects | Volumes | Triggers | Paths | Sigils | Statues,
     AllNoPlayers = All & ~Players,
 }
 
@@ -179,6 +180,12 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
 
         public byte MessageOrder { get; } = 5;
         public byte ServiceID { get; } = 102;
+
+        /// <summary>
+        /// True when the sender tells the entity about every player in the zone once it has loaded, so the
+        /// entity introduces itself to each of them then instead of broadcasting its spawn.
+        /// </summary>
+        public bool PlayersJoinAfterLoad;
 
     }
 
@@ -415,7 +422,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         /// <summary>
         /// Which supervisors the zone should forward this message to.
         /// </summary>
-        public ZoneBroadcastTarget Targets = ZoneBroadcastTarget.All;
+        public ZoneBroadcastTarget Targets = ZoneBroadcastTarget.Players;
 
     }
 
@@ -557,6 +564,11 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         /// The adjectives of the monster a Monster_Killed event is about; requirements on the event read them.
         /// </summary>
         public IReadOnlyList<string> Adjectives;
+
+        /// <summary>
+        /// The posting player's wizard, filled in by <see cref="PostEventWizardQuery"/> when requirements need it.
+        /// </summary>
+        public Wizard PlayerWizard;
 
     }
 
@@ -1251,6 +1263,131 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
 
         public ulong DoorGid;
         public string LocationName;
+
+    }
+
+    /// <summary>
+    /// Sent to a silver chest by the minigame process when its player is in the chest game.
+    /// </summary>
+    public sealed class MSG_CHEST_GAME_STARTED : IServerMessage {
+
+        public byte MessageOrder { get; } = 85;
+        public byte ServiceID { get; } = 102;
+
+        public ulong CharId;
+
+    }
+
+    /// <summary>
+    /// Sent to a silver chest by the minigame process when the chest game was played to the end. The chest is
+    /// used up, won or lost.
+    /// </summary>
+    public sealed class MSG_CHEST_GAME_RESULT : IServerMessage {
+
+        public byte MessageOrder { get; } = 86;
+        public byte ServiceID { get; } = 102;
+
+        public ulong CharId;
+        public bool Won;
+
+    }
+
+    /// <summary>
+    /// Sent to a silver chest when its chest game did not start or ended without a result, so the player's
+    /// hold on the chest ends.
+    /// </summary>
+    public sealed class MSG_CHEST_GAME_ABORTED : IServerMessage {
+
+        public byte MessageOrder { get; } = 87;
+        public byte ServiceID { get; } = 102;
+
+        public ulong CharId;
+
+    }
+
+    /// <summary>
+    /// PipeTo reply carrying a player's wizard (or null on timeout or failure) back to an NPC's service component.
+    /// </summary>
+    public sealed class MSG_SERVICEOPTIONS_RESULT : IServerMessage {
+
+        public byte MessageOrder { get; } = 89;
+        public byte ServiceID { get; } = 102;
+
+        public IActorRef PlayerActor;
+        public Wizard Wizard;
+        public int Reinteract;
+
+    }
+
+    /// <summary>
+    /// Sent by an empty public <see cref="Zone"/> to <see cref="World.GameWorld"/>: it has been idle long enough to
+    /// stop. The game world holds new transfers for it and answers with <see cref="MSG_PUBLICZONESTOPCHECK"/>.
+    /// </summary>
+    public sealed class MSG_PUBLICZONEIDLE : IServerMessage {
+
+        public byte MessageOrder { get; } = 90;
+        public byte ServiceID { get; } = 102;
+
+        public string ZoneName;
+
+    }
+
+    /// <summary>
+    /// Sent by <see cref="World.GameWorld"/> to a public <see cref="Zone"/> that asked to stop: every transfer sent
+    /// before this message has arrived. The zone stops, or answers with <see cref="MSG_PUBLICZONEKEEP"/>.
+    /// </summary>
+    public sealed class MSG_PUBLICZONESTOPCHECK : IServerMessage {
+
+        public byte MessageOrder { get; } = 91;
+        public byte ServiceID { get; } = 102;
+
+    }
+
+    /// <summary>
+    /// Sent by a public <see cref="Zone"/> to <see cref="World.GameWorld"/>: it got a player or a transfer after
+    /// asking to stop, so it stays and the held transfers go to it.
+    /// </summary>
+    public sealed class MSG_PUBLICZONEKEEP : IServerMessage {
+
+        public byte MessageOrder { get; } = 92;
+        public byte ServiceID { get; } = 102;
+
+        public string ZoneName;
+
+    }
+
+    /// <summary>
+    /// Timer-fired message to an <see cref="World.InstanceContainer"/> that holds no zones: it tells
+    /// <see cref="World.GameWorld"/> with <see cref="MSG_INSTANCECONTAINEREMPTY"/>.
+    /// </summary>
+    public sealed class MSG_INSTANCECONTAINERIDLE : IServerMessage {
+
+        public byte MessageOrder { get; } = 93;
+        public byte ServiceID { get; } = 102;
+
+    }
+
+    /// <summary>
+    /// Sent by an empty <see cref="World.InstanceContainer"/> to <see cref="World.GameWorld"/>, which stops the
+    /// container unless a load or transfer for its owner is still pending.
+    /// </summary>
+    public sealed class MSG_INSTANCECONTAINEREMPTY : IServerMessage {
+
+        public byte MessageOrder { get; } = 94;
+        public byte ServiceID { get; } = 102;
+
+        public ulong OwnerCharId;
+
+    }
+
+    /// <summary>
+    /// Called by a <see cref="PathMovementComponent"/> to itself while a creature travels between nodes, to send
+    /// its interpolated position.
+    /// </summary>
+    public sealed class MSG_CREATURETRAVELUPDATEINTERVAL : IServerMessage {
+
+        public byte MessageOrder { get; } = 95;
+        public byte ServiceID { get; } = 102;
 
     }
 

@@ -18,6 +18,7 @@
 
 using System.Collections.Generic;
 using Imlight.CoreLib.Game.Housing.Access;
+using Imlight.CoreLib.Game.Minigames;
 using Imlight.CoreLib.Shared.Networking;
 
 namespace Imlight.CoreLib.Shared.Packets;
@@ -242,6 +243,19 @@ internal sealed class SERVICE_101_PROTOCOL : IServerProtocol {
 
         public byte MessageOrder { get; } = 22;
         public byte ServiceID { get; } = 101;
+
+    }
+
+    /// <summary>
+    /// Sent by ResMinigameHandler to the session of the player who opened it, asking the minigame service to take
+    /// the player into the chest game described by <see cref="Context"/>.
+    /// </summary>
+    public class MSG_START_CHEST_MINIGAME : IServerMessage {
+
+        public byte MessageOrder { get; } = 21;
+        public byte ServiceID { get; } = 101;
+
+        public ChestGameContext Context;
 
     }
 

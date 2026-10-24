@@ -55,6 +55,7 @@ using Imcodec.Types;
 using Imlight.Common;
 using Imlight.CoreLib.Game.Bank;
 using Imlight.CoreLib.Game.Spells;
+using Imlight.CoreLib.Shared.Items;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Collections;

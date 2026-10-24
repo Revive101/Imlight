@@ -233,17 +233,19 @@ public class Wizard {
         var manaDifference = newBaseStats.m_mana - oldBaseStats.m_mana;
         var powerPipDifference = newBaseStats.m_pipChance - oldBaseStats.m_pipChance;
 
-        GameStats.m_baseHitpoints += healthDifference;
-        GameStats.m_baseMana += manaDifference;
-        GameStats.m_powerPipBase += powerPipDifference;
-
-        // Don't reset XP - preserve overflow XP when leveling up.
-        // XP is managed by AddExperiencePoints/RemoveExperiencePoints.
+        GameStats.m_baseHitpoints = Math.Max(0, GameStats.m_baseHitpoints + healthDifference);
+        GameStats.m_baseMana = Math.Max(0, GameStats.m_baseMana + manaDifference);
+        GameStats.m_powerPipBase = Math.Max(0, GameStats.m_powerPipBase + powerPipDifference);
 
         // Persistent save.
         WizardCollection.UpdateCharacterLevel(this);
 
         return true;
+    }
+
+    public void ResetExperiencePointsToLevel() {
+        MagicSchoolBehavior.ExperiencePoints = MagicLevelsConfig.GetExperiencePointsAtLevel(MagicSchoolBehavior.Level);
+        WizardCollection.UpdateCharacterLevel(this);
     }
 
     public void AddExperiencePoints(int xp) {

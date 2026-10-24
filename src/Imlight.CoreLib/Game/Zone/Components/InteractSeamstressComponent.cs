@@ -60,7 +60,7 @@ internal sealed class InteractSeamstressComponent(ZoneEntity entity) : ZoneEntit
     public string ServiceName     => "Seamstress";
     public string NpcIcon         => null;
     public string NpcNameKey      => null;
-    public string NpcTextKey      => null;
+    public string NpcTextKey      => "WizardShops_00000074";
     public WizBangs WizBang       => WizBangs.Shopping;
     public string StateName       => "Shop";
     public string InteractWizBang => "Registrar";
@@ -94,7 +94,7 @@ internal sealed class InteractSeamstressComponent(ZoneEntity entity) : ZoneEntit
         if (serviceOptionIndex == STITCH_OPTION_INDEX) {
             playerActor.Tell(new WIZARD_12_PROTOCOL.MSG_SEAMSTRESSOPEN {
                 GlobalID = Entity.ActiveGameObject.m_globalID,
-                ShopTitle = SeamstressConfig.ShopTitleKey,
+                ShopTitle = NpcTextKey,
                 Credits = playerCharacter.Account.Crowns,
                 MergeCost = stitchCrowns,
                 WebFailure = 0
@@ -102,7 +102,7 @@ internal sealed class InteractSeamstressComponent(ZoneEntity entity) : ZoneEntit
         } else {
             playerActor.Tell(new WIZARD_12_PROTOCOL.MSG_UNSTITCHOPEN {
                 GlobalID = Entity.ActiveGameObject.m_globalID,
-                ShopTitle = SeamstressConfig.ShopTitleKey,
+                ShopTitle = NpcTextKey,
                 Credits = playerCharacter.Account.Crowns,
                 MergeCost = unstitchCrowns,
                 WebFailure = 0

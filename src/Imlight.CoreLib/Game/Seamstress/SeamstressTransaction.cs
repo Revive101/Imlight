@@ -87,23 +87,8 @@ internal sealed class SeamstressTransaction(Wizard wizard, IActorRef session, Fu
             return false;
         }
 
-        // The client is told about the results only after the commit, so a result it could not be told about stops here.
-        foreach (var result in results) {
-            CoreObjectFactory.InitializeCoreObjectBehaviors(result, result.m_templateID);
-            result.m_characterId = wizard.CharId;
-            if (!ItemSync.TrySerialize(result, out _)) {
-                failure = $"item {result.m_globalID.Full} could not be serialized for the client";
-
-                return false;
-            }
-        }
-
-        foreach (var input in equippedInputs) {
-            if (!unequip(input.m_globalID)) {
-                failure = $"item {input.m_globalID.Full} could not be unequipped";
-
-                return false;
-            }
+        if (!TryPrepareResults(results, out failure) || !TryUnequip(equippedInputs, out failure)) {
+            return false;
         }
 
         var crownsBefore = account.Crowns;
@@ -133,6 +118,37 @@ internal sealed class SeamstressTransaction(Wizard wizard, IActorRef session, Fu
         }
 
         TellClient(inputs, results, crownsCost);
+        failure = string.Empty;
+
+        return true;
+    }
+
+    private bool TryPrepareResults(IReadOnlyList<WizClientObjectItem> results, out string failure) {
+        // The client is told about the results only after the commit, so a result it could not be told about stops here.
+        foreach (var result in results) {
+            CoreObjectFactory.InitializeCoreObjectBehaviors(result, result.m_templateID);
+            result.m_characterId = wizard.CharId;
+            if (!ItemSync.TrySerialize(result, out _)) {
+                failure = $"item {result.m_globalID.Full} could not be serialized for the client";
+
+                return false;
+            }
+        }
+
+        failure = string.Empty;
+
+        return true;
+    }
+
+    private bool TryUnequip(IReadOnlyList<WizClientObjectItem> equippedInputs, out string failure) {
+        foreach (var input in equippedInputs) {
+            if (!unequip(input.m_globalID)) {
+                failure = $"item {input.m_globalID.Full} could not be unequipped";
+
+                return false;
+            }
+        }
+
         failure = string.Empty;
 
         return true;

@@ -47,6 +47,7 @@ using Imlight.CoreLib.Game.Minigames;
 using Imlight.CoreLib.Game.Zone.Components;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using MinigameInfo = Imcodec.ObjectProperty.TypeCache.MinigameInfo;
 
 namespace Imlight.CoreLib.Game.Services;
 
@@ -58,6 +59,7 @@ internal class MinigameService(SessionActor sessionActor) : MessageService(sessi
 
     private IActorRef _minigameJob;
     private uint _minigameProcessId;
+    private ChestGameContext _activeChest;
 
     // Akka.net props
     protected static Props Props(SessionActor parentActor) 
@@ -67,21 +69,38 @@ internal class MinigameService(SessionActor sessionActor) : MessageService(sessi
     private void ReceiveAttachComplete() {
         var wizard = GetActiveWizard();
         var wizardZone = wizard.Zone;
+        var hasPendingChest = PendingChestGames.TryTake(wizard.CharId, out var pendingChest);
 
         // If the player's zone is a minigame zone, start the appropriate minigame script.
         if (!MinigameConfig.IsMinigameZone(wizardZone)) {
+            if (hasPendingChest) {
+                AbortChestGame(pendingChest);
+            }
+
             return;
         }
 
         // Minigame script format looks like 'SkullRiders/Client.lua'
         var minigameScript = MinigameConfig.GetMinigameScript(wizardZone);
         var minigameIndex = MinigameConfig.GetMinigameIndex(wizardZone);
+        var minigameName = minigameScript.Split('/')[0];
+
+        if (hasPendingChest) {
+            if (pendingChest.MinigameName == minigameName) {
+                _activeChest = pendingChest;
+            } else {
+                Logger.Warning("{Wizard} entered {Zone} with a chest game of {Minigame} pending",
+                    Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), wizardZone, pendingChest.MinigameName));
+                AbortChestGame(pendingChest);
+            }
+        }
 
         // Ask the server for a new minigame process.
         var msg = new PROCESS_107_PROTOCOL.MSG_NEW_MINIGAME_PROCESS {
             MinigameIndex = minigameIndex,
-            MinigameName = minigameScript.Split('/')[0],
-            Owner = SessionActor.ActorRef
+            MinigameName = minigameName,
+            Owner = SessionActor.ActorRef,
+            ChestGame = _activeChest
         };
         var reply = AskServer<PROCESS_107_PROTOCOL.MSG_PROCESS_DETAILS>(msg);
         _minigameJob = reply.ProcessActorRef;
@@ -125,17 +144,59 @@ internal class MinigameService(SessionActor sessionActor) : MessageService(sessi
             return;
         }
 
+        if (PendingChestGames.TryTake(wizard.CharId, out var pendingChest)) {
+            AbortChestGame(pendingChest);
+        }
+
+        BeginMinigame(minigameInfo);
+    }
+
+    [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_START_CHEST_MINIGAME))]
+    private void ReceiveStartChestMinigame(SERVICE_101_PROTOCOL.MSG_START_CHEST_MINIGAME message) {
+        var chest = message.Context;
+        var wizard = GetActiveWizard();
+        var wizardName = wizard.PlayerNameBehavior.GetWizardName();
+
+        string refusal = null;
+        MinigameInfo minigameInfo = null;
+        if (chest.CharId != wizard.CharId) {
+            refusal = "the chest game belongs to another character";
+        } else if (!MinigameConfig.TryGetMinigameByName(chest.MinigameName, out minigameInfo)) {
+            refusal = "the minigame does not exist";
+        } else if (_minigameJob is not null || MinigameConfig.IsMinigameZone(wizard.Zone)) {
+            refusal = "a minigame is already running";
+        } else if (!PendingChestGames.TryAdd(chest)) {
+            refusal = "a chest game is already starting";
+        }
+
+        if (refusal is not null) {
+            Logger.Warning("{Wizard} could not start the chest game {Minigame}: {Reason}",
+                Logger.Args(wizardName, chest.MinigameName, refusal));
+            AbortChestGame(chest);
+
+            return;
+        }
+
+        BeginMinigame(minigameInfo);
+    }
+
+    private void BeginMinigame(MinigameInfo minigameInfo) {
         var msg = new WIZARD_12_PROTOCOL.MSG_ENTERMINIGAME();
         SendToSocket(msg);
 
-        Logger.Debug("{0} started minigame {1} at index {2}", 
-            Logger.Args(wizardName, minigameInfo.m_name, minigameIndex));
+        Logger.Debug("{0} started minigame {1}",
+            Logger.Args(GetActiveWizard().PlayerNameBehavior.GetWizardName(), minigameInfo.m_name));
 
         Teleport(
-            destinationZone: minigameInfo.m_zone, 
+            destinationZone: minigameInfo.m_zone,
             destinationLocation: "Start",
             makePrivate: true
         );
+    }
+
+    private void AbortChestGame(ChestGameContext chest) {
+        var aborted = new ZONE_102_PROTOCOL.MSG_CHEST_GAME_ABORTED { CharId = chest.CharId };
+        chest.ChestRef?.Tell(aborted, SessionActor.ActorRef);
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_MESSAGE_PROCESS))]
@@ -226,6 +287,18 @@ internal class MinigameService(SessionActor sessionActor) : MessageService(sessi
 
             var leaveMinigameMsg = new WIZARD_12_PROTOCOL.MSG_LEAVEMINIGAME();
             SendToSocket(leaveMinigameMsg);
+
+            if (_activeChest is not null) {
+                var chest = _activeChest;
+                _activeChest = null;
+                Teleport(
+                    destinationZone: chest.ReturnZone,
+                    destinationLocation: chest.ReturnLocation,
+                    makePrivate: chest.ReturnPrivate
+                );
+
+                return;
+            }
 
             var wizard = GetActiveWizard();
             Teleport(

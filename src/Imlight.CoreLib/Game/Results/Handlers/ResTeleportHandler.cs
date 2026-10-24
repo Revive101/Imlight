@@ -18,7 +18,8 @@
 
 using Akka.Actor;
 using Imcodec.ObjectProperty.TypeCache;
-using Imlight.CoreLib.Game.Housing.Access;
+using Imlight.Common;
+using Imlight.CoreLib.Game.Results.Contexts;
 using Imlight.CoreLib.Shared.Packets;
 
 namespace Imlight.CoreLib.Game.Results.Handlers;
@@ -27,12 +28,21 @@ internal sealed class ResTeleportHandler : BaseResultHandler<ResTeleport> {
 
     public override bool Execute(IResultContext context) {
         if (context.GetPlayerObj() is not WizClientObject playerObj) {
+            Logger.Warning("Teleport result skipped: the player object is not a client object.");
+
             return false;
         }
 
         // A player who spawned inside a door's volume would be sent straight back out of it.
         if (context.IsPlayerSpawn()) {
             return true;
+        }
+
+        if (string.IsNullOrEmpty(Result.m_destinationZone)) {
+            Logger.Warning("Teleport result has an empty destination zone (trigger {0}, location {1}).",
+                Logger.Args((context as GenericResultContext)?.TriggerName ?? "none", Result.m_destinationLoc));
+
+            return false;
         }
 
         var destinationZone = Result.m_destinationZone;

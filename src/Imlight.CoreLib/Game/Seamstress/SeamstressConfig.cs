@@ -46,14 +46,8 @@ internal static class SeamstressConfig {
 
     private const string STITCH_CROWNS_KEY = "Seamstress.StitchCrowns";
     private const string UNSTITCH_CROWNS_KEY = "Seamstress.UnstitchCrowns";
-    private const string SHOP_TITLE_KEY_KEY = "Seamstress.ShopTitleKey";
 
     private static int s_warnedUnsetPrices;
-
-    /// <summary>
-    /// The locale key shown as the title of the stitch and unstitch windows.
-    /// </summary>
-    internal static string ShopTitleKey => ConfigurationManager.GetValue(SHOP_TITLE_KEY_KEY, string.Empty);
 
     /// <summary>
     /// Reads the Crowns prices of one stitch and one unstitch.
