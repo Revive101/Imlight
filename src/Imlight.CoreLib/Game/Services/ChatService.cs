@@ -101,7 +101,7 @@ internal class ChatService(SessionActor sessionActor) : MessageService(sessionAc
         }
 
         var player = PluginPlayer.For(wizard, SessionActor.ActorRef, SessionActor.GetZoneActor());
-        if (PluginManager.Events.Fire(new PlayerChatEvent(player, cleanedMessage)).IsCancelled) {
+        if (PluginManager.Events.Fire(new OnPlayerChat(player, cleanedMessage)).IsCancelled) {
             return;
         }
 
@@ -258,7 +258,7 @@ internal class ChatService(SessionActor sessionActor) : MessageService(sessionAc
 
         var player = PluginPlayer.For(myWizard, SessionActor.ActorRef, SessionActor.GetZoneActor());
         var text = message.Message.ToString() ?? string.Empty;
-        if (PluginManager.Events.Fire(new PlayerWhisperEvent(player, targetID, text)).IsCancelled) {
+        if (PluginManager.Events.Fire(new OnPlayerWhisper(player, targetID, text)).IsCancelled) {
             return;
         }
 

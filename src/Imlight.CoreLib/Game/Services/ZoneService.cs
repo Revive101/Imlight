@@ -107,7 +107,7 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         // A session that sent its server transfer is changing zones, not quitting.
         if (ZoneActor is not null && _transferGate.State != ZoneTransferState.Sent) {
             var player = PluginPlayer.For(GetActiveWizard(), SessionActor.ActorRef, ZoneActor);
-            _ = PluginManager.Events.Fire(new PlayerQuitEvent(player));
+            _ = PluginManager.Events.Fire(new OnPlayerQuit(player));
         }
 
         // If the zone reference is not null, we'll tell the zone to remove the player.
@@ -186,7 +186,7 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         // Only a client-facing transfer to another zone can be cancelled; the attach path waits on the reply.
         if (message.SendToClient && message.DestinationZone != GetActiveWizard().Zone) {
             var player = PluginPlayer.For(GetActiveWizard(), SessionActor.ActorRef, ZoneActor);
-            if (PluginManager.Events.Fire(new PlayerZoneChangeEvent(player, message.DestinationZone)).IsCancelled) {
+            if (PluginManager.Events.Fire(new OnPlayerZoneChange(player, message.DestinationZone)).IsCancelled) {
                 return;
             }
         }

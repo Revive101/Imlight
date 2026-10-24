@@ -243,7 +243,7 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
 
         var player = PluginPlayer.For(_wizard, SessionActor.ActorRef, SessionActor.GetZoneActor());
         if (player.Zone is not null) {
-            _ = PluginManager.Events.Fire(new PlayerZoneEnterEvent(player, player.Zone));
+            _ = PluginManager.Events.Fire(new OnPlayerZoneEnter(player, player.Zone));
         }
 
         // Attach succeeded — remove the fallback registration so stale entries
@@ -260,7 +260,7 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
 
     private bool IsLoginCancelled() {
         var player = PluginPlayer.For(_wizard, SessionActor.ActorRef, null);
-        if (!PluginManager.Events.Fire(new PlayerLoginEvent(player)).IsCancelled) {
+        if (!PluginManager.Events.Fire(new OnPlayerLogin(player)).IsCancelled) {
             return false;
         }
 

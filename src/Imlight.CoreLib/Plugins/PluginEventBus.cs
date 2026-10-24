@@ -24,7 +24,7 @@
  * of whichever actor fired the event.
  *
  * USAGE EXAMPLE:
- * var evt = PluginManager.Events.Fire(new PlayerChatEvent(player, message));
+ * var evt = PluginManager.Events.Fire(new OnPlayerChat(player, message));
  * if (evt.IsCancelled) { return; }
  *
  * NOTE:

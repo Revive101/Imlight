@@ -30,7 +30,7 @@
  *     public override string Version => "1.0.0";
  *
  *     public override void OnEnable()
- *         => Events.Subscribe<PlayerZoneEnterEvent>(e => e.Player.SendMessage($"Welcome to {e.Zone}!"));
+ *         => Events.Subscribe<OnPlayerZoneEnter>(e => e.Player.SendMessage($"Welcome to {e.Zone}!"));
  * }
  *
  * Created by: phazejeff

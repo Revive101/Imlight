@@ -159,7 +159,7 @@ internal class WizardService(SessionActor sessionActor) : MessageService(session
     private bool IsLevelUpCancelled(int newLevel) {
         var player = PluginPlayer.For(_activeWizard, SessionActor.ActorRef, SessionActor.GetZoneActor());
 
-        return PluginManager.Events.Fire(new PlayerLevelUpEvent(player, newLevel)).IsCancelled;
+        return PluginManager.Events.Fire(new OnPlayerLevelUp(player, newLevel)).IsCancelled;
     }
 
     [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_GAINXP))]

@@ -25,9 +25,9 @@ namespace Imlight.PluginApi.Events;
 /// <summary>
 /// Fired when a player says something in zone chat, before it is logged and shown to the zone.
 /// Cancelling it drops the message. Group chat, quick chat and chat commands don't fire it, and whispers
-/// fire <see cref="PlayerWhisperEvent"/> instead.
+/// fire <see cref="OnPlayerWhisper"/> instead.
 /// </summary>
-public sealed class PlayerChatEvent(IPlayer player, string message) : ImlightEvent, ICancellable {
+public sealed class OnPlayerChat(IPlayer player, string message) : ImlightEvent, ICancellable {
 
     /// <summary>
     /// The player who sent the message.
@@ -47,7 +47,7 @@ public sealed class PlayerChatEvent(IPlayer player, string message) : ImlightEve
 /// <summary>
 /// Fired when a player has been added to a zone: on first login to a wizard, and after every zone change.
 /// </summary>
-public sealed class PlayerZoneEnterEvent(IPlayer player, IZone zone) : ImlightEvent {
+public sealed class OnPlayerZoneEnter(IPlayer player, IZone zone) : ImlightEvent {
 
     /// <summary>
     /// The player who entered the zone.
@@ -66,7 +66,7 @@ public sealed class PlayerZoneEnterEvent(IPlayer player, IZone zone) : ImlightEv
 /// before they are placed in a zone. Zone changes don't fire it.
 /// Cancelling it rejects the attach and closes the session.
 /// </summary>
-public sealed class PlayerLoginEvent(IPlayer player) : ImlightEvent, ICancellable {
+public sealed class OnPlayerLogin(IPlayer player) : ImlightEvent, ICancellable {
 
     /// <summary>
     /// The player who is logging in. <see cref="IPlayer.Zone"/> is null, since they are not in a zone yet.
@@ -83,7 +83,7 @@ public sealed class PlayerLoginEvent(IPlayer player) : ImlightEvent, ICancellabl
 /// from their zone. Zone changes don't fire it. A player who reconnects after a dropped connection may log in
 /// again before the old session's quit fires.
 /// </summary>
-public sealed class PlayerQuitEvent(IPlayer player) : ImlightEvent {
+public sealed class OnPlayerQuit(IPlayer player) : ImlightEvent {
 
     /// <summary>
     /// The player who is quitting.
@@ -96,7 +96,7 @@ public sealed class PlayerQuitEvent(IPlayer player) : ImlightEvent {
 /// Fired when a player is about to leave their zone for a different one, before the destination is loaded.
 /// Teleports within the same zone don't fire it. Cancelling it keeps the player where they are.
 /// </summary>
-public sealed class PlayerZoneChangeEvent(IPlayer player, string destinationZone) : ImlightEvent, ICancellable {
+public sealed class OnPlayerZoneChange(IPlayer player, string destinationZone) : ImlightEvent, ICancellable {
 
     /// <summary>
     /// The player who is changing zones. <see cref="IPlayer.Zone"/> is the zone they are leaving.
@@ -118,7 +118,7 @@ public sealed class PlayerZoneChangeEvent(IPlayer player, string destinationZone
 /// Cancelling it keeps them at their current level; if experience caused it, they gain only as much
 /// experience as fits within that level.
 /// </summary>
-public sealed class PlayerLevelUpEvent(IPlayer player, int newLevel) : ImlightEvent, ICancellable {
+public sealed class OnPlayerLevelUp(IPlayer player, int newLevel) : ImlightEvent, ICancellable {
 
     /// <summary>
     /// The player who is levelling up. <see cref="IPlayer.Level"/> is still their old level.
@@ -139,7 +139,7 @@ public sealed class PlayerLevelUpEvent(IPlayer player, int newLevel) : ImlightEv
 /// Fired when a player whispers to another online player, before it is delivered.
 /// Cancelling it drops the message. Quick chat whispers and group chat don't fire it.
 /// </summary>
-public sealed class PlayerWhisperEvent(IPlayer player, ulong targetCharacterId, string message)
+public sealed class OnPlayerWhisper(IPlayer player, ulong targetCharacterId, string message)
     : ImlightEvent, ICancellable {
 
     /// <summary>

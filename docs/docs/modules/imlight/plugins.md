@@ -31,7 +31,7 @@ public sealed class GreeterPlugin : ImlightPlugin {
     public override string Version => "1.0.0";
 
     public override void OnEnable()
-        => Events.Subscribe<PlayerZoneEnterEvent>(e => e.Player.SendMessage($"Welcome to {e.Zone.Name}!"));
+        => Events.Subscribe<OnPlayerZoneEnter>(e => e.Player.SendMessage($"Welcome to {e.Zone.Name}!"));
 
 }
 ```
@@ -42,13 +42,13 @@ public sealed class GreeterPlugin : ImlightPlugin {
 
 | Event | Cancellable | Fired |
 | --- | --- | --- |
-| `PlayerLoginEvent` | Yes | When a player's client attaches from login or after a dropped connection, before they are placed in a zone. `Player.Zone` is null. Cancelling rejects the attach and closes the session. Not fired for zone changes. |
-| `PlayerQuitEvent` | No | When a player's session ends (logout, disconnect or kick), before they are removed from their zone. Not fired for zone changes. A player who reconnects after a dropped connection may log in again before the old session's quit fires. |
-| `PlayerZoneChangeEvent` | Yes | When a player is about to leave for a different zone, before the destination loads. `Player.Zone` is the zone they are leaving. Cancelling keeps them where they are. Not fired for teleports within a zone. |
-| `PlayerZoneEnterEvent` | No | When a player is added to a zone: on first login to a wizard, and after every zone change. |
-| `PlayerLevelUpEvent` | Yes | When a player is about to go up a level, from experience or `SetLevel`. `Player.Level` is still the old level. Cancelling keeps them at it; experience that caused it is granted only up to one point short of the next level. |
-| `PlayerChatEvent` | Yes | When a player sends zone chat, before it is logged and broadcast. Cancelling drops the message. Not fired for muted players, chat commands, whispers, group chat or quick chat. |
-| `PlayerWhisperEvent` | Yes | When a player whispers to an online player, before it is delivered. Cancelling drops the message. Not fired for muted players, blocked or offline targets, quick chat whispers or group chat. |
+| `OnPlayerLogin` | Yes | When a player's client attaches from login or after a dropped connection, before they are placed in a zone. `Player.Zone` is null. Cancelling rejects the attach and closes the session. Not fired for zone changes. |
+| `OnPlayerQuit` | No | When a player's session ends (logout, disconnect or kick), before they are removed from their zone. Not fired for zone changes. A player who reconnects after a dropped connection may log in again before the old session's quit fires. |
+| `OnPlayerZoneChange` | Yes | When a player is about to leave for a different zone, before the destination loads. `Player.Zone` is the zone they are leaving. Cancelling keeps them where they are. Not fired for teleports within a zone. |
+| `OnPlayerZoneEnter` | No | When a player is added to a zone: on first login to a wizard, and after every zone change. |
+| `OnPlayerLevelUp` | Yes | When a player is about to go up a level, from experience or `SetLevel`. `Player.Level` is still the old level. Cancelling keeps them at it; experience that caused it is granted only up to one point short of the next level. |
+| `OnPlayerChat` | Yes | When a player sends zone chat, before it is logged and broadcast. Cancelling drops the message. Not fired for muted players, chat commands, whispers, group chat or quick chat. |
+| `OnPlayerWhisper` | Yes | When a player whispers to an online player, before it is delivered. Cancelling drops the message. Not fired for muted players, blocked or offline targets, quick chat whispers or group chat. |
 
 Handlers are matched on the event's exact type, so subscribing to `ImlightEvent` or another base type receives nothing. Handlers for the same event run in the order they subscribed.
 
@@ -92,14 +92,14 @@ Setters that don't clamp throw `ArgumentOutOfRangeException` for negative values
 `IPlayer.Zone` is the `IZone` the player is in, or null while they are between zones. A zone has its `Name`, whether it `IsInstance`, and the `Players` in it:
 
 ```csharp
-Events.Subscribe<PlayerZoneEnterEvent>(e => {
+Events.Subscribe<OnPlayerZoneEnter>(e => {
     foreach (var other in e.Zone.Players) {
         other.SendMessage($"{e.Player.Name} joined. {e.Zone.Players.Count} wizards here now.");
     }
 });
 ```
 
-`Players` is a snapshot, safe to read from any handler; it does not change after you read it, so read it again for fresh data. By the time `PlayerZoneEnterEvent` fires, the entering player is already in it. The `IPlayer`s in it are the same objects events hand you, so `Players.Contains(e.Player)` works. Each dungeon instance is its own `IZone`. An `IZone` lasts only while its zone is loaded, and instances unload once they sit empty, so store `Name` rather than the `IZone`.
+`Players` is a snapshot, safe to read from any handler; it does not change after you read it, so read it again for fresh data. By the time `OnPlayerZoneEnter` fires, the entering player is already in it. The `IPlayer`s in it are the same objects events hand you, so `Players.Contains(e.Player)` works. Each dungeon instance is its own `IZone`. An `IZone` lasts only while its zone is loaded, and instances unload once they sit empty, so store `Name` rather than the `IZone`.
 
 ## Commands
 
@@ -121,12 +121,12 @@ The handler receives a `CommandInvocation` with the `Player`, the `Name` they ty
 
 ## Adding an Event
 
-1. Add a class deriving from `ImlightEvent` to `Imlight.PluginApi/Events`. Implement `ICancellable` if handlers should be able to stop the action.
+1. Add a class deriving from `ImlightEvent` to `Imlight.PluginApi/Events`, named `On<Subject><Action>` (e.g. `OnPlayerLevelUp`). Implement `ICancellable` if handlers should be able to stop the action.
 2. Fire it where the action happens, and respect cancellation if it applies:
 
 ```csharp
 var player = PluginPlayer.For(wizard, SessionActor.ActorRef, SessionActor.GetZoneActor());
-if (PluginManager.Events.Fire(new PlayerChatEvent(player, message)).IsCancelled) {
+if (PluginManager.Events.Fire(new OnPlayerChat(player, message)).IsCancelled) {
     return;
 }
 ```
