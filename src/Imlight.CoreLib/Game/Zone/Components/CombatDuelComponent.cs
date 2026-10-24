@@ -84,7 +84,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
     private const byte PLANNING_TIME = 30;
     private const float DUEL_GRACE_PERIOD_IN_SECONDS = 3.75f;
-    private const float DUEL_NEW_ROUND_DELAY = 2.5f;
+    private const float DUEL_NEW_ROUND_DELAY = 1.86f;
     private const float YAW_ERROR_COMPENSATION = 1.58f;
     private const string GRACE_TIME_KEY = "GracePeriod";
     private const string PLANNING_TIME_KEY = "PlanningPhase";
