@@ -243,6 +243,14 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
         // This is because the overtime effects can kill a participant, and we want to see the animation.
         var cinematicTime = InvokeOverTimeEffects(action.SpellCaster);
 
+        // A caster an over-time tick kills loses its action; the client moves straight on to the next one.
+        if (!action.SpellCaster.IsAlive) {
+            Logger.Debug("Duel {0} | Slot {1} | Caster died to an over-time effect. Skipping action.",
+                Logger.Args(_duel.m_duelID.Full, action.SpellCaster.SlotIndex));
+
+            return cinematicTime;
+        }
+
         // A null spell indicates the caster is passing their turn.
         if (action.Spell is null || action.SelectedTarget is null) {
             Logger.Debug("Duel {0} | Slot {1} | Caster is passing their turn.",
@@ -252,6 +260,8 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
         }
 
         // If our target is gone or we're stunned, pass the turn.
+        // todo: the client ticks m_stunned on a turn only in alternating-turn duels, and plays its 2 s Unstunned stage on the first
+        // turn after a stun when m_stunnedDisplay is set; the server neither sets m_stunnedDisplay nor times that stage.
         if (    action.SpellCaster.CombatParticipant.m_stunned > 0 
             || !action.SelectedTarget.IsAlive
             || !action.SelectedTarget.AddedToDuel) {
@@ -387,11 +397,15 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
 
     private static float GetActionCinematicTime(QueuedCombatAction action, CombatAction combatAction) {
         var spellName = SpellFactory.GetBaseSpellName(action.Spell.m_templateID);
-        var criticalHits = combatAction.m_CritHitList?.Count(x => x.m_mult > 0f) ?? 0;
+        var castTime = SpellCinematics.GetCastTime(spellName) + SpellCinematics.GetSpellPlayTime(spellName);
 
-        return SpellCinematics.GetCastTime(spellName)
-               + SpellCinematics.GetSpellPlayTime(spellName)
-               + (criticalHits * SpellCinematics.GetCriticalHitTime(spellName));
+        // The client queues one critical hit event per action, not one per critted target.
+        var landedCritical = combatAction.m_CritHitList?.Any(x => x.m_mult > 0f) ?? false;
+        if (!landedCritical) {
+            return castTime;
+        }
+
+        return castTime + SpellCinematics.GetCriticalHitTime(spellName);
     }
 
     private static bool SpellHits(CombatDuelSubCircle caster, Spell spell) {

@@ -142,12 +142,12 @@ internal class SpellCinematics : RootDirectoryResourceSingleton<SpellCinematics>
 
     /// <summary>
     /// The time the client takes to turn to a caster and play the cast, before the spell's own stages.
+    /// Only a pass plays the focus stage.
     /// </summary>
     /// <param name="cinematicName">The spell's base name.</param>
     /// <returns>The cast time in seconds.</returns>
     internal static float GetCastTime(string cinematicName)
         => GetStageDuration(cinematicName, TURN_INDICATOR_STAGE)
-           + GetStageDuration(cinematicName, FOCUS_STAGE)
            + GetStageDuration(cinematicName, STARTING_STAGE)
            + GetStageDuration(cinematicName, TARGET_STAGE)
            + GetStageDuration(cinematicName, CASTING_STAGE);
@@ -193,7 +193,7 @@ internal class SpellCinematics : RootDirectoryResourceSingleton<SpellCinematics>
         => GetStageDuration(FALLBACK_CINEMATIC_NAME, DEATH_STAGE);
 
     /// <summary>
-    /// The time the client plays a critical hit on one target.
+    /// The time the client plays a critical hit, once for an action however many targets it crits.
     /// </summary>
     /// <param name="cinematicName">The spell's base name.</param>
     /// <returns>The critical hit time in seconds.</returns>
