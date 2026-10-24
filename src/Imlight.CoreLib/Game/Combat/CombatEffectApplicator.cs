@@ -34,7 +34,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/22/2026
+ * Last Updated: 10/23/2026
  */
 
 using System.Collections.Generic;
@@ -82,9 +82,7 @@ internal static class CombatEffectApplicator {
             case kSpellEffects.kDamage:
                 cinematicTime += ApplyFlatDamageEffect(effect, charms, caster, targets, context.CritMultiplier);
                 break;
-            case kSpellEffects.kDamagePerTotalPipPower:
-                cinematicTime += ApplyFlatDamageEffect(effect, charms, caster, targets, context.CritMultiplier);
-                break;
+            case kSpellEffects.kDeferredDamage:
             case kSpellEffects.kDamageOverTime:
                 cinematicTime += ApplyDamageOverTime(effect, charms, caster, targets, context);
                 break;
@@ -97,9 +95,22 @@ internal static class CombatEffectApplicator {
             case kSpellEffects.kStealHealth:
                 cinematicTime += ApplyStealHealthEffect(effect, charms, caster, targets);
                 break;
+            case kSpellEffects.kDamageNoCrit:
+            case kSpellEffects.kDamagePerTotalPipPower:
+            case kSpellEffects.kDivideDamage:
+            case kSpellEffects.kHealPercent:
+            case kSpellEffects.kHealByWard:
+                cinematicTime += CombatScaledEffects.Apply(effect, charms, caster, targets, context);
+                break;
+            case kSpellEffects.kDispel:
+            case kSpellEffects.kConfusion:
+            case kSpellEffects.kAutoPass:
+            case kSpellEffects.kClue:
+            case kSpellEffects.kForceTargetable:
+                cinematicTime += CombatStatusEffects.Apply(effect, caster, targets, context);
+                break;
             case kSpellEffects.kModifyOutgoingDamage:
             case kSpellEffects.kModifyIncomingDamage:
-            case kSpellEffects.kDispel:
             case kSpellEffects.kModifyAccuracy:
             case kSpellEffects.kModifyOutgoingHeal:
             case kSpellEffects.kModifyOutgoingHealFlat:
@@ -109,6 +120,9 @@ internal static class CombatEffectApplicator {
             case kSpellEffects.kAbsorbDamage:
             case kSpellEffects.kCritBoost:
             case kSpellEffects.kCritBlock:
+            case kSpellEffects.kCritBoostSchoolSpecific:
+            case kSpellEffects.kDispelBlock:
+            case kSpellEffects.kConfusionBlock:
                 cinematicTime += ApplyHangingEffect(effect, targets, context);
                 break;
             case kSpellEffects.kStun:

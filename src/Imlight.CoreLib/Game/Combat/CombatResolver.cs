@@ -48,7 +48,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/22/2026
+ * Last Updated: 10/23/2026
  */
 
 using System;
@@ -249,6 +249,7 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
         // We want to invoke the overtime effects after we check for death.
         // This is because the overtime effects can kill a participant, and we want to see the animation.
         var cinematicTime = InvokeOverTimeEffects(action.SpellCaster);
+        cinematicTime += CombatTurnStart.Apply(action);
 
         // A caster an over-time tick kills loses its action; the client moves straight on to the next one.
         if (!action.SpellCaster.IsAlive) {
