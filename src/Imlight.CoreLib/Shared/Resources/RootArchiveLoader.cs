@@ -46,6 +46,7 @@ internal static class RootArchiveLoader {
     public static void ReloadRootWad() {
         Logger.Information("Loading Root.wad into memory..");
 
+        // todo: dispose the old archive here once Imcodec's Archive is disposable; it holds the wad stream.
         s_rootWad = ResourceWad();
         if (s_rootWad is not null) {
             IsLoaded = true;

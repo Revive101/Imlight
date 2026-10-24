@@ -36,13 +36,14 @@
  * 
  * Created by: Joji
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 10/14/2026
  */
 
 using System;
 using System.Linq;
 using System.Collections.Generic;
 using Akka.Actor;
+using Imlight.CoreLib.Shared.Items;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Collections;
@@ -259,7 +260,7 @@ internal class AuctionHouseService(SessionActor sessionActor) : MessageService(s
 
         var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID);
 
-        var isNoAuction = template.m_adjectiveList.Any(x => x == "FLAG_NoAuction");
+        var isNoAuction = template.m_adjectiveList.Any(x => x == "FLAG_NoAuction") || ItemHelper.IsStitched(item);
         if (isNoAuction) { // The item cannot be sold to the bazaar.
             // Todo: respond with error
             var auctionRspErrorMsg = new WIZARD_12_PROTOCOL.MSG_AUCTIONRESPONSE {

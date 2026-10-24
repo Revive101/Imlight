@@ -49,6 +49,7 @@ using System.Threading.Tasks;
 using Akka.Actor;
 using Imcodec.MessageLayer;
 using Imlight.Common;
+using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.Game.Services;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Services;
@@ -63,6 +64,8 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
 
     private readonly byte _serviceRetryCount                 = ConfigurationManager.Settings["Advanced.SessionActorServiceRetryCount"].AsByte();
     private readonly byte _serviceTimeRangeRetryInSeconds    = ConfigurationManager.Settings["Advanced.SessionActorServiceRangeRetry"].AsByte();
+
+    private const int SERVICE_DISPOSE_REPLY_TIMEOUT_IN_MS = 2000;
 
     private static readonly TimeSpan s_clientCloseTimeout    = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan s_askTimeout            = TimeSpan.FromSeconds(20);
@@ -296,8 +299,6 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
         SendPreDisposeToServices();
         SendDisposeToServices();
 
-        Sender.Tell("DoneDisposing");
-
         if (waitForClientClose) {
             // The client closes its end after the logout echo. The timer only covers a client that never does.
             Logger.Debug("SessionActor {Id} waiting up to {Seconds}s for the client to close.",
@@ -362,6 +363,9 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
                 Ip = this.RemoteIp
             });
         }
+
+        // An abrupt socket drop never reaches the logout path, so the online entry is removed here.
+        OnlinePlayerCollection.RemoveOnlinePlayer(SessionID);
 
         base.PostStop();
     }
@@ -517,22 +521,30 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
                 continue;
             }
 
-            pendingReplies.Add(actorRef.Ask(new SERVICE_101_PROTOCOL.MSG_PREDISPOSE(), timeout: TimeSpan.FromSeconds(2)));
+            pendingReplies.Add(actorRef.Ask(new SERVICE_101_PROTOCOL.MSG_PREDISPOSE(), timeout: TimeSpan.FromMilliseconds(SERVICE_DISPOSE_REPLY_TIMEOUT_IN_MS)));
         }
 
-        // Await the replies under one shared deadline. This is a blocking call so the services dispose gracefully.
-        try {
-            Task.WaitAll(pendingReplies.ToArray(), 2000);
-        }
-        catch (AggregateException) {
-            // A service that failed or timed out must not keep the others from being disposed.
-        }
+        WaitForServiceReplies(pendingReplies);
     }
 
     private void SendDisposeToServices() {
-        // Iterate through our services and send them a dispose message.
-        foreach (var (actorRef, type) in _services) {
-            actorRef.Tell(new SERVICE_101_PROTOCOL.MSG_DISPOSE());
+        // The session stops right after this, and a stopping session drops what its services have not read yet,
+        // so each service acknowledges its dispose first.
+        var pendingReplies = new List<Task>();
+        foreach (var (actorRef, _) in _services) {
+            pendingReplies.Add(actorRef.Ask(new SERVICE_101_PROTOCOL.MSG_DISPOSE(), timeout: TimeSpan.FromMilliseconds(SERVICE_DISPOSE_REPLY_TIMEOUT_IN_MS)));
+        }
+
+        WaitForServiceReplies(pendingReplies);
+    }
+
+    private static void WaitForServiceReplies(List<Task> pendingReplies) {
+        // Await the replies under one shared deadline. This is a blocking call so the services dispose gracefully.
+        try {
+            Task.WaitAll(pendingReplies.ToArray(), SERVICE_DISPOSE_REPLY_TIMEOUT_IN_MS);
+        }
+        catch (AggregateException) {
+            // A service that failed or timed out must not keep the others from being disposed.
         }
     }
     
