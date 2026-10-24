@@ -46,6 +46,11 @@ internal sealed class PluginPlayer(Wizard wizard, IActorRef sessionActor, IZone 
 
     public IZone Zone => zone;
 
+    public System.Numerics.Vector3 Location
+        => new(wizard.Location.X, wizard.Location.Y, wizard.Location.Z);
+
+    public float Orientation => wizard.Orientation.Z;
+
     public int Level => wizard.MagicSchoolBehavior.Level;
 
     public int Experience => wizard.MagicSchoolBehavior.ExperiencePoints;

@@ -20,6 +20,8 @@
  * Last Updated: 10/23/2026
  */
 
+using System.Numerics;
+
 namespace Imlight.PluginApi;
 
 /// <summary>
@@ -45,6 +47,16 @@ public interface IPlayer {
     /// The zone the wizard is in, or null while the wizard is between zones.
     /// </summary>
     IZone? Zone { get; }
+
+    /// <summary>
+    /// The wizard's position in their zone.
+    /// </summary>
+    Vector3 Location { get; }
+
+    /// <summary>
+    /// The direction the wizard is facing, in radians.
+    /// </summary>
+    float Orientation { get; }
 
     /// <summary>
     /// The wizard's level.
