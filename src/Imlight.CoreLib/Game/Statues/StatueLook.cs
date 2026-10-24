@@ -36,9 +36,13 @@
  */
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using Imcodec.Cryptography;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
+using Imlight.CoreLib.Shared.Behaviors;
+using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Models.World;
 
 namespace Imlight.CoreLib.Game.Statues;
@@ -51,6 +55,14 @@ internal static class StatueLook {
         var behaviors = template?.m_behaviors;
         if (behaviors is null) {
             return StatueBaseKind.None;
+        }
+
+        var looksLikePlayer = HasBehavior<WizardCharacterBehavior>(behaviors)
+            && HasBehavior<ClientWizEquipmentBehavior>(behaviors)
+            && HasBehavior<ClientWizPlayerNameBehavior>(behaviors)
+            && !behaviors.OfType<NPCBehaviorTemplate>().Any();
+        if (looksLikePlayer) {
+            return StatueBaseKind.Player;
         }
 
         var looksLikeWizardNpc = behaviors.OfType<NPCBehaviorTemplate>().Any()
@@ -73,6 +85,8 @@ internal static class StatueLook {
             ApplyPedestal(clientObject, statue);
         } else if (kind == StatueBaseKind.WizardNpc) {
             ApplyWizardNpc(clientObject, statue);
+        } else if (kind == StatueBaseKind.Player) {
+            ApplyPlayer(clientObject, statue);
         }
     }
 
@@ -89,6 +103,22 @@ internal static class StatueLook {
     }
 
     private static void ApplyWizardNpc(ClientObject clientObject, PlayerStatue statue) {
+        ReplaceLook(clientObject, statue);
+        ReplaceBehavior<NPCBehavior>(clientObject, npc => {
+            npc.m_isMonster = false;
+
+            return npc;
+        });
+    }
+
+    private static void ApplyPlayer(ClientObject clientObject, PlayerStatue statue) {
+        ReplaceLook(clientObject, statue);
+        ReplaceBehavior<ClientWizPlayerNameBehavior>(clientObject, name => CreateNameBehavior(statue) with {
+            m_behaviorTemplateNameID = name.m_behaviorTemplateNameID,
+        });
+    }
+
+    private static void ReplaceLook(ClientObject clientObject, PlayerStatue statue) {
         ReplaceBehavior<WizardCharacterBehavior>(clientObject, avatar => statue.Appearance with {
             m_behaviorTemplateNameID = avatar.m_behaviorTemplateNameID,
         });
@@ -100,12 +130,18 @@ internal static class StatueLook {
 
             return equipment;
         });
-        ReplaceBehavior<NPCBehavior>(clientObject, npc => {
-            npc.m_isMonster = false;
-
-            return npc;
-        });
     }
+
+    private static ClientWizPlayerNameBehavior CreateNameBehavior(PlayerStatue statue)
+        => new ServerWizPlayerNameBehavior {
+            NameIndices = statue.NameKeys,
+            Gender = statue.Appearance.m_eGender,
+            Race = statue.Appearance.m_eRace,
+            NameOverride = statue.Name,
+        }.GetClientBehaviorInstance();
+
+    private static bool HasBehavior<T>(IEnumerable<BehaviorTemplate> behaviors) where T : BehaviorInstance
+        => behaviors.Any(x => x is not null && BehaviorCache.AllocateBehavior(StringHash.Compute(x.m_behaviorName)) is T);
 
     private static void ReplaceBehavior<T>(ClientObject clientObject, Func<T, T> build) where T : BehaviorInstance {
         var index = clientObject.m_inactiveBehaviors.FindIndex(x => x is T);

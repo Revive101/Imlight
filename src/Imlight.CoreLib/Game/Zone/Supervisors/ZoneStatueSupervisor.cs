@@ -26,7 +26,7 @@
  * Created by Zone next to the other supervisors; spawns on MSG_ZONELOADRESULTS.
  *
  * NOTE:
- * A definition whose base template is not a peaceful wizard-look NPC is skipped with one warning.
+ * A definition whose base template is not a peaceful wizard-look NPC, a pedestal or a player template is skipped with one warning.
  *
  * TODO:
  *
@@ -77,7 +77,8 @@ internal sealed class ZoneStatueSupervisor(Core.Zone zone) : ZoneEntitySuperviso
 
     private void SpawnStatue(PlayerStatue statue) {
         var template = CoreObjectFactory.GetCoreTemplate(statue.BaseTemplateId);
-        if (StatueLook.GetBaseKind(template) == StatueBaseKind.None) {
+        var kind = StatueLook.GetBaseKind(template);
+        if (kind == StatueBaseKind.None) {
             Logger.Warning("Statue {0} has a base template that cannot be a statue; skipping.",
                 Logger.Args(statue.Id));
 
@@ -96,6 +97,10 @@ internal sealed class ZoneStatueSupervisor(Core.Zone zone) : ZoneEntitySuperviso
             Logger.Warning("Could not finalize statue {0}; skipping.", Logger.Args(statue.Id));
 
             return;
+        }
+
+        if (kind == StatueBaseKind.Player) {
+            coreObject.m_globalID = StatueIdentity.CreateGid(statue.Id);
         }
 
         var actor = Context.ActorOf(
