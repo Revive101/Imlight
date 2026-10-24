@@ -183,6 +183,18 @@ internal static class CombatEffectApplicator {
             case kSpellEffects.kDetonateOverTime:
                 cinematicTime += ApplyDetonateOverTimeEffect(effect, targets);
                 break;
+            case var _ when CombatDamageModifiers.IsHungModifier(effect.m_effectType):
+                cinematicTime += CombatDamageModifiers.Hang(effect, targets, context);
+                break;
+            case var _ when CombatPercentHeals.Handles(effect.m_effectType):
+                CombatPercentHeals.Apply(effect, targets);
+                break;
+            case var _ when CombatOverTimeDurations.Handles(effect.m_effectType):
+                cinematicTime += CombatOverTimeDurations.Apply(effect, targets);
+                break;
+            case var _ when CombatParticipantStates.Handles(effect.m_effectType):
+                cinematicTime += CombatParticipantStates.Apply(effect, targets);
+                break;
             default:
                 break;
         }
@@ -215,6 +227,7 @@ internal static class CombatEffectApplicator {
 
         // Calculate damage changes from hanging effects.
         damageFromCaster = CombatCharms.GetOutgoingDamageFromCharms(charms, damageFromCaster);
+        damageFromCaster = CombatDamageModifiers.ApplyOutgoingFlat(charms, effect.m_sDamageType, damageFromCaster);
 
         // Calculate damage from current bubble
         var duel = caster._duelActor.Duel;
@@ -304,6 +317,9 @@ internal static class CombatEffectApplicator {
 
         // Calculate damage changes from hanging effects.
         damageFromCaster = CombatCharms.GetOutgoingDamageFromCharms(charms, damageFromCaster);
+        damageFromCaster = CombatDamageModifiers.ApplyOutgoingFlat(charms, effect.m_sDamageType, damageFromCaster);
+        var outgoingArmorPiercing = CombatDamageModifiers.GetOutgoingArmorPiercing(charms, effect);
+        var outgoingSchool = CombatDamageModifiers.GetOutgoingSchool(charms, effect.m_sDamageType);
 
         var duel = caster._duelActor.Duel;
         var bubbleDamageIncrease = GetGlobalEffectDamageModifier(duel, effect.m_sDamageType);
@@ -320,11 +336,13 @@ internal static class CombatEffectApplicator {
 
             // Calculate damage changes from target hanging effects.
             var wards = CombatWards.FindAppliedWards(target, effect);
-            wards = CombatWards.GetWardsBySchool([.. wards], effect.m_sDamageType, out var finalSchool);
+            wards = CombatWards.GetWardsBySchool([.. wards], outgoingSchool, out var finalSchool);
+            var armorPiercing = CombatDamageModifiers.PierceWards(wards, outgoingArmorPiercing);
             cinematicTime += wards.Count * CombatHangingEffects.HANGING_EFFECT_CONSUME_TIME;
             damage = CombatWards.GetIncomingDamageFromWards(wards, damage);
+            damage = CombatDamageModifiers.ApplyIncomingCaps(wards, damage);
 
-            damageDealt += DoDamageToTarget(target, damage, finalSchool);
+            damageDealt += DoDamageToTarget(target, damage, finalSchool, armorPiercing);
 
             CombatWards.RemoveSpentWards(target, wards);
         }
@@ -661,6 +679,10 @@ internal static class CombatEffectApplicator {
 
     private static int ApplyHealingCharms(SpellEffect[] charms, int heal) {
         foreach (var charm in charms) {
+            if (CombatDamageModifiers.IsOutgoingModifier(charm.m_effectType)) {
+                continue;
+            }
+
             var healChange = charm.m_effectParam / 100.0f;
             heal = (int) Math.Floor(heal * (1 + healChange));
         }
@@ -668,10 +690,10 @@ internal static class CombatEffectApplicator {
         return heal;
     }
 
-    private static int DoDamageToTarget(CombatDuelSubCircle target, int damage, string damageType) {
+    private static int DoDamageToTarget(CombatDuelSubCircle target, int damage, string damageType, int armorPiercing = 0) {
         // Calculate damage reduction from target stats
         var damageReductionFlat = GetFlatDamageReduction(target, damageType);
-        var damageReductionPercent = GetPercentDamageReduction(target, damageType);
+        var damageReductionPercent = CombatDamageModifiers.PierceResist(GetPercentDamageReduction(target, damageType), armorPiercing);
         var reducedDamage = (int) Math.Floor(damage * (1 - damageReductionPercent) - damageReductionFlat);
 
         // Ensure that damage isn't negative.

@@ -237,6 +237,7 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
             // Every participant this action kills plays a death before the next action.
             var aliveBeforeAction = ActiveSubCircles.Where(x => x.IsAlive).ToArray();
             cinematicTime += ProcessQueuedAction(action, combatActionList, cinematicTime);
+            CombatParticipantStates.EndTurn(action.SpellCaster);
             cinematicTime += aliveBeforeAction.Count(x => !x.IsAlive) * SpellCinematics.GetDeathTime();
         }
 

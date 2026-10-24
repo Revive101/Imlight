@@ -381,7 +381,9 @@ internal static class CombatHangingEffects {
         // todo: the client runs its ward pass on every tick; that a tick consumes the wards it used is unconfirmed.
         var wards = CombatWards.FindAppliedWards(carrier, effect);
         wards = CombatWards.GetWardsBySchool([.. wards], effect.m_sDamageType, out _);
+        CombatDamageModifiers.PierceWards(wards, effect.m_armorPiercingParam);
         var damage = CombatWards.GetIncomingDamageFromWards(wards, amount);
+        damage = CombatDamageModifiers.ApplyIncomingCaps(wards, damage);
         carrier.DamageParticipant(damage);
         CombatWards.RemoveSpentWards(carrier, wards);
 

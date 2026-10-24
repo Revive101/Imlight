@@ -172,6 +172,7 @@ internal static class CombatActionResolver {
         var targets = isConditionalChild
             ? GetConditionalChildTargets(effect, action.SpellCaster, selectedTarget)
             : GetEffectTargets(effect, action.SpellCaster, selectedTarget);
+        targets = CombatParticipantStates.WithoutUntargetable(targets, action.SpellCaster);
         if (targets.Length == 0) {
             return;
         }

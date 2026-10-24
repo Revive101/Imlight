@@ -1304,7 +1304,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     });
 
     private void DoPipGain() => EnactActionOnSubCircles(circle => {
-        if (!circle.AddedToDuel || !circle.IsAlive) {
+        if (!circle.AddedToDuel || !circle.IsAlive || circle.CombatParticipant.m_PipsSuspended) {
             return;
         }
 

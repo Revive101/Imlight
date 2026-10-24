@@ -206,7 +206,10 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
             var isProvoke = message.Effect.m_effectType is kSpellEffects.kTaunt;
 
             int hateValue;
-            if (isPacify) {
+            if (message.Effect.m_effectType == kSpellEffects.kModifyHate) {
+                hateValue = message.Effect.m_effectParam;
+            }
+            else if (isPacify) {
                 hateValue = -_pacifyAggroDecrease;
             }
             else if (isProvoke) {
@@ -576,7 +579,7 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
 
     private IEnumerable<CombatDuelSubCircle> GetControlledEnemies()
         => _currentDuelComponent.ActiveSubCircles
-            .Where(x => x.IsAlive && x.CurrentTeam != _currentSubCircle.CurrentTeam);
+            .Where(x => x.IsAlive && x.CurrentTeam != _currentSubCircle.CurrentTeam && CombatParticipantStates.CanBeTargeted(x));
 
     private int GetMostHatedTarget() {
         // A controlled creature picks a random enemy of its current team instead of using its hate table.
@@ -595,7 +598,7 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
                 continue;
             }
 
-            if (target.IsAlive) {
+            if (target.IsAlive && CombatParticipantStates.CanBeTargeted(target)) {
                 return targetIdx;
             }
         }
