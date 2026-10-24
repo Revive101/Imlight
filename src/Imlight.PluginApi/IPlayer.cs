@@ -216,4 +216,55 @@ public interface IPlayer {
     /// <exception cref="System.ArgumentOutOfRangeException">The max is negative.</exception>
     void SetPotions(float charge, float max);
 
+    // Moving the player goes through the same path as the game's own teleports, so it fires
+    // OnPlayerTeleport or OnPlayerZoneChange with ZoneChangeCause.Plugin, and a handler can cancel it.
+    // Calls made while the player is already changing zones are ignored.
+
+    /// <summary>
+    /// Teleports the wizard within their zone, keeping the direction they face.
+    /// </summary>
+    /// <remarks>
+    /// Applied by the player's session after this returns, so <see cref="Location"/> may not change right away.
+    /// </remarks>
+    void SetLocation(Vector3 location);
+
+    /// <summary>
+    /// Teleports the wizard within their zone and turns them to face <paramref name="orientation"/>, in radians.
+    /// </summary>
+    /// <remarks>
+    /// Applied by the player's session after this returns, so <see cref="Location"/> may not change right away.
+    /// </remarks>
+    void SetLocation(Vector3 location, float orientation);
+
+    /// <summary>
+    /// Turns the wizard to face <paramref name="orientation"/>, in radians, without moving them.
+    /// </summary>
+    /// <remarks>
+    /// Applied by the player's session after this returns, so <see cref="Orientation"/> may not change right away.
+    /// </remarks>
+    void SetOrientation(float orientation);
+
+    /// <summary>
+    /// Sends the wizard to the start of another zone. Sending them to their own zone teleports them to its start.
+    /// </summary>
+    /// <param name="zone">The zone's internal name, e.g. <c>WizardCity/WC_Hub</c>.</param>
+    /// <remarks>
+    /// This IPlayer stops being the wizard's once they arrive; get the new one from the zone events.
+    /// </remarks>
+    /// <exception cref="System.ArgumentException">The zone does not exist.</exception>
+    void TransferZone(string zone);
+
+    /// <summary>
+    /// Sends the wizard to <paramref name="location"/> in another zone, facing <paramref name="orientation"/>,
+    /// in radians.
+    /// </summary>
+    /// <param name="zone">The zone's internal name, e.g. <c>WizardCity/WC_Hub</c>.</param>
+    /// <param name="location">Where to put the wizard in the zone.</param>
+    /// <param name="orientation">The direction the wizard faces when they arrive.</param>
+    /// <remarks>
+    /// This IPlayer stops being the wizard's once they arrive; get the new one from the zone events.
+    /// </remarks>
+    /// <exception cref="System.ArgumentException">The zone does not exist.</exception>
+    void TransferZone(string zone, Vector3 location, float orientation);
+
 }

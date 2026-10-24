@@ -25,10 +25,13 @@ using Akka.Actor;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Game.Cantrips;
+using Imlight.CoreLib.Game.World;
 using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.PluginApi;
+using Imlight.PluginApi.Events;
 
 namespace Imlight.CoreLib.Plugins;
 
@@ -187,6 +190,39 @@ internal sealed class PluginPlayer(Wizard wizard, IActorRef sessionActor, IZone 
         sessionActor.Tell(new WIZARD_12_PROTOCOL.MSG_UPDATEPOTIONS {
             PotionCharge = PotionCharge,
             PotionMax = PotionMax
+        }, null);
+    }
+
+    public void SetLocation(System.Numerics.Vector3 location)
+        => SetLocation(location, Orientation);
+
+    public void SetLocation(System.Numerics.Vector3 location, float orientation)
+        => Transfer(wizard.Zone, location, orientation);
+
+    public void SetOrientation(float orientation)
+        => SetLocation(Location, orientation);
+
+    public void TransferZone(string zone)
+        => Transfer(zone, "Start");
+
+    public void TransferZone(string zone, System.Numerics.Vector3 location, float orientation)
+        => Transfer(zone, location, orientation);
+
+    private void Transfer(string zone, System.Numerics.Vector3 location, float orientation)
+        => Transfer(zone, Util.GetCompactStringFromVector(new Imcodec.Math.Vector4(location.X, location.Y, location.Z, orientation)));
+
+    private void Transfer(string zone, string location) {
+        if (!AccessPassManager.DoesZoneExist(zone)) {
+            throw new ArgumentException($"Zone {zone} does not exist.", nameof(zone));
+        }
+
+        // ZoneService teleports in place when the zone is the wizard's own, and fires the plugin event either way.
+        sessionActor.Tell(new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
+            DestinationZone = zone,
+            DestinationLocation = location,
+            SendToClient = true,
+            OwnerCharId = wizard.CharId,
+            Cause = ZoneChangeCause.Plugin,
         }, null);
     }
 

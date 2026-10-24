@@ -72,6 +72,12 @@ public enum ZoneChangeCause {
     /// </summary>
     Command,
 
+    /// <summary>
+    /// A plugin, through <see cref="IPlayer.SetLocation(System.Numerics.Vector3)"/>,
+    /// <see cref="IPlayer.SetOrientation"/> or <see cref="IPlayer.TransferZone(string)"/>.
+    /// </summary>
+    Plugin,
+
 }
 
 /// <summary>
