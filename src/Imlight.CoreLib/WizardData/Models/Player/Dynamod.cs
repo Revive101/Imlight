@@ -53,7 +53,6 @@ public class DynamodSet {
             if (existingDynamod.ZoneName.Equals(dynamod.ZoneName, StringComparison.OrdinalIgnoreCase)
                 && existingDynamod.ClientTag.Equals(dynamod.ClientTag, StringComparison.OrdinalIgnoreCase)) {
                 existingDynamod.ModState = dynamod.ModState;
-                existingDynamod.ShowsObject = dynamod.ShowsObject;
 
                 return true;
             }
@@ -94,8 +93,5 @@ public class Dynamod {
     internal string ZoneName { get; set; }
     internal string ClientTag { get; set; }
     internal string ModState { get; set; }
-
-    // Null for a mod saved before this was recorded, or sent by the client.
-    public bool? ShowsObject { get; set; }
 
 }

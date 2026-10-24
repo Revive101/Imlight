@@ -930,14 +930,13 @@ public class Wizard {
     public ObjState EnterState(string stateName)
         => ObjectStateBehavior.SetState(stateName);
 
-    public bool AddDynamod(string zoneName, string clientTag, string modState, bool? showsObject = null) {
+    public bool AddDynamod(string zoneName, string clientTag, string modState) {
         DynamodSet ??= new DynamodSet(CharId);
 
         var dynamod = new Dynamod {
             ZoneName = zoneName,
             ClientTag = clientTag,
-            ModState = modState,
-            ShowsObject = showsObject
+            ModState = modState
         };
 
         var addSuccess = DynamodSet.AddDynamod(dynamod);
