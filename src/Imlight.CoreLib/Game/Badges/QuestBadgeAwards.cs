@@ -37,24 +37,76 @@
  */
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Imcodec.ObjectProperty.TypeCache;
-using Imlight.CoreLib.Game.Results;
+using Type = System.Type;
 
 namespace Imlight.CoreLib.Game.Badges;
 
 internal static class QuestBadgeAwards {
 
-    internal static HashSet<string> Find(IEnumerable<QuestTemplate> quests)
-        => ToNames(QuestResultScan.Find<ResAddBadge>(quests));
+    internal static HashSet<string> Find(IEnumerable<QuestTemplate> quests) {
+        var names = new HashSet<string>(StringComparer.Ordinal);
+        var walkableProperties = new Dictionary<Type, PropertyInfo[]>();
+        foreach (var quest in quests.Where(quest => quest is not null)) {
+            Walk(quest.m_startResults, names, walkableProperties);
+            Walk(quest.m_endResults, names, walkableProperties);
+            foreach (var goal in quest.m_goals?.Where(goal => goal is not null) ?? []) {
+                Walk(goal.m_activateResults, names, walkableProperties);
+                Walk(goal.m_completeResults, names, walkableProperties);
+            }
+        }
 
-    internal static HashSet<string> Find(ResultList results)
-        => ToNames(QuestResultScan.Find<ResAddBadge>(results));
+        return names;
+    }
 
-    private static HashSet<string> ToNames(IEnumerable<ResAddBadge> awards)
-        => awards.Select(award => award.m_badgeName)
-            .Where(name => !string.IsNullOrEmpty(name))
-            .ToHashSet(StringComparer.Ordinal);
+    internal static HashSet<string> Find(ResultList results) {
+        var names = new HashSet<string>(StringComparer.Ordinal);
+        Walk(results, names, []);
+
+        return names;
+    }
+
+    private static void Walk(object node, HashSet<string> names, Dictionary<Type, PropertyInfo[]> walkableProperties) {
+        if (node is ResAddBadge award) {
+            if (!string.IsNullOrEmpty(award.m_badgeName)) {
+                names.Add(award.m_badgeName);
+            }
+
+            return;
+        }
+
+        if (node is null) {
+            return;
+        }
+
+        var type = node.GetType();
+        if (!walkableProperties.TryGetValue(type, out var properties)) {
+            properties = [.. type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Where(property => property.GetIndexParameters().Length == 0 && IsWalkable(property.PropertyType))];
+            walkableProperties[type] = properties;
+        }
+
+        foreach (var property in properties) {
+            var value = property.GetValue(node);
+            if (value is IEnumerable items) {
+                foreach (var item in items) {
+                    Walk(item, names, walkableProperties);
+                }
+            } else {
+                Walk(value, names, walkableProperties);
+            }
+        }
+    }
+
+    private static bool IsWalkable(Type type)
+        => IsResultNode(type)
+            || (type.IsGenericType && type.GetGenericArguments() is [var element] && typeof(IEnumerable).IsAssignableFrom(type) && IsResultNode(element));
+
+    private static bool IsResultNode(Type type)
+        => type == typeof(ResultList) || type == typeof(RandomResult) || typeof(Result).IsAssignableFrom(type);
 
 }

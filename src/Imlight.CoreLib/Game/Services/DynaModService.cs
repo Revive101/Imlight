@@ -37,7 +37,6 @@
  * Last Updated: 3/18/2025
  */
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
@@ -47,7 +46,6 @@ using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
-using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Player;
@@ -61,9 +59,6 @@ internal class DynaModService(SessionActor sessionActor) : MessageService(sessio
 
     // Live opens the full list with an empty mod at index 1, then numbers the mods after it.
     private const int SENTINEL_INDEX = 1;
-
-    private const string SHOW_OBJECT_STATE_NAME = "On";
-    private const string HIDE_OBJECT_STATE_NAME = "Off";
 
     private int _addIndex = 1;
 
@@ -121,8 +116,7 @@ internal class DynaModService(SessionActor sessionActor) : MessageService(sessio
         var dynaModClientTag = message.DynaMod.m_dynaModClientTag;
         var dynaModState = message.DynaMod.m_dynaModState;
 
-        var revealsObject = message.ContextActor is not null && ModRevealedObjects.Reveals(message.DynaMod);
-        wizard.AddDynamod(zoneName, dynaModClientTag, dynaModState, message.ContextActor is null ? null : revealsObject);
+        wizard.AddDynamod(zoneName, dynaModClientTag, dynaModState);
 
         // A mod added by a quest result (not echoed from the client) must reach the client as well: mods on
         // client-only objects such as the arena gates are otherwise never applied. Live sends it to the owner.
@@ -140,7 +134,7 @@ internal class DynaModService(SessionActor sessionActor) : MessageService(sessio
         // Objects that match the client tag will apply the state change.
         var stateChangeMsg = new ZONE_102_PROTOCOL.MSG_ENTERSTATE {
             ObjectName = dynaModClientTag,
-            StateName = revealsObject ? SHOW_OBJECT_STATE_NAME : dynaModState,
+            StateName = dynaModState,
             ExclusiveToSender = true,
             Sender = SessionActor.ActorRef
         };
@@ -163,23 +157,9 @@ internal class DynaModService(SessionActor sessionActor) : MessageService(sessio
     [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_REMOVEDYNAMOD))]
     private void ReceiveRemoveDynaMod(CHARACTER_103_PROTOCOL.MSG_REMOVEDYNAMOD message) {
         var wizard = GetActiveWizard();
-        string dynaModClientTag = message.DynaMod.m_dynaModClientTag;
-        var removed = wizard.DynamodSet?.Dynamods?.FirstOrDefault(mod => mod is not null
-            && string.Equals(mod.ClientTag, dynaModClientTag, StringComparison.OrdinalIgnoreCase));
+        var dynaModClientTag = message.DynaMod.m_dynaModClientTag;
 
         wizard.RemoveDynamod(dynaModClientTag);
-
-        if (removed is null || !ModRevealedObjects.Contains(removed.ZoneName, dynaModClientTag)) {
-            return;
-        }
-
-        // The quest showed this object to the player; taking the mod away hides it again.
-        ZoneBroadcastNoPlayers(new ZONE_102_PROTOCOL.MSG_ENTERSTATE {
-            ObjectName = dynaModClientTag,
-            StateName = HIDE_OBJECT_STATE_NAME,
-            ExclusiveToSender = true,
-            Sender = SessionActor.ActorRef
-        });
     }
 
     private static DynaMod ToWireMod(Dynamod mod, int index) {

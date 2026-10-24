@@ -97,7 +97,7 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
 
         // A path creature hears each player's join right after loading and sends itself to them there;
         // broadcasting it here as well gives every client the object twice.
-        if (Entity.PlayersJoinAfterLoad || IsHiddenUntilRevealed()) {
+        if (Entity.PlayersJoinAfterLoad) {
             return;
         }
 
@@ -105,14 +105,7 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
     }
 
     public override void OnEnabled() {
-        if (IsHiddenUntilRevealed()) {
-            foreach (var player in _playersWithRequirementsMet.Values.Where(p => !_playerIgnoreBecauseDynamod.ContainsKey(p))) {
-                CreateObjectForPlayer(player);
-            }
-        }
-        else {
-            CreateObjectForAllPlayers();
-        }
+        CreateObjectForAllPlayers();
 
         // Everyone tracked as able to see the object was just sent it, so the next move can cull or restore them.
         foreach (var player in _playersWithRequirementsMet.Values) {
@@ -141,14 +134,7 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
                      || d.ZoneName.Equals(Entity.Zone.ZoneData.m_zoneName, System.StringComparison.OrdinalIgnoreCase))
             .ToList() ?? [];
         string persistedState = null;
-        var revealedByQuest = false;
         foreach (var mod in relevantDynaMods) {
-            if (mod.ShowsObject == true) {
-                revealedByQuest = true;
-
-                continue;
-            }
-
             // If the player has a dynamod that disables this object, do not spawn it for them.
             if (IsDespawnState(mod.ModState)) {
                 _playerIgnoreBecauseDynamod[suspect] = wizard;
@@ -159,13 +145,6 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
             if (!mod.ModState.Equals(SPAWN_STATE_NAME, System.StringComparison.OrdinalIgnoreCase)) {
                 persistedState = mod.ModState;
             }
-        }
-
-        // A quest shows this object to a player; until it has, they are not sent it.
-        if (!revealedByQuest && IsHiddenUntilRevealed()) {
-            _playerIgnoreBecauseDynamod[suspect] = wizard;
-
-            return;
         }
 
         // Determine if this player meets the requirements to see the object.
@@ -331,9 +310,6 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
             }
         }
     }
-
-    private bool IsHiddenUntilRevealed()
-        => ModRevealedObjects.Contains(Entity.Zone.ZoneData?.m_zoneName, Entity.Info?.m_zoneTag);
 
     private bool HoldsObject(IActorRef player)
         => _playersInRange.Contains(player)
