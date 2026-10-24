@@ -48,7 +48,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/26/2026
+ * Last Updated: 10/22/2026
  */
 
 using System;
@@ -528,7 +528,8 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
     private static int ConsumeHangingAccuracyEffects(int startingAccuracy, CombatDuelSubCircle caster, uint magicSchoolId) {
         var accuracyHangingEffects = caster._hangingEffects
             .Where(x => x.m_effectType == kSpellEffects.kModifyAccuracy)
-            .Where(x => x.m_damageType == magicSchoolId);
+            .Where(x => x.m_damageType == magicSchoolId)
+            .ToList();
 
         foreach (var effect in accuracyHangingEffects) {
             startingAccuracy += (int) Math.Floor(1 + effect.m_effectParam / 100.0);
