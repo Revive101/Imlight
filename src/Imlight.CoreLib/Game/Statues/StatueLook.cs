@@ -20,7 +20,7 @@
  * ========================================================================
  *
  * PURPOSE:
- * Decides how a template can be a statue base, and puts a statue's captured look on its client object.
+ * Decides whether a template can be a statue base, and puts a statue's captured look on its client object.
  *
  * USAGE EXAMPLE:
  * StatueEntity.GetClientObject calls StatueLook.Apply on top of the base object.
@@ -49,69 +49,19 @@ namespace Imlight.CoreLib.Game.Statues;
 
 internal static class StatueLook {
 
-    private const string WIZARD_EQUIPMENT_BEHAVIOR_NAME = "WizardEquipmentBehavior";
-
-    internal static StatueBaseKind GetBaseKind(CoreTemplate template) {
+    internal static bool IsPlayerBase(CoreTemplate template) {
         var behaviors = template?.m_behaviors;
         if (behaviors is null) {
-            return StatueBaseKind.None;
+            return false;
         }
 
-        var looksLikePlayer = HasBehavior<WizardCharacterBehavior>(behaviors)
+        return HasBehavior<WizardCharacterBehavior>(behaviors)
             && HasBehavior<ClientWizEquipmentBehavior>(behaviors)
             && HasBehavior<ClientWizPlayerNameBehavior>(behaviors)
             && !behaviors.OfType<NPCBehaviorTemplate>().Any();
-        if (looksLikePlayer) {
-            return StatueBaseKind.Player;
-        }
-
-        var looksLikeWizardNpc = behaviors.OfType<NPCBehaviorTemplate>().Any()
-            && behaviors.OfType<WizardCharacterBehaviorTemplate>().Any()
-            && behaviors.Any(x => x?.m_behaviorName.ToString() == WIZARD_EQUIPMENT_BEHAVIOR_NAME);
-        var canFight = behaviors.OfType<DuelistBehaviorTemplate>().Any()
-            || behaviors.OfType<MobDeckBehaviorTemplate>().Any();
-        if (looksLikeWizardNpc && !canFight) {
-            return StatueBaseKind.WizardNpc;
-        }
-
-        var hasPedestalBehavior = behaviors.OfType<PlayerStatueBehaviorTemplate>()
-            .Any(x => x.m_settings is { Count: > 0 });
-
-        return hasPedestalBehavior ? StatueBaseKind.Pedestal : StatueBaseKind.None;
     }
 
-    internal static void Apply(ClientObject clientObject, PlayerStatue statue, StatueBaseKind kind) {
-        if (kind == StatueBaseKind.Pedestal) {
-            ApplyPedestal(clientObject, statue);
-        } else if (kind == StatueBaseKind.WizardNpc) {
-            ApplyWizardNpc(clientObject, statue);
-        } else if (kind == StatueBaseKind.Player) {
-            ApplyPlayer(clientObject, statue);
-        }
-    }
-
-    private static void ApplyPedestal(ClientObject clientObject, PlayerStatue statue) {
-        if (!StatueBlob.TryBuild(statue, out var blob)) {
-            return;
-        }
-
-        ReplaceBehavior<ClientPlayerStatueBehavior>(clientObject, pedestal => {
-            pedestal.m_visualBlobs = [blob];
-
-            return pedestal;
-        });
-    }
-
-    private static void ApplyWizardNpc(ClientObject clientObject, PlayerStatue statue) {
-        ReplaceLook(clientObject, statue);
-        ReplaceBehavior<NPCBehavior>(clientObject, npc => {
-            npc.m_isMonster = false;
-
-            return npc;
-        });
-    }
-
-    private static void ApplyPlayer(ClientObject clientObject, PlayerStatue statue) {
+    internal static void Apply(ClientObject clientObject, PlayerStatue statue) {
         ReplaceLook(clientObject, statue);
         ReplaceBehavior<ClientWizPlayerNameBehavior>(clientObject, name => CreateNameBehavior(statue) with {
             m_behaviorTemplateNameID = name.m_behaviorTemplateNameID,

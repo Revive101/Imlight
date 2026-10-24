@@ -59,11 +59,9 @@ internal sealed class StatueEntity(
 
     public PlayerStatue Statue { get; } = statue;
 
-    private readonly StatueBaseKind _kind = StatueLook.GetBaseKind(template);
-
     public override ClientObject GetClientObject() {
         var clientObject = base.GetClientObject();
-        StatueLook.Apply(clientObject, Statue, _kind);
+        StatueLook.Apply(clientObject, Statue);
 
         return clientObject;
     }
