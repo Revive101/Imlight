@@ -936,8 +936,11 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         var addMsg = new GAME_5_PROTOCOL.MSG_NEWOBJECT {
             Data = gameObjData,
         };
+        // The player's own client already built this object from MSG_LOGINCOMPLETE and rejects a second copy.
         var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
-            Message = addMsg
+            Message = addMsg,
+            Selfless = true,
+            Sender = SessionActor.ActorRef,
         };
 
         ZoneActor.Tell(broadcastMsg);

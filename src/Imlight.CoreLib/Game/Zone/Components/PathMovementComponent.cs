@@ -47,7 +47,6 @@ using Imlight.Common;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
-using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 
@@ -126,14 +125,29 @@ internal sealed class PathMovementComponent(ZoneEntity entity) : ZoneEntityCompo
         Timers.StartPeriodicTimer(CREATURE_FISH_INTERVAL_LOCK, fishInteractionMsg, fishInteractionInterval);
     }
 
-    public override void OnPlayerJoin(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) {
+    /// <summary>
+    /// Tells a player who was just sent this creature's MSG_NEWOBJECT where it is and whether it is travelling.
+    /// </summary>
+    public void SendMovementTo(IActorRef playerActor) {
+        // The client drops a move for an object it does not have yet, so this must follow the object itself.
         if (_currentNode is null) {
             return;
         }
 
-        // Inform the player of where the creature is right now and whether it is travelling.
         playerActor.Tell(CreateMoveStateMessage(_isTravelling ? MOVE_STATE_TRAVELLING : MOVE_STATE_IDLE));
         playerActor.Tell(CreateServerMoveMessage(GetPosition()));
+    }
+
+    /// <summary>
+    /// Tells every player in the zone, just sent this creature's MSG_NEWOBJECT, where it is and whether it is travelling.
+    /// </summary>
+    public void BroadcastMovement() {
+        if (_currentNode is null) {
+            return;
+        }
+
+        BroadcastMoveState(_isTravelling ? MOVE_STATE_TRAVELLING : MOVE_STATE_IDLE);
+        BroadcastServerMove(GetPosition());
     }
 
     public void Stop() {
