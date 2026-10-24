@@ -143,8 +143,12 @@ internal static class CombatActionResolver {
                                                                 [.. charmsAffectingThisSpell],
                                                                 action.SpellCaster,
                                                                 targets,
+                                                                action.Spell.m_templateID,
                                                                 critMultiplier);
         }
+
+        // A charm is spent once per cast however many of the spell's effects it boosts.
+        cinematicTime += charmsAffectingThisSpell.Count * CombatEffectApplicator.HANGING_EFFECT_CONSUME_TIME;
 
         if (critEligibleTargetSlots.Count > 0) {
             combatAction.m_CritHitList = [.. critEligibleTargetSlots.Select(slot => new TargetCritHit {
