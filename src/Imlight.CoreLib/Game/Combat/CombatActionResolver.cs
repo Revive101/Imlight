@@ -38,6 +38,8 @@
 
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
+using Imlight.CoreLib.Game.Requirements;
+using Imlight.CoreLib.Game.Requirements.Contexts;
 using Imlight.CoreLib.Game.Spells;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
@@ -92,7 +94,11 @@ internal static class CombatActionResolver {
             }
         }
 
-        var critEligibleTargetSlots = new List<int>();
+        var state = new CastState {
+            Action = action,
+            AllEffects = allEffects,
+            CritMultiplier = critMultiplier,
+        };
 
         foreach (var spellEffect in action.SpellTemplate.m_effects) {
             var chosenEffect = spellEffect;
@@ -107,54 +113,21 @@ internal static class CombatActionResolver {
                 _ => spellEffect,
             };
 
-            allEffects.Add(chosenEffect);
+            if (chosenEffect is ConditionalSpellEffect conditionalEffect) {
+                ApplyConditionalEffect(state, conditionalEffect, action.SelectedTarget, ref combatAction);
 
-            charmsAffectingThisSpell = CombatCharms.FindAppliedCharms(action.SpellCaster, [.. allEffects]);
-
-            // A global effect has no real targets; GetEffectTargets yields the caster so the cast is not skipped.
-            var targets = GetEffectTargets(chosenEffect, action.SpellCaster, action.SelectedTarget);
-            if (targets.Length == 0) {
                 continue;
             }
 
-            // If the spell has any targets that are alive or on the same team as the caster, it's worth casting.
-            // If the spell has a global target, it's worth casting.
-            if (!spellWorthCasting && (targets.Any(x => x.IsAlive)
-                                    || targets.Any(x => x.CurrentTeam == action.SpellCaster.CurrentTeam))
-                                    || chosenEffect.m_effectTarget == kEffectTarget.kGlobal) {
-                spellWorthCasting = true;
-            }
-
-            // Inform each of the targets of this spell that they've been targeted by this effect.
-            UpdateCombatActionTargets(ref combatAction, targets);
-            InformDuelParticipantsOfEffect(action.SpellCaster, targets, chosenEffect);
-
-            // The effect types CombatEffectApplicator applies critMultiplier to.
-            if (chosenEffect.m_effectType is kSpellEffects.kDamage
-                                          or kSpellEffects.kDamagePerTotalPipPower
-                                          or kSpellEffects.kHeal) {
-                foreach (var target in targets) {
-                    if (!critEligibleTargetSlots.Contains(target.SlotIndex)) {
-                        critEligibleTargetSlots.Add(target.SlotIndex);
-                    }
-                }
-            }
-
-            if (chosenEffect.m_effectType == kSpellEffects.kStun && combatAction.m_stunResistRoll == 0) {
-                combatAction.m_stunResistRoll = (byte) Random.Shared.Next(1, 101);
-            }
-
-            var effectContext = new CombatEffectContext(action.Spell.m_templateID, critMultiplier, combatAction.m_stunResistRoll);
-            cinematicTime += CombatEffectApplicator.ApplyEffect(chosenEffect,
-                                                                [.. charmsAffectingThisSpell],
-                                                                action.SpellCaster,
-                                                                targets,
-                                                                effectContext);
-            CombatHangingEffects.LogHangingState(action.SpellCaster, targets);
+            ApplyEffectToTargets(state, chosenEffect, action.SelectedTarget, false, ref combatAction);
         }
 
+        spellWorthCasting = state.SpellWorthCasting;
+        charmsAffectingThisSpell = state.Charms;
+
         // A charm is spent once per cast however many of the spell's effects it boosts.
-        cinematicTime += charmsAffectingThisSpell.Count * CombatHangingEffects.HANGING_EFFECT_CONSUME_TIME;
+        cinematicTime += state.CinematicTime + (charmsAffectingThisSpell.Count * CombatHangingEffects.HANGING_EFFECT_CONSUME_TIME);
+        var critEligibleTargetSlots = state.CritEligibleTargetSlots;
 
         if (critEligibleTargetSlots.Count > 0) {
             combatAction.m_CritHitList = [.. critEligibleTargetSlots.Select(slot => new TargetCritHit {
@@ -176,6 +149,134 @@ internal static class CombatActionResolver {
         CheckForPolarCombatActionTargets(ref combatAction, action.SpellTemplate);
 
         return spellWorthCasting;
+    }
+
+    private sealed class CastState {
+
+        public QueuedCombatAction Action { get; init; }
+        public List<SpellEffect> AllEffects { get; init; }
+        public float CritMultiplier { get; init; }
+        public List<SpellEffect> Charms { get; set; } = [];
+        public List<int> CritEligibleTargetSlots { get; } = [];
+        public bool SpellWorthCasting { get; set; }
+        public float CinematicTime { get; set; }
+
+    }
+
+    private static void ApplyEffectToTargets(CastState state, SpellEffect effect, CombatDuelSubCircle selectedTarget, bool isConditionalChild, ref CombatAction combatAction) {
+        var action = state.Action;
+        state.AllEffects.Add(effect);
+        state.Charms = CombatCharms.FindAppliedCharms(action.SpellCaster, [.. state.AllEffects]);
+
+        // A global effect has no real targets; GetEffectTargets yields the caster so the cast is not skipped.
+        var targets = isConditionalChild
+            ? GetConditionalChildTargets(effect, action.SpellCaster, selectedTarget)
+            : GetEffectTargets(effect, action.SpellCaster, selectedTarget);
+        if (targets.Length == 0) {
+            return;
+        }
+
+        // If the spell has any targets that are alive or on the same team as the caster, it's worth casting.
+        // If the spell has a global target, it's worth casting.
+        if (!state.SpellWorthCasting && (targets.Any(x => x.IsAlive)
+                                      || targets.Any(x => x.CurrentTeam == action.SpellCaster.CurrentTeam))
+                                      || effect.m_effectTarget == kEffectTarget.kGlobal) {
+            state.SpellWorthCasting = true;
+        }
+
+        // Inform each of the targets of this spell that they've been targeted by this effect.
+        UpdateCombatActionTargets(ref combatAction, targets);
+        InformDuelParticipantsOfEffect(action.SpellCaster, targets, effect);
+
+        // The effect types CombatEffectApplicator applies critMultiplier to.
+        if (effect.m_effectType is kSpellEffects.kDamage
+                                or kSpellEffects.kDamagePerTotalPipPower
+                                or kSpellEffects.kHeal) {
+            foreach (var target in targets) {
+                if (!state.CritEligibleTargetSlots.Contains(target.SlotIndex)) {
+                    state.CritEligibleTargetSlots.Add(target.SlotIndex);
+                }
+            }
+        }
+
+        if (effect.m_effectType == kSpellEffects.kStun && combatAction.m_stunResistRoll == 0) {
+            combatAction.m_stunResistRoll = (byte) Random.Shared.Next(1, 101);
+        }
+
+        var effectContext = new CombatEffectContext(action.Spell.m_templateID, state.CritMultiplier, combatAction.m_stunResistRoll);
+        state.CinematicTime += CombatEffectApplicator.ApplyEffect(effect,
+                                                                  [.. state.Charms],
+                                                                  action.SpellCaster,
+                                                                  targets,
+                                                                  effectContext);
+        CombatHangingEffects.LogHangingState(action.SpellCaster, targets);
+    }
+
+    private static void ApplyConditionalEffect(CastState state, ConditionalSpellEffect conditional, CombatDuelSubCircle selectedTarget, ref CombatAction combatAction) {
+        var caster = state.Action.SpellCaster;
+        var targets = GetEffectTargets(conditional, caster, selectedTarget);
+
+        // Every target picks its element before any of them is applied.
+        var chosen = targets.Select(target => FindMatchingElement(conditional, caster, target)).ToArray();
+        for (var i = 0; i < targets.Length; i++) {
+            if (chosen[i]?.m_pEffect is null) {
+                continue;
+            }
+
+            ApplyConditionalChoice(state, chosen[i].m_pEffect, targets[i], ref combatAction);
+        }
+    }
+
+    private static ConditionalSpellElement FindMatchingElement(ConditionalSpellEffect conditional, CombatDuelSubCircle caster, CombatDuelSubCircle target) {
+        if (conditional.m_elements is null) {
+            return null;
+        }
+
+        foreach (var element in conditional.m_elements) {
+            if (element is null) {
+                continue;
+            }
+
+            // An element without requirements is the else branch.
+            var context = new CombatRequirementContext(element.m_pReqs, caster, target, caster._duelActor);
+            if (element.m_pReqs is null || RequirementDispatcher.EvaluateRequirements(element.m_pReqs, context)) {
+                return element;
+            }
+        }
+
+        return null;
+    }
+
+    private static void ApplyConditionalChoice(CastState state, SpellEffect choice, CombatDuelSubCircle target, ref CombatAction combatAction) {
+        switch (choice) {
+            case EffectListSpellEffect list:
+                foreach (var child in list.m_effectList) {
+                    ApplyConditionalChoice(state, child, target, ref combatAction);
+                }
+
+                break;
+            case ConditionalSpellEffect nested:
+                ApplyConditionalEffect(state, nested, target, ref combatAction);
+
+                break;
+            case RandomSpellEffect or VariableSpellEffect:
+                Logger.Debug("Conditional element holds a random or variable effect; skipped.");
+
+                break;
+            default:
+                ApplyEffectToTargets(state, choice, target, true, ref combatAction);
+
+                break;
+        }
+    }
+
+    private static CombatDuelSubCircle[] GetConditionalChildTargets(SpellEffect effect, CombatDuelSubCircle caster, CombatDuelSubCircle target) {
+        if (effect.m_effectTarget is kEffectTarget.kSelf or kEffectTarget.kGlobal) {
+            return GetEffectTargets(effect, caster, target);
+        }
+
+        // todo: team-wide and minion children of a conditional are unconfirmed; they take the conditional's target only.
+        return [target];
     }
 
     private static SpellEffect ChooseRandomEffect(RandomSpellEffect randomSpellEffect, CombatEffectStack effectStack) {
