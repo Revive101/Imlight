@@ -108,6 +108,7 @@ using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.Game.Statues;
 using Imlight.CoreLib.Shared.Utilities;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
@@ -607,7 +608,7 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
         var wizard = GetActiveWizard();
         var targetCharID = message.CharacterGID;
 
-        if (targetCharID == 0 || targetCharID == wizard.CharId) {
+        if (targetCharID == 0 || targetCharID == wizard.CharId || StatueIdentity.IsStatueId(targetCharID)) {
             return;
         }
 
