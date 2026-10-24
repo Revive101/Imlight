@@ -122,7 +122,7 @@ internal static class CombatWards {
 
         foreach (var ward in wards) {
             if (ward.m_effectType == kSpellEffects.kModifyIncomingDamageType) {
-                finalSchool = MagicSchools.GetMagicSchool(ward.m_effectParam)?.m_schoolName ?? school;
+                finalSchool = MagicSchools.GetMagicSchool((uint) ward.m_effectParam)?.m_schoolName ?? school;
             }
 
             if (ward.m_sDamageType == finalSchool.ToString() || ward.m_sDamageType == "All") {
