@@ -347,6 +347,10 @@ public class CombatDuelSubCircle {
     }
 
     internal bool HasPipsForSpell(Spell spell) {
+        if (!CombatShadowPips.HasShadowPipsFor(this, spell)) {
+            return false;
+        }
+
         // X-pip spells scale to any pip count; no fixed minimum.
         if (CombatActionResolver.IsXPipSpell(spell)) {
             return true;
@@ -369,6 +373,10 @@ public class CombatDuelSubCircle {
     /// Whether this participant could ever hold enough pips for the spell, counting school mastery.
     /// </summary>
     internal bool CanEverAffordSpell(Spell spell) {
+        if (!CombatShadowPips.CanEverHoldShadowPipsFor(this, spell)) {
+            return false;
+        }
+
         if (CombatActionResolver.IsXPipSpell(spell)) {
             return true;
         }
@@ -767,6 +775,7 @@ public class CombatDuelSubCircle {
     }
 
     private PipCount DetermineStartingPips() {
+        CombatShadowPips.ResetGauge(ParticipantGameStats);
         var pipCount = new PipCount() {
             m_powerPips = ParticipantGameStats.m_startingPowerPips,
             m_genericPips = ParticipantGameStats.m_startingPips

@@ -122,6 +122,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     public byte AliveAndInDuelCreatureCount
         => (byte) SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Monster && x.IsAlive && x.AddedToDuel);
     public ulong SigilId => Entity.ActiveGameObject.m_globalID;
+    internal CombatSigilTemplate SigilTemplate => _sigilTemplate;
 
     // Keyed by the actor: a CoreObject is a record whose hash follows its location.
     private readonly HashSet<IActorRef> _entitiesInRange = [];
@@ -1070,6 +1071,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
                 m_pips = new PipCount() {
                     m_genericPips = genericPips,
                     m_powerPips = powerPips,
+                    m_shadowPips = circle.CombatParticipant.m_pipCount.m_shadowPips,
                 }
             };
             pips.m_pipList.Add(participantPipData);
@@ -1309,6 +1311,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         }
 
         circle.DoPipGain();
+        CombatShadowPips.RollShadowPip(circle);
     });
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_CHEATINSTAWIN))]

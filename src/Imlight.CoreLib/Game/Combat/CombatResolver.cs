@@ -519,6 +519,7 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
 
         // Deduce the players mana by the rank of the spell.
         caster.DeductMana(action.m_spell.m_pipCost.m_spellRank);
+        CombatShadowPips.DeductShadowPips(caster, action.m_spell);
 
         // X-pip spells spend what they used (same GetXPipCost that chose the tier).
         if (CombatActionResolver.IsXPipSpell(action.m_spell)) {

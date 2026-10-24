@@ -180,6 +180,7 @@ public class ServerWizGameStats : IClientTypeProvider<WizGameStats> {
         this.m_baseMana = baseStats.m_mana;
         this.m_powerPipBase = baseStats.m_pipChance;
         this.m_energyMax = baseStats.m_petEnergy;
+        this.m_shadowPipRating = baseStats.m_shadowPipRating;
         this.m_shadowPipMax = m_shadowMagicUnlocked ? WizStatisticEffectConfigLoader.GetShadowPipMax() : 0;
     }
 
@@ -233,6 +234,11 @@ public class ServerWizGameStats : IClientTypeProvider<WizGameStats> {
             // The client shows the combat shadow gauge only when this cap is above zero.
             m_shadowMagicUnlocked = m_shadowMagicUnlocked,
             m_shadowPipMax = m_shadowPipMax,
+            m_shadowPipRating = m_shadowPipRating,
+            m_bonusShadowPipRating = m_bonusShadowPipRating,
+            m_shadowPipRateAccumulated = m_shadowPipRateAccumulated,
+            m_shadowPipRateThreshold = m_shadowPipRateThreshold,
+            m_shadowPipRatePercentage = m_shadowPipRatePercentage,
         };
     }
 

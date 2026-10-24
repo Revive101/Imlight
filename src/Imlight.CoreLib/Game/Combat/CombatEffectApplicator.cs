@@ -148,6 +148,9 @@ internal static class CombatEffectApplicator {
             case kSpellEffects.kModifyPowerPips:
                 ApplyModifyPowerPipsEffect(effect, targets);
                 break;
+            case kSpellEffects.kModifyShadowPips:
+                CombatShadowPips.ApplyModifyShadowPips(effect, targets);
+                break;
             case kSpellEffects.kMaxHealthDamage:
                 cinematicTime += ApplyMaxHealthDamageEffect(effect, targets);
                 break;
