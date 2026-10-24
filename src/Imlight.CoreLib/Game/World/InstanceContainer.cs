@@ -34,7 +34,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/27/2026
+ * Last Updated: 10/14/2026
  */
 
 using Akka.Actor;
@@ -49,7 +49,7 @@ namespace Imlight.CoreLib.Game.World;
 /// <summary>
 /// Manages zone instances for a specific player using Akka.NET actor system.
 /// </summary>
-internal sealed class InstanceContainer(ulong instanceOwnerId) : ReceiveProtocolDispatcher, IWithTimers {
+internal sealed class InstanceContainer(ulong instanceOwnerId, bool removeWhenEmpty) : ReceiveProtocolDispatcher, IWithTimers {
 
     private const string IDLE_TIMER = "container-idle";
     private const int EMPTY_CONTAINER_MINUTES = 5; // todo: tune
@@ -62,8 +62,8 @@ internal sealed class InstanceContainer(ulong instanceOwnerId) : ReceiveProtocol
     private readonly Dictionary<string, uint> _zoneDynamicIds = [];
     private readonly Zone.Core.InstanceQuestProgress _questProgress = new();
 
-    public static Props Props(ulong instanceOwnerId) 
-        => Akka.Actor.Props.Create(() => new InstanceContainer(instanceOwnerId));
+    public static Props Props(ulong instanceOwnerId, bool removeWhenEmpty)
+        => Akka.Actor.Props.Create(() => new InstanceContainer(instanceOwnerId, removeWhenEmpty));
 
     protected override void PreStart() {
         base.PreStart();
@@ -136,6 +136,11 @@ internal sealed class InstanceContainer(ulong instanceOwnerId) : ReceiveProtocol
 
         Context.Stop(zoneActor);
         ArmEmptyTimer();
+
+        // A match container serves one match only, so nothing will ever transfer into it again.
+        if (_zones.Count == 0 && removeWhenEmpty) {
+            Context.Parent.Tell(new ZONE_102_PROTOCOL.MSG_MATCHCONTAINEREMPTY { OwnerId = _instanceOwnerId });
+        }
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_INSTANCECONTAINERIDLE))]
