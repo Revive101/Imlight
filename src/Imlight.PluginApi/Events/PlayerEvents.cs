@@ -161,3 +161,124 @@ public sealed class OnPlayerWhisper(IPlayer player, ulong targetCharacterId, str
     public bool IsCancelled { get; set; }
 
 }
+
+/// <summary>
+/// Fired when a player loses health in a duel, as the server resolves the round and before the client plays it.
+/// Hits fully absorbed by wards or resistances don't fire it. Fires on the duel's actor, not the player's session.
+/// </summary>
+public sealed class OnPlayerDamage(IPlayer player, int damage) : ImlightEvent {
+
+    /// <summary>
+    /// The player who was damaged. <see cref="IPlayer.Health"/> is already reduced.
+    /// </summary>
+    public IPlayer Player { get; } = player;
+
+    /// <summary>
+    /// The health the player lost, never more than they had.
+    /// </summary>
+    public int Damage { get; } = damage;
+
+}
+
+/// <summary>
+/// Fired when a player's health reaches zero in a duel, right after the <see cref="OnPlayerDamage"/> that caused it.
+/// The player stays in the duel and can still be revived; if they aren't by the end, <see cref="OnPlayerDeath"/>
+/// fires. Fires on the duel's actor, not the player's session.
+/// </summary>
+public sealed class OnPlayerKnockout(IPlayer player) : ImlightEvent {
+
+    /// <summary>
+    /// The player who was knocked out.
+    /// </summary>
+    public IPlayer Player { get; } = player;
+
+}
+
+/// <summary>
+/// Fired when a duel ends with a player still knocked out, before they are sent to the hub. It fires whether
+/// their team won or lost. A knocked-out player who disconnects or logs out before the end doesn't fire it.
+/// Cancelling it leaves the player standing where the duel was, still at zero health, so a handler that cancels
+/// should also restore their health with <see cref="IPlayer.SetHealth"/>. Fires on the duel's actor, not the
+/// player's session.
+/// </summary>
+public sealed class OnPlayerDeath(IPlayer player) : ImlightEvent, ICancellable {
+
+    /// <summary>
+    /// The player who died. <see cref="IPlayer.Health"/> is zero.
+    /// </summary>
+    public IPlayer Player { get; } = player;
+
+    /// <inheritdoc />
+    public bool IsCancelled { get; set; }
+
+}
+
+/// <summary>
+/// Fired when a player's queued spell is about to be cast in a duel, before it is rolled for a fizzle.
+/// Passes, and turns lost to a stun or a dead target, don't fire it. Cancelling it turns the cast into a pass,
+/// so no pips, mana or card are spent. Fires on the duel's actor, not the player's session.
+/// </summary>
+public sealed class OnPlayerSpellCast(IPlayer player, uint spellTemplateId, string spellName, string school,
+    int pipCost) : ImlightEvent, ICancellable {
+
+    /// <summary>
+    /// The player who is casting.
+    /// </summary>
+    public IPlayer Player { get; } = player;
+
+    /// <summary>
+    /// The template ID of the spell being cast.
+    /// </summary>
+    public uint SpellTemplateId { get; } = spellTemplateId;
+
+    /// <summary>
+    /// The internal name of the spell's template.
+    /// </summary>
+    public string SpellName { get; } = spellName;
+
+    /// <summary>
+    /// The spell's school, e.g. <c>Fire</c>.
+    /// </summary>
+    public string School { get; } = school;
+
+    /// <summary>
+    /// The spell's rank in pips.
+    /// </summary>
+    public int PipCost { get; } = pipCost;
+
+    /// <inheritdoc />
+    public bool IsCancelled { get; set; }
+
+}
+
+/// <summary>
+/// Fired when a player casts a cantrip, before any energy is spent. For a ritual it fires when the cast starts,
+/// not when the target is chosen. Cancelling it stops the cast without spending energy or starting the cooldown.
+/// </summary>
+public sealed class OnPlayerCantripCast(IPlayer player, uint spellTemplateId, string cantripName, int energyCost)
+    : ImlightEvent, ICancellable {
+
+    /// <summary>
+    /// The player who is casting.
+    /// </summary>
+    public IPlayer Player { get; } = player;
+
+    /// <summary>
+    /// The template ID of the cantrip being cast.
+    /// </summary>
+    public uint SpellTemplateId { get; } = spellTemplateId;
+
+    /// <summary>
+    /// The internal name of the cantrip's template, e.g. <c>CantripsMinorInvisibility</c>.
+    /// </summary>
+    public string CantripName { get; } = cantripName;
+
+    /// <summary>
+    /// The energy the cantrip will cost.
+    /// </summary>
+    public int EnergyCost { get; } = energyCost;
+
+    /// <inheritdoc />
+    public bool IsCancelled { get; set; }
+
+}

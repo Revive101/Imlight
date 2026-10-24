@@ -49,10 +49,13 @@ using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
 using Imlight.CoreLib.Game.Spells;
 using Imlight.CoreLib.Game.Zone.Components;
+using Imlight.CoreLib.Plugins;
 using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Models.Player;
+using Imlight.PluginApi;
+using Imlight.PluginApi.Events;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -358,6 +361,10 @@ public class CombatDuelSubCircle {
 
             // Update the health of the player.
             _wizard.UpdateHealth(newHealth);
+
+            if (newHealth < currentHealth) {
+                FireDamageEvents(currentHealth - newHealth);
+            }
         }
         else {
             // Make sure the health doesn't go below 0.
@@ -369,6 +376,22 @@ public class CombatDuelSubCircle {
             }
         }
     }
+
+    private void FireDamageEvents(int damage) {
+        var player = ToPluginPlayer();
+        _ = PluginManager.Events.Fire(new OnPlayerDamage(player, damage));
+
+        // A damage handler may have healed them back up.
+        if (!IsAlive) {
+            _ = PluginManager.Events.Fire(new OnPlayerKnockout(player));
+        }
+    }
+
+    /// <summary>
+    /// The plugin view of this circle's player. Only valid while a human player occupies it.
+    /// </summary>
+    internal IPlayer ToPluginPlayer()
+        => PluginPlayer.For(_wizard, ParticipantActor, _duelActor.ZoneRef);
 
     internal void HealParticipant(int heal) {
         // If the participant is a player, update their health.

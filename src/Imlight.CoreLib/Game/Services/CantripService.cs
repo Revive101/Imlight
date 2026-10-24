@@ -49,10 +49,12 @@ using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Game.Cantrips;
+using Imlight.CoreLib.Plugins;
 using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Player;
+using Imlight.PluginApi.Events;
 
 namespace Imlight.CoreLib.Game.Services;
 
@@ -72,6 +74,10 @@ internal class CantripService(SessionActor sessionActor) : MessageService(sessio
     private void ReceiveCantripSpellCast(CANTRIPSMESSAGES_57_PROTOCOL.MSG_CANTRIPSSPELLCAST message) {
         var wizard = GetActiveWizard();
         CantripsSpellTemplate cantrip = CantripFactory.CreateCantripTemplateFromId(message.SpellTemplateID);
+
+        if (IsCantripCastCancelled(wizard, message.SpellTemplateID, cantrip)) {
+            return;
+        }
 
         // Rituals require a target to be selected first, so don't use energy here
         if (cantrip.m_cantripsSpellEffect != CantripsSpellEffect.CSE_Ritual) {
@@ -177,6 +183,23 @@ internal class CantripService(SessionActor sessionActor) : MessageService(sessio
 
             return;
         }
+    }
+
+    private bool IsCantripCastCancelled(Wizard wizard, uint spellTemplateID, CantripsSpellTemplate cantrip) {
+        var player = PluginPlayer.For(wizard, SessionActor.ActorRef, SessionActor.GetZoneActor());
+        var evt = new OnPlayerCantripCast(player, spellTemplateID, cantrip.m_name, cantrip.m_energyCost);
+        if (!PluginManager.Events.Fire(evt).IsCancelled) {
+            return false;
+        }
+
+        // The client waits on a response to the cast; answer it as a free cast with no cooldown.
+        SendToSocket(new CANTRIPSMESSAGES_57_PROTOCOL.MSG_CANTRIPSRESPONSE {
+            EnergyUsed = 0,
+            CooldownSeconds = 0,
+            OutOfEnergy = 0
+        });
+
+        return true;
     }
 
     private bool CastCantrip(uint spellTemplateID) {

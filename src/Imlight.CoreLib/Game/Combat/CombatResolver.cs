@@ -57,11 +57,13 @@ using System.Linq;
 using Akka.Actor;
 using Imcodec.MessageLayer.Generated;
 using Imlight.CoreLib.Game.Spells;
+using Imlight.CoreLib.Plugins;
 using Imlight.Common;
 using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
+using Imlight.PluginApi.Events;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.Cryptography;
 
@@ -262,6 +264,15 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
                 continue;
             }
 
+            if (IsSpellCastCancelled(action)) {
+                cinematicTime += HandlePassAction(action, combatActionList);
+
+                Logger.Debug("Duel {0} | Slot {1} | Spell cast cancelled by a plugin.",
+                    Logger.Args(_duel.m_duelID.Full, action.SpellCaster.SlotIndex));
+
+                continue;
+            }
+
             // Determine if this spell hits or fizzles.
             var spellHits = SpellHits(action.SpellCaster, action.Spell);
             if (!spellHits) {
@@ -278,6 +289,22 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
         }
 
         return instantCinematics ? 0 : cinematicTime;
+    }
+
+    private static bool IsSpellCastCancelled(QueuedCombatAction action) {
+        // Only human players fire plugin events; creatures and summoned minions have no wizard.
+        var caster = action.SpellCaster;
+        if (caster._wizard is null || caster.IsSummonedMinion) {
+            return false;
+        }
+
+        var evt = new OnPlayerSpellCast(caster.ToPluginPlayer(),
+            action.Spell.m_templateID,
+            action.SpellTemplate.m_name,
+            action.SpellTemplate.m_sMagicSchoolName,
+            action.Spell.m_pipCost.m_spellRank);
+
+        return PluginManager.Events.Fire(evt).IsCancelled;
     }
 
     private float HandleFizzleAction(QueuedCombatAction action, CombatActionListObj combatActionList) {

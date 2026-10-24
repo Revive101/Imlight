@@ -4,6 +4,9 @@ Plugins change how an Imlight server behaves without rebuilding Imlight. Drop a 
 
 Plugins are event based: the server fires **events** as things happen, and plugins **subscribe** to them to react or to cancel the action. If you have ever developed plugins for Minecraft (Bukkit/Spigot, etc.) you will find this familiar.
 
+## Keep in mind that this is in experimental alpha stage!
+Methods and events may change without notice. Things may break or be removed. The Wizard101 client also can be very finicky in what it expects, so things on the client may not update to what the server see.
+
 ## Writing a Plugin
 
 A plugin is a .NET class library that references only `Imlight.PluginApi`. See [`ExampleImlightPlugin`](https://github.com/phazejeff/ExampleImlightPlugin) for a complete project.
@@ -49,6 +52,11 @@ public sealed class GreeterPlugin : ImlightPlugin {
 | `OnPlayerLevelUp` | Yes | When a player is about to go up a level, from experience or `SetLevel`. `Player.Level` is still the old level. Cancelling keeps them at it; experience that caused it is granted only up to one point short of the next level. |
 | `OnPlayerChat` | Yes | When a player sends zone chat, before it is logged and broadcast. Cancelling drops the message. Not fired for muted players, chat commands, whispers, group chat or quick chat. |
 | `OnPlayerWhisper` | Yes | When a player whispers to an online player, before it is delivered. Cancelling drops the message. Not fired for muted players, blocked or offline targets, quick chat whispers or group chat. |
+| `OnPlayerDamage` | No | When a player loses health in a duel, as the round resolves and before the client plays it. `Damage` is the health lost and `Player.Health` is already reduced. Not fired for hits fully absorbed by wards or resistances. |
+| `OnPlayerKnockout` | No | When a player's health reaches zero in a duel, right after the damage that caused it. They can still be revived; if not, `OnPlayerDeath` fires when the duel ends. |
+| `OnPlayerDeath` | Yes | When a duel ends with a player still knocked out, before they are sent to the hub, whether their team won or lost. Cancelling leaves them standing where the duel was at zero health, so also call `Player.SetHealth`. Not fired for a knocked-out player who disconnects or logs out first. |
+| `OnPlayerSpellCast` | Yes | When a player's queued spell is about to be cast in a duel, before the fizzle roll, so it fires for spells that then fizzle. Cancelling turns the cast into a pass and spends no pips, mana or card. Not fired for passes, stuns or dead targets. |
+| `OnPlayerCantripCast` | Yes | When a player casts a cantrip, before energy is spent. For a ritual, fired when the cast starts, not when the target is chosen. Cancelling stops the cast without spending energy or starting the cooldown. |
 
 Handlers are matched on the event's exact type, so subscribing to `ImlightEvent` or another base type receives nothing. Handlers for the same event run in the order they subscribed.
 

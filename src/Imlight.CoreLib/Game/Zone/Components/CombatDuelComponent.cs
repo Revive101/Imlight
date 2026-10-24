@@ -58,12 +58,14 @@ using Imlight.Common;
 using Imlight.CoreLib.Game.Combat;
 using Imlight.CoreLib.Game.Sigils;
 using Imlight.CoreLib.Game.Zone.Core;
+using Imlight.CoreLib.Plugins;
 using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.CoreLib.WizardData.Models.World;
+using Imlight.PluginApi.Events;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 
@@ -119,6 +121,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     public byte AliveAndInDuelCreatureCount
         => (byte) SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Monster && x.IsAlive && x.AddedToDuel);
     public ulong SigilId => Entity.ActiveGameObject.m_globalID;
+    public IActorRef ZoneRef => Entity.ZoneRef;
 
     // Keyed by the actor: a CoreObject is a record whose hash follows its location.
     private readonly HashSet<IActorRef> _entitiesInRange = [];
@@ -1458,10 +1461,11 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         var deathMsg = new COMBAT_106_PROTOCOL.MSG_COMBATDEATH();
         EnactActionOnSubCircles(circle => circle.ParticipantActor.Tell(deathMsg));
 
-        // Inform each player that they've been defeated.
+        // Inform each participant that they've been defeated. RemovePlayersFromDuel already told every human
+        // player, and a second defeat would send one whose death a plugin cancelled to the hub anyway.
         var defeatMsg = new COMBAT_106_PROTOCOL.MSG_COMBATDEFEAT();
         EnactActionOnSubCircles(circle => {
-            if (!circle.AddedToDuel) {
+            if (!circle.AddedToDuel || (circle.OccupiedTeam == CombatTeam.Player && !circle.IsSummonedMinion)) {
                 return;
             }
 
@@ -1479,12 +1483,16 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
             return;
         }
 
-        // Send any dead players back to the hub.
+        // Send any dead players back to the hub, unless a plugin keeps them here.
         if (!circle.IsAlive) {
-            var defeatMsg = new COMBAT_106_PROTOCOL.MSG_COMBATDEFEAT();
+            var keepInWorld = PluginManager.Events.Fire(new OnPlayerDeath(circle.ToPluginPlayer())).IsCancelled;
+
+            var defeatMsg = new COMBAT_106_PROTOCOL.MSG_COMBATDEFEAT { SendToHub = !keepInWorld };
             circle.ParticipantActor.Tell(defeatMsg);
 
-            return;
+            if (!keepInWorld) {
+                return;
+            }
         }
 
         // Get the players back into the idle state, so they can move around again.

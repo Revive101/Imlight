@@ -162,6 +162,11 @@ public sealed class COMBAT_106_PROTOCOL : IServerProtocol {
         public byte MessageOrder => 15;
         public byte ServiceID => 106;
 
+        /// <summary>
+        /// False when a plugin cancelled the player's death, so they leave the duel where they stand.
+        /// </summary>
+        public bool SendToHub = true;
+
     }
 
     public sealed class MSG_COMBATWIN : IServerMessage {
