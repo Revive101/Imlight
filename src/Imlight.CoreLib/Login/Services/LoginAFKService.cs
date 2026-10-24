@@ -77,8 +77,6 @@ internal class LoginAFKService : MessageService {
 
         _disposed = true;
         Timers.CancelAll();
-
-        CloseSession();
     }
 
     [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_LOGIN_NOT_AFK))]

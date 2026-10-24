@@ -163,6 +163,20 @@ internal static class SpellEffectFilter {
         return filteredSpells;
     }
 
+    /// <summary>
+    /// Whether any of the AI's filters (damage, heal, buff, debuff) would ever pick the spell.
+    /// </summary>
+    /// <param name="spell">The spell to check.</param>
+    /// <returns>True if the spell has a role the creature AI can use.</returns>
+    internal static bool HasAiRole(Spell spell) {
+        var single = new List<Spell> { spell };
+
+        return FilterSpellsByOutgoingDamage(single).Count > 0
+            || FilterSpellsByHealing(single).Count > 0
+            || FilterSpellsByBuff(single).Count > 0
+            || FilterSpellsByDebuff(single).Count > 0;
+    }
+
     private static bool IsEnemyTarget(SpellEffect effect)
         => effect.m_effectTarget is kEffectTarget.kAtLeastOneEnemy
                  or kEffectTarget.kEnemyTeam

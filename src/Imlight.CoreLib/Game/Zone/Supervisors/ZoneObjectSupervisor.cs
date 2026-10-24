@@ -76,6 +76,7 @@ internal sealed class ZoneObjectSupervisor(Core.Zone zone) : ZoneEntitySuperviso
             }
 
             var actor = CreateEntityActor(coreObject, template, objectInfo);
+            Context.Watch(actor);
             _placed.Add(new PlacedObject(objectInfo, template, coreObject, actor));
         }
 
@@ -122,7 +123,6 @@ internal sealed class ZoneObjectSupervisor(Core.Zone zone) : ZoneEntitySuperviso
             return;
         }
 
-        // Spawned entities (summoned pets) can be stopped while the zone lives on.
         Context.Watch(objectActor);
 
         // Reply with the created entity.
@@ -164,6 +164,7 @@ internal sealed class ZoneObjectSupervisor(Core.Zone zone) : ZoneEntitySuperviso
             if (placed.Actor is null) {
                 placed.Object = CoreObjectFactory.FinalizeCoreObject(placed.Info, placed.Template);
                 placed.Actor = CreateEntityActor(placed.Object, placed.Template, placed.Info);
+                Context.Watch(placed.Actor);
             }
             else if (!string.IsNullOrEmpty(message.StateName)) {
                 ZoneRef.Tell(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
@@ -179,8 +180,14 @@ internal sealed class ZoneObjectSupervisor(Core.Zone zone) : ZoneEntitySuperviso
     }
 
     [MessageHandler(typeof(Terminated))]
-    private void ReceiveEntityTerminated(Terminated message)
-        => EntityActors.Remove(message.ActorRef);
+    private void ReceiveEntityTerminated(Terminated message) {
+        EntityActors.Remove(message.ActorRef);
+
+        // A placed object that deleted itself can come back through a trigger.
+        foreach (var placed in _placed.Where(p => message.ActorRef.Equals(p.Actor))) {
+            placed.Actor = null;
+        }
+    }
 
     private static bool IsNamed(PlacedObject placed, string zoneTag)
         => string.Equals(placed.Info.m_zoneTag, zoneTag, StringComparison.OrdinalIgnoreCase);

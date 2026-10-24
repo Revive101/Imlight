@@ -303,6 +303,13 @@ public class GameServer : Server {
         return newId;
     }
 
+    protected override void ReceiveDeallocateSocket(SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET message) {
+        // A queued session that disconnects must not stay in the queue.
+        _playerQueue.RemoveAll(s => s.SessionID == message.Id);
+
+        base.ReceiveDeallocateSocket(message);
+    }
+
     private void ActiveSessionsChangedEvent(object obj, NotifyCollectionChangedEventArgs args) {
         // Anytime a player has left, we'll check to see if a queue is active. If so, we'll grab the next player
         // and finally allocate their slot.

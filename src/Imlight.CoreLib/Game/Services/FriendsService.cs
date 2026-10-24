@@ -108,6 +108,7 @@ using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.Game.Statues;
 using Imlight.CoreLib.Shared.Utilities;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
@@ -256,7 +257,7 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
         var fwdMsg = new CHARACTER_103_PROTOCOL.MSG_BUDDYREQUESTADDFWD {
             RequesterCharId = wizard.CharId,
             RecipientCharId = buddyCharID,
-            OwnerName = DataManipulation.SpacedHexStringToBytes(wizard.PlayerNameBehavior.GetWizardNameAsByteHexString()),
+            OwnerName = wizard.PlayerNameBehavior.GetPackedNameBytes(),
             OwnerLevel = (byte) wizard.MagicSchoolBehavior.Level,
             OwnerSchool = wizard.MagicSchoolBehavior.MagicSchool.ToString()
         };
@@ -447,10 +448,8 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
                 return;
             }
 
-            var myWizardNameHex = myWizard.PlayerNameBehavior.GetWizardNameAsByteHexString();
-            var myWizardNameBytes = DataManipulation.SpacedHexStringToBytes(myWizardNameHex);
-            var entryWizardNameHex = entryWizard.PlayerNameBehavior.GetWizardNameAsByteHexString();
-            var entryWizardNameBytes = DataManipulation.SpacedHexStringToBytes(entryWizardNameHex);
+            var myWizardNameBytes = myWizard.PlayerNameBehavior.GetPackedNameBytes();
+            var entryWizardNameBytes = entryWizard.PlayerNameBehavior.GetPackedNameBytes();
 
             // Inform the game client that the friend request has been accepted.
             clientMsg = new GAME_5_PROTOCOL.MSG_BUDDYREQUESTACCEPT {
@@ -607,7 +606,7 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
         var wizard = GetActiveWizard();
         var targetCharID = message.CharacterGID;
 
-        if (targetCharID == 0 || targetCharID == wizard.CharId) {
+        if (targetCharID == 0 || targetCharID == wizard.CharId || StatueIdentity.IsStatueId(targetCharID)) {
             return;
         }
 
@@ -684,15 +683,14 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
     private void SendBuddyEntry(Wizard buddy, Relationship relationship, Wizard owner) {
         // Check if this buddy is online.
         var isOnline = TryGetOnlinePlayer(buddy.CharId, out var onlinePlayer);
-        var buddyHexName = buddy.PlayerNameBehavior.GetWizardNameAsByteHexString();
-        var buddyByteName = DataManipulation.SpacedHexStringToBytes(buddyHexName);
+        var buddyByteName = buddy.PlayerNameBehavior.GetPackedNameBytes();
 
         // Log
         var ownerName = GetActiveWizard().PlayerNameBehavior.GetWizardName();
-        var statusMessage = isOnline ? "online" : "offline";
         var buddyWizardName = buddy.PlayerNameBehavior.GetWizardName();
-        Logger.Debug("{0} has a friend named {1} (Hex: {2}) (ID: {3}) who is {4}.",
-            Logger.Args(ownerName, buddyWizardName, buddyHexName, buddy.CharId, statusMessage));
+        var statusMessage = isOnline ? "online" : "offline";
+        Logger.Debug("{0} has a friend named {1} (ID: {2}) who is {3}.",
+            Logger.Args(ownerName, buddyWizardName, buddy.CharId, statusMessage));
 
         var buddyMsg = new GAME_5_PROTOCOL.MSG_BUDDYENTRY {
             ListOwnerGID = owner.GameObjectID,

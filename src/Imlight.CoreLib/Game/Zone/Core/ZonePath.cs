@@ -144,7 +144,7 @@ public sealed class ZonePath : ZoneEntity {
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN))]
-    protected override void ReceiveObjectLoadBegin()
+    protected override void ReceiveObjectLoadBegin(ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN message)
         => Sender.Tell(new ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADRESULTS());
 
     [MessageHandler(typeof(IServerMessage))]
@@ -306,7 +306,8 @@ public sealed class ZonePath : ZoneEntity {
         // answers gives the slot back.
         var actorName = CreateEntityActorName(creatureObj);
         var creatureActor = Context.ActorOf(Props.Create(() => new ZoneEntity(creatureObj, template, null, ZoneRef, Zone)), actorName);
-        creatureActor.Tell(new ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN());
+        // ReceiveCreatureLoaded sends the creature every player's join, which is what introduces it to them.
+        creatureActor.Tell(new ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN { PlayersJoinAfterLoad = true });
         _loadingCreatures[creatureActor] = (spawnObject, creatureObj.m_globalID, (template as GameObjectTemplate)?.m_objectName);
         Timers.StartSingleTimer(creatureActor, new ZONE_102_PROTOCOL.MSG_ENTITYLOADTIMEOUT { Entity = creatureActor },
             TimeSpan.FromMilliseconds(OBJECT_CREATION_TIMEOUT_IN_MS));

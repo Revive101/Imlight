@@ -83,10 +83,18 @@ internal sealed class SocketSender : ReceiveActor, IDisposable {
         }
 
         _isDisposed = true;
-        _sessionActorRef.Ask("Close");
 
         _socket?.Close();
         _socket?.Dispose();
+    }
+
+    private void DisposeAfterSocketEnded() {
+        if (_isDisposed) {
+            return;
+        }
+
+        _sessionActorRef.Tell("Close");
+        Dispose();
     }
 
     protected override void PostStop() {
@@ -97,7 +105,7 @@ internal sealed class SocketSender : ReceiveActor, IDisposable {
     private void SendToSocket(IMessage message) {
         if (_isDisposed || !_socket.Connected) {
             LogDroppedPacket(message, _isDisposed ? "disposed" : "not connected");
-            Dispose();
+            DisposeAfterSocketEnded();
 
             return;
         }
@@ -125,7 +133,7 @@ internal sealed class SocketSender : ReceiveActor, IDisposable {
         catch (InvalidOperationException ex) {
             // Includes ObjectDisposedException, thrown when the listener side closed the shared socket.
             LogDroppedPacket(message, ex.GetType().Name);
-            Dispose();
+            DisposeAfterSocketEnded();
 
             return;
         }
