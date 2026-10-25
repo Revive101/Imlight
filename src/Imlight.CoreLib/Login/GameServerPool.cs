@@ -47,6 +47,7 @@ using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Game;
 using Imlight.CoreLib.Game.Groups;
+using Imlight.CoreLib.Game.PvP;
 using Imlight.CoreLib.Game.Trading;
 using Imlight.Common;
 
@@ -70,6 +71,8 @@ internal class GameServerPool : ReceiveProtocolDispatcher {
         // Groups span every realm, so the pool owns the one directory all game servers share.
         Context.ActorOf(GroupDirectory.Props(), nameof(GroupDirectory));
 
+        // Queued players sit in any zone and realm, so the pool owns the one PvP director.
+        Context.ActorOf(PvPDirector.Props(), nameof(PvPDirector));
         Context.ActorOf(TradeDirectory.Props(), nameof(TradeDirectory));
 
         Logger.Information("GameServerPool created.");

@@ -507,6 +507,14 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     private void ReceiveRequestCombatSigil(ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL message)
         => _sigilSupervisor.Forward(message);
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_STARTPVPMATCH))]
+    private void ReceiveStartPvPMatch(ZONE_102_PROTOCOL.MSG_STARTPVPMATCH message)
+        => _supervisors.ForEach(supervisor => supervisor.Forward(message));
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_FORFEITPVPPARTICIPANT))]
+    private void ReceiveForfeitPvPParticipant(ZONE_102_PROTOCOL.MSG_FORFEITPVPPARTICIPANT message)
+        => _supervisors.ForEach(supervisor => supervisor.Forward(message));
+
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_SPAWNENTITY))]
     private void ReceiveSpawnEntity(ZONE_102_PROTOCOL.MSG_SPAWNENTITY message)
         => _supervisors.ForEach(supervisor => supervisor.Forward(message));

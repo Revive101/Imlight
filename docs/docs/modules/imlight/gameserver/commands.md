@@ -110,6 +110,14 @@ Commands are organized into logical groups based on functionality:
 - `reset` - clear the badge state, the selected title and the nameplate title
 - The commands only send a `MSG_BADGECOMMAND` to the session; `BadgeService` runs the action through its normal award, counter and title paths. `mod badge <locale id>` sets the nameplate title the same way and needs no relog.
 
+**PvP Rating Commands (`pvp`)**
+- `rating show [league]` - print the league, season, rating, rank name and index, wins, losses and draws of the record
+- `rating set <rating> [league]` - set the rating (never below the floor of the table); the rank is recomputed, the client gets the records again and the badges of the ranks now reached are awarded
+- `rank set <index or name> [league]` - set the rating to the lowest rating of that rank (rank 0 gets the start rating)
+- `season reset [league]` - end the active record and start a new one at the carry-over rating of the rank it ended on, with wins and losses at 0
+- `rating clear [league]` - delete every record of the league, so the next record starts at the start rating
+- The league is the league type name and defaults to the first rated league with a running season that the sender may use. The commands act on the sender and work whether or not `RankedEnabled` is on. They only send a `MSG_RATINGCOMMAND` to the session; `PvPRatingService` does the work.
+
 **DynaMod Commands (`dynamod`)**
 - Listing, setting, toggling and removing the character's dynamic mods
 

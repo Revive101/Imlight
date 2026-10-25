@@ -393,6 +393,20 @@ public static class WizardCollection {
     }
 
     /// <summary>
+    /// Updates the PvP ratings of a wizard.
+    /// </summary>
+    /// <param name="wizard">The wizard whose PvP rating records should be persisted.</param>
+    /// <returns>True if the update was successful; otherwise, false.</returns>
+    public static bool UpdateCharacterPvPEloBehavior(Wizard wizard) {
+        if (wizard is null || wizard.PvPEloBehavior is null) {
+            return false;
+        }
+
+        return UpdateCharacter(wizard.CharId, existingCharacter =>
+            existingCharacter.PvPEloBehavior = wizard.PvPEloBehavior);
+    }
+
+    /// <summary>
     /// Updates the character spellbook behavior for a wizard; persists the
     /// excluded item spell list and other spellbook state to the database.
     /// </summary>
