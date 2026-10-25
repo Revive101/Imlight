@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/27/2026
+ * Last Updated: 10/14/2026
  */
 
 using System;
@@ -76,6 +76,8 @@ public class GameServiceFactory : ServiceFactory {
         typeof(CinematicService),
         typeof(PotionService),
         typeof(TreasureShopService),
+        typeof(PrivacyOptionsService),
+        typeof(TradeService),
         typeof(SeamstressService),
         typeof(BadgeService),
         typeof(RentalService),
