@@ -25,6 +25,7 @@ using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Game.Cantrips;
 using Imlight.CoreLib.Game.Pet;
 using Imlight.CoreLib.Shared.Character;
+using Imlight.CoreLib.Shared.Items;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Models.Player;
@@ -119,64 +120,20 @@ internal class CommandModifyProtocol : CommandProtocol {
             return;
         }
 
-        // Check to see if this template exists.
-        var template = CoreObjectFactory.GetCoreTemplate(templateIdLong);
-        if (template is null) {
-            InformSenderClient("Invalid item id.");
+        var error = ItemHelper.CheckGiveable(templateIdLong);
+        if (error is not null) {
+            InformSenderClient(error);
 
             return;
         }
 
-        // We can't add game objects to the inventory.
-        if (template is not WizItemTemplate) {
-            InformSenderClient($"Cannot add objects of type {template.GetType().Name} to inventory.");
-
-            return;
-        }
-
-        var isPetTemplate = PetFactory.IsPetTemplate((uint) templateIdLong);
-        if (!isPetTemplate && template.m_behaviors.Any(b => b?.m_behaviorName.ToString() == "PetItemBehavior")) {
-            InformSenderClient("Cannot add this pet item because it is not in the pet list.");
-
-            return;
-        }
-
-        if (!isPetTemplate) {
-            var probe = CoreObjectFactory.FinalizeCoreObject(templateIdLong) as WizClientObjectItem;
-            if (probe is not null) {
-                CoreObjectFactory.InitializeCoreObjectBehaviors(probe, probe.m_templateID);
-            }
-
-            if (probe?.m_inactiveBehaviors?.Contains(null) == true) {
-                InformSenderClient("Cannot add this item because one of its behaviors cannot be created.");
-
-                return;
-            }
-        }
-
-        WizClientObjectItem coreObject;
-        var addedItemSuccess = isPetTemplate
-            ? Context.Character.AddHatchedPetToInventory((uint) templateIdLong, out coreObject)
-            : Context.Character.AddItemToInventory(templateIdLong, out coreObject);
-        if (!addedItemSuccess) {
+        var networkMessage = ItemHelper.GiveItem(Context.Character, templateIdLong, out var coreObject);
+        if (networkMessage is null) {
             InformSenderClient("Could not add item to inventory.");
 
             return;
         }
 
-        var coSerializer = new CoreObjectSerializer(
-            behaviors: Imcodec.ObjectProperty.SerializerFlags.None
-        );
-        if (!coSerializer.Serialize(coreObject, (uint) (PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit), out var serializedCoreObject)) {
-            InformSenderClient("Failed to serialize core object.");
-
-            return;
-        }
-
-        var networkMessage = new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_ADDITEM {
-            GlobalID = Context.Character.GameObjectID,
-            SerializedItem = serializedCoreObject
-        };
         Context.SessionActor.Tell(networkMessage, null);
 
         InformSenderClient($"Added item {coreObject.m_debugName} to inventory.");

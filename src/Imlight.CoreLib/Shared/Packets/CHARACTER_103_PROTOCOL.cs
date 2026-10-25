@@ -388,4 +388,29 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
 
     }
 
+    /// <summary>
+    /// Sent by plugins: the inventory service gives the wizard a new copy of an item and shows it to their client.
+    /// The template must already pass <see cref="Items.ItemHelper.CheckGiveable"/>.
+    /// </summary>
+    public sealed class MSG_GIVEITEM : IServerMessage {
+
+        public byte MessageOrder { get; } = 31;
+        public byte ServiceID { get; } = 103;
+
+        public ulong TemplateId;
+
+    }
+
+    /// <summary>
+    /// Sent by plugins: the inventory service removes an item from the wizard's backpack, if it is there.
+    /// </summary>
+    public sealed class MSG_REMOVEITEM : IServerMessage {
+
+        public byte MessageOrder { get; } = 32;
+        public byte ServiceID { get; } = 103;
+
+        public ulong ItemId;
+
+    }
+
 }

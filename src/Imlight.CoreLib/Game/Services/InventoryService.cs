@@ -44,7 +44,9 @@ using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
 using Imlight.CoreLib.Game.Spells;
+using Imlight.CoreLib.Shared.Items;
 using Imlight.CoreLib.Shared.Networking;
+using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.Shared.Utilities;
 using Imlight.CoreLib.WizardData.Collections;
@@ -67,6 +69,31 @@ internal class InventoryService(SessionActor sessionActor) : MessageService(sess
         SendToSocket(new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_REMOVEITEM() {
             GlobalID = wizard.GameObjectID,
             ItemID = message.GlobalID
+        });
+    }
+
+    [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_GIVEITEM))]
+    private void ReceiveGiveItem(CHARACTER_103_PROTOCOL.MSG_GIVEITEM message) {
+        var addItemMessage = ItemHelper.GiveItem(GetActiveWizard(), message.TemplateId, out _);
+        if (addItemMessage is null) {
+            Logger.Log.Warning("Could not give item {0} to the wizard.", Logger.Args(message.TemplateId));
+
+            return;
+        }
+
+        SendToSocket(addItemMessage);
+    }
+
+    [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_REMOVEITEM))]
+    private void ReceiveRemoveItem(CHARACTER_103_PROTOCOL.MSG_REMOVEITEM message) {
+        var wizard = GetActiveWizard();
+        if (!wizard.InventoryBehavior.HasItem(message.ItemId) || !wizard.RemoveItemFromInventory(message.ItemId)) {
+            return;
+        }
+
+        SendToSocket(new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_REMOVEITEM() {
+            GlobalID = wizard.GameObjectID,
+            ItemID = message.ItemId
         });
     }
 
