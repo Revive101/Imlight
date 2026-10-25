@@ -156,6 +156,7 @@ public static class BehaviorCache {
         0x074A42D2 => new PhysicsBehaviorClient(),
         0x2D701D90 => new PositionalSoundBehavior(),
         0x2B542F69 => new PositionalStateSoundBehavior(),
+        0x1381ED06 => new PvP5thAgeKioskBehavior(),
         0x660CC909 => new RidableBehavior(),
         0x070A552D => new ScriptBehavior(),
         0x5FC99777 => new SeedBehavior(),

@@ -37,7 +37,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/09/2026
+ * Last Updated: 10/14/2026
  */
 
 using System;
@@ -124,6 +124,20 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
         // We've fled or have been defeated in this duel. Send us back to the world hub.
         var hubMsg = new ZONE_102_PROTOCOL.MSG_SENDTOHUB();
         TellOtherServices(hubMsg);
+    }
+
+    [MessageHandler(typeof(DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATVICTORY))]
+    private void ReceiveVictorySceneDone(DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATVICTORY message) {
+        // The client sends this when its victory scene is over; a PvP duel waits for it before it lets everyone go.
+        _currentDuelActor?.Tell(new COMBAT_106_PROTOCOL.MSG_PVPVICTORYSEEN { Actor = SessionActor.ActorRef });
+    }
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_PVPDUELENDED))]
+    private void ReceivePvPDuelEnded(COMBAT_106_PROTOCOL.MSG_PVPDUELENDED message) {
+        // A PvP duel grants no experience or loot and sends nobody to a hub; the director sends the players back.
+        GetActiveWizard().IsInDuel = false;
+        _currentDuelActor = null;
+        EquipMount();
     }
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_COMBATWIN))]
