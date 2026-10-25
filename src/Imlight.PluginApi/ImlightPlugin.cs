@@ -38,6 +38,7 @@
  * Last Updated: 10/23/2026
  */
 
+using System.IO;
 using Imlight.PluginApi.Commands;
 using Imlight.PluginApi.Events;
 
@@ -72,6 +73,14 @@ public abstract class ImlightPlugin {
     /// The server, for its online players and loaded zones.
     /// </summary>
     public IServer Server { get; internal set; } = null!;
+
+    /// <summary>
+    /// This plugin's own folder for configs and other data it keeps between runs, created on first use.
+    /// Store files here rather than anywhere else on disk.
+    /// </summary>
+    public string DataFolder => Directory.CreateDirectory(DataFolderPath).FullName;
+
+    internal string DataFolderPath { get; set; } = null!;
 
     /// <summary>
     /// Called at boot, before the servers accept connections.

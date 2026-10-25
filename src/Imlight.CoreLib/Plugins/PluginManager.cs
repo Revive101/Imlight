@@ -73,7 +73,7 @@ public static class PluginManager {
                 var pluginTypes = assembly.GetTypes().Where(x => x.IsSubclassOf(typeof(ImlightPlugin)) && !x.IsAbstract);
 
                 foreach (var type in pluginTypes) {
-                    Enable((ImlightPlugin) Activator.CreateInstance(type)!);
+                    Enable((ImlightPlugin) Activator.CreateInstance(type)!, directory);
                 }
             }
             catch (Exception ex) {
@@ -98,11 +98,12 @@ public static class PluginManager {
         s_plugins.Clear();
     }
 
-    private static void Enable(ImlightPlugin plugin) {
+    private static void Enable(ImlightPlugin plugin, string directory) {
         try {
             plugin.Events = Events;
             plugin.Commands = Commands.For(plugin);
             plugin.Server = Server;
+            plugin.DataFolderPath = Path.Combine(directory, ToFolderName(plugin.Name));
             plugin.OnEnable();
             s_plugins.Add(plugin);
 
@@ -113,6 +114,17 @@ public static class PluginManager {
             Commands.RemoveAll(plugin);
             Logger.Error("Plugin {Type} failed to enable: {Exception}", Logger.Args(plugin.GetType().Name, ex));
         }
+    }
+
+    // A plugin's name may hold characters a folder name can't.
+    private static string ToFolderName(string name) {
+        var invalid = Path.GetInvalidFileNameChars();
+        var folder = new string([.. name.Select(x => invalid.Contains(x) ? '_' : x)]).Trim();
+        if (folder.Length == 0 || folder.All(x => x == '.')) {
+            throw new ArgumentException($"Plugin name '{name}' can't be used as a folder name.");
+        }
+
+        return folder;
     }
 
 }
