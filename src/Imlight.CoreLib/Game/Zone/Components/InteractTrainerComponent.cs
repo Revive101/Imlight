@@ -74,8 +74,8 @@ internal sealed class InteractTrainerComponent(ZoneEntity entity) : ZoneEntityCo
         // Search Dragon database for our spell inventory.
         if (    Entity.Template is not GameObjectTemplate goTemplate
             || !NpcSpellInventoryCollection.TryGetNpcInventory(goTemplate.m_templateID, out var spellInventory)) {
-            Logger.Error("{0} on entity {1} has no spell inventory.", 
-                Logger.Args(ServiceName, Entity.ActiveGameObject.m_debugName));
+            Logger.Warning("Trainer {Trainer} has no spell inventory, so it teaches nothing.",
+                Logger.Args(Entity.ActiveGameObject.m_debugName));
 
             return;
         }
@@ -165,8 +165,9 @@ internal sealed class InteractTrainerComponent(ZoneEntity entity) : ZoneEntityCo
         foreach (var spell in SpellInventory) {
             var template = CoreObjectFactory.GetCoreTemplate(spell.TemplateID);
             if (template is null || template is not SpellTemplate spellTemplate) {
-                Logger.Error("Trainer {0} has an invalid spell template with ID {1}",
-                    Logger.Args(Entity.ActiveGameObject.m_templateID, spell.TemplateID));
+                Logger.Warning("Trainer {TemplateId} teaches spell template {SpellTemplateId}, which is not a spell in " +
+                               "the game files; it is left out.",
+                    Logger.Args(Entity.ActiveGameObject.m_templateID.Full, spell.TemplateID));
 
                 continue;
             }
@@ -185,8 +186,9 @@ internal sealed class InteractTrainerComponent(ZoneEntity entity) : ZoneEntityCo
             if (spell.RequiredSpellID != 0) {
                 var reqTemplate = CoreObjectFactory.GetCoreTemplate(spell.RequiredSpellID);
                 if (reqTemplate is null || reqTemplate is not SpellTemplate reqSpellTemplate) {
-                    Logger.Error("Trainer {0} has an invalid required spell template with ID {1}",
-                        Logger.Args(Entity.ActiveGameObject.m_templateID, spell.RequiredSpellID));
+                    Logger.Warning("Trainer {TemplateId} requires spell template {SpellTemplateId}, which is not a spell " +
+                                   "in the game files; the spell that needs it is left out.",
+                        Logger.Args(Entity.ActiveGameObject.m_templateID.Full, spell.RequiredSpellID));
 
                     continue;
                 }

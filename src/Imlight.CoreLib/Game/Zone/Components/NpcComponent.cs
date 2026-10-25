@@ -98,8 +98,8 @@ internal sealed class NpcComponent : ZoneEntityComponent, IComponentFactory, ICl
         var parsedSchool = MagicSchool.Balance;
         if (    _npcBehaviorTemplate.m_schoolOfFocus != "" 
             && !Enum.TryParse(_npcBehaviorTemplate.m_schoolOfFocus, out parsedSchool)) {
-            Logger.Error("Failed to parse magic school {0} for creature {1}.",
-                Logger.Args(_npcBehaviorTemplate.m_schoolOfFocus, Entity.ActiveGameObject.m_globalID));
+            Logger.Warning("Creature {Creature} has an unknown magic school {School}.",
+                Logger.Args(Entity.ActiveGameObject.m_debugName, _npcBehaviorTemplate.m_schoolOfFocus));
 
             return;
         }
@@ -112,7 +112,7 @@ internal sealed class NpcComponent : ZoneEntityComponent, IComponentFactory, ICl
         // All NPCs have game stats.
         _statsComponent = Entity.GetComponentOfType<StatsComponent>();
         if (_statsComponent is null) {
-            Logger.Error("NPC {0} does not have a StatsComponent.", Logger.Args(Entity.ActiveGameObject.m_globalID));
+            Logger.Error("NPC {Npc} has no stats, so it cannot fight.", Logger.Args(Entity.ActiveGameObject.m_debugName));
 
             return;
         }
@@ -131,7 +131,7 @@ internal sealed class NpcComponent : ZoneEntityComponent, IComponentFactory, ICl
         if (IsMonster) {
             _deckComponent = Entity.GetComponentOfType<CombatCreatureDeckComponent>();
             if (_deckComponent is null) {
-                Logger.Error("NPC {0} does not have a CombatDeckComponent.", 
+                Logger.Error("Monster {Npc} has no combat deck, so it cannot cast.",
                     Logger.Args(Entity.ActiveGameObject.m_debugName));
 
                 return;
@@ -159,31 +159,6 @@ internal sealed class NpcComponent : ZoneEntityComponent, IComponentFactory, ICl
         m_wsNameOverride = NameOverride,
     };
 
-    private void OnProximityEnter(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) {
-        // Bug fix: There is an off chance the player spawns in the middle of our proximity radius,
-        // before the wizard even has time to load themselves into the world.
-        if (playerWizard is null) {
-            return;
-        }
-
-        if (!IsMonster || playerWizard.IsInCombatGrace || playerWizard.IsInDuel) {
-            return;
-        }
-
-        // Hey! I'm a dueling creature and a player just entered my proximity.
-        // I really don't like that.
-        var interactionMsg = new ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL {
-            StartingParticipants = new Dictionary<IActorRef, CoreObject> {
-                { playerActor, playerObj },
-                { Entity.SelfRef, Entity.ActiveGameObject },
-            },
-        };
-        Entity.ZoneRef.Tell(interactionMsg);
-
-        // We do nothing further here. This message will be sent to the ZoneSigilSupervisor
-        // to locate the closest sigil to the player and the creature.
-    }
-
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_QUERYCREATURESTATS))]
     private void ReceiveQueryGameStats(COMBAT_106_PROTOCOL.MSG_QUERYCREATURESTATS message) {
         var rsp = new COMBAT_106_PROTOCOL.MSG_CREATURESTATS {
@@ -210,6 +185,31 @@ internal sealed class NpcComponent : ZoneEntityComponent, IComponentFactory, ICl
             CreatureActor = Entity.SelfRef,
             CreatureObject = Entity.ActiveGameObject,
         });
+    }
+
+    private void OnProximityEnter(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) {
+        // Bug fix: There is an off chance the player spawns in the middle of our proximity radius,
+        // before the wizard even has time to load themselves into the world.
+        if (playerWizard is null) {
+            return;
+        }
+
+        if (!IsMonster || playerWizard.IsInCombatGrace || playerWizard.IsInDuel) {
+            return;
+        }
+
+        // Hey! I'm a dueling creature and a player just entered my proximity.
+        // I really don't like that.
+        var interactionMsg = new ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL {
+            StartingParticipants = new Dictionary<IActorRef, CoreObject> {
+                { playerActor, playerObj },
+                { Entity.SelfRef, Entity.ActiveGameObject },
+            },
+        };
+        Entity.ZoneRef.Tell(interactionMsg);
+
+        // We do nothing further here. This message will be sent to the ZoneSigilSupervisor
+        // to locate the closest sigil to the player and the creature.
     }
 
 }

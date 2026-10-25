@@ -150,7 +150,7 @@ public static class ResultDispatcher {
                         TimeSpan.FromSeconds(QUERY_WIZARD_TIMEOUT_SECONDS)).Result?.Wizard;
             }
             catch (Exception ex) {
-                Logger.Error("Failed to query wizard for result requirements: {0}", Logger.Args(ex.Message));
+                Logger.Error("The character could not be read to check result requirements, so results that have requirements may not run. {Exception}", Logger.Args(ex));
             }
         }
 
@@ -265,12 +265,12 @@ public static class ResultDispatcher {
                 s_resultHandlers.Add(type, shouldAttachMethod);
             }
             else {
-                Logger.Warning("Could not find ShouldAttachToContext method on: {0}",
-                    Logger.Args(type.FullName));
+                Logger.Error("Result handler {Handler} has no ShouldAttachToContext method, so it never runs.",
+                    Logger.Args(type.Name));
             }
         }
 
-        Logger.Information("Registered {0} result handlers", Logger.Args(s_resultHandlers.Count));
+        Logger.Debug("Registered {Count} result handlers.", Logger.Args(s_resultHandlers.Count));
     }
 
 }

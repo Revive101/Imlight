@@ -39,7 +39,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/10/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -89,9 +89,8 @@ public abstract class Server : ReceiveProtocolDispatcher {
                     .GetResult();
             }
             catch {
-                // If the ipify call fails (offline, timeout, blocked), fall back
-                // to loopback so the server can still start.
-                Logger.Warning("Failed to resolve public IP from ipify.org — falling back to 127.0.0.1.");
+                Logger.Warning("{Name} could not detect this machine's public IP (no internet?). Only players on " +
+                               "this PC can join; set GameServerIP in Imlight.ini to fix.", Logger.Args(name));
                 this.Ip = "127.0.0.1";
             }
 #else
@@ -110,19 +109,17 @@ public abstract class Server : ReceiveProtocolDispatcher {
         var sessionProps = SessionActor.Props(message.Socket, id, Context.Self, _actorFactoryRef);
         Context.ActorOf(sessionProps, $"SessionActor.{id}");
 
-        // Logger
-        Logger.Debug("{Type} new connection from {RemoteEndPoint} given session ID {Id}",
-            Logger.Args(GetType(), message.Socket.RemoteEndPoint?.ToString(), id));
+        Logger.Debug("{Name} new connection from {RemoteEndPoint} given session ID {Id}",
+            Logger.Args(Name, message.Socket.RemoteEndPoint?.ToString(), id));
     }
 
     [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET))]
     protected virtual void ReceiveDeallocateSocket(SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET message) {
         if (!ActiveSessions.Remove(ActiveSessions.FirstOrDefault(x => x.SessionID == message.Id))) {
-            // It's fine if no session was found. This is a common occurrence.
+            return;
         }
-        else {
-            Logger.Information("{Name} lost connection to {Ip}", Logger.Args(Name, message.Ip, message.Id));
-        }
+
+        Logger.Debug("{Name} lost connection to {Ip} (session {Id}).", Logger.Args(Name, message.Ip, message.Id));
     }
 
     [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_STARTLISTENING))]
@@ -164,12 +161,13 @@ public abstract class Server : ReceiveProtocolDispatcher {
             withinTimeRange: TimeSpan.FromSeconds(30),
             localOnlyDecider: ex => {
                 // Client regularly shuts down the socket. No need to log it.
-                if (ex.Message.ToLower().Contains("shutdown")) {
+                if (ex.Message.Contains("shutdown", StringComparison.OrdinalIgnoreCase)) {
                     return Directive.Stop;
                 }
 
-                Logger.Error("SessionActor {Source} has failed with exception {Exception}",
-                    Logger.Args(ex.InnerException.Source, ex));
+                Logger.Error("A session on {Name} stopped after an unexpected error in {Source}. {Exception}",
+                    Logger.Args(Name, ex.InnerException?.Source ?? ex.Source, ex));
+
                 return Directive.Stop;
             }
         );

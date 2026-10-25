@@ -39,7 +39,7 @@
  * 
  * Created by: Joji
  * Version: KALI 1.0
- * Last Updated: 10/14/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -92,7 +92,7 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
             }
         }
         catch (Exception ex) {
-            Logger.Error("Error while equipping item: {0} {1}", Logger.Args(ex.Message, ex.StackTrace));
+            Logger.Error("Item {ItemId} could not be equipped or unequipped. {Exception}", Logger.Args(message.ItemID, ex));
         }
     }
 
@@ -110,8 +110,8 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
             }
         }
         catch (Exception ex) {
-            Logger.Error("Error while attaching effects: {0} {1}",
-                Logger.Args(ex.Message, ex.StackTrace));
+            Logger.Error("The equipment effects could not be sent after the character entered the zone. {Exception}",
+                Logger.Args(ex));
 
             throw new ServiceRetryException("Error while attaching effects.", ex);
         }
@@ -127,9 +127,9 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
             var infractionText = $"Player tried to equip item {itemId} that they do not have in their inventory!";
             account.AddInfraction(InfractionType.SuspiciousBehavior, infractionText);
 
-            Logger.Warning("Player tried to equip item {0} that they do not have in their inventory."
-                        + " This has been logged as suspicious behavior.",
-                Logger.Args(itemId));
+            Logger.Warning("Character {Wizard} tried to equip item {ItemId}, which is not in their inventory."
+                        + " This is recorded as suspicious behavior.",
+                Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), itemId));
 
             return;
         }
@@ -138,7 +138,7 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
         // We don't have to remove it here because the InventoryToEquipmentTransfer method will do that for us.
         if (wizard.EquipmentBehavior.SlotInUse(message.SlotName, out var index)) {
             // Debug log.
-            Logger.Debug("{0} tried to equip item {1} in slot {2} that is already in use. Unequipping from index {3}",
+            Logger.Debug("{Wizard} equips item {ItemId} in slot {Slot}, which is in use, so slot index {Index} is unequipped first.",
                 Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), itemId, message.SlotName, index));
 
             // Get the item that is currently equipped in this slot.
@@ -147,8 +147,8 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
         }
 
         if (!wizard.InventoryToEquipmentTransfer(itemId, out var effects, out var removedEffects)) {
-            Logger.Warning("Equip failed on item {0}",
-                Logger.Args(itemId));
+            Logger.Warning("Character {Wizard} could not equip item {ItemId}.",
+                Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), itemId));
 
             return;
         }
@@ -187,8 +187,8 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
             var infractionText = $"Player tried to unequip item {itemId} that they do not have in their inventory!";
             account.AddInfraction(InfractionType.SuspiciousBehavior, infractionText);
 
-            Logger.Warning("Player tried to unequip item {0} that they do not have in their inventory."
-                        + " This has been logged as a suspicious behavior infraction.",
+            Logger.Warning("A character tried to unequip item {ItemId}, which they do not have equipped."
+                        + " This is recorded as suspicious behavior.",
                 Logger.Args(itemId));
 
             return;
@@ -208,8 +208,8 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
             }
         }
         catch (Exception ex) {
-            Logger.Error("Error while unequipping item {0}: {1} {2}",
-                Logger.Args(message.ItemId, ex.Message, ex.StackTrace));
+            Logger.Error("Item {ItemId} could not be unequipped. {Exception}",
+                Logger.Args(message.ItemId, ex));
         }
 
         Sender.Tell(new CHARACTER_103_PROTOCOL.MSG_UNEQUIPITEMRSP {
@@ -232,8 +232,8 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
             // Send a message to the client to assure them that the server does not have the item equipped.
             SendUnequipItem(slotName, slot, itemId);
 
-            Logger.Warning("Unequip failed on item {0}",
-                Logger.Args(itemId));
+            Logger.Warning("Character {Wizard} could not unequip item {ItemId}.",
+                Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), itemId));
 
             return;
         }
@@ -369,7 +369,7 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
 
                 var slot = equip.GetSlotOfItem(mount.m_globalID);
                 if (!wizard.EquipmentToInventoryTransfer(mount.m_globalID, out var removedEffects)) {
-                    Logger.Warning("Interior dismount transfer failed for mount {0}", Logger.Args(mount.m_globalID));
+                    Logger.Warning("Character {Wizard} entered a zone without mounts, but mount {ItemId} could not be unequipped.", Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), mount.m_globalID));
 
                     return;
                 }
@@ -388,7 +388,7 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
                 WizardCollection.UpdateCharacterInteriorStowedMount(wizard);
 
                 if (!wizard.InventoryToEquipmentTransfer(gid, out var addedEffects, out _)) {
-                    Logger.Warning("Outdoor remount transfer failed for mount {0}", Logger.Args(gid));
+                    Logger.Warning("Character {Wizard} left a zone without mounts, but mount {ItemId} could not be equipped again.", Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), gid));
 
                     return;
                 }
@@ -404,8 +404,8 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
             }
         }
         catch (Exception ex) {
-            Logger.Error("Error while reconciling the mount for the zone: {0} {1}",
-                Logger.Args(ex.Message, ex.StackTrace));
+            Logger.Error("The mount could not be put away or brought back for this zone. {Exception}",
+                Logger.Args(ex));
         }
     }
 
@@ -433,7 +433,7 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
         var pubItem = ItemHelper.GetPublicItem(item);
 
         if (!_itemSerializer.Serialize(pubItem, 1, out var data)) {
-            Logger.Error("Failed to serialize item {0} for equip broadcast.",
+            Logger.Error("Item {ItemId} could not be serialized, so other players do not see it equipped.",
                 Logger.Args(item.m_globalID));
 
             return;
@@ -481,7 +481,7 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
         foreach (var effect in effects) {
             var flags = PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit;
             if (!_effectSerializer.Serialize(effect, flags, out var effectSerializedData)) {
-                Logger.Error("Failed to serialize effect {0} for add effects broadcast.",
+                Logger.Error("Effect {Effect} could not be serialized, so the client does not get it.",
                     Logger.Args(effect.m_effectNameID));
 
                 continue;

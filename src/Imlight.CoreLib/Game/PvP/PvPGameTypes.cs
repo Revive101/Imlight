@@ -34,9 +34,10 @@
  * 
  * Created by: Jay
  * Version: KALI 1.0
- * Last Updated: 10/14/2026
+ * Last Updated: 10/25/2026
  */
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
@@ -49,6 +50,8 @@ internal static class PvPGameTypes {
 
     public const string ALTERNATING_TURNS_PIPS_AT_ONCE = "AlternatingTurns_PipsAtOnce";
 
+    private static readonly ConcurrentDictionary<string, byte> s_reportedModifierNames = new();
+
     public static bool TryResolve(IEnumerable<string> modifierNames, out PvPDuelRules rules) {
         var alternateTurns = false;
         var pipsForBothTeams = false;
@@ -60,7 +63,10 @@ internal static class PvPGameTypes {
                 continue;
             }
 
-            Logger.Error("The PvP duel modifier {Name} is not supported.", Logger.Args(name));
+            if (s_reportedModifierNames.TryAdd(name ?? string.Empty, 0)) {
+                Logger.Error("The PvP duel modifier {Name} is not supported, so matches of tournaments that use it are cancelled.", Logger.Args(name));
+            }
+
             rules = null;
 
             return false;

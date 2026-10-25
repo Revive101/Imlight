@@ -32,7 +32,7 @@
  *
  * Created by: Jay
  * Version: KALI 1.0
- * Last Updated: 10/14/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -93,7 +93,7 @@ internal static class MinigameRewardGranter {
         var gold = Math.Min(outcome.Amount, room);
         if (gold <= 0) {
             if (outcome.Amount > 0) {
-                Logger.Information("Minigame gold reward of {Gold} dropped, the pouch of {Wizard} is full",
+                Logger.Debug("Minigame gold reward of {Gold} dropped, the pouch of {Wizard} is full",
                     Logger.Args(outcome.Amount, wizard.PlayerNameBehavior.GetWizardName()));
             }
 
@@ -121,7 +121,7 @@ internal static class MinigameRewardGranter {
             case MinigameOutcomeKind.Reagent:
                 var reagentCount = LootGranter.GrantReagent(playerActor, wizard, outcome.TemplateId, outcome.Quantity);
                 if (reagentCount == 0) {
-                    Logger.Information("Minigame reagent reward {Reagent} dropped, the stack of {Wizard} is full",
+                    Logger.Debug("Minigame reagent reward {Reagent} dropped, the stack of {Wizard} is full",
                         Logger.Args(outcome.TemplateId, wizard.PlayerNameBehavior.GetWizardName()));
 
                     return null;

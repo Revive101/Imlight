@@ -41,7 +41,7 @@
  *
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/23/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -123,7 +123,7 @@ internal class CinematicService(SessionActor sessionActor) : MessageService(sess
 
         var template = CinematicActorFactory.GetTemplate(cinematicName);
         if (template is null) {
-            Logger.Warning("Cinematic template {Name} could not be loaded.", Logger.Args(cinematicName));
+            Logger.Warning("Cinematic {Name} is not in the game files, so it is not played.", Logger.Args(cinematicName));
 
             return;
         }
@@ -148,7 +148,7 @@ internal class CinematicService(SessionActor sessionActor) : MessageService(sess
         }
 
         if (!_objectSerializer.Serialize(actor, OBJECT_PROPERTY_FLAGS, out var actorData)) {
-            Logger.Error("Failed to serialize the actor of cinematic {Name}.", Logger.Args(cinematicName));
+            Logger.Error("The actor of cinematic {Name} could not be serialized, so the cinematic is not played.", Logger.Args(cinematicName));
 
             return;
         }
@@ -353,7 +353,7 @@ internal class CinematicService(SessionActor sessionActor) : MessageService(sess
 
     private void SendDialog(ActorDialog dialog) {
         if (!_dialogSerializer.Serialize(DialogSpeakers.ForClient(dialog), 16, out var dialogData)) {
-            Logger.Error("Failed to serialize cinematic dialog {Tag}.", Logger.Args(dialog.m_dialogTag));
+            Logger.Error("Cinematic dialog {Tag} could not be serialized, so it is not shown.", Logger.Args(dialog.m_dialogTag));
 
             return;
         }
@@ -373,7 +373,7 @@ internal class CinematicService(SessionActor sessionActor) : MessageService(sess
     private static WizClientObject BuildActor(uint templateId, WizCinematicActorTemplate cinematic,
                                               Vector3 start, Vector3 target) {
         if (CoreObjectFactory.GetCoreTemplate(templateId) is not GameObjectTemplate actorTemplate) {
-            Logger.Warning("Cinematic actor template {Id} could not be loaded.", Logger.Args(templateId));
+            Logger.Warning("Cinematic actor template {Id} is not in the game files.", Logger.Args(templateId));
 
             return null;
         }
@@ -393,7 +393,7 @@ internal class CinematicService(SessionActor sessionActor) : MessageService(sess
         }
 
         if (!CoreObjectFactory.FindBehaviorInstance<CinematicActorBehavior>(actor, out var actorBehavior)) {
-            Logger.Warning("Cinematic actor template {Id} has no CinematicActorBehavior.", Logger.Args(templateId));
+            Logger.Warning("Template {Id} is not a cinematic actor.", Logger.Args(templateId));
 
             return null;
         }

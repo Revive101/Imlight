@@ -75,7 +75,7 @@ internal static class HasBadgeRequirement {
 
         if (!BadgeCatalog.Current.TryGetByName(name, out var definition)) {
             if (s_warnedNames.TryAdd(name, 0)) {
-                Logger.Warning("Requirement names badge {0}, which is not in the badge catalog; it fails.", Logger.Args(name));
+                Logger.Warning("A requirement names badge {Badge}, which is not in the badge catalog, so it is never met.", Logger.Args(name));
             }
 
             return false;

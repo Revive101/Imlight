@@ -98,7 +98,7 @@ internal class ManifestGenerator {
             }
 
             if (counter >= INFORM_ALIVE_INTERVAL) {
-                Logger.Information("Wrote {0} templates", Logger.Args(INFORM_ALIVE_INTERVAL));
+                Logger.Information("Wrote {Count} templates", Logger.Args(INFORM_ALIVE_INTERVAL));
                 counter = 0;
             }
 

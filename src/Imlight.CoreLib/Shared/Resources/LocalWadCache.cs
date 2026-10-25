@@ -37,7 +37,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -85,12 +85,11 @@ internal static class LocalWadCache {
 
         // If the patch server is available, we'll update the cache.
         if (PatchServer.EndpointReached) {
-            Logger.Information("Begin updating local cache..");
+            Logger.Debug("Begin updating local cache..");
             UpdateCache();
-            Logger.Information("Local cache updated!");
         }
         else {
-            Logger.Information("Local cache will not be updated because the patch server is not available.");
+            Logger.Debug("Local cache will not be updated because the patch server is not available.");
         }
     }
 
@@ -103,8 +102,7 @@ internal static class LocalWadCache {
             .FirstOrDefault();
 
         if (file is null) {
-            Logger.Warning("LocalCache does not contain a file definition for {FileName}!", 
-                Logger.Args(wadName));
+            Logger.Debug("Game file {FileName} is not in the local cache yet.", Logger.Args(wadName));
 
             return null;
         }
@@ -140,8 +138,8 @@ internal static class LocalWadCache {
         var file = fs.Find(f => f.Filename == fileName)
             .FirstOrDefault();
         if (file is not null) {
-            Logger.Warning("LocalCache already contains a file definition for {FileName}! " +
-                        $"File will be overwritten.", Logger.Args(fileName));
+            Logger.Debug("Game file {FileName} is already in the local cache and is overwritten.",
+                Logger.Args(fileName));
         }
 
         // Create a new FileDefinition. Create a new byte array from the content stream.
@@ -170,12 +168,13 @@ internal static class LocalWadCache {
             return;
         }
 
-        Logger.Warning("LocalCache tried to delete a file {FileName} it did not contain!", Logger.Args(fileName));
+        Logger.Debug("Game file {FileName} was not in the local cache, so there was nothing to delete.",
+            Logger.Args(fileName));
     }
 
     private static void UpdateCache() {
         if (!PatchServer.EndpointReached) {
-            Logger.Warning($"Tried to update the local cache while the patch server was not available.");
+            Logger.Warning("Tried to update the local cache while the patch server was not available.");
 
             return;
         }
@@ -183,9 +182,16 @@ internal static class LocalWadCache {
         // To check for new files, Imlight will always download the LatestFileList from the patch server. It will
         // use the file sizes to determine which cached files are outdated.
         var latestFileList = PatchServerFascade.GetLatestFileList();
+        if (latestFileList?.Files is null) {
+            Logger.Warning("The local cache was not checked for updates because the patch server sent no game file list.");
+
+            return;
+        }
 
         // Iterate through every cached file and check to see if its size matches the latest.
         var cachedFiles = GetAllCachedFiles();
+        var updatedFiles = 0;
+        var failedFiles = new List<string>();
         foreach (var file in cachedFiles) {
             // Imlight's cache removes the '/' character to match zone transfer data. There's also a naming
             // inconsistency. The game client uses a path while Imlight does not.
@@ -196,7 +202,7 @@ internal static class LocalWadCache {
             var latestFile = latestFileList.Files
                 .Find(f => f.SourceFileName == documentFileName);
             if (latestFile is null) {
-                Logger.Warning("Cached file {FileName} does not exist in the LatestFileList!",
+                Logger.Debug("Cached file {FileName} is not in the patch server's game file list.",
                     Logger.Args(internalFileName));
 
                 continue;
@@ -211,24 +217,34 @@ internal static class LocalWadCache {
             }
 
             Logger.Debug("Cached file {FileName} needed update", Logger.Args(file.Filename));
-            UpdateCachedFile(file);
+            if (TryUpdateCachedFile(file)) {
+                updatedFiles++;
+            }
+            else {
+                failedFiles.Add(file.Filename);
+            }
+        }
+
+        Logger.Information("Local cache checked: {Updated} of {Cached} game files updated.",
+            Logger.Args(updatedFiles, cachedFiles.Count));
+        if (failedFiles.Count > 0) {
+            Logger.Warning("{Failed} game files could not be updated and keep their old copy: {Files}",
+                Logger.Args(failedFiles.Count, string.Join(", ", failedFiles)));
         }
     }
 
-    private static void UpdateCachedFile(FileDefinition file) {
-        DeleteWad(file.Filename);
-
+    private static bool TryUpdateCachedFile(FileDefinition file) {
         if (!PatchServerFascade.DownloadWadFromPatchServer(file.Filename, out var stream)) {
-            Logger.Error("Failed to update wad {WadName}.", Logger.Args(file.Filename));
-
-            return;
+            return false;
         }
 
-        // If we successfully downloaded it, we'll also cache it so we don't have to do that again.
+        // The old copy stays in the cache until the new one is downloaded.
         stream.Seek(0, SeekOrigin.Begin);
         var wad = ArchiveParser.Parse(stream);
-        var betterWadName = SanitizeWadName(file.Filename);
-        CacheWad(betterWadName, wad);
+        DeleteWad(file.Filename);
+        CacheWad(SanitizeWadName(file.Filename), wad);
+
+        return true;
     }
 
     private static string SanitizeWadName(string originalName) {

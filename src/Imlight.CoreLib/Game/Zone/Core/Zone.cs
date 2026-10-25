@@ -35,7 +35,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/14/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -268,15 +268,6 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         ReplyToRemovePlayer();
     }
 
-    private void ReplyToRemovePlayer() {
-        // A zone transfer asks and waits for the removal; a disconnecting session tells it with no sender.
-        if (Sender.IsNobody()) {
-            return;
-        }
-
-        Sender.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYERRSP());
-    }
-
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PLAYERMOVE))]
     protected virtual void ReceivePlayerMove(ZONE_102_PROTOCOL.MSG_PLAYERMOVE message) {
         if (_isLoading) {
@@ -342,8 +333,8 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         Logger.Debug("Zone {ZoneName} client data gathered.", Logger.Args(ZoneName));
 
         if (message.Error) {
-            Logger.Error("Zone {ZoneName} failed to load because {ErrorMessage}", 
-                Logger.Args(ZoneName, message.ErrorMessage));
+            Logger.Error("Zone {ZoneName} could not load and was closed: {ErrorMessage}. Check that the game " +
+                         "files in the resource cache are complete.", Logger.Args(ZoneName, message.ErrorMessage));
 
             CloseZone();
 
@@ -389,7 +380,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONELOADTIMER))]
     private void ReceiveZoneTimerEnd() {
         if (_isLoading) {
-            Logger.Error("Zone {ZoneName} failed to load within the timeout.", Logger.Args(ZoneName));
+            Logger.Error("Zone {ZoneName} did not finish loading in time and was closed.", Logger.Args(ZoneName));
             CloseZone();
         }
     }
@@ -521,6 +512,54 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
 
     #endregion
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_INSTANCEIDLEEXPIRE))]
+    private void ReceiveInstanceIdleExpire(ZONE_102_PROTOCOL.MSG_INSTANCEIDLEEXPIRE message) {
+        if (_players.Count > 0 || _isLoading) {
+            return;
+        }
+
+        if (!IsInstance) {
+            // A public zone only stops once its parent has stopped sending it transfers: see MSG_PUBLICZONESTOPCHECK.
+            _activitySinceIdleRequest = false;
+            Context.Parent.Tell(new ZONE_102_PROTOCOL.MSG_PUBLICZONEIDLE { ZoneName = ZonePath });
+
+            return;
+        }
+
+        Logger.Information("Instance zone {ZoneName} idle with no players, dropping it.", Logger.Args(ZoneName));
+        Context.Parent.Tell(new ZONE_102_PROTOCOL.MSG_DROPINSTANCEZONE { ZoneName = ZonePath });
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PUBLICZONESTOPCHECK))]
+    private void ReceivePublicZoneStopCheck(ZONE_102_PROTOCOL.MSG_PUBLICZONESTOPCHECK message) {
+        if (_players.Count > 0 || _isLoading || _activitySinceIdleRequest) {
+            Context.Parent.Tell(new ZONE_102_PROTOCOL.MSG_PUBLICZONEKEEP { ZoneName = ZonePath });
+
+            return;
+        }
+
+        Logger.Information("Public zone {ZoneName} idle with no players, stopping it.", Logger.Args(ZoneName));
+        CloseZone();
+    }
+
+    internal ushort ReserveMobileId() => GenerateReservedObjectIdentifier();
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_RELEASEMOBILEID))]
+    private void ReceiveReleaseMobileId(ZONE_102_PROTOCOL.MSG_RELEASEMOBILEID message) {
+        lock (_mobileIdLock) {
+            _mobileIdMap.Remove(message.MobileId);
+        }
+    }
+
+    private void ReplyToRemovePlayer() {
+        // A zone transfer asks and waits for the removal; a disconnecting session tells it with no sender.
+        if (Sender.IsNobody()) {
+            return;
+        }
+
+        Sender.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYERRSP());
+    }
+
     private void DispatchBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message) {
         if ((message.Targets & ZoneBroadcastTarget.Players) != 0) {
             if (_players.Count > 0) _playerSupervisor.Forward(message);
@@ -651,36 +690,6 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
             TimeSpan.FromMinutes(minutes));
     }
 
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_INSTANCEIDLEEXPIRE))]
-    private void ReceiveInstanceIdleExpire(ZONE_102_PROTOCOL.MSG_INSTANCEIDLEEXPIRE message) {
-        if (_players.Count > 0 || _isLoading) {
-            return;
-        }
-
-        if (!IsInstance) {
-            // A public zone only stops once its parent has stopped sending it transfers: see MSG_PUBLICZONESTOPCHECK.
-            _activitySinceIdleRequest = false;
-            Context.Parent.Tell(new ZONE_102_PROTOCOL.MSG_PUBLICZONEIDLE { ZoneName = ZonePath });
-
-            return;
-        }
-
-        Logger.Information("Instance zone {ZoneName} idle with no players, dropping it.", Logger.Args(ZoneName));
-        Context.Parent.Tell(new ZONE_102_PROTOCOL.MSG_DROPINSTANCEZONE { ZoneName = ZonePath });
-    }
-
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PUBLICZONESTOPCHECK))]
-    private void ReceivePublicZoneStopCheck(ZONE_102_PROTOCOL.MSG_PUBLICZONESTOPCHECK message) {
-        if (_players.Count > 0 || _isLoading || _activitySinceIdleRequest) {
-            Context.Parent.Tell(new ZONE_102_PROTOCOL.MSG_PUBLICZONEKEEP { ZoneName = ZonePath });
-
-            return;
-        }
-
-        Logger.Information("Public zone {ZoneName} idle with no players, stopping it.", Logger.Args(ZoneName));
-        CloseZone();
-    }
-
     private ushort GenerateObjectIdentifier() {
         lock (_mobileIdLock) {
             // Find first available ID.
@@ -694,8 +703,6 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
             throw new InvalidOperationException("Failed to generate a mobile ID.");
         }
     }
-
-    internal ushort ReserveMobileId() => GenerateReservedObjectIdentifier();
 
     private bool IsMobileIdInUse(ushort mobileId) {
         lock (_mobileIdLock) {
@@ -726,13 +733,6 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         Timers.StartSingleTimer(key, new ZONE_102_PROTOCOL.MSG_RELEASEMOBILEID {
             MobileId = mobileId
         }, TimeSpan.FromSeconds(2));
-    }
-
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_RELEASEMOBILEID))]
-    private void ReceiveReleaseMobileId(ZONE_102_PROTOCOL.MSG_RELEASEMOBILEID message) {
-        lock (_mobileIdLock) {
-            _mobileIdMap.Remove(message.MobileId);
-        }
     }
 
 }

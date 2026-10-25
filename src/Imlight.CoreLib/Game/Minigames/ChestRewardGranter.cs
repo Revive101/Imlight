@@ -35,10 +35,11 @@
  *
  * Created by: Jay
  * Version: KALI 1.0
- * Last Updated: 10/14/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
@@ -54,6 +55,8 @@ namespace Imlight.CoreLib.Game.Minigames;
 internal static class ChestRewardGranter {
 
     private const int WINDOW_SLOTS = 4;
+
+    private static readonly ConcurrentDictionary<ulong, byte> s_warnedChestTemplateIds = new();
 
     internal static MinigameRewardResult NoReward()
         => new(DropTableConverter.CreateEmpty(), 0, false);
@@ -72,14 +75,14 @@ internal static class ChestRewardGranter {
         // The window draws items and treasure cards only (and the gold), so it is given only those.
         var drawn = lootList.m_loot.Where(x => x is ItemLootInfo or TreasureCardLootInfo).ToList();
         if (drawn.Count < lootList.m_loot.Count) {
-            Logger.Information("Chest {Template} granted loot that the rewards window cannot show to {Wizard}",
+            Logger.Debug("Chest {Template} granted loot that the rewards window cannot show to {Wizard}",
                 Logger.Args(chestTemplateId, wizard.PlayerNameBehavior.GetWizardName()));
         }
 
         lootList.m_loot = drawn;
 
         var slots = drawn.Count + (lootList.m_goldInfo is { m_goldAmount: > 0 } ? 1 : 0);
-        if (slots > WINDOW_SLOTS) {
+        if (slots > WINDOW_SLOTS && s_warnedChestTemplateIds.TryAdd(chestTemplateId, 0)) {
             Logger.Warning("Chest {Template} granted {Slots} rewards, the rewards window shows {WindowSlots}",
                 Logger.Args(chestTemplateId, slots, WINDOW_SLOTS));
         }
@@ -96,7 +99,7 @@ internal static class ChestRewardGranter {
         }
 
         if (room == 0) {
-            Logger.Information("Chest gold of {Gold} dropped, the pouch of {Wizard} is full",
+            Logger.Debug("Chest gold of {Gold} dropped, the pouch of {Wizard} is full",
                 Logger.Args(rolled.GoldAmount, wizard.PlayerNameBehavior.GetWizardName()));
         }
 

@@ -35,7 +35,7 @@
  * 
  * Created by: Jay
  * Version: KALI 1.0
- * Last Updated: 10/14/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -66,26 +66,22 @@ internal sealed class PvPMatchFactory : RootDirectoryResourceSingleton<PvPMatchF
         var byId = new Dictionary<uint, MatchTemplate>();
         var levelModifiers = new Dictionary<ulong, TournamentLevelModifiers>();
 
-        foreach (var file in base.Files) {
-            if (!PvPResourceReader.TryRead<PropertyClass>(file.Key, file.Value, out var template)) {
-                continue;
-            }
-
+        foreach (var (file, template) in ReadTemplates<PropertyClass>()) {
             switch (template) {
                 case MatchTemplate match:
-                    RegisterMatch(match, file.Key.FileName, byName, byId);
+                    RegisterMatch(match, file.FileName, byName, byId);
 
                     break;
                 case TournamentLevelModifiers modifiers:
                     if (!levelModifiers.TryAdd(modifiers.m_templateID, modifiers)) {
                         Logger.Error("Level modifiers {Id} in {File} are defined twice.",
-                            Logger.Args(modifiers.m_templateID, file.Key.FileName));
+                            Logger.Args(modifiers.m_templateID, file.FileName));
                     }
 
                     break;
                 default:
                     Logger.Error("PvP match file {File} is a {Type}, which no loader handles.",
-                        Logger.Args(file.Key.FileName, template.GetType().Name));
+                        Logger.Args(file.FileName, template.GetType().Name));
 
                     break;
             }
