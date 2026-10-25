@@ -15,8 +15,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  *
- * ================================================================= * GAME SERVICE FACTORY 
- * ================================================================= * 
+ * ======================================================================== 
+ * GAME SERVICE FACTORY 
+ * ======================================================================== 
+ *
  * PURPOSE:
  * Defines and registers the service types required for game operations,
  * providing a centralized factory for creating game-related services.
