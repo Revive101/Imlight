@@ -76,6 +76,7 @@ public class Wizard {
     public Dictionary<uint, ulong> HouseLots { get; set; } = [];
 
     public byte World { get; set; }
+    public PrivacyOptions PrivacyOptions { get; set; } = new();
     public Vector3 Location {
         get => GameObject.m_location;
         set {
