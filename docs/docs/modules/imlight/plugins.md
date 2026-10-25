@@ -117,6 +117,19 @@ Events.Subscribe<OnPlayerZoneEnter>(e => {
 
 `Players` is a snapshot, safe to read from any handler; it does not change after you read it, so read it again for fresh data. By the time `OnPlayerZoneEnter` fires, the entering player is already in it. The `IPlayer`s in it are the same objects events hand you, so `Players.Contains(e.Player)` works. Each dungeon instance is its own `IZone`. An `IZone` lasts only while its zone is loaded, and instances unload once they sit empty, so store `Name` rather than the `IZone`.
 
+## Server
+
+`Server` gives you the whole server: the `Players` online, the `Zones` loaded, `GetPlayer` to look a player up by character ID or name, and `Broadcast` to message everyone:
+
+```csharp
+Commands.Register("who", c => {
+    var names = Server.Players.Select(x => x.Name);
+    c.Reply($"{Server.Players.Count} online: {string.Join(", ", names)}");
+});
+```
+
+`Players` and `Zones` are snapshots, like `IZone.Players`, so read them again for fresh data. `Players` only holds players who are in a zone, so a player mid zone change or still logging in is missing from it and `GetPlayer` returns null for them. `GetPlayer(name)` matches the display name case-insensitively.
+
 ## Commands
 
 Plugins can add their own chat commands through `Commands`, in `OnEnable`:

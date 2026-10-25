@@ -63,6 +63,11 @@ internal sealed class PluginZone(string name, bool isInstance, IActorRef zoneAct
     public IReadOnlyList<IPlayer> Players => _players;
 
     /// <summary>
+    /// Every running zone. Safe to enumerate from any thread.
+    /// </summary>
+    public static IEnumerable<PluginZone> All => s_zones.Values;
+
+    /// <summary>
     /// The zone for a zone actor, or null if the actor is null or not a running zone.
     /// </summary>
     public static PluginZone Of(IActorRef zoneActor)

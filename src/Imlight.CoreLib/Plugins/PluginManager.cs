@@ -58,6 +58,8 @@ public static class PluginManager {
 
     internal static PluginCommandRegistry Commands { get; } = new();
 
+    internal static PluginServer Server { get; } = new();
+
     /// <summary>
     /// Loads every plugin DLL in the directory, creating it if needed, and enables each plugin.
     /// A plugin that fails is logged and skipped.
@@ -100,6 +102,7 @@ public static class PluginManager {
         try {
             plugin.Events = Events;
             plugin.Commands = Commands.For(plugin);
+            plugin.Server = Server;
             plugin.OnEnable();
             s_plugins.Add(plugin);
 

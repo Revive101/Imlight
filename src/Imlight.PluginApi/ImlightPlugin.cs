@@ -69,6 +69,11 @@ public abstract class ImlightPlugin {
     public ICommandRegistry Commands { get; internal set; } = null!;
 
     /// <summary>
+    /// The server, for its online players and loaded zones.
+    /// </summary>
+    public IServer Server { get; internal set; } = null!;
+
+    /// <summary>
     /// Called at boot, before the servers accept connections.
     /// </summary>
     public virtual void OnEnable() { }
