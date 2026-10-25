@@ -70,6 +70,7 @@ public class Wizard {
     public uint LastLoginTime { get; set; }
     public long TimeHomeLastClicked { get; set; }
     public byte World { get; set; }
+    public PrivacyOptions PrivacyOptions { get; set; } = new();
     public Vector3 Location {
         get => GameObject.m_location;
         set {
