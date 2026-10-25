@@ -38,7 +38,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 08/13/2026
+ * Last Updated: 10/14/2026
  */
 
 using Akka.Actor;
@@ -47,6 +47,7 @@ using Imcodec.Math;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
+using Imlight.CoreLib.Game.PvP.Data;
 using Imlight.CoreLib.Game.Spells;
 using Imlight.CoreLib.Game.Zone.Components;
 using Imlight.CoreLib.Shared.Behaviors;
@@ -92,10 +93,15 @@ public class CombatDuelSubCircle {
     internal IActorRef ParticipantActor { get; private set; }
     internal CoreObject ParticipantObject { get; private set; }
     internal ServerWizGameStats ParticipantGameStats { get; private set; }
+    // The stats the client gets. A duel that scales stats sends them unscaled and lets the client scale them itself.
+    internal WizGameStats ClientGameStats => _clientGameStats ?? ParticipantGameStats?.GetCombatGameStats();
+    internal WizGameStats ResolverGameStats => _resolverGameStats ?? CombatParticipant?.m_pGameStats;
     internal CombatParticipant CombatParticipant { get; private set; }
     internal bool IsBoss => CombatParticipant?.m_bossMob == true;
     internal bool AddedToDuel { get; set;}
     internal bool IsSummonedMinion { get; private set; }
+    // A sandboxed wizard fights with a copy of their stats, so nothing of the duel reaches the saved wizard.
+    internal bool IsSandboxed { get; private set; }
     internal List<SpellEffect> _hangingEffects { get {
         if (CombatParticipant is null) {
             return null;
@@ -125,19 +131,11 @@ public class CombatDuelSubCircle {
         }
     }
     internal bool Occupied => ParticipantObject is not null;
-    internal CombatTeam OccupiedTeam {
-        get {
-            if (ParticipantObject is null) {
-                return CombatTeam.Player;
-            }
-
-            if (IsSummonedMinion) {
-                return CombatTeam.Player;
-            }
-
-            return ParticipantObject.m_templateID == 1 ? CombatTeam.Player : CombatTeam.Monster;
-        }
-    }
+    internal bool IsHumanPlayer => ParticipantObject?.m_templateID == 1;
+    // A creature of the AI: neither a wizard nor a minion that a wizard or creature summoned.
+    internal bool IsAiCreature => Occupied && !IsHumanPlayer && !IsSummonedMinion;
+    // The side of the circle the participant stands on; a minion stands on the side of its summoner.
+    internal CombatTeam OccupiedTeam => SlotType == CombatSlotType.Creature && Occupied ? CombatTeam.Monster : CombatTeam.Player;
     /// <summary>
     /// The side this participant fights for right now. Differs from <see cref="OccupiedTeam"/> while mind controlled.
     /// </summary>
@@ -148,6 +146,8 @@ public class CombatDuelSubCircle {
     internal bool IsAlive => ParticipantGameStats?.m_currentHitpoints > 0;
     internal bool CheatNoFizzle;
     internal CombatDeck _combatDeck;
+    private WizGameStats _clientGameStats;
+    private WizGameStats _resolverGameStats;
     internal readonly CombatDuelComponent _duelActor;
     internal Wizard _wizard;
     internal int _usedPipsForExperienceGain = 0;
@@ -171,10 +171,8 @@ public class CombatDuelSubCircle {
         ParticipantObject = participantObject;
         IsSummonedMinion = isSummonedMinion;
 
-        var isHumanPlayer = participantObject.m_templateID == 1;
-
         // Set the CombatParticipant based on what team they are. A participant that does not answer is dropped.
-        var initialized = isHumanPlayer
+        var initialized = IsHumanPlayer
             ? InitializePlayerSubCircle()
             : InitializeCreatureSubCircle(isSummonedMinion, minionOwnerSubCircle);
         if (!initialized) {
@@ -409,7 +407,7 @@ public class CombatDuelSubCircle {
 
     internal void DamageParticipant(int damage) {
         // If the participant is a player, update their health.
-        if (_wizard is not null) {
+        if (_wizard is not null && !IsSandboxed) {
             var currentHealth = ParticipantGameStats.m_currentHitpoints;
             var newHealth = currentHealth - damage;
 
@@ -434,7 +432,7 @@ public class CombatDuelSubCircle {
 
     internal void HealParticipant(int heal) {
         // If the participant is a player, update their health.
-        if (_wizard is not null) {
+        if (_wizard is not null && !IsSandboxed) {
             var currentHealth = ParticipantGameStats.m_currentHitpoints;
             var newHealth = currentHealth + heal;
 
@@ -460,7 +458,9 @@ public class CombatDuelSubCircle {
     internal void DeductMana(int mana) {
         // If the participant is a player, update their mana.
         // Creature's don't have mana.
-        if (_wizard is not null) {
+        if (_wizard is not null && IsSandboxed) {
+            ParticipantGameStats.m_currentMana = Math.Max(0, ParticipantGameStats.m_currentMana - mana);
+        } else if (_wizard is not null) {
             var currentMana = ParticipantGameStats.m_currentMana;
             var newMana = currentMana - mana;
 
@@ -527,12 +527,13 @@ public class CombatDuelSubCircle {
         }
 
         _wizard = characterResponse.Wizard;
-
-        // Player slots 4-7 show the sun, eye, star and moon icons; the symbol after the moon is the shadow-self icon.
-        var dynamicSymbol = DynamicSigilSymbol.Sun + (SlotIndex - FIRST_PLAYER_SLOT_INDEX);
-
-        ParticipantGameStats = _wizard.GameStats;
+        IsSandboxed = _duelActor.Duel.m_bPVP;
+        ParticipantGameStats = IsSandboxed ? _wizard.GameStats.CopyForDuel() : _wizard.GameStats;
         var combatStats = ParticipantGameStats.GetCombatGameStats();
+        if (IsSandboxed && PvPLeagueScaling.TryScaleDuelStats(_duelActor.PvPLeagueId, ParticipantGameStats)) {
+            _clientGameStats = combatStats;
+            _resolverGameStats = ParticipantGameStats.GetCombatGameStats();
+        }
 
         // Collage spells the player has learned and temporary spells (perhaps from equipment)
         // into one list to create the combat hand. Treasure cards go into a separate vault.
@@ -604,23 +605,24 @@ public class CombatDuelSubCircle {
             m_isPlayer = true,
             m_zoneID = _duelActor.SigilId,
             m_isMonster = 0,
-            m_teamID = 0,
+            m_teamID = (int) OccupiedTeam,
             m_primaryMagicSchoolID = (int) _wizard.MagicSchoolBehavior.MagicSchool,
             m_pipCount = DetermineStartingPips(),
             m_pipRoundRates = new(),
-            m_originalTeam = 0,
+            m_originalTeam = (int) OccupiedTeam,
             m_maxHandSize = PLAYER_HAND_SIZE,
             m_playerHealth = ParticipantGameStats.m_currentHitpoints,
             m_maxPlayerHealth = ParticipantGameStats.m_baseHitpoints,
             // The client's crit sim reads the participant level from m_mobLevel (it zeroes its
             // crit chance below the level threshold when this is missing).
             m_mobLevel = ParticipantGameStats.Level,
-            m_myTeamTurn = _duelActor.Duel.m_firstTeamToAct == 0,
+            m_myTeamTurn = _duelActor.Duel.m_firstTeamToAct == (int) OccupiedTeam,
             m_pGameStats = combatStats,
             m_pPlayDeck = new PlayDeck(),
             m_subcircle = SlotIndex,
-            m_dynamicSymbol = dynamicSymbol,
+            m_dynamicSymbol = DynamicSymbol,
             m_PipsSuspended = false,
+            m_pvp = IsSandboxed,
 
             m_color = _color,
             m_rotation = _rotation,
@@ -651,9 +653,6 @@ public class CombatDuelSubCircle {
             return false;
         }
 
-        // Dynamic symbols start 1-4 for creatures.
-        var dynamicSymbol = (DynamicSigilSymbol) (SlotIndex + 1);
-
         // Convert the creature stats to a combat deck.
         var spellData = new List<CombatDeckSpellData>();
         foreach (var spell in creatureStats.SpellList) {
@@ -677,8 +676,8 @@ public class CombatDuelSubCircle {
             m_zoneID = _duelActor.SigilId,
             m_isMonster = 0, // Live server sends 0
             // Minions are creatures on the player team; m_isPlayer stays false.
-            m_teamID = asMinion ? 0 : 1,
-            m_originalTeam = asMinion ? 0 : 1,
+            m_teamID = (int) OccupiedTeam,
+            m_originalTeam = asMinion ? (int) OccupiedTeam : 0,
             m_bossMob = creatureStats.IsBoss,
             m_isMinion = asMinion,
             m_maxHandSize = PLAYER_HAND_SIZE,
@@ -687,7 +686,8 @@ public class CombatDuelSubCircle {
             m_pipRoundRates = new(),
             m_playerHealth = creatureStats.GameStats.m_currentHitpoints,
             m_maxPlayerHealth = creatureStats.GameStats.m_baseHitpoints,
-            m_myTeamTurn = _duelActor.Duel.m_firstTeamToAct == 1,
+            // todo: a PvE minion has always been told it acts with the creatures, is that right?
+            m_myTeamTurn = _duelActor.Duel.m_firstTeamToAct == (int) (_duelActor.Duel.m_bPVP ? OccupiedTeam : CombatTeam.Monster),
             m_pGameStats = creatureStats.GameStats.GetCombatGameStats(),
             m_mobLevel = creatureStats.CombatLevel,
 
@@ -697,7 +697,8 @@ public class CombatDuelSubCircle {
             m_minionSubCircle = asMinion ? minionOwnerSubCircle : 0,
 
             m_subcircle = SlotIndex,
-            m_dynamicSymbol = dynamicSymbol,
+            m_dynamicSymbol = (DynamicSigilSymbol) (SlotIndex + 1),
+            m_pvp = _duelActor.Duel.m_bPVP,
 
             m_color = _color,
             m_rotation = _rotation,
@@ -744,6 +745,11 @@ public class CombatDuelSubCircle {
         });
     }
 
+    private DynamicSigilSymbol DynamicSymbol
+        => SlotType == CombatSlotType.Creature
+            ? (DynamicSigilSymbol) (SlotIndex + 1)
+            : DynamicSigilSymbol.Sun + (SlotIndex - FIRST_PLAYER_SLOT_INDEX);
+
     private PipCount DetermineStartingPips() {
         CombatShadowPips.ResetGauge(ParticipantGameStats);
         var pipCount = new PipCount() {
@@ -784,7 +790,7 @@ public class CombatDuelSubCircle {
         }
 
         // todo: auras are not tracked server-side, so aura chance adds 0.
-        var stats = CombatParticipant.m_pGameStats;
+        var stats = ResolverGameStats;
         var chance = 100.0f * (stats.m_powerPipBase + stats.m_powerPipBonusPercentAll);
         foreach (var effect in globalEffects.Where(x => x.m_effectType == kSpellEffects.kModifyPowerPipChance)) {
             chance += effect.m_effectParam;

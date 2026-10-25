@@ -95,6 +95,12 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
     private List<QueuedCombatAction> _queuedCombatActions;
     private Dictionary<CombatDuelSubCircle, int> _mindControlSnapshot = [];
 
+    /// <summary>
+    /// The team that plans and acts now. When set, the other team queues no moves and is not made to pass. When
+    /// <c>null</c>, every team acts in the same round.
+    /// </summary>
+    internal CombatTeam? ActingTeam { get; set; }
+
     public void Reset() =>
         _queuedCombatActions = [];
 
@@ -133,6 +139,13 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
                               CombatDuelSubCircle caster,
                               CombatDuelSubCircle target,
                               Spell spell) {
+        if (!IsActing(caster)) {
+            Logger.Debug("Duel {0} | Slot {1} | Move dropped, the other team is acting.",
+                Logger.Args(_duel.m_duelID.Full, caster.SlotIndex));
+
+            return;
+        }
+
         // If this spell is already queued by the same caster, remove all of their queued actions.
         _queuedCombatActions.RemoveAll(x => x.SpellCaster == caster);
 
@@ -169,7 +182,7 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
     /// </summary>
     /// <returns>True if all participants have enqueued actions, false otherwise.</returns>
     public bool HaveAllParticipantsEnqueuedActions() {
-        var enqueuedPlayers = _subCircles.Where(circle => circle.AddedToDuel && circle.IsAlive);
+        var enqueuedPlayers = _subCircles.Where(circle => circle.AddedToDuel && circle.IsAlive && IsActing(circle));
 
         return enqueuedPlayers.Count() == _queuedCombatActions.Count;
     }
@@ -179,9 +192,12 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
     public QueuedCombatAction GetQueuedAction(CombatDuelSubCircle caster)
         => _queuedCombatActions.FirstOrDefault(a => a.SpellCaster == caster);
 
+    private bool IsActing(CombatDuelSubCircle circle)
+        => ActingTeam is null || circle.OccupiedTeam == ActingTeam;
+
     private void AddCasterPassActionIfNeeded() {
         var castersWithoutActions = ActiveSubCircles
-            .Where(subCircle => subCircle.AddedToDuel && subCircle.IsAlive)
+            .Where(subCircle => subCircle.AddedToDuel && subCircle.IsAlive && IsActing(subCircle))
             .Except(_queuedCombatActions.Select(action => action.SpellCaster))
             .ToList();
 
@@ -452,7 +468,7 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
         }
 
         var spellAccuracy = (int) spell.m_accuracy;
-        var stats = caster.CombatParticipant.m_pGameStats;
+        var stats = caster.ResolverGameStats;
         var school = MagicSchools.GetMagicSchool(spell.m_magicSchoolID);
         var schoolName = school.m_schoolName;
 
@@ -485,7 +501,7 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
         // Regular spells are discarded and return to the deck on reshuffle.
         if (action.m_spell.m_treasureCard) {
             var consumedTemplateId = caster.ConsumeFromVault(action.m_spell);
-            if (consumedTemplateId != 0 && caster._wizard != null) {
+            if (consumedTemplateId != 0 && caster._wizard != null && !caster.IsSandboxed) {
                 // Persist the removal from the player's treasure card book.
                 caster._wizard.SpellbookBehavior.RemoveTreasureCard(consumedTemplateId);
                 WizardCollection.RemoveTreasureCard(caster._wizard, consumedTemplateId);
