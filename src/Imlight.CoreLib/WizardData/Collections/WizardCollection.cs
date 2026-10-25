@@ -413,6 +413,15 @@ public static class WizardCollection {
     }
 
     /// <summary>
+    /// Updates the privacy options of a wizard.
+    /// </summary>
+    /// <param name="wizard">The wizard whose privacy options should be persisted.</param>
+    public static void UpdateCharacterPrivacyOptions(Wizard wizard) {
+        UpdateCharacter(wizard.CharId, existingCharacter =>
+            existingCharacter.PrivacyOptions = wizard.PrivacyOptions);
+    }
+
+    /// <summary>
     /// Updates the character pet owner behavior for a wizard.
     /// </summary>
     /// <param name="wizard">The wizard object containing the updated pet owner behavior.</param>
