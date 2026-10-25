@@ -21,12 +21,15 @@
  */
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Akka.Actor;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Game.Cantrips;
 using Imlight.CoreLib.Game.World;
 using Imlight.CoreLib.Shared.Character;
+using Imlight.CoreLib.Shared.Items;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Models.Player;
@@ -81,6 +84,13 @@ internal sealed class PluginPlayer(Wizard wizard, IActorRef sessionActor, IZone 
     public float PotionCharge => wizard.GameStats.m_potionCharge;
 
     public float PotionMax => wizard.GameStats.m_potionMax;
+
+    public IReadOnlyList<PlayerItem> Inventory => Snapshot(wizard.InventoryBehavior.Items);
+
+    public IReadOnlyList<PlayerItem> Equipment => Snapshot(wizard.EquipmentBehavior.EquippedItems);
+
+    public bool HasItem(ulong templateId)
+        => Inventory.Any(item => item.TemplateId == templateId) || Equipment.Any(item => item.TemplateId == templateId);
 
     internal IActorRef SessionActor => sessionActor;
 
@@ -193,6 +203,18 @@ internal sealed class PluginPlayer(Wizard wizard, IActorRef sessionActor, IZone 
         }, null);
     }
 
+    public void GiveItem(ulong templateId) {
+        var error = ItemHelper.CheckGiveable(templateId);
+        if (error is not null) {
+            throw new ArgumentException(error, nameof(templateId));
+        }
+
+        sessionActor.Tell(new CHARACTER_103_PROTOCOL.MSG_GIVEITEM { TemplateId = templateId }, null);
+    }
+
+    public void RemoveItem(ulong itemId)
+        => sessionActor.Tell(new CHARACTER_103_PROTOCOL.MSG_REMOVEITEM { ItemId = itemId }, null);
+
     public void SetLocation(System.Numerics.Vector3 location)
         => SetLocation(location, Orientation);
 
@@ -243,6 +265,13 @@ internal sealed class PluginPlayer(Wizard wizard, IActorRef sessionActor, IZone 
             MaxMana = clientMaxMana,
             DisplayDiff = 1,
         }, null);
+
+    // The session may change the list while a plugin reads it, so this copies it before going through it.
+    private static PlayerItem[] Snapshot(List<WizClientObjectItem> items)
+        => (items?.ToArray() ?? [])
+            .Where(item => item is not null)
+            .Select(item => new PlayerItem((ulong) item.m_globalID, (ulong) item.m_templateID, item.m_debugName.ToString()))
+            .ToArray();
 
     private MagicLevelInfo BaseStats()
         => MagicLevelsConfig.GetPlayerLevelInfo(wizard.MagicSchoolBehavior.MagicSchool, wizard.MagicSchoolBehavior.Level);

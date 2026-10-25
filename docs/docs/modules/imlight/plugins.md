@@ -103,6 +103,29 @@ Commands.Register("buyheal", c => {
 
 Setters that don't clamp throw `ArgumentOutOfRangeException` for negative values, and `SetMaxHealth` also throws for 0. `SetLevel` and `AddExperience` are applied by the player's session after they return, so `Level` and `Experience` may still show the old value straight afterwards. Every other setter takes effect immediately. Call them from an event or command handler, as the server's own commands do.
 
+### Inventory
+
+`Inventory` lists the items in the wizard's backpack and `Equipment` the items they wear, each as a `PlayerItem` with its `ItemId`, `TemplateId` and `Name`. Both are snapshots that do not change after you read them. `HasItem(templateId)` checks both.
+
+```csharp
+Commands.Register("trade", c => {
+    var ticket = c.Player.Inventory.FirstOrDefault(item => item.TemplateId == TicketTemplateId);
+    if (ticket is null) {
+        c.Reply("You need a ticket.");
+        return;
+    }
+    c.Player.RemoveItem(ticket.ItemId);
+    c.Player.GiveItem(PrizeTemplateId);
+});
+```
+
+| Method | Behaviour |
+| --- | --- |
+| `GiveItem(templateId)` | Gives a new copy of the item. Nothing is given if the backpack is full. Throws `ArgumentException` if the template does not exist or is not an item. |
+| `RemoveItem(itemId)` | Removes that exact item from the backpack. Takes an `ItemId`, not a template ID. Does nothing if the item is not there or is equipped. |
+
+Both are applied by the player's session after they return, like `SetLevel`, so `Inventory` may still show the old items straight afterwards.
+
 ## Zones
 
 `IPlayer.Zone` is the `IZone` the player is in, or null while they are between zones. A zone has its `Name`, whether it `IsInstance`, and the `Players` in it:

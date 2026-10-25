@@ -20,6 +20,7 @@
  * Last Updated: 10/23/2026
  */
 
+using System.Collections.Generic;
 using System.Numerics;
 
 namespace Imlight.PluginApi;
@@ -129,6 +130,21 @@ public interface IPlayer {
     float PotionMax { get; }
 
     /// <summary>
+    /// A snapshot of the items in the wizard's backpack.
+    /// </summary>
+    IReadOnlyList<PlayerItem> Inventory { get; }
+
+    /// <summary>
+    /// A snapshot of the items the wizard has equipped.
+    /// </summary>
+    IReadOnlyList<PlayerItem> Equipment { get; }
+
+    /// <summary>
+    /// Whether the wizard has at least one copy of the item, in their backpack or equipped.
+    /// </summary>
+    bool HasItem(ulong templateId);
+
+    /// <summary>
     /// Shows a server message to the player. Safe to call from any thread.
     /// </summary>
     void SendMessage(string message);
@@ -215,6 +231,24 @@ public interface IPlayer {
     /// </summary>
     /// <exception cref="System.ArgumentOutOfRangeException">The max is negative.</exception>
     void SetPotions(float charge, float max);
+
+    /// <summary>
+    /// Gives the wizard a new copy of the item. Nothing is given if their backpack is full.
+    /// </summary>
+    /// <remarks>
+    /// Applied by the player's session after this returns, so <see cref="Inventory"/> may not change right away.
+    /// </remarks>
+    /// <exception cref="System.ArgumentException">The template does not exist or cannot be given as an item.</exception>
+    void GiveItem(ulong templateId);
+
+    /// <summary>
+    /// Removes an item from the wizard's backpack. Nothing happens if it is not there, and equipped items are not removed.
+    /// </summary>
+    /// <param name="itemId">The item's <see cref="PlayerItem.ItemId"/>, not its template ID.</param>
+    /// <remarks>
+    /// Applied by the player's session after this returns, so <see cref="Inventory"/> may not change right away.
+    /// </remarks>
+    void RemoveItem(ulong itemId);
 
     // Moving the player goes through the same path as the game's own teleports, so it fires
     // OnPlayerTeleport or OnPlayerZoneChange with ZoneChangeCause.Plugin, and a handler can cancel it.
