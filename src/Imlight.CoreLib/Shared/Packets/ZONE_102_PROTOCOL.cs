@@ -1205,19 +1205,6 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     }
 
     /// <summary>
-    /// Response to MSG_SPAWNENTITY with the created entity actor reference.
-    /// </summary>
-    public sealed class MSG_SPAWNENTITYRSP : IServerMessage {
-
-        public byte MessageOrder { get; } = 66;
-        public byte ServiceID { get; } = 102;
-
-        public IActorRef EntityActor;
-        public CoreObject SpawnedObject;
-
-    }
-
-    /// <summary>
     /// Sent by an owner's EquipmentService to the zone's objects: the summoned pet whose world GID is
     /// <see cref="PetGlobalId"/> leaves the world for everyone in the zone.
     /// </summary>
