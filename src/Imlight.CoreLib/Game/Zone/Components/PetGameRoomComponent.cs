@@ -20,14 +20,15 @@
  * ========================================================================
  *
  * PURPOSE:
- * Sits on the game object of a pet game zone. It tells each player who joins the zone which pet game
- * the room runs, and introduces the players in the room to each other's sessions.
+ * Sits on the game object of a pet game zone. It sends that object to each player who joins the zone, tells
+ * them which pet game the room runs, and introduces the players in the room to each other's sessions.
  *
  * USAGE EXAMPLE:
  * Attaches to objects whose template has a pet game behavior; the HatchingService takes it from there.
  *
  * NOTE:
- * The client builds the game's logic from this same object, so it is sent to the players like any other.
+ * The client builds the game's logic from this object, and only then answers MSG_PETGAMEINIT with READY. The
+ * object has no render behavior, so RenderComponent never attaches to it and this component sends it instead.
  *
  * TODO:
  *
@@ -39,7 +40,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
+using Imcodec.CoreObject;
+using Imcodec.MessageLayer.Generated;
+using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
+using Imlight.Common;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Player;
@@ -48,7 +53,12 @@ namespace Imlight.CoreLib.Game.Zone.Components;
 
 internal sealed class PetGameRoomComponent(ZoneEntity entity) : ZoneEntityComponent(entity), IComponentFactory {
 
+    private const PropertyFlags OBJECT_PROPERTY_FLAGS = PropertyFlags.Prop_Public
+                                                      | PropertyFlags.Prop_Transmit
+                                                      | PropertyFlags.Prop_AuthorityTransmit;
+
     private readonly Dictionary<ulong, IActorRef> _players = [];
+    private readonly CoreObjectSerializer _serializer = new(versionable: false, behaviors: SerializerFlags.None);
 
     private string GameName
         => (Entity.Template as GameObjectTemplate)?.m_behaviors?.OfType<PetGameBehaviorTemplate>().FirstOrDefault()?.m_gameName.ToString() ?? "";
@@ -58,6 +68,7 @@ internal sealed class PetGameRoomComponent(ZoneEntity entity) : ZoneEntityCompon
             && gameObject.m_behaviors?.Any(behavior => behavior is PetGameBehaviorTemplate) == true;
 
     public override void OnPlayerJoin(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) {
+        SendObjectTo(playerActor);
         foreach (var other in _players.Values) {
             other.Tell(new ZONE_102_PROTOCOL.MSG_PETGAMEROOMPLAYERJOINED { CharId = playerWizard.CharId, Session = playerActor });
         }
@@ -79,6 +90,16 @@ internal sealed class PetGameRoomComponent(ZoneEntity entity) : ZoneEntityCompon
         foreach (var other in _players.Values) {
             other.Tell(new ZONE_102_PROTOCOL.MSG_PETGAMEROOMPLAYERLEFT { CharId = leaving.Key });
         }
+    }
+
+    private void SendObjectTo(IActorRef playerActor) {
+        if (!_serializer.Serialize(Entity.GetClientObject(), OBJECT_PROPERTY_FLAGS, out var data)) {
+            Logger.Error("Could not serialize the pet game object of {Game}.", Logger.Args(GameName));
+
+            return;
+        }
+
+        playerActor.Tell(new GAME_5_PROTOCOL.MSG_NEWOBJECT { Data = data });
     }
 
 }

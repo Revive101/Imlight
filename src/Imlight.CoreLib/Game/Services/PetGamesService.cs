@@ -35,7 +35,9 @@
  * Quitting a game gives no results and no refund. Leaving the zone or the session aborts the game, which
  * refunds part of its energy. The zone transfer starts a new session, so the join is carried over in
  * PetGameVisits. The client answers INIT only once the zone's game object is in its world, which
- * PetGameRoomComponent reports, so INIT waits for that and for the attach. Energy is charged on READY.
+ * PetGameRoomComponent sends and reports, so INIT waits for that and for the attach. In the zone, INIT is
+ * preceded by MSG_ENTERMINIGAME, which stops the world's controls, and leaving sends MSG_LEAVEMINIGAME.
+ * Energy is charged on READY.
  *
  * TODO:
  * - Should a game time out when the client never sends READY or never finishes?
@@ -119,7 +121,6 @@ internal class PetGamesService(SessionActor sessionActor) : MessageService(sessi
         PetGameVisits.Begin(wizard.CharId, new PetGameVisit(gameName, trackIndex, zone, wizard.Zone,
             Util.GetCompactStringFromVector(wizard.Location, wizard.Orientation)));
         SendToSocket(new PET_9_PROTOCOL.MSG_PETGAMEJOINRSP { Game = gameName, Success = JOIN_SUCCEEDED });
-        SendToSocket(new WIZARD_12_PROTOCOL.MSG_ENTERMINIGAME());
         Logger.Information("{CharId} joins the pet game {Game} on track {Track} and goes to {Zone}.",
             Logger.Args(wizard.CharId, gameName, trackIndex, zone));
 
@@ -335,6 +336,7 @@ internal class PetGamesService(SessionActor sessionActor) : MessageService(sessi
         }
 
         Logger.Debug("{CharId} is in the zone of the pet game {Game}; sending INIT.", Logger.Args(session.Wizard.CharId, session.GameName));
+        SendToSocket(new WIZARD_12_PROTOCOL.MSG_ENTERMINIGAME());
         SendToSocket(PetGameEnergy.BuildTick(session.Wizard));
         SendToSocket(new PET_9_PROTOCOL.MSG_PETGAMEINIT {
             Game = session.GameName,
@@ -455,6 +457,7 @@ internal class PetGamesService(SessionActor sessionActor) : MessageService(sessi
         var wizard = GetActiveWizard();
         PetGameVisits.End(wizard.CharId);
         Logger.Debug("{CharId} leaves the pet game {Game} for {Zone}.", Logger.Args(wizard.CharId, visit.GameName, visit.ReturnZone));
+        SendToSocket(new WIZARD_12_PROTOCOL.MSG_LEAVEMINIGAME());
         Teleport(visit.ReturnZone, doTeleportEffects: false, destinationLocation: visit.ReturnLocation);
     }
 
