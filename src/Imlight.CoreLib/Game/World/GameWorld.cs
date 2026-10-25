@@ -36,7 +36,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/27/2026
+ * Last Updated: 10/14/2026
  */
 
 using System;
@@ -221,6 +221,17 @@ public class GameWorld : ReceiveProtocolDispatcher, IWithTimers {
     private void ReceiveZoneClosed(ZONE_102_PROTOCOL.MSG_ZONECLOSED message) {
         var dynamicId = message.DynamicZoneId;
         _dynamicZoneIds.Remove(dynamicId);
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_MATCHCONTAINEREMPTY))]
+    private void ReceiveMatchContainerEmpty(ZONE_102_PROTOCOL.MSG_MATCHCONTAINEREMPTY message) {
+        if (!_instanceContainers.Remove(message.OwnerId, out var instanceContainer)) {
+            return;
+        }
+
+        Logger.Information("Game world removes the empty instance container of {OwnerId}.", Logger.Args(message.OwnerId));
+
+        Context.Stop(instanceContainer);
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PUBLICZONEIDLE))]
@@ -435,7 +446,7 @@ public class GameWorld : ReceiveProtocolDispatcher, IWithTimers {
         // The serial keeps the name free while a stopped container for the same owner is still shutting down.
         var zoneActorName = $"{nameof(InstanceContainer)}_{ownerId}_{_instanceContainerSerial++}";
 
-        var instanceContainer = Context.ActorOf(InstanceContainer.Props(ownerId), zoneActorName);
+        var instanceContainer = Context.ActorOf(InstanceContainer.Props(ownerId, PvP.PvPRegistry.IsMatchInstanceOwner(ownerId)), zoneActorName);
         _instanceContainers.Add(ownerId, instanceContainer);
 
         // Log the new instance container creation.
