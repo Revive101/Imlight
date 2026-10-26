@@ -226,6 +226,7 @@ internal static class CharacterEffectHelper {
         // Apply effects that don't require a school.
         stats.m_baseHitpoints += (int) statistic.m_hitPointBonus;
         stats.m_baseMana += (int) statistic.m_manaBonus;
+        stats.m_energyMax += (int) statistic.m_energyBonus;
         stats.m_powerPipBonusPercentAll += statistic.m_powerPipBonusPercent;
         stats.m_healBonusPercentAll += statistic.m_healBonusPercent;
         stats.m_healIncBonusPercentAll += statistic.m_healIncBonusPercent;
@@ -274,6 +275,7 @@ internal static class CharacterEffectHelper {
         // Remove effects that don't require a school.
         stats.m_baseHitpoints -= (int) statistic.m_hitPointBonus;
         stats.m_baseMana -= (int) statistic.m_manaBonus;
+        stats.m_energyMax -= (int) statistic.m_energyBonus;
         stats.m_powerPipBonusPercentAll -= statistic.m_powerPipBonusPercent;
         stats.m_healBonusPercentAll -= statistic.m_healBonusPercent;
         stats.m_healIncBonusPercentAll -= statistic.m_healIncBonusPercent;

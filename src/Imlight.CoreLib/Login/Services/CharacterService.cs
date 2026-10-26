@@ -194,12 +194,6 @@ internal class CharacterService(SessionActor parentActor) : MessageService(paren
         SendToSocket(new LOGIN_7_PROTOCOL.MSG_CHARACTERLIST());
     }
 
-    [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_LOGINLOGCHARACTERCREATION))]
-    private void ReceiveLoginLogCharacterCreation(LOGIN_7_PROTOCOL.MSG_LOGINLOGCHARACTERCREATION message) {
-        this._characterCreationParameter = message.Parameter;
-        this._characterCreationStage = message.Stage;
-    }
-
     private bool TrySerializeLoginScreenInfo(ObjectSerializer serializer, Account account, Wizard character, out ByteString data) {
         try {
             // Characters in the login screen are stripped down to the bare minimum,
@@ -225,4 +219,9 @@ internal class CharacterService(SessionActor parentActor) : MessageService(paren
         return false;
     }
 
+    [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_LOGINLOGCHARACTERCREATION))]
+    private void ReceiveLoginLogCharacterCreation(LOGIN_7_PROTOCOL.MSG_LOGINLOGCHARACTERCREATION message) {
+        this._characterCreationParameter = message.Parameter;
+        this._characterCreationStage = message.Stage;
+    }
 }

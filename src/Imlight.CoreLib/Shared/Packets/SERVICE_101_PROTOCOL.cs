@@ -17,6 +17,7 @@
  */
 
 using System.Collections.Generic;
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Game.Minigames;
 using Imlight.CoreLib.Shared.Networking;
 
@@ -247,4 +248,13 @@ internal sealed class SERVICE_101_PROTOCOL : IServerProtocol {
 
     }
 
+
+    /// <summary>
+    /// Internal message dispatched to a player's session when they receive a gift while online.
+    /// </summary>
+    public class MSG_DELIVER_GIFT : IServerMessage {
+        public byte MessageOrder { get; } = 22;
+        public byte ServiceID { get; } = 101;
+        public Mail Mail;
+    }
 }

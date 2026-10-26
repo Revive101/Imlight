@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Imlight
  * Copyright (C) 2025 Revive101
  *
@@ -256,6 +256,19 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
     /// </summary>
     public void Dispose() => Dispose("shutdown");
 
+    private void StopWaitingForClientClose(string reason) {
+        // Also reached from other threads through the public Dispose, so only the actor reference is used.
+        var timer = Interlocked.Exchange(ref _clientCloseTimer, null);
+        if (timer is null) {
+            return;
+        }
+
+        timer.Cancel();
+
+        Logger.Debug("SessionActor {Id} closing after logout, reason={Reason}.", Logger.Args(SessionID, reason));
+        ActorRef.Tell(PoisonPill.Instance);
+    }
+
     protected override SupervisorStrategy SupervisorStrategy() =>
         // Recall that child actors of the SessionActor are the message services.
         new AllForOneStrategy(
@@ -377,18 +390,6 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
         ActorRef.Tell(PoisonPill.Instance);
     }
 
-    private void StopWaitingForClientClose(string reason) {
-        // Also reached from other threads through the public Dispose, so only the actor reference is used.
-        var timer = Interlocked.Exchange(ref _clientCloseTimer, null);
-        if (timer is null) {
-            return;
-        }
-
-        timer.Cancel();
-
-        Logger.Debug("SessionActor {Id} closing after logout, reason={Reason}.", Logger.Args(SessionID, reason));
-        ActorRef.Tell(PoisonPill.Instance);
-    }
 
     private void ConfigureReceivers() {
         // Specific message handlers.
@@ -400,6 +401,7 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
         Receive<SERVER_100_PROTOCOL.MSG_PING>(x => this.Ping = x.Ping);
         Receive<Exception>(ReceiveException);
         Receive<SERVER_100_PROTOCOL.MSG_RECEIVEDPACKET>(x => HandlePacket(x.Packet));
+        Receive<ZONE_102_PROTOCOL.MSG_ZONEBROADCAST>(msg => GetZoneActor()?.Tell(msg));
 
         // Generic message handlers.
         Receive<IServerMessage>(HandleInternalTell);
