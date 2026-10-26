@@ -28,8 +28,9 @@
  * if (BankConfig.IsEnabled) { ... }
  *
  * NOTE:
- * The capacities have no default. While [Character] MaxBankItems or MaxSharedBankItems is unset or 0 or less,
- * IsEnabled is false and nothing offers the bank.
+ * A character or account with no capacity of its own (0) follows the base capacity: [Character] MaxBankItems and
+ * MaxSharedBankItems when set above 0, else [Bank] DefaultBankItems and DefaultSharedBankItems. While either base
+ * capacity resolves to 0, IsEnabled is false and nothing offers the bank.
  *
  * TODO:
  *
@@ -53,14 +54,16 @@ internal static class BankConfig {
     private const string MAX_SHARED_BANK_ITEMS_KEY = "Character.MaxSharedBankItems";
     private const string SHARED_JEWEL_CAP_KEY = "Bank.SharedJewelCap";
     private const string EXPAND_ELIXIR_AMOUNT_KEY = "Bank.ExpandElixirAmount";
+    private const string DEFAULT_BANK_ITEMS_KEY = "Bank.DefaultBankItems";
+    private const string DEFAULT_SHARED_BANK_ITEMS_KEY = "Bank.DefaultSharedBankItems";
     private const string MAX_BANK_LIMIT_KEY = "Bank.MaxBankItems";
 
     private static int s_warnedDisabled;
 
-    internal static int MaxBankItems 
-        => Math.Max(0, ConfigurationManager.GetValue(MAX_BANK_ITEMS_KEY, 0));
+    internal static int MaxBankItems
+        => FirstAboveZero(MAX_BANK_ITEMS_KEY, DEFAULT_BANK_ITEMS_KEY);
     internal static int MaxSharedBankItems
-        => Math.Max(0, ConfigurationManager.GetValue(MAX_SHARED_BANK_ITEMS_KEY, 0));
+        => FirstAboveZero(MAX_SHARED_BANK_ITEMS_KEY, DEFAULT_SHARED_BANK_ITEMS_KEY);
     internal static int SharedJewelCap
         => Math.Max(0, ConfigurationManager.GetValue(SHARED_JEWEL_CAP_KEY, 0));
     internal static int ExpandElixirAmount
@@ -80,13 +83,19 @@ internal static class BankConfig {
             }
 
             if (Interlocked.Exchange(ref s_warnedDisabled, 1) == 0) {
-                Logger.Warning("[Character] MaxBankItems and MaxSharedBankItems must both be set above 0, " +
-                    "so the bank is not offered. MaxBankItems={Bank}, MaxSharedBankItems={Shared}.",
+                Logger.Warning("The bank is not offered: the base bank and shared bank capacities must both be above 0. " +
+                    "Set [Bank] DefaultBankItems and DefaultSharedBankItems in Imlight.ini. Resolved base bank={Bank}, shared bank={Shared}.",
                     Logger.Args(maxBankItems, maxSharedBankItems));
             }
 
             return false;
         }
+    }
+
+    private static int FirstAboveZero(string key, string fallbackKey) {
+        var value = ConfigurationManager.GetValue(key, 0);
+
+        return value > 0 ? value : Math.Max(0, ConfigurationManager.GetValue(fallbackKey, 0));
     }
 
 }
