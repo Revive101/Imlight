@@ -50,15 +50,6 @@ public class ApiServer
 
         s_app = builder.Build();
         s_app.UseCors();
-
-        // Serve static files if wwwroot exists.
-        var webRootPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "wwwroot");
-        if (s_enableWebUi && Directory.Exists(webRootPath)) {
-            var fileProvider = new PhysicalFileProvider(webRootPath);
-            s_app.UseDefaultFiles(new DefaultFilesOptions { FileProvider = fileProvider });
-            s_app.UseStaticFiles(new StaticFileOptions { FileProvider = fileProvider });
-        }
-
         s_app.MapControllers();
 
         // Health check endpoint.
@@ -67,10 +58,13 @@ public class ApiServer
             timestamp = DateTimeOffset.UtcNow
         }));
 
+        // Serve static files if wwwroot exists.
+        var webRootPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "wwwroot");
         if (s_enableWebUi && Directory.Exists(webRootPath)) {
-            s_app.MapFallbackToFile("index.html", new StaticFileOptions {
-                FileProvider = new PhysicalFileProvider(webRootPath)
-            });
+            var fileProvider = new PhysicalFileProvider(webRootPath);
+            s_app.UseDefaultFiles(new DefaultFilesOptions { FileProvider = fileProvider });
+            s_app.UseStaticFiles(new StaticFileOptions { FileProvider = fileProvider });
+            s_app.MapFallbackToFile("index.html", new StaticFileOptions { FileProvider = fileProvider });
         }
 
         await s_app.StartAsync();
