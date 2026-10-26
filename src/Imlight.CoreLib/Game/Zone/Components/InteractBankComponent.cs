@@ -29,14 +29,14 @@
  * NOTE:
  * Attaches only to NPC templates that have a NpcBank record in SpiralDB, and only while both bank capacities
  * are set, so the bank is not offered until the owner sets them. The bank NPC stands in the dorm and the
- * housing interiors.
+ * housing interiors. The client compares the option's service name with "WizBankingService" and only then
+ * closes the NPC window after the pick, because the open-bank message does not close it, so the name has to match.
  *
  * TODO:
- * What is the m_serviceName the live server sends for the bank option?
  *
  * Created by: Jay
  * Version: KALI 1.0
- * Last Updated: 10/14/2026
+ * Last Updated: 10/25/2026
  */
 
 using System.Collections.Generic;
@@ -56,7 +56,7 @@ namespace Imlight.CoreLib.Game.Zone.Components;
 
 internal sealed class InteractBankComponent(ZoneEntity entity) : ZoneEntityComponent(entity), IServiceComponent, IComponentFactory {
 
-    public string ServiceName     => "BankService";
+    public string ServiceName     => "WizBankingService";
     public string NpcIcon         => (Entity.Template as GameObjectTemplate)?.m_sIcon;
     public string NpcNameKey      => null;
     public string NpcTextKey      => null;
