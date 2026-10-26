@@ -56,6 +56,7 @@ using Imlight.CoreLib.WizardData;
 using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.CoreLib.WizardData.Collections;
+using Imlight.CoreLib.Game.CrownShop;
 
 namespace Imlight.Director;
 
@@ -209,6 +210,8 @@ internal static class Program {
         if (SpiralDB.ZoneData.Count == 0) {
             throw new InvalidOperationException("SpiralDB loaded no world data.");
         }
+
+        CrownShopHandler.Load();
     }
 
     private static IActorRef StartLoginServer() {

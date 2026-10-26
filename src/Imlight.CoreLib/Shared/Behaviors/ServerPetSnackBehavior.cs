@@ -135,6 +135,15 @@ public class ServerPetSnackBehavior : IClientBehaviorProvider<ClientPetSnackBeha
     public ClientPetSnackItem GetSnack(ulong templateId) 
         => Snacks?.FirstOrDefault(snack => snack.m_templateID == templateId) ?? null;
 
+    /// <summary>
+    /// Checks if the snack bag has space to hold the specified number of snacks for a given template ID.
+    /// </summary>
+    /// <param name="templateId">The template ID of the snack to check.</param>
+    /// <param name="count">The number of snacks to add.</param>
+    /// <returns><c>true</c> if the snack stack has enough space; otherwise, <c>false</c>.</returns>
+    public bool HasSnackSpace(ulong templateId, int count = 1)
+        => count >= 0 && (GetSnack(templateId)?.m_quantity ?? 0) + count <= s_maxSnackStackAllowed;
+
     public ClientPetSnackBehavior GetClientBehaviorInstance() => new() {
         m_snackBag = new ObjectBag() {
             m_maxItemStack = s_maxSnackStackAllowed,

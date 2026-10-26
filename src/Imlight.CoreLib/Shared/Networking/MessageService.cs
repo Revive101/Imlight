@@ -43,11 +43,14 @@
 
 using System;
 using Imcodec.Math;
+using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Imcodec.MessageLayer;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty.TypeCache;
+using Imcodec.Types;
 using Imlight.Common;
 using Imlight.CoreLib.Game.Housing.Access;
 using Imlight.CoreLib.Game.Services;
@@ -79,6 +82,40 @@ internal abstract class MessageService(SessionActor sessionActor) : ReceiveProto
         }
 
         SessionActor.ActorRef.Tell(message);
+    }
+
+    /// <summary>
+    /// Plays a sound on the client using its template ID or sound asset path.
+    /// </summary>
+    /// <param name="soundAsset">The sound asset string.</param>
+    protected void PlaySound(string soundAsset) {
+        if (string.IsNullOrWhiteSpace(soundAsset)) {
+            return;
+        }
+
+        var cleanPath = soundAsset.Contains('|')
+            ? soundAsset.Split('|', StringSplitOptions.RemoveEmptyEntries).Last()
+            : soundAsset;
+
+        if (Path.HasExtension(cleanPath)) {
+            SendToSocket(new GAME_5_PROTOCOL.MSG_PLAYSOUND {
+                SoundFilename = cleanPath
+            });
+            return;
+        }
+
+        if (!uint.TryParse(cleanPath, out var templateId)) {
+            if (!CoreObjectFactory.TryGetCoreTemplateID(x =>
+                x.m_filename.ToString().Contains(cleanPath, StringComparison.OrdinalIgnoreCase), out templateId)) {
+                return;
+            }
+        }
+
+        if (templateId != 0) {
+            SendToSocket(new GAME_5_PROTOCOL.MSG_PLAYSOUND {
+                SoundID = new GID(templateId)
+            });
+        }
     }
 
     /// <summary>
