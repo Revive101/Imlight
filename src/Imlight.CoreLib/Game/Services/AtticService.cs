@@ -40,7 +40,7 @@
  *
  * Created by: Jay
  * Version: KALI 1.0
- * Last Updated: 10/15/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -137,7 +137,7 @@ internal class AtticService(SessionActor sessionActor) : MessageService(sessionA
         }
 
         var templateId = ItemHelper.GetTemplateId(item);
-        var verdict = HousingItems.Check(templateId, out _);
+        var verdict = HousingItems.Check(templateId, out var template);
         if (verdict.Placement == HousingPlacement.Refused) {
             HandleForgedRequest($"move item {message.ItemID}, template {templateId}, which is not housing furniture, to the attic");
 
@@ -147,7 +147,9 @@ internal class AtticService(SessionActor sessionActor) : MessageService(sessionA
         if (verdict.Placement == HousingPlacement.NotEnabled) {
             Logger.Information("Character {CharId} tried to put item {ItemId}, template {TemplateId}, in the attic, which is not supported.",
                 Logger.Args(wizard.CharId, message.ItemID, templateId));
-            InformGameClient("That kind of object cannot be put in the attic yet.");
+            InformGameClient(template.m_nObjectType == ObjectType.OT_HOUSING_TEXTURE
+                ? "Wallpaper and flooring are applied from the furniture window, not stored in the attic."
+                : "That kind of object cannot be put in the attic yet.");
 
             return;
         }

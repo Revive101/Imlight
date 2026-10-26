@@ -37,7 +37,7 @@
  *
  * Created by: Jay
  * Version: KALI 1.0
- * Last Updated: 10/21/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -115,6 +115,27 @@ internal static class HousingBlobs {
         }
 
         return serialized;
+    }
+
+    /// <summary>
+    /// Parses an object this server serialized earlier, such as the texture list a house keeps.
+    /// </summary>
+    /// <typeparam name="T">The type of the object.</typeparam>
+    /// <param name="data">The serialized bytes.</param>
+    /// <param name="propertyMask">The property flags the object was written with.</param>
+    /// <param name="value">The object when this returns <c>true</c>.</param>
+    /// <returns><c>false</c> when the bytes are not a serialized <typeparamref name="T"/>.</returns>
+    internal static bool TryDeserialize<T>(byte[] data, uint propertyMask, out T value) where T : PropertyClass {
+        value = null;
+        if (data is null || data.Length == 0 || data.Length > MAX_SERIALIZED_LENGTH) {
+            return false;
+        }
+
+        try {
+            return NewSerializer().Deserialize(data, propertyMask, out value) && value is not null;
+        } catch (Exception) {
+            return false;
+        }
     }
 
     /// <summary>

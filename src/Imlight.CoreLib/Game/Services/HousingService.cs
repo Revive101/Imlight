@@ -329,6 +329,12 @@ internal class HousingService(SessionActor sessionActor) : MessageService(sessio
             return;
         }
 
+        if (HouseTextures.IsProxy(placedItem.TemplateId)) {
+            HandleForgedRequest("pick up the object that holds the textures of a house");
+
+            return;
+        }
+
         // The backpack and the emptied slot are written in one transaction, so a crash between them cannot lose the item.
         // A stored item keeps its document, and only a new item is stored with it.
         HouseChange change = default;
@@ -410,6 +416,120 @@ internal class HousingService(SessionActor sessionActor) : MessageService(sessio
         });
     }
 
+    [MessageHandler(typeof(WIZARDHOUSING_50_PROTOCOL.MSG_SENDHOUSINGTEXTUREINFO))]
+    private void ReceiveSendHousingTextureInfo(WIZARDHOUSING_50_PROTOCOL.MSG_SENDHOUSINGTEXTUREINFO message) {
+        if (!TryGetHouse("apply a texture", out var house)) {
+            return;
+        }
+
+        // The item and its template come from the server's own inventory, never from the client.
+        var wizard = GetActiveWizard();
+        var item = wizard.InventoryBehavior.GetItem(message.ObjectID);
+        if (item is null) {
+            HandleForgedRequest($"apply item {message.ObjectID}, which is not in the backpack, as a texture");
+
+            return;
+        }
+
+        var templateId = ItemHelper.GetTemplateId(item);
+        if (!HouseTextures.TryGetTextureType(templateId, out var textureType)
+            || !HouseTextures.TryTarget(message.RemapIndex, textureType, out var target)) {
+            HandleForgedRequest($"apply item {message.ObjectID}, template {templateId}, at remap index {message.RemapIndex}, which is not a texture or a surface");
+
+            return;
+        }
+
+        var holder = house.FindByTemplate(HouseTextures.ProxyTemplateId);
+        if (holder is null) {
+            InformGameClient("Wallpaper and flooring cannot be changed in this house.");
+
+            return;
+        }
+
+        var itemId = item.m_globalID;
+        var replacedTemplateId = 0u;
+        WizClientObjectItem returned = null;
+        HouseChange change = default;
+        var transfer = BackpackTransfer.Store(wizard, item, () => {
+            change = house.TryUpdate(holder.Id,
+                stored => HouseTextures.WithTexture(stored, target, templateId, out replacedTemplateId),
+                document => SaveWithReturnedTexture(document, wizard, replacedTemplateId, out returned));
+
+            return change.Done;
+        }, "be applied");
+        if (transfer == BackpackTransferResult.NotInBackpack) {
+            return;
+        }
+
+        if (!change.Done) {
+            InformGameClient("The texture could not be applied.");
+
+            return;
+        }
+
+        ItemSync.SendRemoved(SessionActor.ActorRef, wizard, itemId);
+        if (returned is not null && !ItemSync.SendAdded(SessionActor.ActorRef, wizard, returned)) {
+            Logger.Error("Could not tell the client about replaced texture item {ItemId} of character {CharId}.",
+                Logger.Args(returned.m_globalID, wizard.CharId));
+        }
+
+        ZoneBroadcast(new WIZARDHOUSING_50_PROTOCOL.MSG_PATCHTEXTUREREMAP {
+            Data = change.Item.Custom ?? [],
+            SubType = change.SubType,
+            PackageNumber = 0,
+            VersionNumber = change.Revision,
+            GIDID = change.GidId,
+        }, isSelfless: false, ZoneBroadcastTarget.Players);
+    }
+
+    [MessageHandler(typeof(WIZARDHOUSING_50_PROTOCOL.MSG_PICKUPHOUSINGTEXTURE))]
+    private void ReceivePickUpHousingTexture(WIZARDHOUSING_50_PROTOCOL.MSG_PICKUPHOUSINGTEXTURE message) {
+        if (!TryGetHouse("take a texture", out var house)) {
+            return;
+        }
+
+        var holder = house.FindByTemplate(HouseTextures.ProxyTemplateId);
+        if (holder is null || !HouseTextures.TryFind(holder, message.RemapIndex, message.TextureType, out var removed)) {
+            // The client may act on a list that is a step behind, so it gets the real one.
+            SendBlobs(house);
+
+            return;
+        }
+
+        var wizard = GetActiveWizard();
+        HouseChange change = default;
+        var transfer = BackpackTransfer.Take(wizard, removed.m_textureTemplateID, 0,
+            added => (change = house.TryUpdate(holder.Id, stored => HouseTextures.Without(stored, removed),
+                document => HouseCollection.SaveWithBackpack(document, wizard, added))).Done,
+            out var item);
+        if (transfer == BackpackTransferResult.BackpackCannotHold) {
+            InformGameClient("Your backpack is full.");
+
+            return;
+        }
+
+        if (transfer != BackpackTransferResult.Done) {
+            InformGameClient("The texture could not be picked up.");
+
+            return;
+        }
+
+        if (!ItemSync.SendAdded(SessionActor.ActorRef, wizard, item)) {
+            Logger.Error("Could not tell the client about picked up texture item {ItemId} of character {CharId}.",
+                Logger.Args(item.m_globalID, wizard.CharId));
+        }
+
+        ZoneBroadcast(new WIZARDHOUSING_50_PROTOCOL.MSG_PATCHREMOVETEXTUREREMAP {
+            Data = change.Item.Custom ?? [],
+            SubType = change.SubType,
+            PackageNumber = 0,
+            VersionNumber = change.Revision,
+            GIDID = change.GidId,
+            RemapIndex = removed.m_remapIndex,
+            TextureType = HouseTextures.TextureTypeOf(removed),
+        }, isSelfless: false, ZoneBroadcastTarget.Players);
+    }
+
     private bool TryGetHouse(string request, out HouseState house) {
         house = _house;
         if (house is null) {
@@ -467,6 +587,29 @@ internal class HousingService(SessionActor sessionActor) : MessageService(sessio
         } catch (InvalidOperationException exception) {
             Logger.Error("Could not build the {SubType} blob of lot {LotGid}: {Reason}", Logger.Args(subType, house.LotGid, exception.Message));
         }
+    }
+
+    private static bool SaveWithReturnedTexture(House document, Wizard wizard, uint replacedTemplateId, out WizClientObjectItem returned) {
+        returned = null;
+        if (replacedTemplateId != 0) {
+            returned = HousingItems.CreateItem(wizard, replacedTemplateId);
+            if (returned is null || !wizard.InventoryBehavior.AddItem(returned)) {
+                returned = null;
+
+                return false;
+            }
+        }
+
+        if (HouseCollection.SaveWithBackpack(document, wizard, returned)) {
+            return true;
+        }
+
+        if (returned is not null) {
+            wizard.InventoryBehavior.RemoveItem(returned);
+            returned = null;
+        }
+
+        return false;
     }
 
     private static BlobRequestObject BlobRequestOf(HouseSnapshot snapshot)

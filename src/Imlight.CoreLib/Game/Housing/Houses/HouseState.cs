@@ -48,7 +48,7 @@
  * 
  * Created by: Jay
  * Version: KALI 1.0
- * Last Updated: 10/21/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -132,12 +132,13 @@ internal sealed class HouseState {
     }
 
     /// <summary>
-    /// The number of items the house may hold: the client's own formula, the template's limit plus the bonus slots.
+    /// The number of items the house may hold: the client's own formula, the template's limit plus the bonus slots. The
+    /// texture holder is stored with the items but is not one of them, so it adds a slot.
     /// </summary>
     internal int ItemLimit {
         get {
             lock (_lock) {
-                return _template.ItemLimit + _house.BonusSlots;
+                return LimitLocked();
             }
         }
     }
@@ -157,7 +158,9 @@ internal sealed class HouseState {
         state = null;
         var previousItems = house.Items;
         var previousRevisions = house.Revisions;
+        var previousNextItemId = house.NextItemId;
         var ordered = previousItems.OrderBy(item => item.Id).Select(item => WithCustom(house.OwnerCharId, item)).ToList();
+        AddTextureHolder(house, ordered);
         var revisions = new Dictionary<string, uint>(previousRevisions);
         foreach (var subType in HousingItems.LiveSubTypes) {
             revisions[subType] = revisions.GetValueOrDefault(subType) + 1;
@@ -168,6 +171,7 @@ internal sealed class HouseState {
         if (!HouseCollection.Save(house)) {
             house.Items = previousItems;
             house.Revisions = previousRevisions;
+            house.NextItemId = previousNextItemId;
 
             return false;
         }
@@ -229,6 +233,17 @@ internal sealed class HouseState {
     }
 
     /// <summary>
+    /// Finds the first placed item of a template.
+    /// </summary>
+    /// <param name="templateId">The item template.</param>
+    /// <returns>The item as it is stored; <c>null</c> when none is placed.</returns>
+    internal PlacedItem FindByTemplate(uint templateId) {
+        lock (_lock) {
+            return _house.Items.FirstOrDefault(item => item.TemplateId == templateId);
+        }
+    }
+
+    /// <summary>
     /// Places an item in a new slot at the end of the table of its blob. When the table is full of removed slots it is
     /// numbered again instead and nothing is added.
     /// </summary>
@@ -246,7 +261,7 @@ internal sealed class HouseState {
                 return new HouseChange(HouseEdit.NotFound);
             }
 
-            if (_house.Items.Count >= _template.ItemLimit + _house.BonusSlots) {
+            if (_house.Items.Count >= LimitLocked()) {
                 return new HouseChange(HouseEdit.LimitReached);
             }
 
@@ -387,11 +402,12 @@ internal sealed class HouseState {
     /// </summary>
     /// <param name="itemId">The id of the item to update.</param>
     /// <param name="update">Returns the replacement for the stored item; it must keep the id and the template.</param>
+    /// <param name="save">Writes the house; <c>null</c> writes the house alone.</param>
     /// <returns>
     /// <see cref="HouseEdit.NotFound"/> when the house has no such item or <paramref name="update"/> returns <c>null</c>
     /// or an item of another id or template, <see cref="HouseEdit.SaveFailed"/> when the write failed.
     /// </returns>
-    internal HouseChange TryUpdate(uint itemId, Func<PlacedItem, PlacedItem> update) {
+    internal HouseChange TryUpdate(uint itemId, Func<PlacedItem, PlacedItem> update, Func<House, bool> save = null) {
         lock (_lock) {
             // A retired state is gone from the registry, and a write to it would be lost.
             if (IsRetired) {
@@ -421,7 +437,7 @@ internal sealed class HouseState {
                     _house.Items[index] = previous;
                     undoRevision();
                 },
-                null);
+                save);
             if (!saved) {
                 return new HouseChange(HouseEdit.SaveFailed);
             }
@@ -442,6 +458,28 @@ internal sealed class HouseState {
         }
 
         return item with { Custom = HousingItems.LoadCustomData(ownerCharId, subType, item.ItemGid) };
+    }
+
+    private static void AddTextureHolder(House house, List<PlacedItem> ordered) {
+        var holderTemplateId = HouseTextures.ProxyTemplateId;
+        if (holderTemplateId == 0 || ordered.Any(item => item.TemplateId == holderTemplateId)) {
+            return;
+        }
+
+        var holder = HouseTextures.NewProxy();
+        if (holder is null) {
+            return;
+        }
+
+        ordered.Add(holder with { Id = house.NextItemId });
+        house.NextItemId++;
+    }
+
+    private int LimitLocked() {
+        var holderTemplateId = HouseTextures.ProxyTemplateId;
+        var holders = holderTemplateId == 0 ? 0 : _house.Items.Count(item => item.TemplateId == holderTemplateId);
+
+        return _template.ItemLimit + _house.BonusSlots + holders;
     }
 
     private HouseEdit MakeRoom(string subType, BlobTable<PlacedItem> table, byte[] custom) {

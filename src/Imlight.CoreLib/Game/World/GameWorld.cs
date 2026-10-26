@@ -89,6 +89,7 @@ public class GameWorld : ReceiveProtocolDispatcher, IWithTimers {
         NpcDropTableCollection.PreloadDropTables();
         HouseZoneIndex.Preload();
         HouseTemplates.ValidateStarters();
+        HouseTextures.ValidateProxy();
     }
 
     public static Props Props(GameServer server)
