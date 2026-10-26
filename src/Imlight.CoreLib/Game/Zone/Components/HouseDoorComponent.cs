@@ -29,6 +29,8 @@
  * NOTE:
  * - The component only notices the player and tells their session which door it was. The session knows which house the
  *   player is in, and it does everything that touches the player's items and the zone transfer.
+ * - A door has no RenderBehaviorTemplate, so no RenderComponent sends it. The client only routes MSG_REQUESTHOUSINGZONE
+ *   to an object it holds under the request's GlobalID, so this component sends the door itself with MSG_NEWOBJECT.
  * - A player who arrives inside the radius, as everyone does who walks through a door, has to walk out of it before
  *   the door works again.
  *
@@ -44,7 +46,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
+using Imcodec.CoreObject;
+using Imcodec.MessageLayer.Generated;
+using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
+using Imlight.Common;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Player;
@@ -55,11 +61,17 @@ internal sealed class HouseDoorComponent(ZoneEntity entity) : ZoneEntityComponen
 
     // Keyed by the player's actor: a CoreObject is a record, so its hash changes with every move.
     private readonly HashSet<IActorRef> _playersInRange = [];
+    private readonly CoreObjectSerializer _serializer = new(versionable: false, behaviors: SerializerFlags.None);
+    private readonly PropertyFlags _propertyFlags = PropertyFlags.Prop_Public
+                                                  | PropertyFlags.Prop_Transmit
+                                                  | PropertyFlags.Prop_AuthorityTransmit;
 
     public static bool ShouldAttachToEntity(CoreTemplate template)
         => template is GameObjectTemplate go && go.m_behaviors?.OfType<TeleportProximityBehaviorTemplate>().Any() == true;
 
     public override void OnPlayerJoin(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) {
+        SendDoorObject(playerActor);
+
         if (IsInRange(playerObj)) {
             _playersInRange.Add(playerActor);
         }
@@ -78,10 +90,23 @@ internal sealed class HouseDoorComponent(ZoneEntity entity) : ZoneEntityComponen
             return;
         }
 
+        Logger.Information("Character {CharId} walked up to the house door {DoorGid} (template {TemplateId}) and the client is asked through gid {RequestGid}.",
+            Logger.Args(playerWizard?.CharId, Entity.ActiveGameObject.m_globalID.Full, Entity.ActiveGameObject.m_templateID.Full, Entity.ActiveGameObject.m_globalID.Full));
+
         playerActor.Tell(new ZONE_102_PROTOCOL.MSG_HOUSEDOOR {
             DoorGid = Entity.ActiveGameObject.m_globalID,
             LocationName = Door?.m_locationName.ToString(),
         });
+    }
+
+    private void SendDoorObject(IActorRef playerActor) {
+        if (!_serializer.Serialize(Entity.GetClientObject(), _propertyFlags, out var serializedData)) {
+            Logger.Error("Failed to serialize the house door {DoorGid}.", Logger.Args(Entity.ActiveGameObject.m_globalID.Full));
+
+            return;
+        }
+
+        playerActor.Tell(new GAME_5_PROTOCOL.MSG_NEWOBJECT { Data = serializedData });
     }
 
     private TeleportProximityBehaviorTemplate Door
