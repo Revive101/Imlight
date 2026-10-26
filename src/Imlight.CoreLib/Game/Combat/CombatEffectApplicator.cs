@@ -423,8 +423,8 @@ internal static class CombatEffectApplicator {
         return targets.Count(x => x.IsAlive) * CombatHangingEffects.HANGING_EFFECT_ADD_TIME;
     }
 
-    // Deals a percentage of the target's maximum health; m_effectParam is the percent.
     private static float ApplyMaxHealthDamageEffect(SpellEffect effect, CombatDuelSubCircle[] targets) {
+        // Deals a percentage of the target's maximum health; m_effectParam is the percent.
         var cinematicTime = 0.0f;
         foreach (var target in targets) {
             if (!target.IsAlive) {
@@ -439,9 +439,9 @@ internal static class CombatEffectApplicator {
         return cinematicTime;
     }
 
-    // Adds or removes generic pips (signed m_effectParam). Gains respect the 7-pip cap; steals
-    // only take generic pips, so a power-pip-only target keeps them.
     private static void ApplyModifyPipsEffect(SpellEffect effect, CombatDuelSubCircle[] targets) {
+        // Adds or removes generic pips (signed m_effectParam). Gains respect the 7-pip cap; steals
+        // only take generic pips, so a power-pip-only target keeps them.
         foreach (var target in targets) {
             if (!target.IsAlive) {
                 continue;
@@ -459,9 +459,9 @@ internal static class CombatEffectApplicator {
         }
     }
 
-    // Kills the effect's targets outright; the round cleanup sends MSG_COMBATDEATH for the corpse.
-    // kKillCreature only kills the named creature: m_effectParam is the template id to match.
     private static float ApplyKillCreatureEffect(SpellEffect effect, CombatDuelSubCircle[] targets) {
+        // Kills the effect's targets outright; the round cleanup sends MSG_COMBATDEATH for the corpse.
+        // kKillCreature only kills the named creature: m_effectParam is the template id to match.
         foreach (var target in targets) {
             if (target is null || target.ParticipantObject is null || !target.IsAlive) {
                 continue;
@@ -478,8 +478,8 @@ internal static class CombatEffectApplicator {
         return 0.0f;
     }
 
-    // m_effectParam is the creature template id to spawn.
     private static void ApplySummonCreature(SpellEffect effect, CombatDuelSubCircle caster) {
+        // m_effectParam is the creature template id to spawn.
         if (effect.m_effectParam <= 0 || caster?._duelActor is null) {
             return;
         }

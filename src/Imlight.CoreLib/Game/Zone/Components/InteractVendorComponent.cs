@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 10/14/2026
  */
 
 using System.Collections.Generic;
@@ -66,8 +66,10 @@ internal sealed class InteractVendorComponent(ZoneEntity entity) : ZoneEntityCom
     public string InteractWizBang => "Registrar";
     public string DisplayKey      => "GUI_ShopOptionEquipment";
 
+    private const string DEFAULT_SHOP_TITLE = "KrocNPC_00000013";
+
     private List<GID> _inventory;
-    private string _shopTitle = "Unknown Shop";
+    private string _shopTitle;
     private int _shopType = 0;
     private bool _csrTestShop = false;
 
@@ -81,13 +83,14 @@ internal sealed class InteractVendorComponent(ZoneEntity entity) : ZoneEntityCom
 
     public override void OnStart() {
         if (!NpcInventoryCollection.TryGetNpcInventory(Entity.ActiveGameObject.m_templateID, out var inventory)) {
-            Logger.Error("Failed to get vendor inventory for NPC {0}",
-                Logger.Args(Entity.ActiveGameObject.m_templateID));
+            Logger.Debug("Vendor NPC {TemplateId} has no shop inventory in the database, so its shop is empty.",
+                Logger.Args(Entity.ActiveGameObject.m_templateID.Full));
 
             return;
         }
 
         _inventory = inventory.Inventory;
+        _shopTitle = inventory.ShopTitle;
 
         var shoppingBehavior = Entity.Template?.m_behaviors?.OfType<WizShoppingBehaviorTemplate>().FirstOrDefault();
         if (shoppingBehavior != null) {
@@ -110,17 +113,16 @@ internal sealed class InteractVendorComponent(ZoneEntity entity) : ZoneEntityCom
 
     public void OnServiceInteraction(IActorRef playerActor, Wizard playerCharacter, CoreObject playerObject, uint serviceOptionIndex) {
         SendShopOfferings(playerActor);
-        SendPlayerIntoWizbang(playerObject.m_globalID);
-        SendPlayerIntoState(playerObject.m_globalID);
+        BroadcastPlayerEnteringService(playerObject.m_globalID, (uint) WizBang, StateName);
     }
 
     public bool HasItem(GID itemGID)
-        => _inventory.Any(x => x.MParts.TemplateId == itemGID.MParts.TemplateId);
+        => _inventory is not null && _inventory.Any(x => x.MParts.TemplateId == itemGID.MParts.TemplateId);
 
     private void SendShopOfferings(IActorRef playerActor) {
         var shopOffering = new WizShopOffering() {
             m_sellModifier = 0.05f,
-            m_shopTitle = _shopTitle,
+            m_shopTitle = string.IsNullOrWhiteSpace(_shopTitle) ? DEFAULT_SHOP_TITLE : _shopTitle,
             m_shopList = _inventory,
             // Changes the type of currency that is used
             // 0 - Gold
@@ -136,8 +138,8 @@ internal sealed class InteractVendorComponent(ZoneEntity entity) : ZoneEntityCom
             Behaviors: SerializerFlags.None
         );
         if (!serializer.Serialize(shopOffering, 4, out var serializedShopList)) {
-            Logger.Error("Failed to serialize shop offering for NPC {0}",
-                Logger.Args(Entity.ActiveGameObject.m_templateID));
+            Logger.Error("Could not build the shop list of vendor NPC {TemplateId}.",
+                Logger.Args(Entity.ActiveGameObject.m_templateID.Full));
 
             return;
         }
@@ -147,34 +149,6 @@ internal sealed class InteractVendorComponent(ZoneEntity entity) : ZoneEntityCom
             Data = serializedShopList
         };
         playerActor.Tell(shopListMsg);
-    }
-
-    private void SendPlayerIntoWizbang(ulong playerObjID) {
-        // Create the wiz bang message, and wrap it in a broadcast message.
-        var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG {
-            WizBangID = (uint) WizBang,
-            GameObjectID = playerObjID
-        };
-        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
-            Message = wizBangMsg,
-            Selfless = false,
-        };
-
-        Entity.ZoneRef.Tell(broadcastMsg);
-    }
-
-    private void SendPlayerIntoState(ulong playerObjID) {
-        // Create the change state message, and wrap it in a broadcast message.
-        var changeStateMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
-            State = StringHash.Compute(StateName),
-            GameObjectID = playerObjID
-        };
-        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
-            Message = changeStateMsg,
-            Selfless = false,
-        };
-
-        Entity.ZoneRef.Tell(broadcastMsg);
     }
 
 }

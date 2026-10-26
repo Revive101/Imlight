@@ -49,8 +49,8 @@ internal sealed class ResMinigameHandler : BaseResultHandler<ResMinigame> {
             .Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD(), queryTimeout)
             .Result?.Wizard;
         if (wizard is null) {
-            Logger.Error("The minigame result could not read the character within {Seconds} seconds",
-                Logger.Args(QUERY_WIZARD_TIMEOUT_SECONDS));
+            Logger.Warning("Result {Result} was skipped: the character could not be read, most likely because the player logged out.",
+                Logger.Args(nameof(ResMinigame)));
 
             return false;
         }

@@ -33,7 +33,7 @@
  *
  * Created by: Jay
  * Version: KALI 1.0
- * Last Updated: 10/14/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -172,7 +172,7 @@ internal class BadgeService(SessionActor sessionActor) : MessageService(sessionA
         BadgeDefinition chosen = null;
         var error = requestedId != 0 ? GetSelectionError(state, catalog, requestedId, out chosen) : 0;
         if (error != 0) {
-            Logger.Warning("{0} could not select badge {1}, error {2}.",
+            Logger.Warning("{Wizard} could not select badge {BadgeId}, error {Error}.",
                 Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), requestedId, error));
             SendToSocket(new GAME_5_PROTOCOL.MSG_SELECT_BADGE { BadgeNameID = message.BadgeNameID, Error = error });
 
@@ -201,7 +201,7 @@ internal class BadgeService(SessionActor sessionActor) : MessageService(sessionA
         }
 
         if (message.GlobalID != wizard.CharId) {
-            Logger.Warning("{0} asked for a badge on behalf of character {1}.",
+            Logger.Warning("{Wizard} asked for a badge on behalf of character {CharId}.",
                 Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), message.GlobalID));
 
             return;
@@ -276,7 +276,7 @@ internal class BadgeService(SessionActor sessionActor) : MessageService(sessionA
 
         var state = wizard.BadgeBehavior;
         if (!catalog.TryGet(message.BadgeID, out var definition) || !BadgeView.IsComplete(state, definition)) {
-            Logger.Warning("{0} acknowledged badge {1}, which they do not hold complete.",
+            Logger.Warning("{Wizard} acknowledged badge {BadgeId}, which they have not completed.",
                 Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), message.BadgeID));
 
             return;
@@ -400,7 +400,7 @@ internal class BadgeService(SessionActor sessionActor) : MessageService(sessionA
             return;
         }
 
-        Logger.Warning("Badge {0} is not in the badge catalog and was not awarded to {1}.",
+        Logger.Warning("Badge {BadgeId} is not in the badge catalog, so it was not awarded to character {CharId}.",
             Logger.Args(badgeId, wizard.CharId));
     }
 
@@ -471,7 +471,7 @@ internal class BadgeService(SessionActor sessionActor) : MessageService(sessionA
 
     private static void Persist(Wizard wizard) {
         if (!WizardCollection.UpdateCharacterBadgeBehavior(wizard)) {
-            Logger.Error("Failed to save the badge state of {0}.", Logger.Args(wizard.CharId));
+            Logger.Error("The badges of character {CharId} could not be saved.", Logger.Args(wizard.CharId));
         }
     }
 

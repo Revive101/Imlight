@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/10/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -65,7 +65,10 @@ public class TcpListenerActor : ReceiveActor {
         this._serverRef = serverRef;
 
         Receive<SERVER_100_PROTOCOL.MSG_STARTLISTENING>(_ => {
-            Start();
+            if (!Start()) {
+                return;
+            }
+
             Sender.Tell(new SERVER_100_PROTOCOL.MSG_STARTLISTENING_COMPLETE());
         });
 
@@ -77,25 +80,36 @@ public class TcpListenerActor : ReceiveActor {
     public static Props Props(string name, int port, IActorRef serverRef, bool startListening = true) 
         => Akka.Actor.Props.Create(() => new TcpListenerActor(name, port, serverRef, startListening));
 
-    public async void Start() {
+    public bool Start() {
         if (Listening) {
-            return;
+            return true;
         }
 
         try {
             this.Listener.Start();
-            this.Listening = true;
-
-            Logger.Information("TcpListener for {Name} bound to port {Port} — listening.",
-                Logger.Args(Name, Port));
-
-            var token = this._tokenSource.Token;
-            await ListenAsync(token);
         }
-        catch (Exception ex) {
-            Logger.Fatal("TcpListener for {Name} on port {Port} failed: {Exception}",
-                Logger.Args(Name, Port, ex));
+        catch (SocketException ex) when (ex.SocketErrorCode == SocketError.AddressAlreadyInUse) {
+            Logger.Fatal("Port {Port} ({Name}) is already in use by another program. Close that program, " +
+                         "or change LoginServerPort or GameServerPort in Imlight.ini.", Logger.Args(Port, Name));
+            ExitServer();
+
+            return false;
         }
+        catch (SocketException ex) {
+            Logger.Fatal("{Name} could not listen on port {Port}: {Reason} Pick another port in Imlight.ini.",
+                Logger.Args(Name, Port, ex.Message));
+            ExitServer();
+
+            return false;
+        }
+
+        this.Listening = true;
+
+        Logger.Information("{Name} is listening on port {Port}.", Logger.Args(Name, Port));
+
+        _ = ListenAsync(this._tokenSource.Token);
+
+        return true;
     }
 
     public void Stop() {
@@ -117,15 +131,13 @@ public class TcpListenerActor : ReceiveActor {
                 AllocateNewSocket(socket);
             }
             catch (OperationCanceledException) {
-                // Normal shutdown — token was cancelled.
                 break;
             }
             catch (ObjectDisposedException) {
-                // Listener was disposed — normal during shutdown.
                 break;
             }
             catch (Exception ex) {
-                Logger.Error("TcpListener for {Name} on port {Port} accept error: {Exception}",
+                Logger.Error("{Name} on port {Port} could not accept a connection. {Exception}",
                     Logger.Args(Name, Port, ex));
             }
         }
@@ -144,6 +156,12 @@ public class TcpListenerActor : ReceiveActor {
 
         var msg = new SERVER_100_PROTOCOL.MSG_ALLOCATESOCKET() { Socket = socket };
         _serverRef.Tell(msg);
+    }
+
+    private static void ExitServer() {
+        // Exits off the actor thread, so the actor system can shut down while the process ends.
+        Environment.ExitCode = 1;
+        _ = Task.Run(() => Environment.Exit(1));
     }
 
 }

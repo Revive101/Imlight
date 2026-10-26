@@ -33,11 +33,12 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/14/2026
+ * Last Updated: 10/25/2026
  */
 
 using System.Collections.Generic;
 using System;
+using System.IO;
 using System.Linq;
 using Imcodec.ObjectProperty;
 using Imlight.Common;
@@ -50,7 +51,7 @@ namespace Imlight.CoreLib.Game.Minigames;
 /// </summary>
 internal sealed class MinigameConfig : RootSingleResourceSingleton<MinigameConfig>, IMemoryStreamDisposable {
 
-    private const int TierCount = 12;
+    private const int TIER_COUNT = 12;
 
     protected override string ResourceName => "MinigameConfig.xml";
 
@@ -60,58 +61,20 @@ internal sealed class MinigameConfig : RootSingleResourceSingleton<MinigameConfi
     protected override void AfterLoad() {
         var serializer = new BindSerializer();
         if (!serializer.Deserialize(Stream.ToArray(), out s_minigameConfig)) {
-            Logger.Error("Failed to deserialize minigame configuration file");
-
-            return;
+            throw new InvalidDataException($"The minigame config {ResourceName} could not be read. Re-download the game resources.");
         }
 
-        Logger.Information("Loaded {0} minigame configurations",
+        Logger.Information("Loaded {Count} minigame configurations.",
             Logger.Args(s_minigameConfig.m_minigames.Count));
 
         var invalidCount = s_minigameConfig.m_minigames.Count(x => !IsValid(x));
         if (invalidCount > 0) {
-            Logger.Error("{Count} minigame configurations failed validation", Logger.Args(invalidCount));
+            Logger.Warning("{Count} minigame configurations are invalid; those chest games are not offered.", Logger.Args(invalidCount));
         }
 
         s_chestGames = [.. s_minigameConfig.m_minigames.Where(x => x.m_iconArt.IsEmpty && IsValid(x))];
-        Logger.Information("Found {Count} chest games, the configurations without an arcade icon",
+        Logger.Debug("Found {Count} chest games, the configurations without an arcade icon.",
             Logger.Args(s_chestGames.Count));
-    }
-
-    private static bool IsValid(Imcodec.ObjectProperty.TypeCache.MinigameInfo minigame) {
-        var valid = true;
-        var thresholds = minigame.m_scoreThresholds;
-        if (thresholds is null || thresholds.Count != TierCount) {
-            Logger.Error("MinigameConfig: {Minigame} has {Count} score thresholds, it needs {Expected}. Fix MinigameConfig.xml",
-                Logger.Args(minigame.m_name, thresholds?.Count ?? 0, TierCount));
-
-            valid = false;
-        } else if (!IsStrictlyAscending(thresholds)) {
-            Logger.Error("MinigameConfig: the score thresholds of {Minigame} do not strictly ascend. Fix MinigameConfig.xml",
-                Logger.Args(minigame.m_name));
-
-            valid = false;
-        }
-
-        var rewardTable = minigame.m_rewardTable;
-        if (rewardTable is null || rewardTable.Count != TierCount || rewardTable.Any(x => x.IsEmpty)) {
-            Logger.Error("MinigameConfig: the reward table of {Minigame} does not have {Expected} named entries. Fix MinigameConfig.xml",
-                Logger.Args(minigame.m_name, TierCount));
-
-            valid = false;
-        }
-
-        return valid;
-    }
-
-    private static bool IsStrictlyAscending(IReadOnlyList<int> values) {
-        for (var i = 1; i < values.Count; i++) {
-            if (values[i] <= values[i - 1]) {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     public static Imcodec.ObjectProperty.TypeCache.MinigameInfo GetMinigameInfo(int index) {
@@ -138,8 +101,7 @@ internal sealed class MinigameConfig : RootSingleResourceSingleton<MinigameConfi
     public static string GetMinigameScript(string zoneName) {
         var minigameInfo = s_minigameConfig.m_minigames.FirstOrDefault(x => x.m_zone == zoneName);
         if (minigameInfo == null) {
-            Logger.Error("Minigame script not found for zone {0}", 
-                Logger.Args(zoneName));
+            Logger.Error("No minigame is configured for zone {Zone}.", Logger.Args(zoneName));
 
             return null;
         }
@@ -155,5 +117,41 @@ internal sealed class MinigameConfig : RootSingleResourceSingleton<MinigameConfi
 
     public void DisposeStream()
         => base.Stream.Dispose();
+
+    private static bool IsValid(Imcodec.ObjectProperty.TypeCache.MinigameInfo minigame) {
+        var valid = true;
+        var thresholds = minigame.m_scoreThresholds;
+        if (thresholds is null || thresholds.Count != TIER_COUNT) {
+            Logger.Warning("Minigame {Minigame} has {Count} score thresholds, but needs {Expected}.",
+                Logger.Args(minigame.m_name, thresholds?.Count ?? 0, TIER_COUNT));
+
+            valid = false;
+        } else if (!IsStrictlyAscending(thresholds)) {
+            Logger.Warning("The score thresholds of minigame {Minigame} do not strictly ascend.",
+                Logger.Args(minigame.m_name));
+
+            valid = false;
+        }
+
+        var rewardTable = minigame.m_rewardTable;
+        if (rewardTable is null || rewardTable.Count != TIER_COUNT || rewardTable.Any(x => x.IsEmpty)) {
+            Logger.Warning("The reward table of minigame {Minigame} does not have {Expected} named entries.",
+                Logger.Args(minigame.m_name, TIER_COUNT));
+
+            valid = false;
+        }
+
+        return valid;
+    }
+
+    private static bool IsStrictlyAscending(IReadOnlyList<int> values) {
+        for (var i = 1; i < values.Count; i++) {
+            if (values[i] <= values[i - 1]) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 
 }

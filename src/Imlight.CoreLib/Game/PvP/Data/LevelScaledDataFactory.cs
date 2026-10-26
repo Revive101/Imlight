@@ -33,10 +33,11 @@
  * 
  * Created by: Jay
  * Version: KALI 1.0
- * Last Updated: 10/18/2026
+ * Last Updated: 10/25/2026
  */
 
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using Imcodec.ObjectProperty.TypeCache;
@@ -59,11 +60,7 @@ internal sealed class LevelScaledDataFactory : RootDirectoryResourceSingleton<Le
     private static LevelScaledTable s_table;
 
     protected override void AfterLoad() {
-        foreach (var file in base.Files) {
-            if (!PvPResourceReader.TryRead<LevelScaledData>(file.Key, file.Value, out var data)) {
-                continue;
-            }
-
+        foreach (var (_, data) in ReadTemplates<LevelScaledData>()) {
             var floorRow = data.m_statsFloorPercent is null ? null : CreateRow(data.m_statsFloorPercent);
             s_table = new LevelScaledTable((data.m_levelScaledInfoList ?? []).Select(CreateRow), floorRow);
 
@@ -72,7 +69,7 @@ internal sealed class LevelScaledDataFactory : RootDirectoryResourceSingleton<Le
             return;
         }
 
-        Logger.Error("The level scaling data is missing from the game data.");
+        throw new InvalidDataException("The PvP level scaling data is missing from the game data. Re-download the game resources.");
     }
 
     internal static bool TryGetTable(out LevelScaledTable table) {

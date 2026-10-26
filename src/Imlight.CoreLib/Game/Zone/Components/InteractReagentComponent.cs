@@ -83,20 +83,6 @@ internal sealed class InteractReagentComponent(ZoneEntity entity)
         }
     }
 
-    private static string GetReagentTemplateIcon(string nodeName) {
-        var reagentTemplate = ReagentFactory.GetReagentTemplate(nodeName);
-        if (reagentTemplate is null) {
-            return "";
-        }
-
-        string icon = reagentTemplate.m_sIcon;
-        if (!string.IsNullOrEmpty(icon)) {
-            return icon;
-        }
-
-        string imageName = reagentTemplate.m_imageName;
-        return string.IsNullOrEmpty(imageName) ? "" : REAGENT_ICON_DIRECTORY + imageName;
-    }
     public string NpcNameKey {
         get {
             if (Entity.Template is not GameObjectTemplate goTemplate) {
@@ -186,6 +172,21 @@ internal sealed class InteractReagentComponent(ZoneEntity entity)
 
         // Finally, destroy this entity.
         Entity.DeleteObject();
+    }
+
+    private static string GetReagentTemplateIcon(string nodeName) {
+        var reagentTemplate = ReagentFactory.GetReagentTemplate(nodeName);
+        if (reagentTemplate is null) {
+            return "";
+        }
+
+        string icon = reagentTemplate.m_sIcon;
+        if (!string.IsNullOrEmpty(icon)) {
+            return icon;
+        }
+
+        string imageName = reagentTemplate.m_imageName;
+        return string.IsNullOrEmpty(imageName) ? "" : REAGENT_ICON_DIRECTORY + imageName;
     }
 
     private ClientReagentItem GetReagent(ulong charId, int quantity) {

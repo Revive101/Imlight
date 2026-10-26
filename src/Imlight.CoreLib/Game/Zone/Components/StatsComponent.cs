@@ -63,8 +63,8 @@ internal sealed class StatsComponent : ZoneEntityComponent, IComponentFactory {
         var parsedSchool = MagicSchool.Balance;
         if (    npcBehaviorTemplate.m_schoolOfFocus != "" 
             && !Enum.TryParse(npcBehaviorTemplate.m_schoolOfFocus, out parsedSchool)) {
-            Logger.Error("Failed to parse magic school {0} for creature {1}.",
-                Logger.Args(npcBehaviorTemplate.m_schoolOfFocus, Entity.ActiveGameObject.m_globalID));
+            Logger.Warning("Creature {Creature} has an unknown magic school {School}.",
+                Logger.Args(Entity.ActiveGameObject.m_debugName, npcBehaviorTemplate.m_schoolOfFocus));
 
             return;
         }

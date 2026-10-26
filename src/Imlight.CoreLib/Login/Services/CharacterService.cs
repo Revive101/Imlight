@@ -29,7 +29,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/09/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -80,7 +80,7 @@ internal class CharacterService(SessionActor parentActor) : MessageService(paren
         try {
             var flags = PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit;
             if (!serializer.Deserialize(message.CreationInfo, flags, out WizardCharacterCreationInfo charData)) {
-                Logger.Error("SessionActor {SessionId} account {accountUsername} sent character creation data that could not be deserialized.",
+                Logger.Warning("SessionActor {SessionId} account {accountUsername} sent character creation data that could not be read; the client may be a different game version.",
                     Logger.Args(SessionActor.SessionID, account.Username));
                 SendToSocket(new LOGIN_7_PROTOCOL.MSG_CREATECHARACTERRESPONSE { ErrorCode = 1 });
 
@@ -151,7 +151,7 @@ internal class CharacterService(SessionActor parentActor) : MessageService(paren
             }
         }
         else {
-            Logger.Error("Account {accountUsername} failed to delete character {characterId} from account.",
+            Logger.Warning("Account {accountUsername} asked to delete character {characterId}, which is not on the account.",
                 Logger.Args(account.Username, message.CharID));
             errorCode = 1;
         }
@@ -194,6 +194,12 @@ internal class CharacterService(SessionActor parentActor) : MessageService(paren
         SendToSocket(new LOGIN_7_PROTOCOL.MSG_CHARACTERLIST());
     }
 
+    [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_LOGINLOGCHARACTERCREATION))]
+    private void ReceiveLoginLogCharacterCreation(LOGIN_7_PROTOCOL.MSG_LOGINLOGCHARACTERCREATION message) {
+        this._characterCreationParameter = message.Parameter;
+        this._characterCreationStage = message.Stage;
+    }
+
     private bool TrySerializeLoginScreenInfo(ObjectSerializer serializer, Account account, Wizard character, out ByteString data) {
         try {
             // Characters in the login screen are stripped down to the bare minimum,
@@ -217,12 +223,6 @@ internal class CharacterService(SessionActor parentActor) : MessageService(paren
         data = default;
 
         return false;
-    }
-
-    [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_LOGINLOGCHARACTERCREATION))]
-    private void ReceiveLoginLogCharacterCreation(LOGIN_7_PROTOCOL.MSG_LOGINLOGCHARACTERCREATION message) {
-        this._characterCreationParameter = message.Parameter;
-        this._characterCreationStage = message.Stage;
     }
 
 }

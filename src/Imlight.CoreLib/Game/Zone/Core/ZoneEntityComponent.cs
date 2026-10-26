@@ -42,11 +42,13 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/26/2026
+ * Last Updated: 10/25/2026
  */
 
 using Akka.Actor;
+using Imcodec.Cryptography;
 using Imcodec.MessageLayer;
+using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
@@ -257,6 +259,21 @@ public abstract class ZoneEntityComponent(ZoneEntity entity) : IZoneComponent {
             Targets = ZoneBroadcastTarget.Players,
         };
         ZoneActor.Tell(broadcastMsg);
+    }
+
+    /// <summary>
+    /// Shows every player in the zone that a player opened this entity's service: the player plays the
+    /// service's wiz bang and enters its state.
+    /// </summary>
+    protected void BroadcastPlayerEnteringService(ulong playerObjectId, uint wizBangId, string stateName) {
+        PlayerBroadcast(new GAME_5_PROTOCOL.MSG_WIZBANG {
+            WizBangID = wizBangId,
+            GameObjectID = playerObjectId
+        });
+        PlayerBroadcast(new GAME_5_PROTOCOL.MSG_ENTERSTATE {
+            State = StringHash.Compute(stateName),
+            GameObjectID = playerObjectId
+        });
     }
 
 }

@@ -33,7 +33,7 @@
  * 
  * Created by: Jay
  * Version: KALI 1.0
- * Last Updated: 10/18/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -54,13 +54,13 @@ internal sealed class LevelScaledEffectFactory : RootDirectoryResourceSingleton<
     protected override void AfterLoad() {
         var byName = new Dictionary<string, LevelScaledEffectTemplate>(StringComparer.Ordinal);
 
-        foreach (var file in base.Files) {
-            if (!PvPResourceReader.TryRead<PropertyClass>(file.Key, file.Value, out var read) || read is not GameEffectTemplateList list) {
+        foreach (var (file, read) in ReadTemplates<PropertyClass>()) {
+            if (read is not GameEffectTemplateList list) {
                 continue;
             }
 
             foreach (var template in list.m_effectTemplates ?? []) {
-                RegisterTemplate(template, file.Key.FileName, byName);
+                RegisterTemplate(template, file.FileName, byName);
             }
         }
 

@@ -31,8 +31,7 @@ internal sealed class ResControlMusicHandler : BaseResultHandler<ResControlBackg
     public override bool Execute(IResultContext context) {
         if (_actionHash == 0) {
             if (Result == null) {
-                Logger.Error("Tried to create a {0}, but the result was null.",
-                    Logger.Args(GetType().Name));
+                Logger.Error("A background music result arrived without its data, so the music is unchanged.");
                     
                 return false;
             }

@@ -37,7 +37,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/26/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -57,30 +57,23 @@ namespace Imlight.Common;
 public class Logger {
 
     private const byte MaxCallerNameLength = 40;
-    private static readonly string s_path = ConfigurationManager.Settings["Logging.LogPath"].AsString()
-        ?? Path.Combine(Directory.GetCurrentDirectory(), "logs", "log.txt");
-    private static readonly string s_logFormat = ConfigurationManager.Settings["Logging.LogFormat"].AsString()
-        ?? "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}";
-    private static readonly string s_logLevel = ConfigurationManager.Settings["Logging.LogLevel"].AsString()
-        ?? "INFO";
-    private static readonly string s_seqUrl = ConfigurationManager.Settings["Logging.SeqSinkUrl"].AsString()
-        ?? "http://localhost:5341";
+    private static readonly string s_path = ConfigurationManager.Settings["Logging.LogPath"]
+        .AsString(Path.Combine(Directory.GetCurrentDirectory(), "logs", "log.txt"));
+    private static readonly string s_logFormat = ConfigurationManager.Settings["Logging.LogFormat"]
+        .AsString("{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}");
+    private static readonly string s_logLevel = ConfigurationManager.Settings["Logging.LogLevel"].AsString("INFO");
+    private static readonly string s_seqUrl = ConfigurationManager.Settings["Logging.SeqSinkUrl"].AsString();
 
-    public static ILogger Log { get; } = new LoggerConfiguration()
-        .MinimumLevel.ControlledBy(new LoggingLevelSwitch { MinimumLevel = GetLogLevel(s_logLevel) })
-        .Enrich.FromLogContext()
-        .Enrich.WithThreadId()
-        .Enrich.WithThreadName()
-        .Enrich.WithEnvironmentName()
-        .Enrich.WithMachineName()
-        .WriteTo.Console(outputTemplate: s_logFormat)
-        .WriteTo.File(s_path, rollingInterval: RollingInterval.Day)
-        .WriteTo.Seq(s_seqUrl)
-        .CreateLogger();
+    public static ILogger Log { get; } = CreateLogger();
 
     static Logger() {
         // Akka's Serilog logger writes to the global logger, so dead letters and crashes only show up if it is set.
         Serilog.Log.Logger = Log;
+
+        if (GetLogLevel(s_logLevel) is null) {
+            Log.Warning("Config/Imlight.ini: [Logging] LogLevel {LogLevel} is not one of TRACE, DEBUG, INFO, WARN, " +
+                "ERROR or FATAL, so INFO is used.", s_logLevel);
+        }
     }
 
     /// <summary>
@@ -225,18 +218,38 @@ public class Logger {
         Log.Write(logLevel, message, values);
     }
 
-    private static LogEventLevel GetLogLevel(string logLevelString) {
+    private static ILogger CreateLogger() {
+        var configuration = new LoggerConfiguration()
+            .MinimumLevel.ControlledBy(new LoggingLevelSwitch {
+                MinimumLevel = GetLogLevel(s_logLevel) ?? LogEventLevel.Information
+            })
+            .Enrich.FromLogContext()
+            .Enrich.WithThreadId()
+            .Enrich.WithThreadName()
+            .Enrich.WithEnvironmentName()
+            .Enrich.WithMachineName()
+            .WriteTo.Console(outputTemplate: s_logFormat)
+            .WriteTo.File(s_path, rollingInterval: RollingInterval.Day);
+
+        if (!string.IsNullOrWhiteSpace(s_seqUrl)) {
+            configuration = configuration.WriteTo.Seq(s_seqUrl);
+        }
+
+        return configuration.CreateLogger();
+    }
+
+    private static LogEventLevel? GetLogLevel(string logLevelString) {
         // Clean the log level string.
         logLevelString = logLevelString.Trim();
         logLevelString = logLevelString.Replace("\"", string.Empty);
         return logLevelString.ToUpperInvariant() switch {
             "TRACE" => LogEventLevel.Verbose,
             "DEBUG" => LogEventLevel.Debug,
-            "INFO" => LogEventLevel.Information,
-            "WARNING" => LogEventLevel.Warning,
+            "INFO" or "INFORMATION" => LogEventLevel.Information,
+            "WARN" or "WARNING" => LogEventLevel.Warning,
             "ERROR" => LogEventLevel.Error,
             "FATAL" => LogEventLevel.Fatal,
-            _ => throw new Exception($"Invalid log level: {logLevelString}"),
+            _ => null,
         };
     }
 

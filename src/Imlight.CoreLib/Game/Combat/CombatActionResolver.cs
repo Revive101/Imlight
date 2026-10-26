@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/22/2026
+ * Last Updated: 10/25/2026
  */
 
 using Imcodec.ObjectProperty.TypeCache;
@@ -188,7 +188,7 @@ internal static class CombatActionResolver {
         // the highest tier the pips paid can afford, for any list length.
         var effects = variableSpellEffect.m_effectList;
         if (effects is null || effects.Count == 0) {
-            Logger.Error("Variable spell effect has no nested effects; cannot resolve.");
+            Logger.Warning("An X-pip spell effect has no pip tiers in the spell data, so it resolves without a tier.");
 
             return variableSpellEffect;
         }
@@ -245,8 +245,8 @@ internal static class CombatActionResolver {
         return (byte) Math.Min(totalPips, GetMaxXPipTier(spell));
     }
 
-    // Highest pip tier (m_pipNum) an X-pip spell offers; int.MaxValue when there is none.
     private static int GetMaxXPipTier(Spell spell) {
+        // Highest pip tier (m_pipNum) an X-pip spell offers; int.MaxValue when there is none.
         var template = CoreObjectFactory.GetCoreTemplate(spell.m_templateID) as SpellTemplate;
         var variable = template?.m_effects?.OfType<VariableSpellEffect>().FirstOrDefault();
         if (variable?.m_effectList is null || variable.m_effectList.Count == 0) {

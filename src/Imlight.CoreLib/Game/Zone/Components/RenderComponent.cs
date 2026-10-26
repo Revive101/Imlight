@@ -35,7 +35,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/27/2026
+ * Last Updated: 10/25/2026
  */
 
 using System.Collections.Generic;
@@ -366,9 +366,9 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
         Entity.GetComponentOfType<PathMovementComponent>()?.BroadcastMovement();
     }
 
-    // The client builds an object in its template's default state, so the state the zone holds for it
-    // (the placement's start state, or what a player or trigger changed since) is sent right after it.
     private GAME_5_PROTOCOL.MSG_ENTERSTATE CreateCurrentStateMessage() {
+        // The client builds an object in its template's default state, so the state the zone holds for it
+        // (the placement's start state, or what a player or trigger changed since) is sent right after it.
         var state = Entity.Zone.ScriptState.GetObjectState(Entity.Info?.m_zoneTag);
         if (IsDespawnState(state)) {
             return null;

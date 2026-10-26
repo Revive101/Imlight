@@ -67,11 +67,6 @@ internal sealed partial class InteractDungeonSigilComponent(ZoneEntity entity)
     protected override bool IsAvailable
          => SigilInfo is not null && TryResolveDestination(out _);
 
-    [GeneratedRegex(@"street\s*(\d+)\s+(.+?)\s+instance\s+sigil", RegexOptions.IgnoreCase | RegexOptions.Compiled, "en-US")]
-    private static partial Regex StreetTowerRegex();
-    [GeneratedRegex(@"tower\s*0*(\d+)", RegexOptions.IgnoreCase | RegexOptions.Compiled, "en-US")]
-    private static partial Regex TowerNumberRegex();
-
     public static bool ShouldAttachToEntity(CoreTemplate template) {
         if (template is not GameObjectTemplate go) {
             return false;
@@ -123,6 +118,12 @@ internal sealed partial class InteractDungeonSigilComponent(ZoneEntity entity)
 
     private static string NormalizeSigilToken(string s)
         => Regex.Replace(s ?? "", "[^A-Za-z0-9]", "").ToLowerInvariant();
+
+    [GeneratedRegex(@"street\s*(\d+)\s+(.+?)\s+instance\s+sigil", RegexOptions.IgnoreCase | RegexOptions.Compiled, "en-US")]
+    private static partial Regex StreetTowerRegex();
+
+    [GeneratedRegex(@"tower\s*0*(\d+)", RegexOptions.IgnoreCase | RegexOptions.Compiled, "en-US")]
+    private static partial Regex TowerNumberRegex();
 
     private bool TryResolveDestination(out ResolvedSigil sigil) {
         sigil = null;
