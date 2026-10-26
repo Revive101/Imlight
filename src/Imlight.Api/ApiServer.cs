@@ -54,7 +54,7 @@ public class ApiServer
 
         // Health check endpoint.
         s_app.MapGet("/api/v1/health", () => Results.Ok(new {
-            status = "ok",
+            status = StatusCodes.Status200OK,
             timestamp = DateTimeOffset.UtcNow
         }));
 
