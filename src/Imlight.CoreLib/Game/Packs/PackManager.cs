@@ -30,12 +30,14 @@ using System.Collections.Generic;
 using Akka.Actor;
 using Imcodec.CoreObject;
 using Imcodec.Cryptography;
+using Imcodec.IO;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.Types;
 using Imlight.Common;
 using Imlight.CoreLib.Game.DropTables;
+using Imlight.CoreLib.Game.Pet;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
@@ -48,36 +50,73 @@ public static class PackManager {
     private static readonly ObjectSerializer s_objectSerializer = new(Versionable: false);
 
     /// <summary>
-    /// Opens a booster pack, grants the drops to the player, and sends the client confirmation.
+    /// Opens one or more booster packs atomically, grants the drops to the player, and sends the client confirmations.
+    /// Returns <c>true</c> if all drops across all packs were successfully granted; otherwise, <c>false</c>.
     /// </summary>
-    public static void OpenPack(IActorRef sessionActorRef, Wizard wizard, ulong packTemplateId) {
+    public static bool OpenPack(IActorRef sessionActorRef, Wizard wizard, ulong packTemplateId, int count = 1) {
+        if (count < 1) {
+            return false;
+        }
+
         if (CoreObjectFactory.GetCoreTemplate(packTemplateId) is not BoosterPackTemplate boosterTemplate) {
             Logger.Warning("Template {0} is not a BoosterPackTemplate.", Logger.Args(packTemplateId));
-            return;
+            return false;
         }
 
         var lootTables = boosterTemplate.m_lootTables;
         if (lootTables is null || lootTables.Count == 0) {
             Logger.Warning("Booster pack {0} has no m_lootTables defined in TemplateManifest.", Logger.Args(packTemplateId));
-            return;
+            return false;
         }
 
-        var lootItems = new List<LootInfo>(lootTables.Count);
-        var lootRarities = new List<LootRarity>(lootTables.Count);
+        var rolledPacks = new List<(List<(uint ItemTemplateId, CoreTemplate ItemTemplate, string TableName, string ItemName)> Drops, ByteString SerializedLoot)>(count);
+        var inventorySlotsNeeded = 0;
+        var reagentCounts = new Dictionary<ulong, int>();
+        var snackCounts = new Dictionary<ulong, int>();
 
-        foreach (var tableName in lootTables) {
-            var rollResult = DropTableRoller.Roll([tableName], sessionActorRef, wizard.GameObject, wizard);
-            if (rollResult.Items.Count == 0) {
-                continue;
-            }
-
-            foreach (var droppedItem in rollResult.Items) {
-                if (!uint.TryParse(droppedItem.ItemId, out var itemTemplateId)) {
+        // 1. Roll and serialize all packs in memory first without modifying player state.
+        for (var i = 0; i < count; i++) {
+            var rolledDrops = new List<(uint ItemTemplateId, CoreTemplate ItemTemplate, string TableName, string ItemName)>();
+            foreach (var tableName in lootTables) {
+                var rollResult = DropTableRoller.Roll([tableName], sessionActorRef, wizard.GameObject, wizard);
+                if (rollResult.Items.Count == 0) {
                     continue;
                 }
 
-                var itemTemplate = CoreObjectFactory.GetCoreTemplate(itemTemplateId);
-                var rarity = ResolveRarity(itemTemplate, tableName);
+                foreach (var droppedItem in rollResult.Items) {
+                    if (!uint.TryParse(droppedItem.ItemId, out var itemTemplateId)) {
+                        continue;
+                    }
+
+                    var itemTemplate = CoreObjectFactory.GetCoreTemplate(itemTemplateId);
+                    if (itemTemplate is null) {
+                        Logger.Warning("Booster pack {0} rolled unknown item template {1}.",
+                            Logger.Args(packTemplateId, itemTemplateId));
+                        continue;
+                    }
+
+                    rolledDrops.Add((itemTemplateId, itemTemplate, tableName, droppedItem.ItemName));
+                }
+            }
+
+            if (rolledDrops.Count == 0) {
+                Logger.Warning("Booster pack {0} rolled no valid drops.", Logger.Args(packTemplateId));
+                return false;
+            }
+
+            var lootItems = new List<LootInfo>(rolledDrops.Count);
+            var lootRarities = new List<LootRarity>(rolledDrops.Count);
+
+            foreach (var (itemTemplateId, itemTemplate, tableName, _) in rolledDrops) {
+                if (itemTemplate is ReagentItemTemplate) {
+                    reagentCounts[itemTemplateId] = reagentCounts.GetValueOrDefault(itemTemplateId) + 1;
+                }
+                else if (itemTemplate is PetSnackItemTemplate) {
+                    snackCounts[itemTemplateId] = snackCounts.GetValueOrDefault(itemTemplateId) + 1;
+                }
+                else if (itemTemplate is not SpellTemplate) {
+                    inventorySlotsNeeded++;
+                }
 
                 LootInfo lootInfo = itemTemplate switch {
                     SpellTemplate => new TreasureCardLootInfo {
@@ -104,38 +143,70 @@ public static class PackManager {
                 lootItems.Add(lootInfo);
 
                 lootRarities.Add(new LootRarity {
-                    m_rarity = rarity,
+                    m_rarity = ResolveRarity(itemTemplate, tableName),
                     m_lootGid = (GID) itemTemplateId,
                     m_odds = 0
                 });
+            }
 
+            var lootInfoList = new LootInfoList {
+                m_loot = lootItems,
+                m_goldInfo = null,
+                m_lootRarityList = new LootRarityList {
+                    m_loot = lootRarities
+                }
+            };
+
+            if (!s_objectSerializer.Serialize(lootInfoList, PropertyFlags.Prop_Public, out var serializedLoot)) {
+                Logger.Error("Failed to serialize LootInfoList for booster pack {0}.", Logger.Args(packTemplateId));
+                return false;
+            }
+
+            rolledPacks.Add((rolledDrops, serializedLoot));
+        }
+
+        // 2. Pre-validate aggregated capacity across all rolled packs before modifying player state.
+        if (inventorySlotsNeeded > 0 && !wizard.InventoryBehavior.HasInventorySpace(inventorySlotsNeeded)) {
+            Logger.Warning("Booster pack {0} grant failed: inventory full (needed {1} slots).",
+                Logger.Args(packTemplateId, inventorySlotsNeeded));
+            return false;
+        }
+
+        foreach (var (reagentId, needed) in reagentCounts) {
+            if (!(wizard.AlchemyBehavior?.HasReagentSpace(reagentId, needed) ?? false)) {
+                Logger.Warning("Booster pack {0} grant failed: reagent stack limit reached for {1}.",
+                    Logger.Args(packTemplateId, reagentId));
+                return false;
+            }
+        }
+
+        foreach (var (snackId, needed) in snackCounts) {
+            if (!(wizard.PetSnackBehavior?.HasSnackSpace(snackId, needed) ?? false)) {
+                Logger.Warning("Booster pack {0} grant failed: pet snack stack limit reached for {1}.",
+                    Logger.Args(packTemplateId, snackId));
+                return false;
+            }
+        }
+
+        // 3. Grant the rolled drops and dispatch confirmations now that capacity is guaranteed.
+        foreach (var (rolledDrops, serializedLoot) in rolledPacks) {
+            foreach (var (itemTemplateId, itemTemplate, tableName, itemName) in rolledDrops) {
                 GrantDroppedItem(sessionActorRef, wizard, itemTemplateId, itemTemplate);
 
                 Logger.Information("Granted {0} ({1}) from slot {2}",
-                    Logger.Args(droppedItem.ItemName, droppedItem.ItemId, tableName));
+                    Logger.Args(itemName, itemTemplateId, tableName));
             }
+
+            sessionActorRef.Tell(new WIZARD_12_PROTOCOL.MSG_CROWNSBUYCONFIRM {
+                Failure = 0,
+                WebFailure = 0,
+                Credits = wizard.Account.Crowns,
+                Data = serializedLoot,
+                TemplateID = packTemplateId
+            });
         }
 
-        var lootInfoList = new LootInfoList {
-            m_loot = lootItems,
-            m_goldInfo = null,
-            m_lootRarityList = new LootRarityList {
-                m_loot = lootRarities
-            }
-        };
-
-        if (!s_objectSerializer.Serialize(lootInfoList, PropertyFlags.Prop_Public, out var serializedLoot)) {
-            Logger.Error("Failed to serialize LootInfoList for booster pack {0}.", Logger.Args(packTemplateId));
-            return;
-        }
-
-        sessionActorRef.Tell(new WIZARD_12_PROTOCOL.MSG_CROWNSBUYCONFIRM {
-            Failure = 0,
-            WebFailure = 0,
-            Credits = wizard.Account.Crowns,
-            Data = serializedLoot,
-            TemplateID = packTemplateId
-        });
+        return true;
     }
 
     private static void GrantDroppedItem(
@@ -241,9 +312,18 @@ public static class PackManager {
     }
 
     private static void GrantInventoryItem(IActorRef sessionActorRef, Wizard wizard, uint itemTemplateId) {
-        if (!wizard.AddItemToInventory(itemTemplateId, out var itemCoreObject)) {
-            Logger.Warning("Could not add item {0} to inventory.", Logger.Args(itemTemplateId));
-            return;
+        WizClientObjectItem itemCoreObject;
+        if (PetFactory.IsPetTemplate(itemTemplateId)) {
+            if (!wizard.AddHatchedPetToInventory(itemTemplateId, out itemCoreObject)) {
+                Logger.Warning("Could not add hatched pet {0} to inventory.", Logger.Args(itemTemplateId));
+                return;
+            }
+        }
+        else {
+            if (!wizard.AddItemToInventory(itemTemplateId, out itemCoreObject)) {
+                Logger.Warning("Could not add item {0} to inventory.", Logger.Args(itemTemplateId));
+                return;
+            }
         }
 
         if (!s_coreObjectSerializer.Serialize(itemCoreObject, PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit, out var serializedItem)) {
@@ -293,4 +373,3 @@ public static class PackManager {
     }
 
 }
-

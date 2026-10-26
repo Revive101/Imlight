@@ -144,11 +144,11 @@ internal static class LevelUpElixirHelper {
 
         // 5. Complete World Quests if WorldElixirBehaviorTemplate
         if (elixirTemplate is WorldElixirBehaviorTemplate worldElixir && !string.IsNullOrWhiteSpace(worldElixir.m_questPrefix)) {
-            var prefix = worldElixir.m_questPrefix.Trim();
+            var prefix = worldElixir.m_questPrefix.ToString().Trim();
             var allQuests = QuestTemplateCollection.GetAllQuests();
 
             foreach (var qTemplate in allQuests) {
-                if (qTemplate != null && !string.IsNullOrEmpty(qTemplate.m_questName) && qTemplate.m_questName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) {
+                if (qTemplate != null && !string.IsNullOrEmpty(qTemplate.m_questName) && qTemplate.m_questName.ToString().StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) {
                     CompleteQuestForWizard(wizard, qTemplate.m_questName, sendToSocket);
                 }
             }

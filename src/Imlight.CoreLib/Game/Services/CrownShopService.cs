@@ -51,6 +51,7 @@ using Imlight.CoreLib.Game.CrownShop;
 using Imlight.CoreLib.Game.Elixirs;
 using Imlight.CoreLib.Game.Effects;
 using Imlight.CoreLib.Game.Packs;
+using Imlight.CoreLib.Game.Pet;
 using Imlight.CoreLib.Game.Results;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
@@ -265,10 +266,11 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
             wizard.RemoveGold(amountToPay);
             SyncGoldBalance(wizard);
         }
-        else if(message.Type == 1) {
+        else if (message.Type == 1) {
             wizard.Account.SetCrowns(wizard.Account.Crowns - amountToPay);
             SyncCrownBalance(wizard);
-        }else {
+        }
+        else {
             Logger.Error("Invalid currency type {0} for item {1}.", Logger.Args(message.Type, message.Item));
             return;
         }
@@ -287,32 +289,37 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
         }
     }
 
+    private static bool CanHoldReagents(Wizard wizard, ulong reagentTemplateId, int count)
+        => wizard.AlchemyBehavior?.HasReagentSpace(reagentTemplateId, count) ?? false;
+
+    private static bool CanHoldPetSnacks(Wizard wizard, ulong snackTemplateId, int count)
+        => wizard.PetSnackBehavior?.HasSnackSpace(snackTemplateId, count) ?? false;
+
     private int TryGrantPurchasedItem(Wizard wizard, WIZARD_12_PROTOCOL.MSG_PCS_PURCHASE_REQUEST message) {
         var itemTemplate = CoreObjectFactory.GetCoreTemplate(message.Item);
 
         switch (itemTemplate) {
             case BoosterPackTemplate:
-                for (var i = 0; i < message.Count; i++) {
-                    PackManager.OpenPack(SessionActor.ActorRef, wizard, message.Item);
+                if (!PackManager.OpenPack(SessionActor.ActorRef, wizard, message.Item, (int) message.Count)) {
+                    return s_errorInvFull;
                 }
                 return 0;
 
             case GoldAmountTemplate goldItem:
-                // Reject, if money >= maxMoney
-                if (wizard.GameStats.m_currentGold + (goldItem.m_goldAmount * message.Count) >= wizard.GameStats.m_baseGoldPouch) {
+                if (wizard.GameStats.m_currentGold + (goldItem.m_goldAmount * (int) message.Count) > wizard.GameStats.m_baseGoldPouch) {
                     return s_errorMaxGold;
                 }
 
-                wizard.AddGold(goldItem.m_goldAmount * message.Count);
+                wizard.AddGold(goldItem.m_goldAmount * (int) message.Count);
                 SyncGoldBalance(wizard);
                 return 0;
 
             case LunariAmountTemplate lunariTemplate:
-                if(wizard.GameStats.m_currentEventCurrency1 + (lunariTemplate.m_lunariAmount * message.Count) >= wizard.GameStats.m_baseEventCurrency1Pouch) {
+                if (wizard.GameStats.m_currentEventCurrency1 + (lunariTemplate.m_lunariAmount * (int) message.Count) > wizard.GameStats.m_baseEventCurrency1Pouch) {
                     return s_errorMaxLunari;
                 }
 
-                wizard.AddLunari(lunariTemplate.m_lunariAmount * message.Count);
+                wizard.AddLunari(lunariTemplate.m_lunariAmount * (int) message.Count);
                 SendToSocket(new WIZARD2_53_PROTOCOL.MSG_UPDATEEVENTCURRENCY1 {
                     EventCurrency1 = wizard.GameStats.m_currentEventCurrency1,
                     MaxEventCurrency1 = wizard.GameStats.m_baseEventCurrency1Pouch
@@ -320,19 +327,69 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
                 return 0;
 
             case ReagentItemTemplate reagentTemplate:
-                return TryGrantReagent(wizard, reagentTemplate.m_templateID, message.Count);
+                return TryGrantReagent(wizard, reagentTemplate.m_templateID, (int) message.Count);
 
             case PetSnackItemTemplate petSnackTemplate:
-                return TryGrantPetSnack(wizard, petSnackTemplate.m_templateID, message.Count);
+                return TryGrantPetSnack(wizard, petSnackTemplate.m_templateID, (int) message.Count);
 
             case TourneyTokensAmountTemplate:
                 // TODO
                 return 0;
 
             case ItemBundleTemplate itemBundle:
+                var bundleInventorySlots = 0;
+                var bundleReagentCounts = new Dictionary<ulong, int>();
+                var bundleSnackCounts = new Dictionary<ulong, int>();
+                var bundlePackCounts = new Dictionary<ulong, int>();
+
+                foreach (var bundleSubId in itemBundle.m_bundleItems) {
+                    var bundleSub = CoreObjectFactory.GetCoreTemplate(bundleSubId);
+                    if (bundleSub is ReagentItemTemplate) {
+                        bundleReagentCounts[bundleSubId] = bundleReagentCounts.GetValueOrDefault(bundleSubId) + (int) message.Count;
+                    }
+                    else if (bundleSub is PetSnackItemTemplate) {
+                        bundleSnackCounts[bundleSubId] = bundleSnackCounts.GetValueOrDefault(bundleSubId) + (int) message.Count;
+                    }
+                    else if (bundleSub is BoosterPackTemplate subBooster) {
+                        bundlePackCounts[bundleSubId] = bundlePackCounts.GetValueOrDefault(bundleSubId) + (int) message.Count;
+                        bundleInventorySlots += (subBooster.m_lootTables?.Count ?? 1) * (int) message.Count;
+                    }
+                    else if (bundleSub is not GoldAmountTemplate &&
+                             bundleSub is not LunariAmountTemplate &&
+                             bundleSub is not TourneyTokensAmountTemplate) {
+                        bundleInventorySlots += (int) message.Count;
+                    }
+                }
+
+                if (bundleInventorySlots > 0 && !wizard.InventoryBehavior.HasInventorySpace(bundleInventorySlots)) {
+                    return s_errorInvFull;
+                }
+
+                foreach (var (reagentId, needed) in bundleReagentCounts) {
+                    if (!CanHoldReagents(wizard, reagentId, needed)) {
+                        return s_errorInvFull;
+                    }
+                }
+
+                foreach (var (snackId, needed) in bundleSnackCounts) {
+                    if (!CanHoldPetSnacks(wizard, snackId, needed)) {
+                        return s_errorInvFull;
+                    }
+                }
+
+                foreach (var (packId, packCount) in bundlePackCounts) {
+                    if (!PackManager.OpenPack(SessionActor.ActorRef, wizard, packId, packCount)) {
+                        return s_errorInvFull;
+                    }
+                }
+
                 for (var i = 0; i < message.Count; i++) {
                     foreach (var templateId in itemBundle.m_bundleItems) {
                         var bundleSubTemplate = CoreObjectFactory.GetCoreTemplate(templateId);
+                        if (bundleSubTemplate is BoosterPackTemplate) {
+                            continue;
+                        }
+
                         if (bundleSubTemplate is ReagentItemTemplate) {
                             var reagentErr = TryGrantReagent(wizard, templateId, 1);
                             if (reagentErr != 0) {
@@ -362,6 +419,10 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
     }
 
     private int TryGrantReagent(Wizard wizard, ulong reagentTemplateId, int count) {
+        if (!CanHoldReagents(wizard, reagentTemplateId, count)) {
+            return s_errorInvFull;
+        }
+
         ClientReagentItem reagentObj = null;
         for (var i = 0; i < count; i++) {
             if (!wizard.AddReagent(reagentTemplateId, out reagentObj)) {
@@ -396,6 +457,10 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
     }
 
     private int TryGrantPetSnack(Wizard wizard, ulong snackTemplateId, int count) {
+        if (!CanHoldPetSnacks(wizard, snackTemplateId, count)) {
+            return s_errorInvFull;
+        }
+
         ClientPetSnackItem snackObj = null;
         for (var i = 0; i < count; i++) {
             if (!wizard.AddSnack(snackTemplateId, out snackObj)) {
@@ -431,6 +496,8 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
 
     private int TryGrantWizItem(Wizard wizard, WIZARD_12_PROTOCOL.MSG_PCS_PURCHASE_REQUEST message, WizItemTemplate wizItemTemplate) {
         var behaviors = wizItemTemplate.m_behaviors;
+        CustomEmoteBehaviorTemplate customEmote = null;
+
         if (behaviors is not null) {
             if (message.PurchaseElixirEquipNow > 0) {
                 var levelUpOrWorldElixir = behaviors.OfType<LevelUpElixirBehaviorTemplate>().FirstOrDefault();
@@ -456,24 +523,35 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
             }
 
             // Check if the item is an emote or teleport effect
-            var customEmote = behaviors.OfType<CustomEmoteBehaviorTemplate>().FirstOrDefault();
+            customEmote = behaviors.OfType<CustomEmoteBehaviorTemplate>().FirstOrDefault();
             if (customEmote is { m_bitFieldNumber: >= 0 }) {
                 if (customEmote.m_emoteType == CustomEmoteType.CE_Teleport) {
-                    if(wizard.CountTeleportEffectsUnlocked() >= s_maxTeleportEffects) {
+                    if (wizard.CountTeleportEffectsUnlocked() >= s_maxTeleportEffects) {
                         return s_errorMaxTeleportEffects;
                     }
-
-                    wizard.UnlockCustomTeleportEffect(customEmote.m_bitFieldNumber);
                 }
-                else if(customEmote.m_emoteType == CustomEmoteType.CE_Emote) {
+                else if (customEmote.m_emoteType == CustomEmoteType.CE_Emote) {
                     if (wizard.CountEmotesUnlocked() >= s_maxEmotes) {
                         return s_errorMaxEmotes;
                     }
-
-                    wizard.UnlockCustomEmote(customEmote.m_bitFieldNumber);
-                }else {
-                    Logger.Error($"Unknown CustomEmoteType: {0}", Logger.Args(customEmote.m_emoteType));
                 }
+                else {
+                    Logger.Error("Unknown CustomEmoteType: {0}", Logger.Args(customEmote.m_emoteType));
+                }
+            }
+        }
+
+        // Pre-validate inventory space before modifying state or adding items.
+        if (!wizard.InventoryBehavior.HasInventorySpace((int) message.Count)) {
+            return s_errorInvFull;
+        }
+
+        if (customEmote is { m_bitFieldNumber: >= 0 }) {
+            if (customEmote.m_emoteType == CustomEmoteType.CE_Teleport) {
+                wizard.UnlockCustomTeleportEffect(customEmote.m_bitFieldNumber);
+            }
+            else if (customEmote.m_emoteType == CustomEmoteType.CE_Emote) {
+                wizard.UnlockCustomEmote(customEmote.m_bitFieldNumber);
             }
         }
 
@@ -519,7 +597,7 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
         var mail = new Mail {
             m_recipientId = recipientAccountId,
             m_senderId = (GID) sender.CharId,
-            m_messageData = Encoding.Latin1.GetString((byte[]) serializedItem),
+            m_messageData = serializedItem,
             m_expireDuration = 0,
             m_messageType = 2,
             m_timeStamp = (ulong) DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
@@ -566,9 +644,18 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
     }
 
     private bool TryAddItemToInventory(Wizard wizard, ulong itemTemplateId, int texture, int decal) {
-        if (!wizard.AddItemToInventory(itemTemplateId, texture, decal, out var itemCoreObject)) {
-            Logger.Warning("Could not add item {0} to inventory.", Logger.Args(itemTemplateId));
-            return false;
+        WizClientObjectItem itemCoreObject;
+        if (PetFactory.IsPetTemplate((uint) itemTemplateId)) {
+            if (!wizard.AddHatchedPetToInventory((uint) itemTemplateId, out itemCoreObject)) {
+                Logger.Warning("Could not add hatched pet {0} to inventory.", Logger.Args(itemTemplateId));
+                return false;
+            }
+        }
+        else {
+            if (!wizard.AddItemToInventory(itemTemplateId, texture, decal, out itemCoreObject)) {
+                Logger.Warning("Could not add item {0} to inventory.", Logger.Args(itemTemplateId));
+                return false;
+            }
         }
 
         if (!s_coreObjectSerializer.Serialize(itemCoreObject, 24, out var serializedItem)) {
@@ -597,7 +684,7 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
                                 ElixirBehaviorTemplate elixirTemplate) {
         var durationSeconds = 0u;
         if (!string.IsNullOrEmpty(elixirTemplate.m_expireTime)) {
-            _ = uint.TryParse(elixirTemplate.m_expireTime, out durationSeconds);
+            _ = uint.TryParse(elixirTemplate.m_expireTime.ToString(), out durationSeconds);
         }
 
         // Case 1: Instant refill (duration == 0).

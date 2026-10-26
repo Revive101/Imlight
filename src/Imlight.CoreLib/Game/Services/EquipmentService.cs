@@ -560,7 +560,7 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
                                           ElixirBehaviorTemplate elixirTemplate) {
         uint durationSeconds = 0;
         if (!string.IsNullOrEmpty(elixirTemplate.m_expireTime)) {
-            _ = uint.TryParse(elixirTemplate.m_expireTime, out durationSeconds);
+            _ = uint.TryParse(elixirTemplate.m_expireTime.ToString(), out durationSeconds);
         }
 
         // Case 0: Level Up or World Elixir
