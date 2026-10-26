@@ -70,8 +70,6 @@ internal sealed class HouseZoneIndex : RootSingleResourceSingleton<HouseZoneInde
         foreach (var zone in names.m_houseZoneList ?? []) {
             _zones.Add(zone.m_zoneName.ToString());
         }
-
-        Logger.Information("Indexed {Count} house zones.", Logger.Args(_zones.Count));
     }
 
     /// <summary>
@@ -83,6 +81,7 @@ internal sealed class HouseZoneIndex : RootSingleResourceSingleton<HouseZoneInde
 
         if (Interlocked.Exchange(ref s_privateZoneTestRegistered, 1) == 0) {
             ZoneInstanceOwners.RegisterPrivateZoneTest(IsHouseZone);
+            Logger.Information("Indexed {Count} house zones.", Logger.Args(Count));
         }
     }
 

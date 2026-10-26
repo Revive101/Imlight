@@ -90,7 +90,7 @@ internal sealed class HouseDoorComponent(ZoneEntity entity) : ZoneEntityComponen
             return;
         }
 
-        Logger.Information("Character {CharId} walked up to the house door {DoorGid} (template {TemplateId}) and the client is asked through gid {RequestGid}.",
+        Logger.Debug("Character {CharId} walked up to the house door {DoorGid} (template {TemplateId}) and the client is asked through gid {RequestGid}.",
             Logger.Args(playerWizard?.CharId, Entity.ActiveGameObject.m_globalID.Full, Entity.ActiveGameObject.m_templateID.Full, Entity.ActiveGameObject.m_globalID.Full));
 
         playerActor.Tell(new ZONE_102_PROTOCOL.MSG_HOUSEDOOR {

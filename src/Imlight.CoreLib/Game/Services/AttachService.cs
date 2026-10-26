@@ -107,7 +107,7 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
 
         // The client chooses the zone and the lot, so a house zone has to be one the character may enter before it is loaded.
         if (!HouseAttach.TryAuthorize(_wizard, zoneName, message.ZoneID, out var house, out _)) {
-            Logger.Information("Session {SessionId} MSG_ATTACH refused: house zone {Zone} is not available to character {CharId}",
+            Logger.Warning("Session {SessionId} MSG_ATTACH refused: house zone {Zone} is not available to character {CharId}",
                 Logger.Args(SessionActor.SessionID, zoneName, _wizard.CharId));
 
             SendToSocket(new GAME_5_PROTOCOL.MSG_ATTACHFAILED {

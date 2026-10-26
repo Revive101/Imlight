@@ -178,7 +178,7 @@ internal class HousingService(SessionActor sessionActor) : MessageService(sessio
         }
 
         if (verdict.Placement == HousingPlacement.NotEnabled || message.SwitchCastleBlock != 0) {
-            Logger.Information("Character {CharId} tried to place item {ItemId}, template {TemplateId}, which the server cannot place yet.",
+            Logger.Warning("Character {CharId} tried to place item {ItemId}, template {TemplateId}, which the server cannot place yet.",
                 Logger.Args(wizard.CharId, message.ObjectID, templateId));
             InformGameClient("That kind of object cannot be placed in a house yet.");
 

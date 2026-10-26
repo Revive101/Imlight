@@ -189,7 +189,7 @@ public sealed record HouseEntry(
         }
 
         if (echo.Status != READY_STATUS) {
-            Logger.Warning("The client answered the door zone request for {ObjectGid} with status {Status}, so the house is not ready.",
+            Logger.Debug("The client answered the door zone request for {ObjectGid} with status {Status}, so the house is not ready.",
                 Logger.Args(ObjectGid, echo.Status));
 
             return HouseEchoStatus.Refused;

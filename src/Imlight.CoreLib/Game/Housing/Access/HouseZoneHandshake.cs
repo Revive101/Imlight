@@ -122,7 +122,7 @@ internal sealed class HouseZoneHandshake(IHouseZoneHost host) {
         }
 
         host.Send(entry.CreateRequest(location));
-        Logger.Information("Sent the house zone request to character {CharId}: {Kind} entry to {Zone} ({ObjectGid}), waiting for the client's echo.",
+        Logger.Debug("Sent the house zone request to character {CharId}: {Kind} entry to {Zone} ({ObjectGid}), waiting for the client's echo.",
             Logger.Args(host.Character.CharId, entry.Kind, entry.Zone, entry.ObjectGid));
         host.StartTimeout();
     }

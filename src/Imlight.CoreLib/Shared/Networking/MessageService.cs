@@ -331,7 +331,7 @@ internal abstract class MessageService(SessionActor sessionActor) : ReceiveProto
         var wizard = GetActiveWizard();
         HouseEntry houseEntry = null;
         if (target.AttachedLotGid != 0 && !HouseVisits.TryPrepare(wizard, target, out houseEntry, out var failure)) {
-            Logger.Information("Character {CharId} cannot go to character {TargetCharId} in a house: {Failure}.",
+            Logger.Warning("Character {CharId} cannot go to character {TargetCharId} in a house: {Failure}.",
                 Logger.Args(wizard.CharId, targetCharId, failure));
             SendToSocket(new GAME_5_PROTOCOL.MSG_GOTOPLAYERRESP { TargetCharacterID = targetCharId, Error = 1 });
 

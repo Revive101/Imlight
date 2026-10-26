@@ -102,7 +102,7 @@ internal class HousingVisitService(SessionActor sessionActor) : MessageService(s
         }
 
         visitorActor.Tell(CreateSendAway(visitor.GameObjectID), Self);
-        Logger.Information("Character {CharId} sent character {VisitorId} away from house {LotGid}.",
+        Logger.Debug("Character {CharId} sent character {VisitorId} away from house {LotGid}.",
             Logger.Args(wizard.CharId, visitor.CharId, house.LotGid));
     }
 
@@ -118,7 +118,7 @@ internal class HousingVisitService(SessionActor sessionActor) : MessageService(s
             return;
         }
 
-        Logger.Information("Character {CharId} is not welcome in house {LotGid} any more and is sent away.",
+        Logger.Debug("Character {CharId} is not welcome in house {LotGid} any more and is sent away.",
             Logger.Args(wizard.CharId, wizard.AttachedLotGid));
         SessionActor.ActorRef.Tell(CreateSendAway(wizard.GameObjectID), Self);
     }

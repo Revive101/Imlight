@@ -145,7 +145,7 @@ internal class AtticService(SessionActor sessionActor) : MessageService(sessionA
         }
 
         if (verdict.Placement == HousingPlacement.NotEnabled) {
-            Logger.Information("Character {CharId} tried to put item {ItemId}, template {TemplateId}, in the attic, which is not supported.",
+            Logger.Warning("Character {CharId} tried to put item {ItemId}, template {TemplateId}, in the attic, which is not supported.",
                 Logger.Args(wizard.CharId, message.ItemID, templateId));
             InformGameClient(template.m_nObjectType == ObjectType.OT_HOUSING_TEXTURE
                 ? "Wallpaper and flooring are applied from the furniture window, not stored in the attic."
