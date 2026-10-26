@@ -188,10 +188,6 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
             DynamicZoneId = _dynamicZoneId
         };
 
-        foreach (var supervisor in _supervisors) {
-            supervisor.Tell(msg);
-        }
-
         // Inform any pending player events that the zone is closing.
         foreach (var (player, _) in _pendingPlayerEvents) {
             var rsp = new ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP {
