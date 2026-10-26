@@ -12,7 +12,7 @@ public class ApiToken {
     public string TokenHash { get; set; } = string.Empty;
     public List<string> Scopes { get; set; } = [];
     public ulong CreatedByAccountId { get; set; }
-    public string CreatedByUsername { get; set; }
+    public string CreatedByUsername { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public DateTime? ExpiresAt { get; set; }
     public bool IsRevoked { get; set; }
