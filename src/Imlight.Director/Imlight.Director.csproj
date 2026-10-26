@@ -38,6 +38,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Imlight.Common\Imlight.Common.csproj" />
     <ProjectReference Include="..\Imlight.CoreLib\Imlight.CoreLib.csproj" />
+    <ProjectReference Include="..\Imlight.Api\Imlight.Api.csproj" />
   </ItemGroup>
 
 </Project>
