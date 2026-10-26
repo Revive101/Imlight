@@ -1190,6 +1190,13 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     }
 
     private void SpawnAndAssignMinion(uint creatureTid, CombatDuelSubCircle caster) {
+        if (HasLivingMinion(caster)) {
+            Logger.Debug("Duel {DuelId} | minion summon (tid {CreatureTid}) refused, slot {Owner} already has a minion.",
+                Logger.Args(Duel.m_duelID.Full, creatureTid, caster.SlotIndex));
+
+            return;
+        }
+
         // A PvE minion fights for the wizards whoever summoned it; in PvP it fights for its summoner.
         var slot = Duel.m_bPVP ? GetAvailableSubCircle(caster.OccupiedTeam) : GetAvailableSubCircleTeamPlayer();
         if (slot is null) {
@@ -1236,6 +1243,12 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
         Logger.Debug("Duel {DuelId} | summoned minion tid {CreatureTid} into player-team slot {Slot} (caught up next round).",
             Logger.Args(Duel.m_duelID.Full, creatureTid, slot.SlotIndex));
+    }
+
+    private bool HasLivingMinion(CombatDuelSubCircle owner) {
+        // The client finds a minion by its owner's sub-circle and takes the first, so a wizard has at most one.
+        return SubCircles.Any(x => x.Occupied && x.IsSummonedMinion && x.IsAlive
+                                   && x.CombatParticipant.m_minionSubCircle == owner.SlotIndex);
     }
 
     private void AddParticipant(CoreObject participantObject, IActorRef participantActor) {
