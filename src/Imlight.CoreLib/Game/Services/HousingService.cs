@@ -52,7 +52,9 @@ using System.Linq;
 using Akka.Actor;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty.TypeCache;
+using Imcodec.Types;
 using Imlight.Common;
+using Imlight.CoreLib.Game.Housing.Access;
 using Imlight.CoreLib.Game.Housing.Attics;
 using Imlight.CoreLib.Game.Housing.Houses;
 using Imlight.CoreLib.Game.Housing.Items;
@@ -66,6 +68,12 @@ using Imlight.CoreLib.WizardData.Models.Player;
 namespace Imlight.CoreLib.Game.Services;
 
 internal class HousingService(SessionActor sessionActor) : MessageService(sessionActor) {
+
+    private const uint STATUS_LIST_ELIGIBLE = 0;
+    private const uint STATUS_ADD = 1;
+    private const uint STATUS_REMOVE = 2;
+    private const uint STATUS_LIST_DECORATORS = 3;
+    private const uint STATUS_DECORATE = 4;
 
     private HouseState _house;
     private readonly AtticViewer _atticViewer = new();
@@ -139,6 +147,10 @@ internal class HousingService(SessionActor sessionActor) : MessageService(sessio
 
         foreach (var subType in subTypes) {
             SendBlob(house, subType);
+        }
+
+        if (house.OwnerCharId != wizard.CharId && house.IsDecorator(wizard.CharId)) {
+            SendDecoratorInventory(house);
         }
     }
 
@@ -231,7 +243,7 @@ internal class HousingService(SessionActor sessionActor) : MessageService(sessio
 
     [MessageHandler(typeof(WIZARDHOUSING_50_PROTOCOL.MSG_UPDATEHOUSINGOBJECT))]
     private void ReceiveUpdateHousingObject(WIZARDHOUSING_50_PROTOCOL.MSG_UPDATEHOUSINGOBJECT message) {
-        if (!TryGetHouse("move an object", out var house)) {
+        if (!TryGetHouse("move an object", out var house, allowDecorators: true)) {
             return;
         }
 
@@ -530,7 +542,54 @@ internal class HousingService(SessionActor sessionActor) : MessageService(sessio
         }, isSelfless: false, ZoneBroadcastTarget.Players);
     }
 
-    private bool TryGetHouse(string request, out HouseState house) {
+    [MessageHandler(typeof(WIZARD3_56_PROTOCOL.MSG_DECORATORBUDDYREQUEST))]
+    private void ReceiveDecoratorBuddyRequest(WIZARD3_56_PROTOCOL.MSG_DECORATORBUDDYREQUEST message) {
+        if (!TryGetHouse("change the decorators of a house", out var house)) {
+            return;
+        }
+
+        switch (message.Status) {
+            case STATUS_LIST_ELIGIBLE:
+                SendDecoratorList(STATUS_LIST_ELIGIBLE, EligibleBuddies(house));
+
+                break;
+            case STATUS_LIST_DECORATORS:
+                SendDecoratorList(STATUS_LIST_DECORATORS, house.Decorators());
+
+                break;
+            case STATUS_ADD:
+            case STATUS_REMOVE:
+                ChangeDecorators(house, message);
+
+                break;
+            default:
+                Logger.Debug("Character {CharId} sent a decorator buddy request with status {Status}, which the server does not handle.",
+                    Logger.Args(GetActiveWizard().CharId, message.Status));
+
+                break;
+        }
+    }
+
+    [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_DECORATORBUDDYFWD))]
+    private void ReceiveDecoratorBuddyFwd(CHARACTER_103_PROTOCOL.MSG_DECORATORBUDDYFWD message) {
+        var wizard = GetActiveWizard();
+        if (wizard is null || wizard.CharId != message.TargetCharId || _house is null || _house.LotGid != message.LotGid) {
+            return;
+        }
+
+        if (message.Added) {
+            SendDecoratorInventory(_house);
+
+            return;
+        }
+
+        SendToSocket(new WIZARD3_56_PROTOCOL.MSG_DECORATORBUDDYREQUEST {
+            Status = STATUS_REMOVE,
+            Buffer = message.OwnerName,
+        });
+    }
+
+    private bool TryGetHouse(string request, out HouseState house, bool allowDecorators = false) {
         house = _house;
         if (house is null) {
             HandleForgedRequest($"{request} outside a house");
@@ -538,8 +597,9 @@ internal class HousingService(SessionActor sessionActor) : MessageService(sessio
             return false;
         }
 
-        // Only the owner decorates. The client hides the controls from a visitor, so a request is forged.
-        if (house.OwnerCharId != GetActiveWizard().CharId) {
+        // Only the owner decorates, and the decorators the owner chose move objects. The client hides the controls from a visitor, so a request is forged.
+        var wizard = GetActiveWizard();
+        if (allowDecorators ? !HouseAccess.CanDecorate(wizard, house) : house.OwnerCharId != wizard.CharId) {
             house = null;
             HandleForgedRequest($"{request} in a house that is not theirs");
 
@@ -548,6 +608,79 @@ internal class HousingService(SessionActor sessionActor) : MessageService(sessio
 
         return true;
     }
+
+    private void ChangeDecorators(HouseState house, WIZARD3_56_PROTOCOL.MSG_DECORATORBUDDYREQUEST message) {
+        var owner = GetActiveWizard();
+        if (!HousingBlobs.TryParseItemList(message.Buffer, out var charIds)) {
+            Logger.Warning("Character {CharId} sent a list of decorators that could not be read.", Logger.Args(owner.CharId));
+            InformGameClient("The decorators could not be changed.");
+
+            return;
+        }
+
+        var adding = message.Status == STATUS_ADD;
+        var edit = adding
+            ? house.TryAddDecorators(charIds.Where(charId => BuddyRelationshipCollection.AreFriends(owner.CharId, charId)), out var changed)
+            : house.TryRemoveDecorators(charIds, out changed);
+        if (edit == HouseEdit.LimitReached) {
+            InformGameClient("That would be more decorators than a house can have.");
+
+            return;
+        }
+
+        if (edit != HouseEdit.Done) {
+            Logger.Debug("Character {CharId} changed no decorators of lot {LotGid}: {Edit}.", Logger.Args(owner.CharId, house.LotGid, edit));
+
+            return;
+        }
+
+        foreach (var charId in changed) {
+            if (!TryGetOnlinePlayer(charId, out var online)) {
+                continue;
+            }
+
+            Context.ActorSelection(online.ActorPath).Tell(new CHARACTER_103_PROTOCOL.MSG_DECORATORBUDDYFWD {
+                TargetCharId = charId,
+                LotGid = house.LotGid,
+                Added = adding,
+                OwnerName = owner.PlayerNameBehavior.GetPackedNameBytes(),
+            });
+        }
+    }
+
+    private void SendDecoratorList(uint status, IEnumerable<ulong> charIds)
+        => SendToSocket(new WIZARD3_56_PROTOCOL.MSG_DECORATORBUDDYREQUEST {
+            Status = status,
+            Buffer = HousingBlobs.Serialize(new HousingItemList { m_housingItemGIDList = [.. charIds.Select(charId => (GID) charId)] }),
+        });
+
+    private void SendDecoratorInventory(HouseState house) {
+        var owner = WizardCollection.GetCharacterUnloaded(house.OwnerCharId);
+        if (owner is null) {
+            Logger.Warning("The owner {OwnerId} of lot {LotGid} cannot be loaded, so the decorator is not told about the house.",
+                Logger.Args(house.OwnerCharId, house.LotGid));
+
+            return;
+        }
+
+        // The owner's backpack is not offered, so a decorator moves the objects that are placed and places nothing.
+        SendToSocket(new WIZARD3_56_PROTOCOL.MSG_DECORATORBUDDYREQUEST {
+            Status = STATUS_DECORATE,
+            Buffer = HousingBlobs.Serialize(new DecoratorBuddyInventory {
+                m_ownerGID = owner.CharId,
+                m_lotGID = house.LotGid,
+                m_ownerName = owner.PlayerNameBehavior.GetPackedNameBytes(),
+                m_itemList = [],
+            }),
+        });
+    }
+
+    private static List<ulong> EligibleBuddies(HouseState house)
+        => [.. BuddyRelationshipCollection.GetRelationshipsForPlayer(house.OwnerCharId)
+            .Where(relationship => !relationship.IsBrokenUp && !relationship.Blocked)
+            .Select(relationship => relationship.FirstPlayerId == house.OwnerCharId ? relationship.SecondPlayerId : relationship.FirstPlayerId)
+            .Where(charId => charId != house.OwnerCharId && !house.IsDecorator(charId))
+            .Distinct()];
 
     private void BroadcastDelete(HouseChange change) {
         ZoneBroadcast(new WIZARDHOUSING_50_PROTOCOL.MSG_PATCHDELETEHOUSINGOBJECT {

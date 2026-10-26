@@ -105,6 +105,8 @@ internal readonly record struct HouseSnapshot(string SubType, uint Revision, uin
 /// </summary>
 internal sealed class HouseState {
 
+    private const int DECORATOR_LIMIT = 50;
+
     private readonly Lock _lock = new();
     private readonly House _house;
     private readonly HouseTemplateInfo _template;
@@ -448,6 +450,90 @@ internal sealed class HouseState {
         }
     }
 
+    /// <summary>
+    /// Checks whether a character is one of the house's decorators.
+    /// </summary>
+    /// <param name="charId">The character to look for.</param>
+    /// <returns><c>true</c> when the owner made the character a decorator.</returns>
+    internal bool IsDecorator(ulong charId) {
+        lock (_lock) {
+            return _house.Decorators.Contains(charId);
+        }
+    }
+
+    /// <summary>
+    /// Copies the decorators of the house.
+    /// </summary>
+    /// <returns>The character ids of the decorators.</returns>
+    internal IReadOnlyList<ulong> Decorators() {
+        lock (_lock) {
+            return [.. _house.Decorators];
+        }
+    }
+
+    /// <summary>
+    /// Makes characters decorators of the house with one write. The owner and those who already are one are left out.
+    /// </summary>
+    /// <param name="charIds">The characters to add.</param>
+    /// <param name="added">The characters that were added when this returns <see cref="HouseEdit.Done"/>.</param>
+    /// <returns>
+    /// <see cref="HouseEdit.NotFound"/> when there is nobody to add, <see cref="HouseEdit.LimitReached"/> when the house
+    /// would have more decorators than it may, <see cref="HouseEdit.SaveFailed"/> when the write failed.
+    /// </returns>
+    internal HouseEdit TryAddDecorators(IEnumerable<ulong> charIds, out IReadOnlyList<ulong> added) {
+        added = [];
+        lock (_lock) {
+            if (IsRetired) {
+                return HouseEdit.NotFound;
+            }
+
+            var fresh = charIds.Where(charId => charId != OwnerCharId && !_house.Decorators.Contains(charId)).Distinct().ToList();
+            if (fresh.Count == 0) {
+                return HouseEdit.NotFound;
+            }
+
+            if (_house.Decorators.Count + fresh.Count > DECORATOR_LIMIT) {
+                return HouseEdit.LimitReached;
+            }
+
+            if (!ChangeDecorators([.. _house.Decorators, .. fresh])) {
+                return HouseEdit.SaveFailed;
+            }
+
+            added = fresh;
+
+            return HouseEdit.Done;
+        }
+    }
+
+    /// <summary>
+    /// Takes characters off the decorators of the house with one write.
+    /// </summary>
+    /// <param name="charIds">The characters to remove.</param>
+    /// <param name="removed">The characters that were removed when this returns <see cref="HouseEdit.Done"/>.</param>
+    /// <returns><see cref="HouseEdit.NotFound"/> when none of them is a decorator, <see cref="HouseEdit.SaveFailed"/> when the write failed.</returns>
+    internal HouseEdit TryRemoveDecorators(IEnumerable<ulong> charIds, out IReadOnlyList<ulong> removed) {
+        removed = [];
+        lock (_lock) {
+            if (IsRetired) {
+                return HouseEdit.NotFound;
+            }
+
+            var leaving = charIds.Where(_house.Decorators.Contains).Distinct().ToList();
+            if (leaving.Count == 0) {
+                return HouseEdit.NotFound;
+            }
+
+            if (!ChangeDecorators([.. _house.Decorators.Where(charId => !leaving.Contains(charId))])) {
+                return HouseEdit.SaveFailed;
+            }
+
+            removed = leaving;
+
+            return HouseEdit.Done;
+        }
+    }
+
     private static string SubTypeOf(PlacedItem item)
         => CoreObjectFactory.GetCoreTemplate(item.TemplateId) is WizItemTemplate template ? HousingItems.SubTypeOf(template) : HousingItems.ITEM_SUB_TYPE;
 
@@ -491,6 +577,12 @@ internal sealed class HouseState {
         var saved = Persist(() => undo = _tables.Renumber(subType, table, _house.Revisions), () => undo(), null);
 
         return saved ? HouseEdit.NeedsResync : HouseEdit.SaveFailed;
+    }
+
+    private bool ChangeDecorators(List<ulong> decorators) {
+        var previous = _house.Decorators;
+
+        return Persist(() => _house.Decorators = decorators, () => _house.Decorators = previous, null);
     }
 
     private bool Persist(Action apply, Action undo, Func<House, bool> save)

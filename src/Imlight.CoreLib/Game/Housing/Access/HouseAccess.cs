@@ -30,7 +30,7 @@
  * NOTE:
  * - The owner always has access. Anyone else is a guest only when the owner is a friend of theirs and has not hidden
  *   from friends (WizGameStats.m_invisibleToFriends). The protocol knows no finer setting.
- * - Only the owner decorates. A guest sees the house and never edits it.
+ * - The owner decorates, and so do the friends the owner made decorators of the house. A guest sees the house and never edits it.
  * - The owner's data comes from the store, so the owner can be offline.
  *
  * TODO:
@@ -41,6 +41,7 @@
  * Last Updated: 10/15/2026
  */
 
+using Imlight.CoreLib.Game.Housing.Houses;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
 
@@ -65,6 +66,16 @@ internal static class HouseAccess {
     /// <returns>The access level; <see cref="HouseAccessLevel.Denied"/> when the house is missing or its owner cannot be loaded.</returns>
     internal static HouseAccessLevel Evaluate(Wizard visitor, House house)
         => house is null ? HouseAccessLevel.Denied : Evaluate(visitor, house.OwnerCharId);
+
+    /// <summary>
+    /// Decides whether a character may move the objects of a house. Decorators are friends of the owner when they are
+    /// made one, and a friend the owner dropped is denied entry to the house, so the list alone decides.
+    /// </summary>
+    /// <param name="wizard">The character who wants to edit.</param>
+    /// <param name="house">The live house.</param>
+    /// <returns><c>true</c> for the owner and the decorators of the house.</returns>
+    internal static bool CanDecorate(Wizard wizard, HouseState house)
+        => wizard.CharId == house.OwnerCharId || house.IsDecorator(wizard.CharId);
 
     /// <summary>
     /// Decides what a character may do in the houses of an owner.

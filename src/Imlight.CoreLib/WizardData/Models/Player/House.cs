@@ -32,6 +32,7 @@
  * - Revisions has one number per live blob subtype, the version the client's blob cache compares. Every stored change moves
  *   the revision of the blob it touches forward. A subtype with no entry has not been sent. An old document's single revision is ignored.
  * - Item ids are never reused: NextItemId is the id of the next item placed.
+ * - Decorators are the character ids of the friends the owner lets move the objects of the house.
  * 
  * TODO:
  * 
@@ -58,6 +59,7 @@ public class House {
     public int BonusSlots { get; set; }
     public uint NextItemId { get; set; } = 1;
     public List<PlacedItem> Items { get; set; } = [];
+    public List<ulong> Decorators { get; set; } = [];
     public DateTime CreatedUtc { get; set; }
 
     /// <summary>

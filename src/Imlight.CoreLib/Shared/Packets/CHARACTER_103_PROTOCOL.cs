@@ -482,4 +482,19 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
 
     }
 
+    /// <summary>
+    /// Sent by the owner's session to a friend who was made a decorator of a house, or taken off its decorators.
+    /// </summary>
+    public sealed class MSG_DECORATORBUDDYFWD : IServerMessage {
+
+        public byte MessageOrder { get; } = 51;
+        public byte ServiceID { get; } = 103;
+
+        public ulong TargetCharId;
+        public ulong LotGid;
+        public bool Added;
+        public ByteString OwnerName;
+
+    }
+
 }
