@@ -114,7 +114,7 @@ public static class WizardItemCollection {
             .FirstOrDefault(x => x.m_characterId == item.m_characterId && x.m_globalID == item.m_globalID);
 
         // If the item was not found, return false.
-        if (associatedItem == null) {
+        if (associatedItem is null) {
             return false;
         }
 
@@ -134,6 +134,18 @@ public static class WizardItemCollection {
     }
 
     /// <summary>
+    /// Retrieves an item from the WorldItem collection.
+    /// </summary>
+    /// <param name="charId">The ID of the player.</param>
+    /// <param name="itemId">The ID of the item to retrieve.</param>
+    /// <returns>The item if found, null otherwise.</returns>
+    public static WizClientObjectItem GetItem(ulong charId, ulong itemId) {
+        using var session = s_store.OpenSession();
+        return session.Query<WizClientObjectItem>(collectionName: CollectionName)
+            .FirstOrDefault(x => x.m_characterId == charId && x.m_globalID == itemId);
+    }
+
+    /// <summary>
     /// Removes an item from the WorldItem collection.
     /// </summary>
     /// <param name="charId">The ID of the player.</param>
@@ -148,7 +160,7 @@ public static class WizardItemCollection {
             .FirstOrDefault(x => x.m_characterId == charId && x.m_globalID == itemId);
 
         // If the item was not found, return false.
-        if (associatedItem == null) {
+        if (associatedItem is null) {
             return false;
         }
 
@@ -214,7 +226,7 @@ public static class WizardItemCollection {
             .FirstOrDefault(x => x.m_globalID == item.m_globalID && x.m_characterId == item.m_characterId);
 
         // If the item was not found, return false.
-        if (associatedItem == null) {
+        if (associatedItem is null) {
             return false;
         }
 
@@ -241,7 +253,7 @@ public static class WizardItemCollection {
             .FirstOrDefault(x => x.m_globalID == item.m_globalID && x.m_characterId == item.m_characterId);
 
         // If the item was not found, return false.
-        if (associatedItem == null) {
+        if (associatedItem is null) {
             return false;
         }
 
@@ -270,7 +282,7 @@ public static class WizardItemCollection {
             .FirstOrDefault(x => x.m_globalID == item.m_globalID && x.m_characterId == item.m_characterId);
 
         // If the item was not found, return false.
-        if (associatedItem == null) {
+        if (associatedItem is null) {
             return false;
         }
 
@@ -319,7 +331,7 @@ public static class WizardItemCollection {
             .FirstOrDefault(x => x.m_globalID == deckId);
 
         // If the deck was not found, return false.
-        if (associatedDeck == null) {
+        if (associatedDeck is null) {
             return false;
         }
 
@@ -367,7 +379,7 @@ public static class WizardItemCollection {
             .FirstOrDefault(x => x.m_globalID == deckId);
 
         // If the deck was not found, return false.
-        if (associatedDeck == null) {
+        if (associatedDeck is null) {
             return;
         }
 

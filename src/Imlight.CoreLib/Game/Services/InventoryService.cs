@@ -37,17 +37,21 @@
  */
 
 using System;
+using System.Linq;
 using Akka.Actor;
 using Imcodec.Cryptography;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
+using Imlight.CoreLib.Game.Effects;
+using Imlight.CoreLib.Shared.Items;
 using Imlight.CoreLib.Game.Spells;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.Shared.Utilities;
 using Imlight.CoreLib.WizardData.Collections;
+using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Services;
 
@@ -62,8 +66,99 @@ internal class InventoryService(SessionActor sessionActor) : MessageService(sess
     private void ReceiveTrashInventoryItem(GAME_5_PROTOCOL.MSG_TRASHINVENTORYITEM message) {
         var wizard = GetActiveWizard();
 
-        wizard.RemoveItemFromInventory(message.GlobalID);
+        // Check if this is an equipped item (e.g. an active elixir).
+        var slot = wizard.EquipmentBehavior.SlotList?.FirstOrDefault(s => s.ItemId.Value == message.GlobalID);
+        if (slot is not null || wizard.EquipmentBehavior.HasItemEquipped(message.GlobalID)) {
+            var item = wizard.EquipmentBehavior.GetItem(message.GlobalID);
+            var template = ItemHelper.GetItemTemplate(item);
 
+            if (template is null) {
+                var dbItem = WizardItemCollection.GetItem(wizard.CharId, message.GlobalID);
+                if (dbItem is not null) {
+                    template = ItemHelper.GetItemTemplate(dbItem);
+                }
+            }
+
+            if (slot is null) {
+                Logger.Error("Tried to unequip item with global id {0} that does not exist in player equipment.",
+                    Logger.Args(message.GlobalID)); 
+                return;
+            }
+
+            if (template is null) {
+                Logger.Error("Tried to unequip item with global id {0} but could not find its template.",
+                    Logger.Args(message.GlobalID));
+                return;
+            }
+
+            var slotName = slot.SlotType.ToString();
+            var removedEffects = CharacterEffectHelper.RemoveEffectsFromWizard(wizard, template);
+            wizard.EquipmentBehavior.UnequipItem(message.GlobalID);
+            WizardItemCollection.RemoveItem(wizard.CharId, message.GlobalID);
+            WizardCollection.UpdateCharacterItems(wizard);
+
+            // For elixirs, send MSG_EQUIPMENTBEHAVIOR_UNEQUIPITEM so the client's ElixirGUIManager
+            // receives the "EQUIPMENT_UnequipItem" event and destroys the HUD timer icon.
+            if (slot.SlotType == EquipmentSlotType.Elixir) {
+                SendToSocket(new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_UNEQUIPITEM {
+                    GlobalID = wizard.GameObjectID,
+                    ItemID = message.GlobalID
+                });
+            }
+            else {
+                SendToSocket(new GAME_5_PROTOCOL.MSG_EQUIPITEM {
+                    ItemID = message.GlobalID,
+                    SlotName = slotName,
+                    IsEquip = 0
+                });
+            }
+
+            SendToSocket(new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_REMOVEITEM {
+                GlobalID = wizard.GameObjectID,
+                ItemID = message.GlobalID
+            });
+
+            if (removedEffects is not null) {
+                foreach (var effect in removedEffects) {
+                    SendToSocket(new GAME_5_PROTOCOL.MSG_REMOVEEFFECT {
+                        GameObjectID = wizard.GameObjectID,
+                        EffectNameID = effect.m_effectNameID,
+                        InternalID = effect.m_internalID
+                    });
+                }
+            }
+
+            if (template.m_behaviors?.OfType<ElixirBehaviorTemplate>().FirstOrDefault() is { } elixirTemplate) {
+                PlaySound(elixirTemplate.m_unequipSound);
+            }
+
+            // Sync health and mana display, clamping current values to the new maximums.
+            var clientStats = wizard.GameStats.GetClientTypeAlternative();
+            if (wizard.GameStats.m_currentHitpoints > clientStats.m_baseHitpoints) {
+                wizard.GameStats.m_currentHitpoints = clientStats.m_baseHitpoints;
+            }
+
+            if (wizard.GameStats.m_currentMana > clientStats.m_baseMana) {
+                wizard.GameStats.m_currentMana = clientStats.m_baseMana;
+            }
+
+            SendToSocket(new WIZARD_12_PROTOCOL.MSG_UPDATEHEALTH {
+                CharacterID = wizard.GameObjectID,
+                NewHealth = wizard.GameStats.m_currentHitpoints,
+                NewHealthMax = clientStats.m_baseHitpoints,
+                DisplayDiff = 1
+            });
+
+            SendToSocket(new WIZARD_12_PROTOCOL.MSG_UPDATEMANA {
+                Mana = wizard.GameStats.m_currentMana,
+                MaxMana = clientStats.m_baseMana,
+                DisplayDiff = 1
+            });
+
+            return;
+        }
+
+        wizard.RemoveItemFromInventory(message.GlobalID);
         SendToSocket(new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_REMOVEITEM() {
             GlobalID = wizard.GameObjectID,
             ItemID = message.GlobalID
