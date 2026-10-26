@@ -82,7 +82,7 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
         None = 0,
 
         /// <summary>
-        /// Allows the player to type in chat using KingsIsle's strict whitelist dictionary.
+        /// Allows the player to type in chat using strict whitelist dictionary.
         /// Numbers, unwhitelisted words, and personal information are blocked.
         /// </summary>
         FilteredChat = 1 << 0,

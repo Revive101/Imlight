@@ -34,8 +34,7 @@ namespace Imlight.CoreLib.Game.Commands.Protocols;
 
 internal class CommandModifyProtocol : CommandProtocol {
 
-    // StringHash of "SpeedBuff" which can be found in Root.wad/GameEffectData/CanonicalStatEffect.xml
-    private const uint SPEED_EFFECT_NAME = 6543894;
+    private const uint SPEED_BUFF_EFFECT_NAME_HASH = 6543894;
 
     internal override string Group { get; set; } = "mod";
 
@@ -89,7 +88,7 @@ internal class CommandModifyProtocol : CommandProtocol {
         // Create the speed effect.
         var effect = new SpeedEffect() {
             m_speedMultiplier = speedBonusInt, // Speed is not a multiplier, but a percentage bonus! (+50%, etc.)
-            m_effectNameID = SPEED_EFFECT_NAME,
+            m_effectNameID = SPEED_BUFF_EFFECT_NAME_HASH,
             m_itemSlotID = 0 //  Should be 0 when effects are not bound to an equipped gear slot!
         };
 
