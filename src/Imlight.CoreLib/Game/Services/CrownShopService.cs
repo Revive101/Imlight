@@ -57,6 +57,7 @@ using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Collections;
+using Imlight.CoreLib.WizardData.Models.Misc;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System;
 using System.Collections.Generic;
@@ -226,6 +227,23 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
             return;
         }
 
+        if (GetUnitPrice(catalogItem, message.Type) <= 0) {
+            // The currency type comes from the client, so a currency the item has no price in is never trusted.
+            var infractionText = $"Player tried to buy crown shop item {message.Item} "
+                + "with currency type {message.Type}, "
+                + "which the item isn't sold for!";
+            GetActiveAccount().AddInfraction(InfractionType.SuspiciousBehavior, infractionText);
+
+            Logger.Warning("{Character} (ID {CharId}) tried to buy crown shop item {Template} "
+                + "with currency type {CurrencyType} (count {Count}), "
+                + "which the item isn't sold for. "
+                + "The purchase was refused, and this has been logged as suspicious behavior.",
+                Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), wizard.CharId, message.Item, message.Type, message.Count));
+            SendPurchaseError(s_errorNoPriceForType);
+
+            return;
+        }
+
         int amountToPay;
         switch (message.Type) {
             // Gold
@@ -288,6 +306,12 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
             ApplyLocalWishlistUpdate(wizard, updatedWishlist, message.Item.ToString(), sendToSelf: true);
         }
     }
+
+    private static int GetUnitPrice(CrownShopItem item, int currencyType) => currencyType switch {
+        0 => item.m_goldCost,
+        1 => item.m_crownsCost,
+        _ => 0
+    };
 
     private static bool CanHoldReagents(Wizard wizard, ulong reagentTemplateId, int count)
         => wizard.AlchemyBehavior?.HasReagentSpace(reagentTemplateId, count) ?? false;
