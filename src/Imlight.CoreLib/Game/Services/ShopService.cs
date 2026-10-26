@@ -28,6 +28,7 @@
  * for player inventory and economic interactions.
  * 
  * NOTE:
+ * The vendor and the housing shop both send MSG_SHOPBUYREQUEST, so both buy here.
  * A house bought from a housing shop is issued through HouseDeeds, with its structure, and paid in the currency the
  * client chose: gold at the item's cost, or Crowns at its Crowns cost.
  * 
@@ -90,9 +91,10 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
             return;
         }
 
-        // Ensure that the interacted object is a vendor.
+        // Ensure that the interacted object is a vendor or a housing shop; both send this request.
         var vendorComponent = interactedObject.GetComponentOfType<InteractVendorComponent>();
-        if (vendorComponent is null) {
+        var housingShopComponent = interactedObject.GetComponentOfType<InteractHousingShopComponent>();
+        if (vendorComponent is null && housingShopComponent is null) {
             Logger.Warning("Failed to find VendorComponent for NPC {0} in zone for shop purchase",
                 Logger.Args(message.npcGlobalID));
             var shopDenyMsg = new WIZARD_12_PROTOCOL.MSG_SHOPBUYCONFIRM { Failure = 1 };
@@ -103,7 +105,7 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
 
         // Ensure that the vendor has the item that the player is trying to purchase.
         var itemTemplateID = new GID(message.ShopID).MParts.TemplateId;
-        if (!vendorComponent.HasItem((GID) message.ShopID)) {
+        if (!(vendorComponent?.HasItem((GID) message.ShopID) ?? housingShopComponent.HasItem((GID) message.ShopID))) {
             HandleIllegalPurchaseAttempt(itemTemplateID, message.npcGlobalID);
 
             return;
