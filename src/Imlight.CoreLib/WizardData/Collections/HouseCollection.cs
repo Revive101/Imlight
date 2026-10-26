@@ -182,9 +182,10 @@ public static class HouseCollection {
     /// <param name="house">The house to save.</param>
     /// <param name="owner">The owner, whose backpack is written as it is in memory.</param>
     /// <param name="addedItem">An item that entered the backpack and has no document yet, or <c>null</c>. An item that came out of a house keeps its document.</param>
+    /// <param name="deletedItemId">An item that left the game in this change, whose document is deleted with it, or 0.</param>
     /// <returns><c>true</c> when both are stored; <c>false</c> when neither changed.</returns>
-    public static bool SaveWithBackpack(House house, Wizard owner, WizClientObjectItem addedItem = null)
-        => WizardItemCollection.SaveContainerWithBackpack<House>(house.Id, owner, stored => CopyChanging(house, stored), addedItem);
+    public static bool SaveWithBackpack(House house, Wizard owner, WizClientObjectItem addedItem = null, ulong deletedItemId = 0)
+        => WizardItemCollection.SaveContainerWithBackpack<House>(house.Id, owner, stored => CopyChanging(house, stored), addedItem, deletedItemId);
 
     /// <summary>
     /// Writes a house together with its owner's attic in one transaction, so objects that move between them are

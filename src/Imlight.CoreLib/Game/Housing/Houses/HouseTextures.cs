@@ -29,7 +29,7 @@
  * }
  *
  * NOTE:
- * - The holder is the object whose template carries a texture remap behavior and is named by Housing.TextureProxyTemplate.
+ * - The holder is the one housing template that carries a texture remap behavior, found once from the template manifest.
  *   Every house gets one when its state is created, because the client patches a texture list only into an object it has.
  * - A remap index from 1 to 99, with bit 16 for a wall or bit 17 for a floor, is the number of a numbered wall or floor
  *   surface of the house model and applies the texture at once. Without a flag the texture's own type picks wall or floor.
@@ -77,6 +77,7 @@ internal static class HouseTextures {
     private const uint STORED_SLOTS_PER_KIND = 15;
     private const int MAX_ENTRIES = 64;
     private const uint TRANSMIT_PROPERTY_MASK = 0x18;
+    private const string HOUSING_TEMPLATE_FOLDER = "ObjectData/Housing/";
 
     private static readonly Lazy<uint> s_proxyTemplateId = new(ResolveProxyTemplate);
 
@@ -86,7 +87,7 @@ internal static class HouseTextures {
     internal static uint ProxyTemplateId => s_proxyTemplateId.Value;
 
     /// <summary>
-    /// Checks at boot that the texture holder is set and is a template with a texture remap behavior, and logs when it is not.
+    /// Finds the texture holder at boot, and logs when there is not exactly one.
     /// </summary>
     /// <returns><c>true</c> when textures are on.</returns>
     internal static bool ValidateProxy()
@@ -237,21 +238,21 @@ internal static class HouseTextures {
         => TryGetTextureType(entry.m_textureTemplateID, out var type) ? (uint) type : 0;
 
     private static uint ResolveProxyTemplate() {
-        var configured = HousingSettings.TextureProxyTemplate;
-        if (configured == 0) {
-            Logger.Warning("Housing.TextureProxyTemplate is not set, so wallpaper and flooring cannot be applied.");
+        var holders = CoreObjectFactory.TemplateManifest.m_serializedTemplates
+            .AsParallel()
+            .Where(location => location?.m_filename is not null && location.m_filename.ToString().StartsWith(HOUSING_TEMPLATE_FOLDER, StringComparison.Ordinal))
+            .Where(location => CoreObjectFactory.LoadTemplateFile(location.m_filename) is WizItemTemplate template
+                && (template.m_behaviors ?? []).OfType<TextureRemapBehaviorTemplate>().Any())
+            .Select(location => (uint) location.m_id)
+            .Distinct()
+            .ToList();
+        if (holders.Count != 1) {
+            Logger.Warning("Found {Count} housing templates with a texture remap behavior, so wallpaper and flooring cannot be applied.", Logger.Args(holders.Count));
 
             return 0;
         }
 
-        if (CoreObjectFactory.GetCoreTemplate(configured) is not WizItemTemplate template
-            || !(template.m_behaviors ?? []).OfType<TextureRemapBehaviorTemplate>().Any()) {
-            Logger.Error("Housing.TextureProxyTemplate names template {TemplateId}, which has no texture remap behavior.", Logger.Args(configured));
-
-            return 0;
-        }
-
-        return configured;
+        return holders[0];
     }
 
     private static bool IsStoredSlot(uint remapIndex)

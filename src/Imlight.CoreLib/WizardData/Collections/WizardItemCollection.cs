@@ -207,8 +207,10 @@ public static class WizardItemCollection {
     /// <param name="owner">The owner, whose backpack is written as it is in memory.</param>
     /// <param name="copyChanging">Copies the container's changing parts onto the stored document.</param>
     /// <param name="addedItem">An item that entered the backpack and has no document yet, or <c>null</c>.</param>
+    /// <param name="deletedItemId">An item that left the game in this change and whose document is deleted with it, or 0.</param>
     /// <returns><c>true</c> when both are stored; <c>false</c> when neither changed.</returns>
-    internal static bool SaveContainerWithBackpack<TContainer>(string containerId, Wizard owner, Action<TContainer> copyChanging, WizClientObjectItem addedItem)
+    internal static bool SaveContainerWithBackpack<TContainer>(string containerId, Wizard owner, Action<TContainer> copyChanging, WizClientObjectItem addedItem,
+                                                               ulong deletedItemId = 0)
         where TContainer : class {
         try {
             return WizardCollection.UpdateCharacterWithSession(owner.CharId, (session, storedOwner) => {
@@ -219,6 +221,9 @@ public static class WizardItemCollection {
 
                 copyChanging(stored);
                 StoreBackpackInSession(session, storedOwner, owner, addedItem);
+                if (deletedItemId != 0) {
+                    DeleteInSession(session, owner.CharId, deletedItemId);
+                }
 
                 return true;
             });

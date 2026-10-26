@@ -30,7 +30,6 @@
  * - StarterDeeds: the templates every character is given on the first Home click, as a comma-separated list.
  * - AtticLimit: how many items an attic holds.
  * - IslandLimit: how many deeds a character may hold. The client refuses to buy a deed past it.
- * - TextureProxyTemplate: the template of the object that holds a house's wallpaper and flooring; empty turns textures off.
  * 
  * TODO:
  * 
@@ -55,7 +54,6 @@ internal static class HousingSettings {
     private const string STARTER_DEEDS_KEY = "Housing.StarterDeeds";
     private const string ATTIC_LIMIT_KEY = "Housing.AtticLimit";
     private const string ISLAND_LIMIT_KEY = "Housing.IslandLimit";
-    private const string TEXTURE_PROXY_TEMPLATE_KEY = "Housing.TextureProxyTemplate";
     private const int DEFAULT_DEED_ZONE_TIMEOUT_SECONDS = 90;
     private const int DEFAULT_ATTIC_LIMIT = 100;
     private const int DEFAULT_ISLAND_LIMIT = 30;
@@ -113,13 +111,6 @@ internal static class HousingSettings {
             return starters;
         }
     }
-
-    /// <summary>
-    /// The template of the object that holds a house's wallpaper and flooring: <c>Housing.TextureProxyTemplate</c>, or 0
-    /// when it is not a template id.
-    /// </summary>
-    internal static uint TextureProxyTemplate
-        => TryParseTemplateId(ConfigurationManager.Settings[TEXTURE_PROXY_TEMPLATE_KEY].AsString(), out var templateId) ? templateId : 0;
 
     private static bool TryParseTemplateId(string entry, out uint templateId)
         => uint.TryParse(entry, NumberStyles.None, CultureInfo.InvariantCulture, out templateId) && templateId != 0;

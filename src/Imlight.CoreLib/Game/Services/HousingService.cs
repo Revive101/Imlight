@@ -453,7 +453,7 @@ internal class HousingService(SessionActor sessionActor) : MessageService(sessio
         var transfer = BackpackTransfer.Store(wizard, item, () => {
             change = house.TryUpdate(holder.Id,
                 stored => HouseTextures.WithTexture(stored, target, templateId, out replacedTemplateId),
-                document => SaveWithReturnedTexture(document, wizard, replacedTemplateId, out returned));
+                document => SaveWithReturnedTexture(document, wizard, replacedTemplateId, itemId, out returned));
 
             return change.Done;
         }, "be applied");
@@ -589,7 +589,7 @@ internal class HousingService(SessionActor sessionActor) : MessageService(sessio
         }
     }
 
-    private static bool SaveWithReturnedTexture(House document, Wizard wizard, uint replacedTemplateId, out WizClientObjectItem returned) {
+    private static bool SaveWithReturnedTexture(House document, Wizard wizard, uint replacedTemplateId, ulong consumedItemId, out WizClientObjectItem returned) {
         returned = null;
         if (replacedTemplateId != 0) {
             returned = HousingItems.CreateItem(wizard, replacedTemplateId);
@@ -600,7 +600,7 @@ internal class HousingService(SessionActor sessionActor) : MessageService(sessio
             }
         }
 
-        if (HouseCollection.SaveWithBackpack(document, wizard, returned)) {
+        if (HouseCollection.SaveWithBackpack(document, wizard, returned, consumedItemId)) {
             return true;
         }
 
