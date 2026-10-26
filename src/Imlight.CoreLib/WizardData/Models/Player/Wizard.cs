@@ -16,6 +16,12 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Numerics;
+using System.Text.Json.Serialization;
+using Imcodec.IO;
 using Imcodec.Cryptography;
 using Imcodec.Math;
 using Imcodec.ObjectProperty.TypeCache;
@@ -29,10 +35,6 @@ using Imlight.CoreLib.Shared.Items;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.Shared.Utilities;
 using Imlight.CoreLib.WizardData.Collections;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.Json.Serialization;
 
 namespace Imlight.CoreLib.WizardData.Models.Player;
 
@@ -71,14 +73,14 @@ public class Wizard {
     public uint LastLoginTime { get; set; }
     public long TimeHomeLastClicked { get; set; }
     public byte World { get; set; }
-    public Vector3 Location {
+    public Imcodec.Math.Vector3 Location {
         get => GameObject.m_location;
         set {
             GameObject.m_location = value;
             _hasLocation = true;
         }
     }
-    public Vector3 Orientation {
+    public Imcodec.Math.Vector3 Orientation {
         get => GameObject.m_orientation;
         set {
             GameObject.m_orientation = value;
@@ -86,8 +88,8 @@ public class Wizard {
         }
     }
 
-    public Vector3 MarkedLocation { get; set; }
-    public Vector3 MarkedOrientation { get; set; }
+    public Imcodec.Math.Vector3 MarkedLocation { get; set; }
+    public Imcodec.Math.Vector3 MarkedOrientation { get; set; }
 
     public WizardCharacterBehavior WizardAvatar { get; set; }
     public ServerWizPlayerNameBehavior PlayerNameBehavior { get; set; }
@@ -141,6 +143,11 @@ public class Wizard {
     [JsonIgnore]
     public uint CurrentAnimationState { get; set; } = 0;
 
+    public ByteString RadialMenuData { get; set; } = new ByteString();
+    public ByteString RadialMenu2Data { get; set; } = new ByteString();
+    public ByteString RadialMenu3Data { get; set; } = new ByteString();
+
+    public ByteString CrownShopWishlist { get; set; }
     /// <summary>
     /// Tracks hatched pets for MSG_PETTOMEPETADDED. Key: pet global ID, Value: pet template ID.
     /// Runtime-only; not persisted (the pet tome behavior blob handles persistence).
@@ -191,7 +198,7 @@ public class Wizard {
     public void SaveLocation()
         => WizardCollection.UpdateCharacterLocation(this, Location, Orientation.Z);
 
-    public void SetPersistentLocation(Vector3 loc) {
+    public void SetPersistentLocation(Imcodec.Math.Vector3 loc) {
         Location = loc;
 
         // Persistent save.
@@ -199,7 +206,7 @@ public class Wizard {
     }
 
     public void SetPersistentOrientation(float orientation) {
-        Orientation = new Vector3(0, 0, orientation);
+        Orientation = new Imcodec.Math.Vector3(0, 0, orientation);
 
         // Persistent save.
         WizardCollection.UpdateCharacterLocation(this, Location, Orientation.Z);
@@ -227,10 +234,12 @@ public class Wizard {
         var healthDifference = newBaseStats.m_hitpoints - oldBaseStats.m_hitpoints;
         var manaDifference = newBaseStats.m_mana - oldBaseStats.m_mana;
         var powerPipDifference = newBaseStats.m_pipChance - oldBaseStats.m_pipChance;
+        var energyDifference = newBaseStats.m_petEnergy - oldBaseStats.m_petEnergy;
 
         GameStats.m_baseHitpoints += healthDifference;
         GameStats.m_baseMana += manaDifference;
         GameStats.m_powerPipBase += powerPipDifference;
+        GameStats.m_energyMax += energyDifference;
 
         // Don't reset XP - preserve overflow XP when leveling up.
         // XP is managed by AddExperiencePoints/RemoveExperiencePoints.
@@ -285,7 +294,7 @@ public class Wizard {
         WizardCollection.UpdateCharacterLevel(this);
     }
 
-    public void SetMarkedLocation(Vector3 loc, Vector3 orientation, string zone, string zoneDisplayName) {
+    public void SetMarkedLocation(Imcodec.Math.Vector3 loc, Imcodec.Math.Vector3 orientation, string zone, string zoneDisplayName) {
         MarkedLocation = loc;
         MarkedOrientation = orientation;
         MarkedZone = zone;
@@ -324,6 +333,21 @@ public class Wizard {
         GameStats.m_currentGold -= gold;
 
         // Persistent save.
+        WizardCollection.UpdateCharacterGameStats(this);
+    }
+
+    public void AddLunari(int lunari) {
+        if (GameStats.m_currentEventCurrency1 + lunari > GameStats.m_baseEventCurrency1Pouch) {
+            GameStats.m_currentEventCurrency1 = GameStats.m_baseEventCurrency1Pouch;
+        } else {
+            GameStats.m_currentEventCurrency1 += lunari;
+        }
+
+        WizardCollection.UpdateCharacterGameStats(this);
+    }
+
+    public void RemoveLunari(int lunari) {
+        GameStats.m_currentEventCurrency1 -= lunari;
         WizardCollection.UpdateCharacterGameStats(this);
     }
 
@@ -398,6 +422,16 @@ public class Wizard {
         return AddItemToInventory(item);
     }
 
+    public bool AddItemToInventory(ulong itemId, int primaryColor, int secondaryColor, out WizClientObjectItem item) {
+        item = (WizClientObjectItem) CoreObjectFactory.FinalizeCoreObject(itemId);
+        item.m_characterId = (GID) CharId;
+        item.m_primaryColor = primaryColor;
+        item.m_secondaryColor = secondaryColor;
+
+        return AddItemToInventory(item);
+    }
+
+
     public bool AddItemToInventory(WizClientObjectItem item) {
         if (item is null) {
             Logger.Warning("Cannot add item to inventory because that item does not exist.");
@@ -413,7 +447,7 @@ public class Wizard {
         var success = InventoryBehavior.AddItem(item);
         if (!success) {
             Logger.Warning("Could not add item {0} to player {1}'s inventory.",
-                Logger.Args(item.m_globalID, PlayerNameBehavior.GetWizardName()));
+                Logger.Args(item.m_globalID.Value, PlayerNameBehavior.GetWizardName()));
 
             return false;
         }
@@ -456,6 +490,7 @@ public class Wizard {
         }
 
         // Persistent save.
+        WizardItemCollection.RemoveItem(CharId, itemId);
         WizardCollection.UpdateCharacterItems(this);
 
         return true;
@@ -474,11 +509,19 @@ public class Wizard {
         // Get the template for this item. Using this template we can get the slot this object should be on.
         var template = ItemHelper.GetItemTemplate(inventoryItem);
         var slot = ItemHelper.GetItemSlot(template);
+        if (slot is null) {
+            InventoryBehavior.AddItem(inventoryItem);
+            Logger.Warning("Could not determine equipment slot for item {0} (template {1}).",
+                Logger.Args(itemId, inventoryItem.m_templateID));
+
+            return false;
+        }
 
         // Get the item that is currently in the slot, if there is one. We want to remove its effects.
         var replacedItem = EquipmentBehavior.GetItemInSlot(slot.SlotType);
         if (replacedItem != null) {
             if (!EquipmentToInventoryTransfer(replacedItem.m_globalID, out unequipEffects)) {
+                InventoryBehavior.AddItem(inventoryItem);
                 Logger.Warning("Could not replace item {0} from slot {1}.",
                     Logger.Args(replacedItem.m_globalID, slot.SlotType));
 
@@ -489,6 +532,7 @@ public class Wizard {
         // Add the item to the equipment.
         var equipResult = EquipmentBehavior.EquipItem(inventoryItem, slot.SlotType);
         if (!equipResult) {
+            InventoryBehavior.AddItem(inventoryItem);
             Logger.Warning("Tried to equip item with global id {0} that is already equipped.",
                 Logger.Args(itemId));
 
@@ -504,6 +548,12 @@ public class Wizard {
         }
         if (slot.SlotType == EquipmentSlotType.Pet) {
             EquipPet(template, inventoryItem);
+        }
+        if (slot.SlotType == EquipmentSlotType.PIITeleportEffect) {
+            EquipTeleportEffect(inventoryItem);
+        }
+        if (slot.SlotType == EquipmentSlotType.PIIVictoryDance) {
+            EquipVictoryDance(inventoryItem);
         }
 
         // Persistent save.
@@ -522,6 +572,13 @@ public class Wizard {
 
         // Get the actual item. We'll also grab the template to remove the effects from the wizard.
         var item = EquipmentBehavior.EquippedItems.FirstOrDefault(i => i.m_globalID == itemId);
+        if (item is null) {
+            Logger.Warning("Tried to unequip item with global id {0} that does not exist in EquippedItems.",
+                Logger.Args(itemId));
+
+            return false;
+        }
+
         var template = ItemHelper.GetItemTemplate(item);
         var slot = ItemHelper.GetItemSlot(template);
 
@@ -549,6 +606,12 @@ public class Wizard {
         }
         if (slot.SlotType == EquipmentSlotType.Pet) {
             UnequipPet();
+        }
+        if (slot.SlotType == EquipmentSlotType.PIITeleportEffect) {
+            UnequipTeleportEffect();
+        }
+        if (slot.SlotType == EquipmentSlotType.PIIVictoryDance) {
+            UnequipVictoryDance();
         }
 
         // Persistent save.
@@ -1274,6 +1337,8 @@ public class Wizard {
     }
 
     internal void AfterDatabaseLoad() {
+        AfterDatabaseLoadTeleportEffect();
+        AfterDatabaseLoadVictoryDance();
         AfterDatabaseLoadWizardGameStats();
         AfterDatabaseLoadSpellbookBehavior();
         AfterDatabaseloadMountOwnerBehavior();
@@ -1285,6 +1350,84 @@ public class Wizard {
         FriendsBehavior ??= new ServerFriendBehavior();
         QuestBehavior ??= new ServerQuestBehavior();
         DynamodSet ??= new DynamodSet(CharId);
+    }
+
+    private void EquipTeleportEffect(WizClientObjectItem item) {
+        var templateId = (uint) item.m_templateID;
+        MagicSchoolBehavior.EquippedTeleportEffect = templateId;
+        GameStats.m_equippedTeleportEffect = templateId;
+
+        if (HasInitializedGameObject && CoreObjectFactory.FindBehaviorInstance<ClientMagicSchoolBehavior>(GameObject, out var schoolBehavior)) {
+            schoolBehavior.m_equippedTeleportEffect = templateId;
+        }
+
+        WizardCollection.UpdateCharacterTeleportEffect(this);
+    }
+
+    private void UnequipTeleportEffect() {
+        MagicSchoolBehavior.EquippedTeleportEffect = 0;
+        GameStats.m_equippedTeleportEffect = 0;
+
+        if (HasInitializedGameObject && CoreObjectFactory.FindBehaviorInstance<ClientMagicSchoolBehavior>(GameObject, out var schoolBehavior)) {
+            schoolBehavior.m_equippedTeleportEffect = 0;
+        }
+
+        WizardCollection.UpdateCharacterTeleportEffect(this);
+    }
+
+    private void AfterDatabaseLoadTeleportEffect() {
+        var idInSlot = EquipmentBehavior?.SlotList?.FirstOrDefault(s => s.SlotType == EquipmentSlotType.PIITeleportEffect)?.ItemId;
+        if (idInSlot is null) {
+            MagicSchoolBehavior.EquippedTeleportEffect = 0;
+            GameStats.m_equippedTeleportEffect = 0;
+            return;
+        }
+
+        var teleportItem = EquipmentBehavior.EquippedItems?.FirstOrDefault(i => i.m_globalID == idInSlot);
+        var templateId = teleportItem is not null ? (uint) teleportItem.m_templateID : 0u;
+        MagicSchoolBehavior.EquippedTeleportEffect = templateId;
+        GameStats.m_equippedTeleportEffect = templateId;
+    }
+
+    private void EquipVictoryDance(WizClientObjectItem item) {
+        var templateId = (uint) item.m_templateID;
+        if (WizardAvatar is not null) {
+            WizardAvatar.m_afterCombatVictoryDance = templateId;
+        }
+
+        if (HasInitializedGameObject && CoreObjectFactory.FindBehaviorInstance<WizardCharacterBehavior>(GameObject, out var avatarBehavior)) {
+            avatarBehavior.m_afterCombatVictoryDance = templateId;
+        }
+
+        WizardCollection.UpdateCharacterVictoryDance(this);
+    }
+
+    private void UnequipVictoryDance() {
+        if (WizardAvatar is not null) {
+            WizardAvatar.m_afterCombatVictoryDance = 0;
+        }
+
+        if (HasInitializedGameObject && CoreObjectFactory.FindBehaviorInstance<WizardCharacterBehavior>(GameObject, out var avatarBehavior)) {
+            avatarBehavior.m_afterCombatVictoryDance = 0;
+        }
+
+        WizardCollection.UpdateCharacterVictoryDance(this);
+    }
+
+    private void AfterDatabaseLoadVictoryDance() {
+        var idInSlot = EquipmentBehavior?.SlotList?.FirstOrDefault(s => s.SlotType == EquipmentSlotType.PIIVictoryDance)?.ItemId;
+        if (idInSlot is null) {
+            if (WizardAvatar is not null) {
+                WizardAvatar.m_afterCombatVictoryDance = 0;
+            }
+            return;
+        }
+
+        var danceItem = EquipmentBehavior.EquippedItems?.FirstOrDefault(i => i.m_globalID == idInSlot);
+        var templateId = danceItem is not null ? (uint) danceItem.m_templateID : 0u;
+        if (WizardAvatar is not null) {
+            WizardAvatar.m_afterCombatVictoryDance = templateId;
+        }
     }
 
     private void EquipMount(WizItemTemplate template, WizClientObjectItem item) {
@@ -1541,15 +1684,11 @@ public class Wizard {
     }
 
     private void AfterDatabaseLoadPetOwnerBehavior() {
-        var magicSchool = MagicSchoolBehavior.MagicSchool;
-        var level = MagicSchoolBehavior.Level;
-        var baseStats = MagicLevelsConfig.GetPlayerLevelInfo(magicSchool, level);
-        var normMaxEnergy = baseStats.m_petEnergy;
-        GameStats.m_energyMax = normMaxEnergy;
+        var maxEnergy = GameStats.m_energyMax;
 
         if (PetOwnerBehavior is null) {
             PetOwnerBehavior = new ServerPetOwnerBehavior();
-            PetOwnerBehavior.SetEnergy(GameStats.m_energyMax);
+            PetOwnerBehavior.SetEnergy(maxEnergy);
 
             return;
         }
@@ -1571,8 +1710,8 @@ public class Wizard {
         var energyRegained = timeDifference / energyTickIntervalInSeconds;
 
         // If the player has regained more energy than their max, set it to the max.
-        var newEnergy = PetOwnerBehavior.Energy + energyRegained > normMaxEnergy
-            ? normMaxEnergy
+        var newEnergy = PetOwnerBehavior.Energy + energyRegained > maxEnergy
+            ? maxEnergy
             : (int) (PetOwnerBehavior.Energy + energyRegained);
         if (newEnergy == PetOwnerBehavior.Energy) {
             PetOwnerBehavior.SetEnergy(newEnergy);
@@ -1591,6 +1730,8 @@ public class Wizard {
         GameStats.MagicSchool = MagicSchoolBehavior.MagicSchool;
         GameStats.m_schoolID = (uint) MagicSchoolBehavior.MagicSchool;
         GameStats.m_highestCharacterLevelOnAccount = highestLevelOnAcc;
+
+        CharacterHelper.RecalculateGameStats(this);
     }
 
     private void AfterDatabaseLoadAlchemyBehavior()
@@ -1642,4 +1783,51 @@ public class Wizard {
         WizardCollection.UpdateCharacterQuestBehavior(this);
     }
 
+    public void UnlockCustomEmote(int emoteBit) {
+        if (emoteBit < 0 || emoteBit >= 96) {
+            return;
+        }
+
+        if (emoteBit < 32) {
+            GameStats.m_purchasedCustomEmotes1 |= (1u << emoteBit);
+        }
+        else if (emoteBit < 64) {
+            GameStats.m_purchasedCustomEmotes2 |= (1u << (emoteBit - 32));
+        }
+        else {
+            GameStats.m_purchasedCustomEmotes3 |= (1u << (emoteBit - 64));
+        }
+
+        WizardCollection.UpdateCharacterGameStats(this);
+    }
+
+    public int CountEmotesUnlocked() {
+        return BitOperations.PopCount(GameStats.m_purchasedCustomEmotes1)
+         + BitOperations.PopCount(GameStats.m_purchasedCustomEmotes2)
+         + BitOperations.PopCount(GameStats.m_purchasedCustomEmotes3);
+    }
+
+    public void UnlockCustomTeleportEffect(int emoteBit) {
+        if (emoteBit < 0 || emoteBit >= 96) {
+            return;
+        }
+
+        if (emoteBit < 32) {
+            GameStats.m_purchasedCustomTeleportEffects1 |= (1u << emoteBit);
+        }
+        else if (emoteBit < 64) {
+            GameStats.m_purchasedCustomTeleportEffects2 |= (1u << (emoteBit - 32));
+        }
+        else {
+            GameStats.m_purchasedCustomTeleportEffects3 |= (1u << (emoteBit - 64));
+        }
+
+        WizardCollection.UpdateCharacterGameStats(this);
+    }
+
+    public int CountTeleportEffectsUnlocked() {
+        return BitOperations.PopCount(GameStats.m_purchasedCustomTeleportEffects1)
+             + BitOperations.PopCount(GameStats.m_purchasedCustomTeleportEffects2)
+             + BitOperations.PopCount(GameStats.m_purchasedCustomTeleportEffects3);
+    }
 }

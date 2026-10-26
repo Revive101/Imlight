@@ -33,9 +33,7 @@ internal sealed class ResPlaySoundHandler : BaseResultHandler<ResPlaySound> {
     public override bool Execute(IResultContext context) {
         if (_soundName == null) {
             _soundName = Result.m_soundName;
-            _templateId = CoreObjectFactory.GetCoreTemplateID(x => x.m_filename.ToString().Contains(_soundName));
-
-            if (_templateId == 0) {
+            if (!CoreObjectFactory.TryGetCoreTemplateID(x => x.m_filename.ToString().Contains(_soundName), out _templateId)) {
                 Logger.Error("Sound {0} tried to gather data, but a template ID was not found.",
                     Logger.Args(_soundName));
                     

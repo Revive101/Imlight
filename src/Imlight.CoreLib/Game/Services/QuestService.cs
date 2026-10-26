@@ -37,6 +37,8 @@
  */
 
 using Akka.Actor;
+using Imcodec.CoreObject;
+using Imlight.CoreLib.Shared.Resources;
 using Imcodec.Cryptography;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
@@ -104,6 +106,63 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
 
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new QuestService(parentActor));
+
+    [MessageHandler(typeof(QUEST_MESSAGES_52_PROTOCOL.MSG_CANACQUIREWORLDELIXIR))]
+    private void ReceiveCanAcquireWorldElixir(QUEST_MESSAGES_52_PROTOCOL.MSG_CANACQUIREWORLDELIXIR message) {
+        var wizard = GetActiveWizard();
+        var template = CoreObjectFactory.GetCoreTemplate(message.ElixirTemplateGID);
+
+        var canBuyForSelf = true;
+        var canGift = true;
+
+        if (template is WizItemTemplate wizItem) {
+            // Check requirements for the wizard
+            if (wizItem.m_equipRequirements != null) {
+                var context = new GenericRequirementContext(
+                    wizItem.m_equipRequirements,
+                    SessionActor.ActorRef,
+                    wizard.GetInitializedGameObject(),
+                    wizard);
+
+                if (!RequirementDispatcher.EvaluateRequirements(wizItem.m_equipRequirements, context)) {
+                    canBuyForSelf = false;
+                }
+            }
+
+            // Check if level already >= target level
+            var worldElixir = wizItem.m_behaviors?.OfType<WorldElixirBehaviorTemplate>().FirstOrDefault();
+            var levelUpElixir = wizItem.m_behaviors?.OfType<LevelUpElixirBehaviorTemplate>().FirstOrDefault();
+            var targetLevel = worldElixir?.m_setCharacterToLevel ?? levelUpElixir?.m_setCharacterToLevel ?? 0;
+
+            if (targetLevel > 0 && wizard.MagicSchoolBehavior.Level >= targetLevel) {
+                canBuyForSelf = false;
+            }
+        }
+
+        // Result codes per client PermanentShop::MSG_CanAcquireWorldElixir:
+        // 0 = Can buy for self & can gift
+        // 1 = Cannot buy for self, but CAN gift
+        // 2 = Can buy for self, cannot gift
+        // 3 = Cannot buy or gift
+        int result;
+        if (canBuyForSelf && canGift) {
+            result = 0;
+        }
+        else if (!canBuyForSelf && canGift) {
+            result = 1;
+        }
+        else if (canBuyForSelf && !canGift) {
+            result = 2;
+        }
+        else {
+            result = 3;
+        }
+
+        SendToSocket(new QUEST_MESSAGES_52_PROTOCOL.MSG_CANACQUIREWORLDELIXIR {
+            ElixirTemplateGID = message.ElixirTemplateGID,
+            Result = result
+        });
+    }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PRELOGIN))]
     private void ReceiveSendQuests(ZONE_102_PROTOCOL.MSG_PRELOGIN message) {

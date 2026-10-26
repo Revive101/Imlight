@@ -45,6 +45,7 @@ using System.Collections.Generic;
 using Akka.Actor;
 using Imcodec.CoreObject;
 using Imcodec.IO;
+using Imcodec.Math;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
@@ -61,7 +62,7 @@ namespace Imlight.CoreLib.Game.Services;
 internal class CombatService(SessionActor sessionActor) : MessageService(sessionActor) {
 
     private const uint NO_AGGRO_EFFECT_STRINGID = 1618528611;
-    private const uint NO_AGGRO_EFFECT_DURATION_IN_SECONDS = 3;
+    private const uint NO_AGGRO_EFFECT_DURATION_IN_SECONDS = 20;
 
     private readonly CoreObjectSerializer _effectSerializer = new(
         behaviors: SerializerFlags.None
@@ -133,11 +134,9 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
         EquipMount();
         SetNoAggroGrace();
 
-        // Send a message to ourselves to end the no aggro grace period.
-        var noAggroGraceOverMsg = new COMBAT_106_PROTOCOL.MSG_NOAGGROGRACEOVER();
         Timers.StartSingleTimer(
             "NoAggroGraceOver",
-            noAggroGraceOverMsg,
+            new COMBAT_106_PROTOCOL.MSG_NOAGGROGRACEOVER(),
             TimeSpan.FromSeconds(NO_AGGRO_EFFECT_DURATION_IN_SECONDS));
 
         // Gain 3 XP per pip used in the duel.
@@ -251,6 +250,29 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_NOAGGROGRACEOVER))]
     private void ReceiveNoAggroGraceOver()
         => RemoveNoAggroEffect();
+
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENTMOVE))]
+    private void ReceiveClientMove(GAME_5_PROTOCOL.MSG_CLIENTMOVE message) {
+        var wizard = GetActiveWizard();
+        if (wizard is not null && wizard.IsInCombatGrace) {
+            RemoveNoAggroEffect();
+        }
+    }
+
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_JUMP))]
+    private void ReceiveClientJump(GAME_5_PROTOCOL.MSG_JUMP message) {
+        var wizard = GetActiveWizard();
+        if (wizard is not null && wizard.IsInCombatGrace) {
+            RemoveNoAggroEffect();
+        }
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_SENDTOHUB))]
+    private void ReceiveSendToHub(ZONE_102_PROTOCOL.MSG_SENDTOHUB message) {
+        if (GetActiveWizard()?.IsInCombatGrace == true) {
+            RemoveNoAggroEffect();
+        }
+    }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT))]
     private void ReceiveClientDisconnect(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT message) {
@@ -445,7 +467,12 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
 
     private void SetNoAggroGrace() {
         var wizard = GetActiveWizard();
-        var charObjId = GetActiveGameObject().m_globalID;
+        var charObj = GetActiveGameObject();
+        if (wizard is null || charObj is null) {
+            return;
+        }
+
+        var charObjId = charObj.m_globalID;
         var effectInternalId = wizard.GameEffects.Count + 1;
 
         var epoch = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
@@ -474,8 +501,19 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
     }
 
     private void RemoveNoAggroEffect() {
+        Timers.Cancel("NoAggroGraceOver");
+
         var wizard = GetActiveWizard();
-        var charObjId = GetActiveGameObject().m_globalID;
+        if (wizard is null) {
+            return;
+        }
+
+        wizard.IsInCombatGrace = false;
+
+        var charObj = GetActiveGameObject();
+        if (charObj is null) {
+            return;
+        }
 
         var effect = wizard.GameEffects.Find(e => e.m_effectNameID == NO_AGGRO_EFFECT_STRINGID);
         if (effect is null) {
@@ -483,10 +521,9 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
         }
 
         wizard.GameEffects.Remove(effect);
-        wizard.IsInCombatGrace = false;
 
         SendToSocket(new GAME_5_PROTOCOL.MSG_REMOVEEFFECT() {
-            GameObjectID = charObjId,
+            GameObjectID = charObj.m_globalID,
             EffectNameID = effect.m_effectNameID,
             InternalID = effect.m_internalID,
         });

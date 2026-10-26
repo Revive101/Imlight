@@ -23,6 +23,7 @@ using Imlight.CoreLib.WizardData.Models.Misc;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Raven.Client.Documents.Session;
 using System;
+using Imcodec.ObjectProperty.TypeCache;
 
 namespace Imlight.CoreLib.WizardData.Collections;
 
@@ -389,4 +390,32 @@ public static class AccountCollection {
         });
     }
 
+    /// <summary>
+    /// Updates the crowns balance for the specified account.
+    /// </summary>
+    /// <param name="accountId">The unique identifier of the account to update.</param>
+    /// <param name="crownsAmount">The crowns balance to assign to the account.</param>
+    /// <returns>true if the account was updated; otherwise, false.</returns>
+    public static bool UpdateCrowns(ulong accountId, int crownsAmount) {
+        return UpdateAccount(accountId, acc => {
+            acc.Crowns = crownsAmount;
+        });
+    }
+
+    public static bool AddGiftMail(ulong accountId, Mail mail) {
+        return UpdateAccount(accountId, acc => {
+            acc.GiftMailbox ??= new();
+            acc.GiftMailbox.Add(mail);
+        });
+    }
+
+    public static bool RemoveGiftMail(ulong accountId, ulong mailId) {
+        return UpdateAccount(accountId, acc => {
+            acc.GiftMailbox ??= new();
+            var toRemove = acc.GiftMailbox.SingleOrDefault(s => s.m_mailId == mailId, null);
+            if (toRemove != null) {
+                acc.GiftMailbox.Remove(toRemove);
+            }
+        });
+    }
 }

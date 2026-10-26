@@ -56,6 +56,7 @@ using Imlight.CoreLib.WizardData;
 using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.CoreLib.WizardData.Collections;
+using Imlight.CoreLib.Game.CrownShop;
 
 namespace Imlight.Director;
 
@@ -198,9 +199,10 @@ internal static class Program {
     }
 
     private static void LoadResources() {
-        // Load SpiralDB — the in-memory world database from JSON files.
         SpiralDB.Load();
+        CrownShopHandler.Load();
     }
+
     private static IActorRef StartLoginServer() {
         var loginServerName = s_loginServerName;
         var loginServerPort = s_loginServerPort;

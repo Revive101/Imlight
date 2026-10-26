@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Imlight
  * Copyright (C) 2025 Revive101
  *
@@ -395,6 +395,7 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
         Receive<SERVER_100_PROTOCOL.MSG_PING>(x => this.Ping = x.Ping);
         Receive<Exception>(ReceiveException);
         Receive<SERVER_100_PROTOCOL.MSG_RECEIVEDPACKET>(x => HandlePacket(x.Packet));
+        Receive<ZONE_102_PROTOCOL.MSG_ZONEBROADCAST>(msg => GetZoneActor()?.Tell(msg));
 
         // Generic message handlers.
         Receive<IServerMessage>(HandleInternalTell);

@@ -174,12 +174,8 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_BUDDYSTATS))]
     private void ReceiveBuddyStats(GAME_5_PROTOCOL.MSG_BUDDYSTATS message) {
-        if (!Wizard.TryGetCharacterId(message.BuddyID, out var buddyCharID)) {
-            return;
-        }
-
         var wizard = GetActiveWizard();
-        if (wizard is null) {
+        if (wizard is null || !TryResolveCharacterId(message.BuddyID, wizard, out var buddyCharID)) {
             return;
         }
 
@@ -203,6 +199,26 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
         }
 
         SendStoredBuddyStats(message, buddyCharID, SessionActor.ActorRef, targetCharacterGid: 0);
+    }
+
+    private bool TryResolveCharacterId(ulong buddyId, Wizard activeWizard, out ulong charId) {
+        if (Wizard.TryGetCharacterId(buddyId, out charId)) {
+            if (charId == activeWizard.CharId
+                || TryGetOnlinePlayer(charId, out _)
+                || WizardCollection.GetCharacterUnloaded(charId) is not null) {
+                return true;
+            }
+        }
+
+        if (buddyId == activeWizard.CharId
+            || TryGetOnlinePlayer(buddyId, out _)
+            || WizardCollection.GetCharacterUnloaded(buddyId) is not null) {
+            charId = buddyId;
+            return true;
+        }
+
+        charId = 0;
+        return false;
     }
 
     [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_BUDDYSTATSFWD))]
@@ -596,7 +612,8 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
                 doTeleportEffects: true,
                 ownerCharId: targetID
             );
-        } else {
+        }
+        else {
             Logger.Error("Failed to query the target wizard for teleportation.");
         }
     }
@@ -668,7 +685,7 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
         var msg = new GAME_5_PROTOCOL.MSG_IGNORELIST {
             ListOwnerGID = wizard.GameObjectID,
             ListData = listBytes,
-            Add = add ? (byte)1 : (byte)0
+            Add = add ? (byte) 1 : (byte) 0
         };
         SendToSocket(msg);
     }
