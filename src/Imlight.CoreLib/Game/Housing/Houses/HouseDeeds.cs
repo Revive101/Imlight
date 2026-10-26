@@ -39,12 +39,10 @@
  * - Running an issue again changes nothing. Nothing is created when the backpack cannot hold everything that is
  *   missing, and a lot that was stored stays stored.
  * - The house document is not created by an issue. The first entry creates it from the template's layout.
- * - Home goes to the first starter template that is a house (Housing.StarterDeeds). A starter is a plain house template
- *   like any other; no data marks it.
+ * - Home goes to the equipped house (the deed in the Islands slot). With none equipped it goes to the first starter
+ *   template that is a house (Housing.StarterDeeds). A starter is a plain house template like any other; no data marks it.
  *
  * TODO:
- * - The equipped Islands item should decide the home. The slots exist, but which lot of an equipped castle Home goes to
- *   needs a capture.
  *
  * Created by: Jay
  * Version: KALI 1.0
@@ -107,14 +105,16 @@ internal static class HouseDeeds {
     /// Finds the house Home goes to.
     /// </summary>
     /// <param name="wizard">The character.</param>
-    /// <returns>The first starter house, with what the character holds of it; the target has template 0 when no starter is a house.</returns>
+    /// <returns>The equipped house, else the first starter house, with what the character holds of it; the target has template 0 when no starter is a house.</returns>
     internal static HomeTarget ResolveHome(Wizard wizard) {
+        var equipped = (wizard.EquipmentBehavior?.EquippedItems ?? [])
+            .FirstOrDefault(item => HouseTemplates.TryGet(ItemHelper.GetTemplateId(item), out var held) && !held.IsStructure);
         var starters = HouseTemplates.Starters();
-        if (starters.Count == 0) {
+        if (equipped is null && starters.Count == 0) {
             return default;
         }
 
-        var templateId = starters[0].TemplateId;
+        var templateId = equipped is null ? starters[0].TemplateId : ItemHelper.GetTemplateId(equipped);
         var lot = wizard.HouseLots.GetValueOrDefault(templateId);
         var item = FindItem(wizard, templateId);
 
