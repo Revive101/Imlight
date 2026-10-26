@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/09/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -88,6 +88,11 @@ internal sealed class SocketSender : ReceiveActor, IDisposable {
         _socket?.Dispose();
     }
 
+    protected override void PostStop() {
+        Dispose();
+        base.PostStop();
+    }
+
     private void DisposeAfterSocketEnded() {
         if (_isDisposed) {
             return;
@@ -97,11 +102,6 @@ internal sealed class SocketSender : ReceiveActor, IDisposable {
         Dispose();
     }
 
-    protected override void PostStop() {
-        Dispose();
-        base.PostStop();
-    }
-
     private void SendToSocket(IMessage message) {
         if (_isDisposed || !_socket.Connected) {
             LogDroppedPacket(message, _isDisposed ? "disposed" : "not connected");
@@ -109,10 +109,11 @@ internal sealed class SocketSender : ReceiveActor, IDisposable {
 
             return;
         }
+
         if (_isSending) {
-            Logger.Error("SessionActor {SessionId} send failure: " +
-                         "Synchronous send operation already in progress.", Logger.Args(_sessionid));
-                         
+            Logger.Warning("SessionActor {SessionId} dropped {ScopedMessageName}: another send is still in progress.",
+                Logger.Args(_sessionid, GetScopedMessageName(message)));
+
             return;
         }
 

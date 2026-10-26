@@ -40,7 +40,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/14/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -143,7 +143,7 @@ internal sealed class MinigameProcess : Process {
         }
 
         if (score < -1) {
-            Logger.Warning("{Process} ignored the invalid score {Score}",
+            Logger.Debug("{Process} ignored the invalid score {Score}",
                 Logger.Args(ProcessName, score));
             SendLeaderboardResponse(leaderboard);
 
@@ -151,7 +151,7 @@ internal sealed class MinigameProcess : Process {
         }
 
         if (!_roundOpen) {
-            Logger.Warning("{Process} ignored the score {Score}, no round is open",
+            Logger.Debug("{Process} ignored the score {Score}, no round is open",
                 Logger.Args(ProcessName, score));
             SendLeaderboardResponse(leaderboard);
 
@@ -243,8 +243,7 @@ internal sealed class MinigameProcess : Process {
 
     private void SendLeaderboardResponse(ScoreTrackingList leaderboard) {
         if (!_serializer.Serialize(leaderboard, 5, out var leaderboardData)) {
-            Logger.Error("{0} {1} failed to serialize leaderboard data.",
-                Logger.Args(nameof(MinigameProcess), ProcessName));
+            Logger.Error("{Process} failed to serialize leaderboard data.", Logger.Args(ProcessName));
 
             return;
         }
@@ -288,8 +287,7 @@ internal sealed class MinigameProcess : Process {
     private void SendRewardsReply(int score, ScoreTrackingList leaderboard, MinigameRewardResult reward) {
         // Serialize the leaderboard data.
         if (!_serializer.Serialize(leaderboard, 5, out var leaderboardData)) {
-            Logger.Error("{0} {1} failed to serialize leaderboard data.",
-                Logger.Args(nameof(MinigameProcess), ProcessName));
+            Logger.Error("{Process} failed to serialize leaderboard data.", Logger.Args(ProcessName));
 
             return;
         }
@@ -300,8 +298,7 @@ internal sealed class MinigameProcess : Process {
 
         // Serialize the loot.
         if (!_serializer.Serialize(reward.Loot, 5, out var lootData)) {
-            Logger.Error("{0} {1} failed to serialize loot data.",
-                Logger.Args(nameof(MinigameProcess), ProcessName));
+            Logger.Error("{Process} failed to serialize loot data.", Logger.Args(ProcessName));
 
             return;
         }
@@ -345,8 +342,8 @@ internal sealed class MinigameProcess : Process {
             reason = ex.GetBaseException().Message;
         }
 
-        Logger.Error("{0} {1} failed to query character data in {2} ms: {3}",
-            Logger.Args(nameof(MinigameProcess), ProcessName, QUERY_WIZARD_TIMEOUT_IN_MS, reason));
+        Logger.Error("{Process} did not get the character data within {Timeout} ms: {Reason}",
+            Logger.Args(ProcessName, QUERY_WIZARD_TIMEOUT_IN_MS, reason));
 
         return null;
     }

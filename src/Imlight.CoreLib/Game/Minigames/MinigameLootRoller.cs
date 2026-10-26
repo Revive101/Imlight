@@ -35,7 +35,7 @@
  *
  * Created by: Jay
  * Version: KALI 1.0
- * Last Updated: 10/14/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -63,7 +63,7 @@ internal static class MinigameLootRoller {
         var table = DropTableCollection.GetDropTable(tableName);
         if (table is null) {
             if (FirstReport("missing", tableName)) {
-                Logger.Error("Minigame table {Table} is not in the drop tables, its slot is skipped",
+                Logger.Warning("Minigame table {Table} is not in the drop tables, its slot is skipped",
                     Logger.Args(tableName));
             }
 
@@ -231,7 +231,7 @@ internal static class MinigameLootRoller {
 
     private static void ReportInvalid(string tableName, string problem) {
         if (FirstReport(problem, tableName)) {
-            Logger.Error("Minigame table {Table} is invalid and rolls nothing: {Problem}",
+            Logger.Warning("Minigame table {Table} is invalid and rolls nothing: {Problem}",
                 Logger.Args(tableName, problem));
         }
     }

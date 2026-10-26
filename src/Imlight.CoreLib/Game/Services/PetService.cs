@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 06/14/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -126,7 +126,7 @@ internal class PetService(SessionActor sessionActor) : MessageService(sessionAct
             ?.FirstOrDefault(e => e.m_globalID == message.EggGlobalId);
 
         if (egg == null) {
-            Logger.Debug("MSG_DOEGGHATCH for unknown egg {0}.", Logger.Args(message.EggGlobalId));
+            Logger.Debug("A hatch request named egg {EggId}, which the character does not have.", Logger.Args(message.EggGlobalId));
             return;
         }
 
@@ -140,7 +140,7 @@ internal class PetService(SessionActor sessionActor) : MessageService(sessionAct
             ?.FirstOrDefault(e => e.m_globalID == message.EggGID);
 
         if (egg == null) {
-            Logger.Debug("MSG_HATCHEGGNOW for unknown egg {0}.", Logger.Args(message.EggGID));
+            Logger.Debug("A hatch-now request named egg {EggId}, which the character does not have.", Logger.Args(message.EggGID));
             return;
         }
 
@@ -212,7 +212,7 @@ internal class PetService(SessionActor sessionActor) : MessageService(sessionAct
             Behaviors: SerializerFlags.None
         );
         if (!serializer.Serialize(clientBehavior, (PropertyFlags) 31, out var blob)) {
-            Logger.Error("Failed to serialize ClientPetOwnerBehavior for MSG_PETUPDATEBEHAVIOR.");
+            Logger.Error("The pet state could not be serialized, so the client keeps its old pet view.");
 
             return string.Empty;
         }
@@ -223,7 +223,7 @@ internal class PetService(SessionActor sessionActor) : MessageService(sessionAct
     private void HatchEgg(Wizard wizard, CraftingSlot egg) {
         // Resolve the pet template from the egg's recipe name.
         if (!ServerPetOwnerBehavior.TryGetPetTemplateFromEgg(egg, out var petTemplateId)) {
-            Logger.Debug("HatchEgg: could not parse pet template from egg {0}, recipe='{1}'.",
+            Logger.Debug("Egg {EggId} names recipe '{Recipe}', which has no pet template, so it does not hatch.",
                 Logger.Args(egg.m_globalID, egg.m_recipeName));
 
             return;
@@ -272,8 +272,8 @@ internal class PetService(SessionActor sessionActor) : MessageService(sessionAct
             PetTemplateID = (uint) petTemplateId
         });
 
-        Logger.Information("Pet hatched! Egg {0} → template {1} (tome entry: {2})",
-            Logger.Args(egg.m_globalID, petTemplateId, petTomeGlobalId));
+        Logger.Debug("{Wizard} hatched egg {EggId} into pet template {TemplateId} (tome entry {TomeEntryId}).",
+            Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), egg.m_globalID, petTemplateId, petTomeGlobalId));
     }
 
 }

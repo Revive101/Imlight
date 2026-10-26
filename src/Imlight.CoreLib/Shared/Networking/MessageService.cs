@@ -38,7 +38,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/15/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -188,8 +188,7 @@ internal abstract class MessageService(SessionActor sessionActor) : ReceiveProto
     protected T AskServer<T>(IServerMessage message)
         where T : IServerMessage {
         if (SessionActor is null) {
-            Logger.Error("{0} attempted to send message to undefined SessionActor.",
-                Logger.Args(this.GetType()));
+            Logger.Error("{Service} asked the server without a session.", Logger.Args(GetType().Name));
 
             return default(T);
         }
@@ -239,24 +238,6 @@ internal abstract class MessageService(SessionActor sessionActor) : ReceiveProto
 
         // Remove the player from the online collection.
         OnlinePlayerCollection.RemoveOnlinePlayer(SessionActor.SessionID);
-    }
-
-    private void EnsureActiveWizardCached() {
-        if (_cachedWizard is not null && _cachedWizardGameObject is not null) {
-            return;
-        }
-
-        var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
-        var response = AskOtherService<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
-
-        if (response?.Wizard is null) {
-            Logger.Warning("{0} found no active wizard; skipping the cache.", Logger.Args(GetType().Name));
-
-            return;
-        }
-
-        _cachedWizard = response.Wizard;
-        _cachedWizardGameObject = response.WizardGameObject;
     }
 
     protected CoreObject GetActiveGameObject() {
@@ -371,19 +352,6 @@ internal abstract class MessageService(SessionActor sessionActor) : ReceiveProto
         DoTeleport(msg.DestinationZone, msg.DestinationLocation, msg.MakePrivate, msg.OwnerCharId, msg.HouseEntry);
     }
 
-    private void DoTeleport(string destinationZone, string destinationLocation,
-                            bool makePrivate, ulong ownerCharId, HouseEntry houseEntry) {
-        var zoneTransfer = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
-            DestinationLocation = destinationLocation,
-            DestinationZone = destinationZone,
-            SendToClient = true,
-            IsPrivate = makePrivate,
-            OwnerCharId = ownerCharId,
-            HouseEntry = houseEntry
-        };
-        TellOtherServices(zoneTransfer);
-    }
-
     /// <summary>
     /// Checks if the player is online and retrieves the <see cref="OnlinePlayer"/> object.
     /// </summary>
@@ -428,7 +396,7 @@ internal abstract class MessageService(SessionActor sessionActor) : ReceiveProto
     }
 
     protected override void PreRestart(Exception reason, object message) {
-        Logger.Error("MessageService {ServiceName} restarting due to {Reason}",
+        Logger.Debug("MessageService {ServiceName} restarting due to {Reason}",
             Logger.Args(GetType().Name, reason.Message));
 
         base.PreRestart(reason, message);
@@ -475,5 +443,36 @@ internal abstract class MessageService(SessionActor sessionActor) : ReceiveProto
     }
 
     #endregion
+
+    private void EnsureActiveWizardCached() {
+        if (_cachedWizard is not null && _cachedWizardGameObject is not null) {
+            return;
+        }
+
+        var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
+        var response = AskOtherService<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
+
+        if (response?.Wizard is null) {
+            Logger.Warning("{Service} found no active wizard; skipping the cache.", Logger.Args(GetType().Name));
+
+            return;
+        }
+
+        _cachedWizard = response.Wizard;
+        _cachedWizardGameObject = response.WizardGameObject;
+    }
+
+    private void DoTeleport(string destinationZone, string destinationLocation,
+                            bool makePrivate, ulong ownerCharId, HouseEntry houseEntry) {
+        var zoneTransfer = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
+            DestinationLocation = destinationLocation,
+            DestinationZone = destinationZone,
+            SendToClient = true,
+            IsPrivate = makePrivate,
+            OwnerCharId = ownerCharId,
+            HouseEntry = houseEntry
+        };
+        TellOtherServices(zoneTransfer);
+    }
 
 }

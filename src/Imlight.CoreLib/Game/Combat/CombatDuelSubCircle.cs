@@ -38,7 +38,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/14/2026
+ * Last Updated: 10/25/2026
  */
 
 using Akka.Actor;
@@ -299,7 +299,7 @@ public class CombatDuelSubCircle {
             return HasSchoolMastery((uint)magicSchool);
         }
 
-        Logger.Warning("Failed to parse magic school \"{0}\" from string.", Logger.Args(school));
+        Logger.Warning("Unknown magic school \"{School}\" on a spell or item; mastery is treated as absent.", Logger.Args(school));
 
         return false;
     }
@@ -318,9 +318,15 @@ public class CombatDuelSubCircle {
             throw new ArgumentException("List must have a count equal to the max magic school index.");
         }
 
-        var index = (int) MagicSchools.GetMagicSchool(magicSchool).m_schoolIndex;
+        var school = MagicSchools.GetMagicSchool(magicSchool);
+        if (school is null) {
+            Logger.Error("Duel {DuelId} | Slot {Slot} | Unknown magic school \"{School}\"; its stat counts as zero.",
+                Logger.Args(_duelActor.Duel?.m_duelID.Full, SlotIndex, magicSchool));
 
-        return list[index];
+            return default;
+        }
+
+        return list[school.m_schoolIndex];
     }
 
     internal bool HasPipsForSpell(Spell spell) {

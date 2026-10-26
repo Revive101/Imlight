@@ -42,7 +42,7 @@
  *
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/27/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -112,35 +112,6 @@ public sealed class ZonePath : ZoneEntity {
 
             StartSpawnTimer(spawnObject, i);
         }
-    }
-
-    private void StartSpawnTimer(SpawnObject spawnObject, int index) {
-        var timerKey = SpawnTimerKey(spawnObject, index);
-        var msg = new ZONE_102_PROTOCOL.MSG_PATHSPAWNINTERVAL { SpawnObject = spawnObject };
-        var interval = TimeSpan.FromSeconds(spawnObject.m_spawnTime);
-
-        // Without an interval the spawn point fills up to its maximum at once and never refills.
-        if (interval <= TimeSpan.Zero) {
-            for (var i = 0; i < Math.Max(1, (int) spawnObject.m_maxNumberOfSpawns); i++) {
-                Timers.StartSingleTimer($"{timerKey}_{i}", msg, TimeSpan.Zero);
-            }
-
-            return;
-        }
-
-        // Otherwise, start the interval. This still ticks in an instanced zone so a multi-creature
-        // spawn point can populate up to its max on load; CanSpawn is what stops a defeated spawn
-        // point from ever refilling there (see _defeatedInInstance).
-        var delay = TimeSpan.FromSeconds(INITIAL_SPAWN_DELAY_IN_SECONDS);
-        Timers.StartPeriodicTimer(timerKey, msg, delay, interval);
-    }
-
-    private static string SpawnTimerKey(SpawnObject spawnObject, int index) {
-        // Spawners with a zone level range are alternatives (one boss per level band) and share one timer, so
-        // the last of them runs. todo: pick the band from the zone's level once zones carry one.
-        var isLevelVariant = spawnObject.m_zoneLevelMin != 0 || spawnObject.m_zoneLevelMax != 0;
-
-        return isLevelVariant ? CREATURE_SPAWN_INTERVAL_LOCK : $"{CREATURE_SPAWN_INTERVAL_LOCK}_{index}";
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN))]
@@ -264,6 +235,35 @@ public sealed class ZonePath : ZoneEntity {
         HandleCreatureSpawn(spawnObject, message);
     }
 
+    private void StartSpawnTimer(SpawnObject spawnObject, int index) {
+        var timerKey = SpawnTimerKey(spawnObject, index);
+        var msg = new ZONE_102_PROTOCOL.MSG_PATHSPAWNINTERVAL { SpawnObject = spawnObject };
+        var interval = TimeSpan.FromSeconds(spawnObject.m_spawnTime);
+
+        // Without an interval the spawn point fills up to its maximum at once and never refills.
+        if (interval <= TimeSpan.Zero) {
+            for (var i = 0; i < Math.Max(1, (int) spawnObject.m_maxNumberOfSpawns); i++) {
+                Timers.StartSingleTimer($"{timerKey}_{i}", msg, TimeSpan.Zero);
+            }
+
+            return;
+        }
+
+        // Otherwise, start the interval. This still ticks in an instanced zone so a multi-creature
+        // spawn point can populate up to its max on load; CanSpawn is what stops a defeated spawn
+        // point from ever refilling there (see _defeatedInInstance).
+        var delay = TimeSpan.FromSeconds(INITIAL_SPAWN_DELAY_IN_SECONDS);
+        Timers.StartPeriodicTimer(timerKey, msg, delay, interval);
+    }
+
+    private static string SpawnTimerKey(SpawnObject spawnObject, int index) {
+        // Spawners with a zone level range are alternatives (one boss per level band) and share one timer, so
+        // the last of them runs. todo: pick the band from the zone's level once zones carry one.
+        var isLevelVariant = spawnObject.m_zoneLevelMin != 0 || spawnObject.m_zoneLevelMax != 0;
+
+        return isLevelVariant ? CREATURE_SPAWN_INTERVAL_LOCK : $"{CREATURE_SPAWN_INTERVAL_LOCK}_{index}";
+    }
+
     private void HandleCreatureSpawn(SpawnObject spawnObject, ZONE_102_PROTOCOL.MSG_ZONEPATHSPAWN cause) {
         // Determine if the conditions match to spawn the objects.
         if (!CanSpawn(spawnObject)) {
@@ -286,8 +286,8 @@ public sealed class ZonePath : ZoneEntity {
         // Create the creature using the data we have.
         var template = CoreObjectFactory.GetCoreTemplate(spawnItemInfo.m_templateID);
         if (template is null) {
-            Logger.Error("Failed to get template for {0}.",
-                Logger.Args(spawnItemInfo.m_templateID));
+            Logger.Warning("Creature template {TemplateId} is not in the game files, so it is not spawned.",
+                Logger.Args((ulong) spawnItemInfo.m_templateID));
 
             return;
         }
@@ -382,7 +382,7 @@ public sealed class ZonePath : ZoneEntity {
         var count = _creatureCount[spawnObject];
 
         if (count >= MAX_SPAWNS_ALLOWED) {
-            Logger.Error("Creature {0} has reached the maximum number of spawns allowed ({1}).",
+            Logger.Debug("Creature {Creature} has reached the maximum number of spawns allowed ({MaxSpawns}).",
                 Logger.Args(spawnObject.m_name, MAX_SPAWNS_ALLOWED));
         }
 

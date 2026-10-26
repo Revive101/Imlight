@@ -48,7 +48,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/22/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -393,7 +393,7 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
                 Logger.Args(_duel.m_duelID.Full, action.SpellCaster.SlotIndex, action.Spell.m_templateID, targetsStringForLog, critSuffix));
         }
         else {
-            Logger.Debug("Duel {0} | Slot {1} | Spell {3} not worth casting. Passing turn.",
+            Logger.Debug("Duel {DuelId} | Slot {Slot} | Spell {SpellId} is not worth casting; passing the turn.",
                 Logger.Args(_duel.m_duelID.Full, action.SpellCaster.SlotIndex, action.Spell.m_templateID));
             combatAction.m_spell = null;
         }

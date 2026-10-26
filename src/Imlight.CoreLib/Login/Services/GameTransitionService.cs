@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/14/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -79,7 +79,8 @@ internal class GameTransitionService(SessionActor sessionActor) : MessageService
         // If the socket account cannot be found, send the client an error.
         var account = GetSocketAccount();
         if (account is null) {
-            Logger.Error("Service {Type} socket account could not be retrieved!", Logger.Args(GetType()));
+            Logger.Warning("SessionActor {SessionId} selected a character before its account was signed in.",
+                Logger.Args(SessionActor.SessionID));
             SendErrorToSocket();
             
             return;

@@ -34,6 +34,7 @@ public abstract class RavenDatabaseSingleton<T> where T : RavenDatabaseSingleton
     // Singleton manager: only one instance of the database is allowed to exist.
     // Make it lazy so that it is only created when needed.
     private static readonly Lazy<T> s_lazy = new(() => (Activator.CreateInstance(typeof(T), true) as T)!);
+    private static bool s_hasLoggedSelfSignedCertificate;
     public static T Instance => s_lazy.Value;
 
     protected readonly byte MaxNumberOfRequestsPerSession
@@ -57,10 +58,6 @@ public abstract class RavenDatabaseSingleton<T> where T : RavenDatabaseSingleton
     public bool IsEmbedded { get; protected set; }
 
     protected virtual IDocumentStore CreateStore() {
-        // If this is the first time we're creating the store, we need to create the database.
-        Logger.Information("Initializing remote RavenDB database for the first time..");
-        Logger.Information("Database name: {0}", Logger.Args(DatabaseName));
-
         var store = new DocumentStore {
             Urls = [Url],
             Database = DatabaseName,
@@ -81,15 +78,19 @@ public abstract class RavenDatabaseSingleton<T> where T : RavenDatabaseSingleton
                 return true;
             }
 
-            Logger.Information("Accepting self-signed certificate: {0}", Logger.Args(cert.Subject));
-            
+            if (!s_hasLoggedSelfSignedCertificate) {
+                s_hasLoggedSelfSignedCertificate = true;
+                Logger.Warning("The database at {Url} uses a certificate that is not trusted ({Subject}). " +
+                    "It is accepted anyway.", Logger.Args(Url, cert.Subject));
+            }
+
             return true;
         };
 
         RavenSystemTextJsonBridge.Apply(store.Conventions);
 
         store.Initialize();
-        Logger.Information("Database initialized.");
+        Logger.Information("Using the RavenDB database {DatabaseName} at {Url}.", Logger.Args(DatabaseName, Url));
 
         return store;
     }
@@ -98,23 +99,26 @@ public abstract class RavenDatabaseSingleton<T> where T : RavenDatabaseSingleton
         EmbeddedDatabaseManager.Start();
         var store = EmbeddedDatabaseManager.GetDocumentStore(DatabaseName);
         IsEmbedded = true;
+        if (store is null) {
+            return null;
+        }
+
+        Logger.Information("Using the embedded database {DatabaseName}. Set PlayerDatabaseUrl in [Database] " +
+            "to use your own RavenDB server.", Logger.Args(DatabaseName));
 
         return store;
     }
 
     protected virtual X509Certificate2 GetCertificate() {
-        if (string.IsNullOrEmpty(Url)) {
+        if (string.IsNullOrEmpty(Url) || string.IsNullOrWhiteSpace(CertificatePath)) {
             return null;
         }
 
         // The certificate path is relative to the working directory.
-        // We need to get the absolute path.
         var absolutePath = Path.GetFullPath(CertificatePath);
-
-        // If there is no file at this path, log an error and return null.
         if (!File.Exists(absolutePath)) {
-            Logger.Error("No certificate found at path {0}",
-                Logger.Args(absolutePath));
+            Logger.Error("The database certificate {Path} does not exist. Fix PlayerDatabaseCertificatePath in " +
+                "[Database], or leave it empty to connect without one.", Logger.Args(absolutePath));
 
             return null;
         }

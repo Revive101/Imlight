@@ -85,7 +85,7 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
         // Ensure that the player has interacted with an object in the zone.
         var interactedObject = GetZoneObject(message.npcGlobalID);
         if (interactedObject is null) {
-            Logger.Warning("Failed to find NPC {0} in zone for shop purchase",
+            Logger.Warning("A shop purchase named NPC {NpcId}, which is not in the zone, so it is refused.",
                 Logger.Args(message.npcGlobalID));
             var shopDenyMsg = new WIZARD_12_PROTOCOL.MSG_SHOPBUYCONFIRM { Failure = 1 };
             SendToSocket(shopDenyMsg);
@@ -97,7 +97,7 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
         var vendorComponent = interactedObject.GetComponentOfType<InteractVendorComponent>();
         var housingShopComponent = interactedObject.GetComponentOfType<InteractHousingShopComponent>();
         if (vendorComponent is null && housingShopComponent is null) {
-            Logger.Warning("Failed to find VendorComponent for NPC {0} in zone for shop purchase",
+            Logger.Warning("A shop purchase named NPC {NpcId}, which is neither a vendor nor a housing shop, so it is refused.",
                 Logger.Args(message.npcGlobalID));
             var shopDenyMsg = new WIZARD_12_PROTOCOL.MSG_SHOPBUYCONFIRM { Failure = 1 };
             SendToSocket(shopDenyMsg);
@@ -118,7 +118,7 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
         var isPet = PetFactory.IsPetTemplate(itemTemplateID);
 
         if (BadgeGate.Blocks(template?.m_purchaseRequirements, itemTemplateID, SessionActor.ActorRef, GetActiveGameObject(), playerWizard, SessionActor.GetZoneActor())) {
-            Logger.Warning("{0} tried to buy item {1} without the badge it requires.",
+            Logger.Warning("{Wizard} tried to buy item {TemplateId} without the badge it requires.",
                 Logger.Args(playerWizard.PlayerNameBehavior.GetWizardName(), itemTemplateID));
             SendShopDenyMessage();
 
@@ -152,7 +152,7 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
             item.m_secondaryColor = message.decal;
         }
 
-        var goldCost = CalculateItemCost(template);
+        var goldCost = PriceModifiersConfig.GetShopBuyCost(template, message.texture, message.decal);
 
         // Check if the user can afford the item.
         if (playerWizard.GameStats.m_currentGold >= goldCost) {
@@ -171,7 +171,7 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
 
         var removedItemSuccess = wizard.RemoveItemFromInventory(message.GlobalID);
         if (!removedItemSuccess) {
-            Logger.Warning("Failed to find item {0} in inventory for shop sell", Logger.Args(message.GlobalID));
+            Logger.Warning("{Wizard} tried to sell item {ItemId}, which is not in their inventory.", Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), message.GlobalID));
             ProcessFailedSale();
 
             return;
@@ -193,7 +193,7 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
             item = wizard.EquipmentBehavior.GetItem(message.itemGlobalID);
 
             if (item == null) {
-                Logger.Error("Failed to find item {0} in inventory for dyes", Logger.Args(message.itemGlobalID));
+                Logger.Warning("{Wizard} tried to dye item {ItemId}, which they do not have.", Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), message.itemGlobalID));
 
                 var dyeDenyMsg = new WIZARD_12_PROTOCOL.MSG_DYECONFIRM { Failure = 1 };
                 SendToSocket(dyeDenyMsg);
@@ -207,7 +207,7 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
 
         var template = ItemHelper.GetDisplayTemplate(item);
         if (template is null || !IsValidDye(item, template, message.texture, message.decal, message.decal2)) {
-            Logger.Warning("Rejected dye {0}/{1}/{2} for item {3} (template {4})",
+            Logger.Warning("Rejected dye {Texture}/{Decal}/{Decal2} for item {ItemId} (template {TemplateId})",
                 Logger.Args(message.texture, message.decal, message.decal2, item.m_globalID, item.m_templateID.Full));
 
             SendToSocket(new WIZARD_12_PROTOCOL.MSG_DYECONFIRM { Failure = 1 });
@@ -264,8 +264,8 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
         var pet = wizard.InventoryBehavior.GetItem(message.itemGlobalID)
             ?? wizard.EquipmentBehavior.GetItem(message.itemGlobalID);
         if (pet is null || !CoreObjectFactory.FindBehaviorInstance<ClientPetNameBehavior>(pet, out _)) {
-            Logger.Warning("Player tried to rename item {0}, which is not one of their pets.",
-                Logger.Args(message.itemGlobalID));
+            Logger.Warning("{Wizard} tried to rename item {ItemId}, which is not one of their pets.",
+                Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), message.itemGlobalID));
 
             SendPetRenameDeny();
 
@@ -273,8 +273,8 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
         }
 
         if (!WizardNameBank.IsValidPetName(message.petName)) {
-            Logger.Warning("Player tried to rename pet {0} with name keys {1}, which are not in the pet name tables.",
-                Logger.Args(pet.m_globalID, message.petName));
+            Logger.Warning("{Wizard} tried to rename pet {ItemId} with name keys {NameKeys}, which are not in the pet name tables.",
+                Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), pet.m_globalID, message.petName));
 
             SendPetRenameDeny();
 
@@ -289,7 +289,7 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
         }
 
         if (!WizardItemCollection.ApplyPetName(pet, message.petName)) {
-            Logger.Error("Failed to save name keys {0} for pet {1}",
+            Logger.Error("Name keys {NameKeys} could not be saved for pet {ItemId}, so the rename is refused.",
                 Logger.Args(message.petName, pet.m_globalID));
 
             SendPetRenameDeny();
@@ -308,7 +308,7 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
         // The client renames its own copy of the pet on success; the confirm carries no name.
         SendToSocket(new WIZARD_12_PROTOCOL.MSG_PETRENAMECONFIRM { Failure = 0 });
 
-        Logger.Information("Pet {0} renamed to {1} for {2} gold.",
+        Logger.Debug("Pet {ItemId} renamed to {PetName} for {Gold} gold.",
             Logger.Args(pet.m_globalID, WizardNameBank.GetPetEnglishName(message.petName), renameCost));
 
         ResummonIfEquippedPet(wizard, pet);
@@ -370,14 +370,14 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
     private void SendEquippedItemRefresh(Wizard wizard, WizClientObjectItem item, WizItemTemplate template) {
         var slot = ItemHelper.GetItemSlot(template);
         if (slot is null) {
-            Logger.Error("Dyed item {0} has no equipment slot", Logger.Args(item.m_globalID));
+            Logger.Error("Dyed item {ItemId} has no equipment slot, so other players do not see the new colors.", Logger.Args(item.m_globalID));
 
             return;
         }
 
         // Serialize the item with new colors for the local player's cache.
         if (!s_itemSerializer.Serialize(item, EquippedItemMask, out var localData)) {
-            Logger.Error("Failed to serialize dyed item {0} for local update",
+            Logger.Error("Dyed item {ItemId} could not be serialized, so the client does not see the new colors.",
                 Logger.Args(item.m_globalID));
 
             return;
@@ -393,7 +393,7 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
         // Broadcast updated public appearance so other players see the new colors.
         var pubItem = ItemHelper.GetPublicItem(item);
         if (!s_itemSerializer.Serialize(pubItem, 1, out var pubData)) {
-            Logger.Error("Failed to serialize item {0} for dye broadcast",
+            Logger.Error("Dyed item {ItemId} could not be serialized, so other players do not see the new colors.",
                 Logger.Args(item.m_globalID));
 
             return;
@@ -435,7 +435,7 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
         }
 
         if (!IsValidDye(pet, template, message.texture, message.decal, message.decal2)) {
-            Logger.Warning("Rejected dye {0}/{1}/{2} for the purchase of pet template {3}",
+            Logger.Warning("Rejected dye {Texture}/{Decal}/{Decal2} for the purchase of pet template {TemplateId}",
                 Logger.Args(message.texture, message.decal, message.decal2, template.m_templateID));
 
             return false;
@@ -451,7 +451,7 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
         }
 
         if (!WizardNameBank.IsValidPetName(message.petName) || !PetFactory.TrySetPetName(pet, message.petName)) {
-            Logger.Warning("Rejected name keys {0} for the purchase of pet template {1}",
+            Logger.Warning("Rejected name keys {NameKeys} for the purchase of pet template {TemplateId}",
                 Logger.Args(message.petName, template.m_templateID));
 
             return false;
@@ -478,7 +478,7 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
                                            bool isPet) {
         var added = isPet ? playerWizard.AddPetToInventory(item) : playerWizard.AddItemToInventory(item);
         if (!added) {
-            Logger.Warning("Could not add purchased item {0} to the inventory of {1}.",
+            Logger.Warning("Could not add purchased item {TemplateId} to the inventory of character {CharId}.",
                 Logger.Args(itemTemplateID, playerWizard.CharId));
             SendShopDenyMessage();
 
@@ -518,7 +518,7 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
 
     private void ProcessHousePurchase(Wizard wizard, WizItemTemplate template, uint templateId, bool paysWithCrowns) {
         var account = GetActiveAccount();
-        var cost = paysWithCrowns ? (int) template.m_creditsCost : CalculateItemCost(template);
+        var cost = paysWithCrowns ? (int) template.m_creditsCost : PriceModifiersConfig.GetShopBuyCost(template, 0, 0);
         var balance = paysWithCrowns ? account.Crowns : wizard.GameStats.m_currentGold;
         if (cost <= 0 || balance < cost) {
             SendHouseDenyMessage(account);
@@ -591,9 +591,9 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
         var infractionText = $"Player tried to purchase item {itemTemplateID} from NPC {interactedObjectGID} that is not in its inventory!";
         account.AddInfraction(WizardData.Models.Misc.InfractionType.SuspiciousBehavior, infractionText);
 
-        Logger.Warning("Player tried to purchase item {0} from an NPC that it did not have in its inventory. "
-            + "This has been logged as suspicious behavior.",
-            Logger.Args(itemTemplateID));
+        Logger.Warning("A player tried to buy item {TemplateId} from NPC {NpcId}, which does not sell it. "
+            + "This is recorded as suspicious behavior.",
+            Logger.Args(itemTemplateID, interactedObjectGID));
     }
 
     private static int CalculateItemSellValue(WizItemTemplate template) {
@@ -603,21 +603,6 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
         }
 
         return goldValue;
-    }
-
-    private static int CalculateItemCost(WizItemTemplate template) {
-        var goldCost = (int) template.m_baseCost;
-
-        // The client's shop window shows a pet's base price whatever its texture choices are.
-        if (PetFactory.IsPetTemplate(template.m_templateID)) {
-            return goldCost;
-        }
-
-        if (template.m_numPrimaryColors != 1 && template.m_numSecondaryColors != 0) {
-            goldCost = (int) Math.Ceiling(goldCost * DYED_ITEM_COST_MULTIPLIER) + 1;
-        }
-
-        return goldCost;
     }
 
 }

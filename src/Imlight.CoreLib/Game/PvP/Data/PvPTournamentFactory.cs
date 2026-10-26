@@ -34,11 +34,12 @@
  * 
  * Created by: Jay
  * Version: KALI 1.0
- * Last Updated: 10/18/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Imcodec.Cryptography;
 using Imcodec.ObjectProperty.TypeCache;
@@ -58,14 +59,10 @@ internal sealed class PvPTournamentFactory : RootDirectoryResourceSingleton<PvPT
         var byName = new Dictionary<string, TournamentTemplate>(StringComparer.Ordinal);
         var byId = new Dictionary<uint, TournamentTemplate>();
 
-        foreach (var file in base.Files) {
-            if (!PvPResourceReader.TryRead<TournamentTemplate>(file.Key, file.Value, out var tournament)) {
-                continue;
-            }
-
+        foreach (var (file, tournament) in ReadTemplates<TournamentTemplate>()) {
             string name = tournament.m_tournamentName;
             if (!byName.TryAdd(name, tournament) || !byId.TryAdd(StringHash.Compute(name), tournament)) {
-                Logger.Error("Tournament {Name} in {File} is defined twice.", Logger.Args(name, file.Key.FileName));
+                Logger.Error("Tournament {Name} in {File} is defined twice.", Logger.Args(name, file.FileName));
             }
         }
 
@@ -73,8 +70,12 @@ internal sealed class PvPTournamentFactory : RootDirectoryResourceSingleton<PvPT
         s_tournamentsById = byId;
 
         Logger.Information("Loaded {Count} PvP tournaments.", Logger.Args(byName.Count));
-        Logger.Information("PvP ranked play uses the tournament {Tournament}; {RankedCount} tournament(s) of the data update a ladder with the Elo behavior.",
-            Logger.Args(TryGetRankedTournament(out var ranked) ? ranked.m_tournamentName.ToString() : "none", byName.Values.Count(IsRanked)));
+        if (!TryGetRankedTournament(out var ranked) || !TryGetPracticeTournament(out _)) {
+            throw new InvalidDataException("The game data has no PvP tournament for ranked or for practice play. Re-download the game resources.");
+        }
+
+        Logger.Debug("PvP ranked play uses the tournament {Tournament}; {RankedCount} tournament(s) of the data update a ladder with the Elo behavior.",
+            Logger.Args(ranked.m_tournamentName.ToString(), byName.Values.Count(IsRanked)));
     }
 
     internal static bool TryGetTournament(string name, out TournamentTemplate tournament) {

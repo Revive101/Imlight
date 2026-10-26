@@ -37,7 +37,7 @@
  * 
  * Created by: Jay
  * Version: KALI 1.0
- * Last Updated: 10/18/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -93,7 +93,6 @@ internal sealed class PvPDirector : ReceiveProtocolDispatcher, IWithTimers {
     private ulong _matchSequence;
     private ulong _hostedSequence;
 
-    // ctor
     public PvPDirector()
         => Instance = Self;
 
@@ -107,20 +106,12 @@ internal sealed class PvPDirector : ReceiveProtocolDispatcher, IWithTimers {
         base.PreStart();
     }
 
-    private static void LogRankBadges() {
-        try {
-            PvPRankBadges.LogResolution();
-        } catch (Exception ex) {
-            Logger.Warning("The PvP rank badges could not be checked at boot: {Exception}", Logger.Args(ex.Message));
-        }
-    }
-
     protected override bool AroundReceive(Receive receive, object message) {
         // A restart would rebuild the director empty and silently drop every queued player.
         try {
             return base.AroundReceive(receive, message);
         } catch (Exception ex) {
-            Logger.Error("PvPDirector failed to handle {MessageType}: {Exception}",
+            Logger.Error("PvP could not handle {MessageType} and carries on without it. {Exception}",
                 Logger.Args(message.GetType().Name, ex));
 
             return true;
@@ -230,39 +221,6 @@ internal sealed class PvPDirector : ReceiveProtocolDispatcher, IWithTimers {
         SendQueueStatus(entry);
     }
 
-    private static bool IsRankedTournament(uint tournamentNameId)
-        => PvPTournamentFactory.TryGetTournament(tournamentNameId, out var tournament) && PvPTournamentFactory.IsRanked(tournament);
-
-    private bool TryBuildEntry(PvPPlayerProfile profile, uint tournamentNameId, uint matchNameId, uint leagueId, uint seasonId,
-                               bool expandSearch, PvPRatingSnapshot ranked, out PvPQueueEntry entry) {
-        entry = null;
-        if (!PvPMatchFactory.TryGetMatch(matchNameId, out var match)
-            || !PvPMatchFactory.TryGetLevelModifiers(match.m_levelModifiersListID.Full, out var levelModifiers)) {
-            Logger.Error("Match {MatchId} has no template or level table; {CharId} cannot play it.", Logger.Args(matchNameId, profile.CharId));
-            SendToPlayer(profile.CharId, PvPArenaErrors.Message(PvPArenaErrors.INVALID_MATCH_NAME_ID));
-
-            return false;
-        }
-
-        entry = new PvPQueueEntry(
-            CharId: profile.CharId,
-            RealmName: profile.RealmName,
-            TournamentNameId: tournamentNameId,
-            MatchNameId: matchNameId,
-            LeagueId: leagueId,
-            SeasonId: seasonId,
-            ExpandSearch: expandSearch,
-            EnteredAtUtc: DateTime.UtcNow,
-            Rating: ranked?.Elo ?? (int) Math.Round(PvPMatchmaker.GetRating(levelModifiers, (int) profile.Level)),
-            OriginZone: profile.ZonePath,
-            OriginZoneDisplayName: profile.ZoneDisplayName,
-            OriginLocation: profile.Location,
-            Ranked: ranked
-        );
-
-        return true;
-    }
-
     [MessageHandler(typeof(PVP_111_PROTOCOL.MSG_SETEXPANDSEARCH))]
     private void ReceiveSetExpandSearch(PVP_111_PROTOCOL.MSG_SETEXPANDSEARCH message) {
         if (!_queue.TryGet(message.CharId, out var entry) || entry.ExpandSearch == message.Expand) {
@@ -302,24 +260,6 @@ internal sealed class PvPDirector : ReceiveProtocolDispatcher, IWithTimers {
         }
 
         RemoveFromQueue(message.CharId);
-    }
-
-    private void LeaveMatch(PvPMatch match, ulong charId) {
-        if (match.State == PvPMatchState.InProgress) {
-            ForfeitParticipant(match, charId);
-
-            return;
-        }
-
-        CancelMatch(match, PvPCancelReason.OpponentLeft, charId);
-    }
-
-    private void ForfeitParticipant(PvPMatch match, ulong charId) {
-        if (!_profiles.TryGetValue(charId, out var profile) || profile.ZoneActor is null) {
-            return;
-        }
-
-        profile.ZoneActor.Tell(new ZONE_102_PROTOCOL.MSG_FORFEITPVPPARTICIPANT { MatchId = match.Id, CharId = charId });
     }
 
     #endregion
@@ -414,105 +354,6 @@ internal sealed class PvPDirector : ReceiveProtocolDispatcher, IWithTimers {
         CreateMatch(teams);
     }
 
-    private string GetJoinHostedRefusal(PVP_111_PROTOCOL.MSG_JOINHOSTED message, PvPPlayerProfile profile, out PvPHostedMatch hosted) {
-        if (!_hostedMatches.TryGetValue(message.MatchId, out hosted) || hosted.State != PvPHostedState.Open
-            || !HostScope(hosted).SameList(new PvPListScope(message.TournamentNameId, message.LeagueId, message.SeasonId))
-            || !_sessions.ContainsKey(hosted.Host.CharId)) {
-            return PvPArenaErrors.INVALID_MATCH_NAME_ID;
-        }
-
-        if (hosted.IsSeated(profile.CharId)) {
-            return PvPArenaErrors.ALREADY_IN_MATCH;
-        }
-
-        if (IsQueuedOrInMatch(profile.CharId) || PvPRegistry.IsHosting(profile.CharId)) {
-            return PvPArenaErrors.ALREADY_QUEUED;
-        }
-
-        if (!hosted.HasFreeSlot(message.TeamId)) {
-            return PvPArenaErrors.INVALID_MATCH_NAME_ID;
-        }
-
-        if (hosted.MaxActorLevel > 0 && profile.Level > hosted.MaxActorLevel) {
-            return PvPArenaErrors.NOT_IN_LEVEL_RANGE;
-        }
-
-        // todo: the buddy check of a friends-only match; no buddy lookup helper exists yet, so every joiner passes.
-        return null;
-    }
-
-    private bool CancelHosted(ulong charId) {
-        if (!_hostedIdByPlayer.TryGetValue(charId, out var hostedId) || !_hostedMatches.TryGetValue(hostedId, out var hosted)) {
-            return false;
-        }
-
-        if (hosted.Host.CharId != charId) {
-            Logger.Debug("{CharId} leaves hosted PvP match {HostedId}.", Logger.Args(charId, hostedId));
-
-            Unseat(hosted, charId);
-
-            return true;
-        }
-
-        Logger.Debug("{CharId} cancels hosted PvP match {HostedId}.", Logger.Args(charId, hostedId));
-
-        RemoveHosted(hosted);
-
-        return true;
-    }
-
-    private void Unseat(PvPHostedMatch hosted, ulong charId) {
-        hosted.Unseat(charId);
-        _hostedIdByPlayer.Remove(charId);
-        PvPRegistry.SetHosting(charId, false);
-        PvPRegistry.SetHostedMatch(hosted.Id, hosted.Info);
-
-        PushHostedUpdate(hosted);
-    }
-
-    private void RemoveHosted(PvPHostedMatch hosted) {
-        var seated = hosted.Teams.SelectMany(team => team).Select(entry => entry.CharId).ToList();
-        _hostedMatches.Remove(hosted.Id);
-        PvPRegistry.SetHostedMatch(hosted.Id, null);
-
-        foreach (var charId in seated) {
-            _hostedIdByPlayer.Remove(charId);
-            PvPRegistry.SetHosting(charId, false);
-        }
-
-        PushToViewers(HostScope(hosted), members: seated);
-    }
-
-    private void PushHostedUpdate(PvPHostedMatch hosted)
-        => PushToViewers(HostScope(hosted), members: hosted.Teams.SelectMany(team => team).Select(entry => entry.CharId));
-
-    private static PvPListScope HostScope(PvPHostedMatch hosted)
-        => new(hosted.Host.TournamentNameId, hosted.Host.LeagueId, hosted.Host.SeasonId);
-
-    private void PushToViewers(PvPListScope scope, ulong exceptCharId = 0, IEnumerable<ulong> members = null) {
-        // The client only accepts a whole new list, so every change resends it.
-        var recipients = _windowViewers
-            .Where(viewer => viewer.Value.SameList(scope))
-            .Select(viewer => viewer.Key)
-            .Concat(members ?? [])
-            .Where(charId => charId != exceptCharId)
-            .Distinct();
-
-        foreach (var charId in recipients) {
-            if (!_sessions.TryGetValue(charId, out var session)) {
-                continue;
-            }
-
-            var viewerScope = _windowViewers.TryGetValue(charId, out var viewing) ? viewing : scope;
-            var blob = PvPBlobs.TournamentList(viewerScope);
-            Logger.Debug("PvP list push to {CharId}: tournament {TournamentId}, {Bytes} bytes.", Logger.Args(charId, viewerScope.TournamentNameId, blob.Length));
-            session.Tell(PvPBlobs.UpdateInfo(charId, blob));
-        }
-    }
-
-    private static WIZARD_12_PROTOCOL.MSG_PVPMATCHREQUEST HostReply(uint tournamentNameId, ulong mobileId, byte failure)
-        => new() { TournamentNameID = tournamentNameId, MobileID = mobileId, Failure = failure };
-
     #endregion
 
     #region Matches
@@ -521,14 +362,14 @@ internal sealed class PvPDirector : ReceiveProtocolDispatcher, IWithTimers {
     private void ReceiveConfirmMatch(PVP_111_PROTOCOL.MSG_CONFIRMMATCH message) {
         var charId = message.CharId;
         if (!TryGetMatch(charId, out var match) || match.State != PvPMatchState.Confirming) {
-            Logger.Warning("{CharId} answered a PvP match prompt, but has no match to confirm.", Logger.Args(charId));
+            Logger.Debug("{CharId} answered a PvP match prompt, but has no match to confirm.", Logger.Args(charId));
 
             return;
         }
 
         var entry = match.GetEntry(charId);
         if (entry.TournamentNameId != message.TournamentNameId) {
-            Logger.Warning("{CharId} answered the prompt of tournament {TournamentId}, not the one of the match.",
+            Logger.Debug("{CharId} answered the prompt of tournament {TournamentId}, not the one of the match.",
                 Logger.Args(charId, message.TournamentNameId));
 
             return;
@@ -569,7 +410,7 @@ internal sealed class PvPDirector : ReceiveProtocolDispatcher, IWithTimers {
     [MessageHandler(typeof(PVP_111_PROTOCOL.MSG_MATCHENDED))]
     private void ReceiveMatchEnded(PVP_111_PROTOCOL.MSG_MATCHENDED message) {
         if (!_matches.TryGetValue(message.MatchId, out var match) || match.State != PvPMatchState.InProgress) {
-            Logger.Warning("PvP match {MatchId} reported its end, but is not in progress.", Logger.Args(message.MatchId));
+            Logger.Debug("PvP match {MatchId} reported its end, but is not in progress.", Logger.Args(message.MatchId));
 
             return;
         }
@@ -581,49 +422,6 @@ internal sealed class PvPDirector : ReceiveProtocolDispatcher, IWithTimers {
         match.State = PvPMatchState.Ended;
         ForgetMatch(match);
         ReturnPlayers(match, culpritCharId: 0);
-    }
-
-    private void ReportRatedResult(PvPMatch match, int winningTeam, IReadOnlyCollection<ulong> forfeitedCharIds) {
-        if (!match.IsRanked) {
-            return;
-        }
-
-        foreach (var entry in match.Entries) {
-            var side = match.GetSideIndex(entry.CharId);
-            var opponents = match.Entries.Where(other => match.GetSideIndex(other.CharId) != side).ToList();
-            var forfeited = forfeitedCharIds.Contains(entry.CharId);
-            var opponentsForfeited = opponents.All(opponent => forfeitedCharIds.Contains(opponent.CharId));
-
-            SendRatedResult(entry.CharId, new PVP_111_PROTOCOL.MSG_RATEDRESULT {
-                MatchId = match.Id,
-                LeagueId = entry.LeagueId,
-                SeasonId = entry.SeasonId,
-                OpponentElo = PvPEloCalculator.GetTeamAverage(opponents.Select(opponent => opponent.Ranked.Elo)),
-                Score = GetRatedScore(side, winningTeam, forfeited, opponentsForfeited)
-            });
-        }
-    }
-
-    private static double GetRatedScore(int side, int winningTeam, bool forfeited, bool opponentsForfeited) {
-        if (forfeited) {
-            return PvPEloCalculator.LOSS;
-        }
-
-        if (opponentsForfeited || winningTeam == side) {
-            return PvPEloCalculator.WIN;
-        }
-
-        return winningTeam < 0 ? PvPEloCalculator.DRAW : PvPEloCalculator.LOSS;
-    }
-
-    private void SendRatedResult(ulong charId, PVP_111_PROTOCOL.MSG_RATEDRESULT result) {
-        if (_sessions.ContainsKey(charId) || _profiles.ContainsKey(charId)) {
-            SendToPlayer(charId, result);
-
-            return;
-        }
-
-        PvPRatedResults.ApplyOffline(charId, result);
     }
 
     #endregion
@@ -976,6 +774,207 @@ internal sealed class PvPDirector : ReceiveProtocolDispatcher, IWithTimers {
         foreach (var message in queue) {
             session.Tell(message);
         }
+    }
+
+    private static void LogRankBadges() {
+        try {
+            PvPRankBadges.LogResolution();
+        } catch (Exception ex) {
+            Logger.Warning("The PvP rank badges could not be checked ({Reason}); ranks still work, but their badges may not be granted.", Logger.Args(ex.Message));
+        }
+    }
+
+    private static bool IsRankedTournament(uint tournamentNameId)
+        => PvPTournamentFactory.TryGetTournament(tournamentNameId, out var tournament) && PvPTournamentFactory.IsRanked(tournament);
+
+    private bool TryBuildEntry(PvPPlayerProfile profile, uint tournamentNameId, uint matchNameId, uint leagueId, uint seasonId,
+                               bool expandSearch, PvPRatingSnapshot ranked, out PvPQueueEntry entry) {
+        entry = null;
+        if (!PvPMatchFactory.TryGetMatch(matchNameId, out var match)
+            || !PvPMatchFactory.TryGetLevelModifiers(match.m_levelModifiersListID.Full, out var levelModifiers)) {
+            Logger.Error("Match {MatchId} has no template or level table; {CharId} cannot play it.", Logger.Args(matchNameId, profile.CharId));
+            SendToPlayer(profile.CharId, PvPArenaErrors.Message(PvPArenaErrors.INVALID_MATCH_NAME_ID));
+
+            return false;
+        }
+
+        entry = new PvPQueueEntry(
+            CharId: profile.CharId,
+            RealmName: profile.RealmName,
+            TournamentNameId: tournamentNameId,
+            MatchNameId: matchNameId,
+            LeagueId: leagueId,
+            SeasonId: seasonId,
+            ExpandSearch: expandSearch,
+            EnteredAtUtc: DateTime.UtcNow,
+            Rating: ranked?.Elo ?? (int) Math.Round(PvPMatchmaker.GetRating(levelModifiers, (int) profile.Level)),
+            OriginZone: profile.ZonePath,
+            OriginZoneDisplayName: profile.ZoneDisplayName,
+            OriginLocation: profile.Location,
+            Ranked: ranked
+        );
+
+        return true;
+    }
+
+    private void LeaveMatch(PvPMatch match, ulong charId) {
+        if (match.State == PvPMatchState.InProgress) {
+            ForfeitParticipant(match, charId);
+
+            return;
+        }
+
+        CancelMatch(match, PvPCancelReason.OpponentLeft, charId);
+    }
+
+    private void ForfeitParticipant(PvPMatch match, ulong charId) {
+        if (!_profiles.TryGetValue(charId, out var profile) || profile.ZoneActor is null) {
+            return;
+        }
+
+        profile.ZoneActor.Tell(new ZONE_102_PROTOCOL.MSG_FORFEITPVPPARTICIPANT { MatchId = match.Id, CharId = charId });
+    }
+
+    private string GetJoinHostedRefusal(PVP_111_PROTOCOL.MSG_JOINHOSTED message, PvPPlayerProfile profile, out PvPHostedMatch hosted) {
+        if (!_hostedMatches.TryGetValue(message.MatchId, out hosted) || hosted.State != PvPHostedState.Open
+            || !HostScope(hosted).SameList(new PvPListScope(message.TournamentNameId, message.LeagueId, message.SeasonId))
+            || !_sessions.ContainsKey(hosted.Host.CharId)) {
+            return PvPArenaErrors.INVALID_MATCH_NAME_ID;
+        }
+
+        if (hosted.IsSeated(profile.CharId)) {
+            return PvPArenaErrors.ALREADY_IN_MATCH;
+        }
+
+        if (IsQueuedOrInMatch(profile.CharId) || PvPRegistry.IsHosting(profile.CharId)) {
+            return PvPArenaErrors.ALREADY_QUEUED;
+        }
+
+        if (!hosted.HasFreeSlot(message.TeamId)) {
+            return PvPArenaErrors.INVALID_MATCH_NAME_ID;
+        }
+
+        if (hosted.MaxActorLevel > 0 && profile.Level > hosted.MaxActorLevel) {
+            return PvPArenaErrors.NOT_IN_LEVEL_RANGE;
+        }
+
+        // todo: the buddy check of a friends-only match; no buddy lookup helper exists yet, so every joiner passes.
+        return null;
+    }
+
+    private bool CancelHosted(ulong charId) {
+        if (!_hostedIdByPlayer.TryGetValue(charId, out var hostedId) || !_hostedMatches.TryGetValue(hostedId, out var hosted)) {
+            return false;
+        }
+
+        if (hosted.Host.CharId != charId) {
+            Logger.Debug("{CharId} leaves hosted PvP match {HostedId}.", Logger.Args(charId, hostedId));
+
+            Unseat(hosted, charId);
+
+            return true;
+        }
+
+        Logger.Debug("{CharId} cancels hosted PvP match {HostedId}.", Logger.Args(charId, hostedId));
+
+        RemoveHosted(hosted);
+
+        return true;
+    }
+
+    private void Unseat(PvPHostedMatch hosted, ulong charId) {
+        hosted.Unseat(charId);
+        _hostedIdByPlayer.Remove(charId);
+        PvPRegistry.SetHosting(charId, false);
+        PvPRegistry.SetHostedMatch(hosted.Id, hosted.Info);
+
+        PushHostedUpdate(hosted);
+    }
+
+    private void RemoveHosted(PvPHostedMatch hosted) {
+        var seated = hosted.Teams.SelectMany(team => team).Select(entry => entry.CharId).ToList();
+        _hostedMatches.Remove(hosted.Id);
+        PvPRegistry.SetHostedMatch(hosted.Id, null);
+
+        foreach (var charId in seated) {
+            _hostedIdByPlayer.Remove(charId);
+            PvPRegistry.SetHosting(charId, false);
+        }
+
+        PushToViewers(HostScope(hosted), members: seated);
+    }
+
+    private void PushHostedUpdate(PvPHostedMatch hosted)
+        => PushToViewers(HostScope(hosted), members: hosted.Teams.SelectMany(team => team).Select(entry => entry.CharId));
+
+    private static PvPListScope HostScope(PvPHostedMatch hosted)
+        => new(hosted.Host.TournamentNameId, hosted.Host.LeagueId, hosted.Host.SeasonId);
+
+    private void PushToViewers(PvPListScope scope, ulong exceptCharId = 0, IEnumerable<ulong> members = null) {
+        // The client only accepts a whole new list, so every change resends it.
+        var recipients = _windowViewers
+            .Where(viewer => viewer.Value.SameList(scope))
+            .Select(viewer => viewer.Key)
+            .Concat(members ?? [])
+            .Where(charId => charId != exceptCharId)
+            .Distinct();
+
+        foreach (var charId in recipients) {
+            if (!_sessions.TryGetValue(charId, out var session)) {
+                continue;
+            }
+
+            var viewerScope = _windowViewers.TryGetValue(charId, out var viewing) ? viewing : scope;
+            var blob = PvPBlobs.TournamentList(viewerScope);
+            Logger.Debug("PvP list push to {CharId}: tournament {TournamentId}, {Bytes} bytes.", Logger.Args(charId, viewerScope.TournamentNameId, blob.Length));
+            session.Tell(PvPBlobs.UpdateInfo(charId, blob));
+        }
+    }
+
+    private static WIZARD_12_PROTOCOL.MSG_PVPMATCHREQUEST HostReply(uint tournamentNameId, ulong mobileId, byte failure)
+        => new() { TournamentNameID = tournamentNameId, MobileID = mobileId, Failure = failure };
+
+    private void ReportRatedResult(PvPMatch match, int winningTeam, IReadOnlyCollection<ulong> forfeitedCharIds) {
+        if (!match.IsRanked) {
+            return;
+        }
+
+        foreach (var entry in match.Entries) {
+            var side = match.GetSideIndex(entry.CharId);
+            var opponents = match.Entries.Where(other => match.GetSideIndex(other.CharId) != side).ToList();
+            var forfeited = forfeitedCharIds.Contains(entry.CharId);
+            var opponentsForfeited = opponents.All(opponent => forfeitedCharIds.Contains(opponent.CharId));
+
+            SendRatedResult(entry.CharId, new PVP_111_PROTOCOL.MSG_RATEDRESULT {
+                MatchId = match.Id,
+                LeagueId = entry.LeagueId,
+                SeasonId = entry.SeasonId,
+                OpponentElo = PvPEloCalculator.GetTeamAverage(opponents.Select(opponent => opponent.Ranked.Elo)),
+                Score = GetRatedScore(side, winningTeam, forfeited, opponentsForfeited)
+            });
+        }
+    }
+
+    private static double GetRatedScore(int side, int winningTeam, bool forfeited, bool opponentsForfeited) {
+        if (forfeited) {
+            return PvPEloCalculator.LOSS;
+        }
+
+        if (opponentsForfeited || winningTeam == side) {
+            return PvPEloCalculator.WIN;
+        }
+
+        return winningTeam < 0 ? PvPEloCalculator.DRAW : PvPEloCalculator.LOSS;
+    }
+
+    private void SendRatedResult(ulong charId, PVP_111_PROTOCOL.MSG_RATEDRESULT result) {
+        if (_sessions.ContainsKey(charId) || _profiles.ContainsKey(charId)) {
+            SendToPlayer(charId, result);
+
+            return;
+        }
+
+        PvPRatedResults.ApplyOffline(charId, result);
     }
 
     #endregion

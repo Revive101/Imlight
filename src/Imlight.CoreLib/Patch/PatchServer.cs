@@ -68,14 +68,13 @@ public class PatchServer : Server {
     private Stopwatch _diagnosticStopwatch;
     private string _patchServerWorkingUrl;
 
-    // ctor
     public PatchServer(string name, int port, Props factoryProps)
         : base(name, port, factoryProps) {
         if (Instance is not null) {
             throw new Exception("Attempted to create more than one patch server! This is not possible!");
         }
 
-        Logger.Information("Patch server created with name {name} under port {port}.", Logger.Args(name, port));
+        Logger.Debug("Patch server created with name {Name} under port {Port}.", Logger.Args(name, port));
         Instance = this.Self;
     }
 
@@ -83,7 +82,7 @@ public class PatchServer : Server {
         => Akka.Actor.Props.Create(() => new PatchServer(serverName, serverPort, PatchServiceFactory.Props()));
 
     protected override void PreRestart(Exception reason, object message) {
-        Logger.Error($"Patch server actor has restarted due to {reason.Message}");
+        Logger.Error("The patch server restarted after an error: {Reason}", Logger.Args(reason.Message));
 
         base.PreRestart(reason, message);
     }
@@ -99,13 +98,11 @@ public class PatchServer : Server {
         _diagnosticStopwatch.Restart();
         EndpointReached = GetPatchServerStatus();
         _diagnosticStopwatch.Stop();
-        Logger.Debug("Patch server status check took {em} ms.",
+        Logger.Debug("Patch server status check took {ElapsedMs} ms.",
             Logger.Args(_diagnosticStopwatch.ElapsedMilliseconds));
 
         // Only perform the following if the patch server is available.
         if (!EndpointReached) {
-            Logger.Error("Patch server endpoint is not available! Continuing without patch server.");
-
             Sender.Tell(new SERVER_100_PROTOCOL.MSG_INITIALIZE_COMPLETE());
 
             return;
@@ -116,7 +113,7 @@ public class PatchServer : Server {
         var latestFileSuccess = SetLatestFileList();
         _diagnosticStopwatch.Stop();
         if (latestFileSuccess) {
-            Logger.Debug("Downloaded and parsed LatestFileList in {em} ms.",
+            Logger.Debug("Downloaded and parsed LatestFileList in {ElapsedMs} ms.",
                 Logger.Args(_diagnosticStopwatch.ElapsedMilliseconds));
         }
 
@@ -158,7 +155,7 @@ public class PatchServer : Server {
 
     private async Task<MemoryStream> DownloadWadStream(string wadName) {
         if (!EndpointReached) {
-            throw new InvalidOperationException("Patch server endpoint is not available.");
+            return null;
         }
 
         // Remove the `.wad` extension if one exists.
@@ -168,10 +165,7 @@ public class PatchServer : Server {
 
         var url = $"{_patchServerWorkingUrl}/{PatchServerWadUrlPrefix}/{wadName}.wad";
 
-        var stream = await DownloadFileStream(url)
-            ?? throw new InvalidOperationException($"Failed to download WAD '{wadName}' from patch server.");
-
-        return stream;
+        return await DownloadFileStream(url);
     }
 
     private async Task<MemoryStream> DownloadStream(string fileName) {
@@ -195,8 +189,8 @@ public class PatchServer : Server {
             var totalBytes = response.Content.Headers.ContentLength;
             var totalMegaBytes = totalBytes / 1024 / 1024;
 
-            Logger.Information("Attempting to download file from patch server endpoint " +
-                            "at url {Url}. Content size: {totalMegaBytes} MB", Logger.Args(url, totalMegaBytes));
+            Logger.Debug("Attempting to download file from patch server endpoint " +
+                            "at url {Url}. Content size: {TotalMegaBytes} MB", Logger.Args(url, totalMegaBytes));
 
             // Download the file from web using the HttpClient.
             await using var contentStream = await response.Content.ReadAsStreamAsync();
@@ -209,13 +203,13 @@ public class PatchServer : Server {
                 await memoryStream.WriteAsync(buffer.AsMemory(0, bytesRead));
             }
 
-            Logger.Information("File successfully downloaded from {Url}. Content size: {totalMegaBytes} MB",
-                Logger.Args(url, totalMegaBytes));
+            Logger.Information("Downloaded {Url} from the patch server ({MegaBytes} MB).",
+                Logger.Args(url, Math.Round(memoryStream.Length / 1048576d, 1)));
 
             return memoryStream;
         }
         catch (Exception webException) {
-            Logger.Error("Error while downloading file {File} from patch server endpoint: {Ex}",
+            Logger.Error("Could not download {Url} from the patch server: {Reason}",
                 Logger.Args(url, webException.Message));
 
             return null;
@@ -226,18 +220,16 @@ public class PatchServer : Server {
         var workingUrl = $"{_patchServerInternalUrl}/V_{_revision}";
 
         // Check to see if the patch server URL is available at all.
-        Logger.Information("Checking patch server at URL {Url}. Timeout: {Timeout} s",
+        Logger.Debug("Checking patch server at URL {Url}. Timeout: {Timeout} s",
             Logger.Args(workingUrl, _patchServerTimeout));
 
         var serverStatus = GetServerUrlStatus(workingUrl).Result;
         if (!serverStatus) {
-            Logger.Error("Patch server at URL {Url} is not available", Logger.Args(workingUrl));
-
             return false;
         }
 
         _patchServerWorkingUrl = workingUrl;
-        Logger.Information("Patch server at URL {Url} found and set", Logger.Args(workingUrl));
+        Logger.Information("Using the patch server at {Url}.", Logger.Args(workingUrl));
 
         return true;
     }
@@ -254,11 +246,11 @@ public class PatchServer : Server {
             // we only care that the endpoint exists, not that the path is valid.
             return true;
         }
-        catch (HttpRequestException ex) {
-            // Network-level failure (DNS, connection refused, TLS error) or
-            // 5xx server error — the endpoint is not reachable.
-            Logger.Warning("Patch server at URL {Url} is not reachable: {Reason}",
-                Logger.Args(url, ex.Message));
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or InvalidOperationException
+                                       or UriFormatException) {
+            // A network failure, a timeout or a malformed URL: the endpoint is not reachable.
+            Logger.Warning("The patch server at {Url} is not reachable ({Reason}). Game files come from the local " +
+                "cache only; check PatchServerInternalUrl in [Patch Server].", Logger.Args(url, ex.Message));
 
             return false;
         }
@@ -270,14 +262,16 @@ public class PatchServer : Server {
         // We'll be using it to check the integrity of Imlight's cached files.
         var latestXml = DownloadStream(LatestFileListNameXml).Result;
         if (latestXml is null) {
-            Logger.Error("Had trouble downloading {Name}", Logger.Args(LatestFileListNameXml));
+            Logger.Error("Could not download {Name} from the patch server, so players get no file list.",
+                Logger.Args(LatestFileListNameXml));
 
             return false;
         }
 
         latestXml.Seek(0, SeekOrigin.Begin);
         if (!ParseLatestFileList(latestXml, out var latestXmlObj)) {
-            Logger.Error("Could not successfully parse {Name}", Logger.Args(LatestFileListNameXml));
+            Logger.Error("{Name} from the patch server could not be read, so players get no file list.",
+                Logger.Args(LatestFileListNameXml));
 
             return false;
         }
@@ -288,7 +282,8 @@ public class PatchServer : Server {
         // Download the `.bin` interpretation and cache the file stats.
         var latestBin = DownloadStream(LatestFileListNameBin).Result;
         if (latestBin is null) {
-            Logger.Error("Had trouble downloading the {Name}", Logger.Args(LatestFileListNameBin));
+            Logger.Error("Could not download {Name} from the patch server, so players get no file list.",
+                Logger.Args(LatestFileListNameBin));
 
             return false;
         }
@@ -408,7 +403,7 @@ public class PatchServer : Server {
             return xmlDoc;
         }
         catch (Exception ex) {
-            Logger.Error("Error parsing Stream to XmlDocument: {Ex}", Logger.Args(ex.Message));
+            Logger.Error("The patch server's file list is not valid XML: {Reason}", Logger.Args(ex.Message));
 
             return null;
         }

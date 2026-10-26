@@ -37,7 +37,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/10/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -176,34 +176,6 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
     }
 
     /// <summary>
-    /// Dispatches a <see cref="IServerMessage"/> to any service that can handle the message.
-    /// </summary>
-    /// <param name="msg"></param>
-    private void HandleInternalTell(IServerMessage msg) {
-        if (_dispatchTable.TryGetValue(msg.GetType(), out var handlers)) {
-            var wasDispatched = false;
-            foreach (var handler in handlers) {
-                if (handler == Sender) {
-                    continue;
-                }
-                handler.Forward(msg);
-                wasDispatched = true;
-            }
-
-            if (!wasDispatched) {
-                Logger.Warning("SessionActor {Id} had no service to hand {Type} to, so it was dropped.",
-                    Logger.Args(SessionID, msg.GetType().Name));
-                Unhandled(msg);
-            }
-            return;
-        }
-
-        Logger.Warning("SessionActor {Id} has no service that handles {Type}, so it was dropped.",
-            Logger.Args(SessionID, msg.GetType().Name));
-        Unhandled(msg);
-    }
-
-    /// <summary>
     /// Dispatches a <see cref="IServerMessage"/> to any service that can handle the message. Awaits a response
     /// with a timeout of 2 seconds.
     /// </summary>
@@ -222,8 +194,10 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
                     return handler.Ask<T>(msg, timeout: s_askTimeout).Result;
                 }
                 catch (Exception ex) {
-                    Logger.Error("SessionActor service attempted to ask another service with {0}, but the timeout " +
-                              "was exceeded. {1}", Logger.Args(msg.GetType(), ex.Message));
+                    var serviceName = _services.TryGetValue(handler, out var service) ? service.GetType().Name : handler.Path.Name;
+                    Logger.Error("Session {Id}: {Service} did not answer {Message} within {Timeout}s. {Reason}",
+                        Logger.Args(SessionID, serviceName, msg.GetType().Name, s_askTimeout.TotalSeconds,
+                            ex.InnerException?.Message ?? ex.Message));
                 }
             }
         }
@@ -282,6 +256,97 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
     /// </summary>
     public void Dispose() => Dispose("shutdown");
 
+    protected override SupervisorStrategy SupervisorStrategy() =>
+        // Recall that child actors of the SessionActor are the message services.
+        new AllForOneStrategy(
+            maxNrOfRetries: _serviceRetryCount,
+            withinTimeRange: TimeSpan.FromSeconds(_serviceTimeRangeRetryInSeconds),
+            localOnlyDecider: ex => {
+                switch (ex) {
+                    case ServiceRetryException tex: {
+                            Logger.Warning("Session {Id}: a service hit a problem and is restarting: {Message} " +
+                                           "({Class} L:{LineNumber})",
+                                Logger.Args(SessionID, tex.Message, tex.CallingClass, tex.LineNumber));
+
+                            return Directive.Restart;
+                        }
+                    case SessionFatalException tex: {
+                            Logger.Error("Session {Id}: a service failed and the session is closing: {Message} " +
+                                         "({Class} L:{LineNumber})",
+                                Logger.Args(SessionID, tex.Message, tex.CallingClass, tex.LineNumber));
+                            _stoppedByStrategy = true;
+
+                            return Directive.Stop;
+                        }
+                    default:
+                        Logger.Error("Session {Id}: {Class}.{Method} failed and the message was skipped: {Message} {Exception}",
+                            Logger.Args(SessionID, ex.TargetSite?.DeclaringType?.Name, ex.TargetSite?.Name, ex.Message, ex));
+
+                        return Directive.Resume;
+                }
+            }
+        );
+
+    protected override void PostStop() {
+        // The server frees the session id on this message, so it goes out only once the actor is gone.
+        if (!_isDeallocated) {
+            _isDeallocated = true;
+
+            ServerRef.Tell(new SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET() {
+                Id = SessionID,
+                Socket = this._socket,
+                Ip = this.RemoteIp
+            });
+        }
+
+        // An abrupt socket drop never reaches the logout path, so the online entry is removed here.
+        OnlinePlayerCollection.RemoveOnlinePlayer(SessionID);
+
+        base.PostStop();
+    }
+
+    protected override void PreStart() {
+        // Ask the ActorFactory for this actor's message services.
+        var msg = new SERVICE_101_PROTOCOL.MSG_QUERYUNLOADEDSERVICES();
+        var services = _actorFactoryRef
+            .Ask<SERVICE_101_PROTOCOL.MSG_SERVICESLIST>(msg, s_askTimeout)
+            .Result
+            .Services;
+
+        SetServices(services);
+
+        base.PreStart();
+    }
+
+    protected override void Unhandled(object message) {
+        Logger.Verbose("SessionActor {Id} received unhandled message {MessageName}.",
+            Logger.Args(SessionID, message.GetType().Name));
+    }
+
+    private void HandleInternalTell(IServerMessage msg) {
+        if (_dispatchTable.TryGetValue(msg.GetType(), out var handlers)) {
+            var wasDispatched = false;
+            foreach (var handler in handlers) {
+                if (handler == Sender) {
+                    continue;
+                }
+                handler.Forward(msg);
+                wasDispatched = true;
+            }
+
+            if (!wasDispatched) {
+                Logger.Warning("SessionActor {Id} had no service to hand {Type} to, so it was dropped.",
+                    Logger.Args(SessionID, msg.GetType().Name));
+                Unhandled(msg);
+            }
+            return;
+        }
+
+        Logger.Warning("SessionActor {Id} has no service that handles {Type}, so it was dropped.",
+            Logger.Args(SessionID, msg.GetType().Name));
+        Unhandled(msg);
+    }
+
     private void Dispose(string reason, bool waitForClientClose = false) {
         // Avoid duplicate Dispose calls.
         if (_isDisposed) {
@@ -327,70 +392,6 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
 
         Logger.Debug("SessionActor {Id} closing after logout, reason={Reason}.", Logger.Args(SessionID, reason));
         ActorRef.Tell(PoisonPill.Instance);
-    }
-
-    protected override SupervisorStrategy SupervisorStrategy() =>
-        // Recall that child actors of the SessionActor are the message services.
-        new AllForOneStrategy(
-            maxNrOfRetries: _serviceRetryCount,
-            withinTimeRange: TimeSpan.FromSeconds(_serviceTimeRangeRetryInSeconds),
-            localOnlyDecider: ex => {
-                switch (ex) {
-                    case ServiceRetryException tex: {
-                            Logger.Error("SessionActor {Sid} service {Class} L:{LineNumber} threw restart exception: " +
-                                      "{Message}", Logger.Args(SessionID, tex.CallingClass, tex.LineNumber, tex.Message));
-                            return Directive.Restart;
-                        }
-                    case SessionFatalException tex: {
-                            Logger.Error("SessionActor {Sid} service {Class} L:{LineNumber} threw fatal exception: " +
-                                      "{Message}", Logger.Args(SessionID, tex.CallingClass, tex.LineNumber, tex.Message));
-                            _stoppedByStrategy = true;
-                            return Directive.Stop;
-                        }
-                    default:
-                        Logger.Error("SessionActor {Sid} service {Class} L:{LineNumber} threw unknown exception: " +
-                                     "{Message}. Exception details: {Exception}. Inner exception: {InnerException}",
-                                     Logger.Args(SessionID, ex.TargetSite?.DeclaringType, ex.TargetSite?.Name, ex.Message, ex, ex.InnerException));
-                        return Directive.Resume;
-                }
-            }
-        );
-
-    protected override void PostStop() {
-        // The server frees the session id on this message, so it goes out only once the actor is gone.
-        if (!_isDeallocated) {
-            _isDeallocated = true;
-
-            ServerRef.Tell(new SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET() {
-                Id = SessionID,
-                Socket = this._socket,
-                Ip = this.RemoteIp
-            });
-        }
-
-        // An abrupt socket drop never reaches the logout path, so the online entry is removed here.
-        OnlinePlayerCollection.RemoveOnlinePlayer(SessionID);
-
-        base.PostStop();
-    }
-
-    protected override void PreStart() {
-        // Ask the ActorFactory for this actor's message services.
-        var msg = new SERVICE_101_PROTOCOL.MSG_QUERYUNLOADEDSERVICES();
-        var services = _actorFactoryRef
-            .Ask<SERVICE_101_PROTOCOL.MSG_SERVICESLIST>(msg, s_askTimeout)
-            .Result
-            .Services;
-
-        SetServices(services);
-
-        base.PreStart();
-    }
-
-    protected override void Unhandled(object message) {
-        // Bump this up to warning on release builds.
-        Logger.Verbose("SessionActor {Id} received unhandled message of type {Type}.",
-            Logger.Args(SessionID, message.GetType()));
     }
 
     private void ConfigureReceivers() {
@@ -551,5 +552,5 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
             // A service that failed or timed out must not keep the others from being disposed.
         }
     }
-    
+
 }

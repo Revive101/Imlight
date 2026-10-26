@@ -68,8 +68,8 @@ internal sealed class InteractTreasureVendorComponent(ZoneEntity entity) : ZoneE
 
     public override void OnStart() {
         if (!NpcTreasureCardInventoryCollection.TryGetInventory(Entity.ActiveGameObject.m_templateID, out var inventory)) {
-            Logger.Error("Failed to get treasure card inventory for NPC {0}",
-                Logger.Args(Entity.ActiveGameObject.m_templateID));
+            Logger.Error("Treasure card vendor NPC {TemplateId} has no treasure card inventory.",
+                Logger.Args(Entity.ActiveGameObject.m_templateID.Full));
 
             return;
         }
@@ -88,8 +88,7 @@ internal sealed class InteractTreasureVendorComponent(ZoneEntity entity) : ZoneE
 
     public void OnServiceInteraction(IActorRef playerActor, Wizard playerCharacter, CoreObject playerObject, uint serviceOptionIndex) {
         SendTreasureShopOfferings(playerActor);
-        SendPlayerIntoWizbang(playerObject.m_globalID);
-        SendPlayerIntoState(playerObject.m_globalID);
+        BroadcastPlayerEnteringService(playerObject.m_globalID, (uint) WizBang, StateName);
     }
 
     public bool HasSpell(string spellName)
@@ -136,8 +135,8 @@ internal sealed class InteractTreasureVendorComponent(ZoneEntity entity) : ZoneE
             Behaviors: SerializerFlags.None
         );
         if (!serializer.Serialize(shopOffering, (PropertyFlags) 31, out var serializedShopList)) {
-            Logger.Error("Failed to serialize treasure shop offering for NPC {0}",
-                Logger.Args(Entity.ActiveGameObject.m_templateID));
+            Logger.Error("Could not build the treasure card shop list of NPC {TemplateId}.",
+                Logger.Args(Entity.ActiveGameObject.m_templateID.Full));
 
             return;
         }
@@ -147,34 +146,6 @@ internal sealed class InteractTreasureVendorComponent(ZoneEntity entity) : ZoneE
             Data = serializedShopList
         };
         playerActor.Tell(shopListMsg);
-    }
-
-    private void SendPlayerIntoWizbang(ulong playerObjID) {
-        // Create the wiz bang message, and wrap it in a broadcast message.
-        var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG {
-            WizBangID = (uint) WizBang,
-            GameObjectID = playerObjID
-        };
-        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
-            Message = wizBangMsg,
-            Selfless = false,
-        };
-
-        Entity.ZoneRef.Tell(broadcastMsg);
-    }
-
-    private void SendPlayerIntoState(ulong playerObjID) {
-        // Create the change state message, and wrap it in a broadcast message.
-        var changeStateMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
-            State = StringHash.Compute(StateName),
-            GameObjectID = playerObjID
-        };
-        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
-            Message = changeStateMsg,
-            Selfless = false,
-        };
-
-        Entity.ZoneRef.Tell(broadcastMsg);
     }
 
 }
