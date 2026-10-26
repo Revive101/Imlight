@@ -36,7 +36,7 @@ internal sealed class ResActorDialogHandler : BaseResultHandler<ResActorDialog> 
         // Serialize the actor dialog into network format.
         var serializer = new ObjectSerializer(Versionable: false);
         if (!serializer.Serialize(DialogSpeakers.ForClient(dialog), 16, out var serializedData)) {
-            Logger.Error("Failed to serialize dialog.");
+            Logger.Error("An actor dialog could not be prepared for the client, so it is not shown.");
                 
             return false;
         }

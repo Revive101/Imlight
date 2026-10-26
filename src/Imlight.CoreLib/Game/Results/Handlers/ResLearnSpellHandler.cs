@@ -36,9 +36,9 @@ internal sealed class ResLearnSpellHandler : BaseResultHandler<ResLearnSpell> {
         var queryResponse = context
             .GetPlayerRef()
             .Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(queryWizardMsg, queryTimeout).Result;
-        if (queryResponse == null) {
-            Logger.Error("ResLearnSpell handler failed to retrieve character data within {0} seconds.",
-                Logger.Args(QUERY_WIZARD_TIMEOUT_SECONDS));
+        if (queryResponse?.Wizard is null) {
+            Logger.Warning("Result {Result} was skipped: the character could not be read, most likely because the player logged out.",
+                Logger.Args(nameof(ResLearnSpell)));
 
             return false;
         }

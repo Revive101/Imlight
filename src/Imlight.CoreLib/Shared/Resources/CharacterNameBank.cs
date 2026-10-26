@@ -64,7 +64,7 @@ public class WizardNameBank : RootSingleResourceSingleton<WizardNameBank>, IMemo
 
     protected override void AfterLoad() {
         s_characterNameTable = GetCharacterNameTable(Stream);
-        Logger.Information("Loaded {0} character name tables.", Logger.Args(s_characterNameTable.Count));
+        Logger.Information("Loaded {Count} character name tables.", Logger.Args(s_characterNameTable.Count));
     }
 
     /// <summary>

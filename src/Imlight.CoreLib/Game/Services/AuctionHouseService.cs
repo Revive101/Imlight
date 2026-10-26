@@ -36,7 +36,7 @@
  * 
  * Created by: Joji
  * Version: KALI 1.0
- * Last Updated: 10/14/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -176,7 +176,8 @@ internal class AuctionHouseService(SessionActor sessionActor) : MessageService(s
 
         // Try serializing item data.
         if (!_itemSerializer.Serialize(item, 1, out var itemData)) {
-            Logger.Error("Failed to serialize item data.");
+            Logger.Error("Item template {TemplateId} could not be serialized, so {Wizard} could not buy it.",
+                Logger.Args(templateId, wizard.PlayerNameBehavior.GetWizardName()));
 
             return;
         }

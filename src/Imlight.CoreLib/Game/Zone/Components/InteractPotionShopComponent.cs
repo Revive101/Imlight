@@ -38,7 +38,7 @@
  * 
  * Created by: Jay
  * Version: KALI 1.0
- * Last Updated: 08/13/2026
+ * Last Updated: 10/25/2026
  */
 
 using System.Collections.Generic;
@@ -83,8 +83,7 @@ internal sealed class InteractPotionShopComponent(ZoneEntity entity) : ZoneEntit
 
     public void OnServiceInteraction(IActorRef playerActor, Wizard playerCharacter, CoreObject playerObject, uint serviceOptionIndex) {
         SendPlayerPotionShopOpen(playerActor, Entity.ActiveGameObject.m_globalID);
-        SendPlayerIntoWizbang(playerObject.m_globalID);
-        SendPlayerIntoState(playerObject.m_globalID);
+        BroadcastPlayerEnteringService(playerObject.m_globalID, (uint) WizBang, StateName);
     }
 
     private void SendPlayerPotionShopOpen(IActorRef playerActor, ulong objId) {
@@ -94,34 +93,6 @@ internal sealed class InteractPotionShopComponent(ZoneEntity entity) : ZoneEntit
         };
 
         playerActor.Tell(potionShopOpen);
-    }
-
-    private void SendPlayerIntoWizbang(ulong playerObjID) {
-        // Create the wiz bang message, and wrap it in a broadcast message.
-        var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG {
-            WizBangID = (uint) WizBang,
-            GameObjectID = playerObjID
-        };
-        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
-            Message = wizBangMsg,
-            Selfless = false,
-        };
-
-        Entity.ZoneRef.Tell(broadcastMsg);
-    }
-
-    private void SendPlayerIntoState(ulong playerObjID) {
-        // Create the change state message, and wrap it in a broadcast message.
-        var changeStateMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
-            State = StringHash.Compute(StateName),
-            GameObjectID = playerObjID
-        };
-        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
-            Message = changeStateMsg,
-            Selfless = false,
-        };
-
-        Entity.ZoneRef.Tell(broadcastMsg);
     }
 
 }

@@ -38,7 +38,7 @@
  * 
  * Created by: Jooty, Joji
  * Version: KALI 1.0
- * Last Updated: 09/26/2026
+ * Last Updated: 10/25/2026
  */
 
 using Akka.Actor;
@@ -70,7 +70,7 @@ internal class WizardService(SessionActor sessionActor) : MessageService(session
             _activeWizard?.SaveLocation();
         }
         catch (Exception ex) {
-            Logger.Error("Failed to save wizard location during disconnect: {0}",
+            Logger.Error("The character location could not be saved on disconnect. {Exception}",
                 Logger.Args(ex));
         }
         finally {

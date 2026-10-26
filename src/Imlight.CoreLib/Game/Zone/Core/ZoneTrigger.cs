@@ -38,7 +38,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 08/21/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -46,6 +46,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
 using Imcodec.ObjectProperty.TypeCache;
+using Imlight.Common;
 using Imlight.CoreLib.Game.Requirements;
 using Imlight.CoreLib.Game.Requirements.Contexts;
 using Imlight.CoreLib.Game.Results;
@@ -64,13 +65,16 @@ namespace Imlight.CoreLib.Game.Zone.Core;
 public sealed class ZoneTrigger(IActorRef zoneRef, Zone zone, Trigger trigger) 
     : ZoneEntity(null, null, null, zoneRef, zone) {
 
+    private const double MIN_PACED_WAIT_SECONDS = 1;
+
     public Trigger TriggerData { get; init; } = trigger;
     private readonly Dictionary<ulong, DateTime> _cooldowns = [];
 
-    // Unsure why this override is required, but it fails without it present.
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN))]
-    protected override void ReceiveObjectLoadBegin(ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN message)
-        => base.ReceiveObjectLoadBegin(message);
+    protected override void ReceiveObjectLoadBegin(ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN message) {
+        // todo: unsure why this override is required, but it fails without it present.
+        base.ReceiveObjectLoadBegin(message);
+    }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_POSTEVENT))]
     private void ReceivePostEvent(ZONE_102_PROTOCOL.MSG_POSTEVENT message) {
@@ -123,13 +127,7 @@ public sealed class ZoneTrigger(IActorRef zoneRef, Zone zone, Trigger trigger)
             };
         }
 
-        // A result that posts one of this trigger's own fire events would fire it again without end,
-        // and the event that fired it has already reached every trigger and quest goal.
-        if (results?.m_results is { Count: > 0 } && results.m_results.Any(IsSelfPost)) {
-            results = new ResultList {
-                m_results = results.m_results.Where(result => !IsSelfPost(result)).ToList()
-            };
-        }
+        results = WithoutNonLoopSelfPosts(results, TriggerData);
 
         ResultDispatcher.ExecuteResults(Context, results, message.PlayerActor, message.PlayerGameObject,
                                        zoneActor: ZoneRef, triggerName: TriggerData.m_triggerName,
@@ -144,12 +142,50 @@ public sealed class ZoneTrigger(IActorRef zoneRef, Zone zone, Trigger trigger)
         => requirements?.m_requirements is { } list
         && list.Any(r => r is null || r is RequirementList nested && HasUndecodableRequirement(nested));
 
-    private bool IsSelfPost(Result result)
+    internal static ResultList WithoutNonLoopSelfPosts(ResultList results, Trigger trigger) {
+        var fireEvents = trigger?.m_fireEvents;
+        if (results?.m_results is not { Count: > 0 } || fireEvents is null) {
+            return results;
+        }
+
+        // A self-post spins unless a wait comes first (a wait with requirements can be skipped).
+        var isLoop = IsLoop(trigger, results);
+        var paced = false;
+        var kept = new List<Result>(results.m_results.Count);
+        foreach (var result in results.m_results) {
+            if (result is ResWait wait && wait.m_secondsToWait >= MIN_PACED_WAIT_SECONDS && !HasRequirements(wait.m_requirements)) {
+                paced = true;
+            }
+
+            if (!(paced && isLoop) && IsSelfPost(result, trigger)) {
+                continue;
+            }
+
+            kept.Add(result);
+        }
+
+        return kept.Count == results.m_results.Count ? results : new ResultList { m_results = kept };
+    }
+
+    private static bool IsLoop(Trigger trigger, ResultList results) {
+        // A self-post only echoes an event every listener already got unless the trigger changes something or can stop.
+        var canStop = trigger.m_triggerMax != uint.MaxValue
+            || HasRequirements(trigger.m_requirements)
+            || results.m_results.Any(result => HasRequirements(result?.m_requirements));
+        var changesSomething = results.m_results.Any(result => result is not (null or ResWait or ResPostEvent or ResPostQuestEvent));
+
+        return canStop || changesSomething;
+    }
+
+    private static bool IsSelfPost(Result result, Trigger trigger)
         => result switch {
-            ResPostEvent post => TriggerData.m_fireEvents.Any(x => x == post.m_eventName),
-            ResModifyTriggerObject modify => TriggerData.m_fireEvents.Any(x => x == $"{modify.m_triggerObjName}.{modify.m_triggerObjState}.EnterState"),
+            ResPostEvent post => trigger.m_fireEvents.Any(x => x == post.m_eventName),
+            ResModifyTriggerObject modify => trigger.m_fireEvents.Any(x => x == $"{modify.m_triggerObjName}.{modify.m_triggerObjState}.EnterState"),
             _ => false
         };
+
+    private static bool HasRequirements(RequirementList requirements)
+        => requirements?.m_requirements is { Count: > 0 };
 
     private bool CooldownCheck(CoreObject playerObject) {
         var key = playerObject?.m_globalID ?? 0;

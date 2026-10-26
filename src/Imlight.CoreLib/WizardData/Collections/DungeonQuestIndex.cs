@@ -40,7 +40,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 08/13/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -129,7 +129,7 @@ internal static class DungeonQuestIndex {
             s_built = true;
 
             var total = s_dungeonQuestNames.Count;
-            Logger.Information("Indexed {0} dungeon quest(s) across {1} zone(s).",
+            Logger.Information("Indexed {Count} dungeon quest(s) across {Zones} zone(s).",
                 Logger.Args(total, s_questsByZone.Count));
         }
     }

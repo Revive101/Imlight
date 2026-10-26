@@ -451,8 +451,8 @@ public static class AccountCollection {
                 return true;
             });
         } catch (Exception ex) {
-            Logger.Error("Failed to save the Crowns of account {AccountId} with the backpack of character {CharId}: {Reason}",
-                Logger.Args(account.AccountId, owner.CharId, ex.Message));
+            Logger.Error("The Crowns of account {AccountId} and the backpack of character {CharId} could not be saved. {Exception}",
+                Logger.Args(account.AccountId, owner.CharId, ex));
 
             return false;
         }

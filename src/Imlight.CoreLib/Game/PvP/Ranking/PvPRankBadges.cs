@@ -33,7 +33,7 @@
  * 
  * Created by: Jay
  * Version: KALI 1.0
- * Last Updated: 10/18/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -74,8 +74,14 @@ internal static class PvPRankBadges {
             .ToList();
         var missing = names.Where(name => !catalog.TryGet(StringHash.Compute(name), out _)).ToList();
 
-        Logger.Information("{Resolved} of {Total} PvP rank badge names resolve in the badge catalog.{Missing}",
-            Logger.Args(names.Count - missing.Count, names.Count, missing.Count == 0 ? string.Empty : $" Missing: {string.Join(", ", missing)}."));
+        if (missing.Count == 0) {
+            Logger.Debug("All {Total} PvP rank badges are in the badge catalog.", Logger.Args(names.Count));
+
+            return;
+        }
+
+        Logger.Warning("{MissingCount} of {Total} PvP rank badges are not in the badge catalog, so those ranks grant no badge: {Missing}.",
+            Logger.Args(missing.Count, names.Count, string.Join(", ", missing)));
     }
 
 }

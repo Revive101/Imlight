@@ -41,6 +41,12 @@ internal static class PostEventWizardQuery {
             return true;
         }
 
+        if (message.PlayerActor is IInternalActorRef { IsTerminated: true }) {
+            Logger.Debug("Dropped event {0}: its player is gone.", Logger.Args(message.EventName));
+
+            return false;
+        }
+
         message.PlayerActor
             .Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD(),
                                                        TimeSpan.FromSeconds(WIZARD_QUERY_TIMEOUT_SECONDS))

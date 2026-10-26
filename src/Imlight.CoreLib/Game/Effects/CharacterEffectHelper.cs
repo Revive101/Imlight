@@ -35,9 +35,10 @@
  * 
  * Created by: Joji, Jooty
  * Version: KALI 1.0
- * Last Updated: 08/14/2026
+ * Last Updated: 10/25/2026
  */
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -61,6 +62,8 @@ namespace Imlight.CoreLib.Game.Effects;
 /// </remarks>
 internal static class CharacterEffectHelper {
 
+    private static readonly ConcurrentDictionary<string, byte> s_warnedSchoolNames = new();
+
     /// <summary>
     /// Adds effects to a wizard based on a given template.
     /// </summary>
@@ -75,7 +78,6 @@ internal static class CharacterEffectHelper {
         foreach (var effectInfo in template.m_equipEffects) {
             var gameEffect = GameEffectFactory.CreateEffectFromInfo(effectInfo, slotHash);
             if (gameEffect is null) {
-                Logger.Warning("Could not create effect {0} from effect info.", Logger.Args(effectInfo.m_effectName));
                 continue;
             }
 
@@ -167,12 +169,15 @@ internal static class CharacterEffectHelper {
     internal static GameEffectBase AddGameEffectToStats(ServerWizGameStats stats, GameEffectInfo effectInfo) {
         var gameEffect = GameEffectFactory.CreateEffectFromInfo(effectInfo, 0);
         if (gameEffect is null) {
-            Logger.Warning("Could not create effect {0} from effect info.", Logger.Args(effectInfo.m_effectName));
             return null;
         }
 
         if (gameEffect is WizStatisticEffect canonicalEffect) {
-            var canonicalEffectName = CanonicalStatEffects.GetEffectTemplate(effectInfo.m_effectName).m_effectName;
+            var canonicalEffectName = CanonicalStatEffects.GetEffectTemplate(effectInfo.m_effectName)?.m_effectName;
+            if (canonicalEffectName is null) {
+                return gameEffect;
+            }
+
             AddStatisticEffectToStats(stats, canonicalEffectName, canonicalEffect);
         }
         else if (gameEffect is StartingPipEffect pipEffect) {
@@ -192,12 +197,15 @@ internal static class CharacterEffectHelper {
     internal static GameEffectBase RemoveGameEffectFromStats(ServerWizGameStats stats, GameEffectInfo effectInfo) {
         var gameEffect = GameEffectFactory.CreateEffectFromInfo(effectInfo, 0);
         if (gameEffect is null) {
-            Logger.Warning("Could not create effect {0} from effect info.", Logger.Args(effectInfo.m_effectName));
             return null;
         }
 
         if (gameEffect is WizStatisticEffect canonicalEffect) {
-            var canonicalEffectName = CanonicalStatEffects.GetEffectTemplate(effectInfo.m_effectName).m_effectName;
+            var canonicalEffectName = CanonicalStatEffects.GetEffectTemplate(effectInfo.m_effectName)?.m_effectName;
+            if (canonicalEffectName is null) {
+                return gameEffect;
+            }
+
             RemoveStatisticEffectFromStats(stats, canonicalEffectName, canonicalEffect);
         }
         else if (gameEffect is StartingPipEffect pipEffect) {
@@ -320,7 +328,8 @@ internal static class CharacterEffectHelper {
 
         var schoolTemplate = MagicSchools.GetMagicSchool(schoolName);
         if (schoolTemplate is null) {
-            Logger.Warning("Could not find magic school {0}.", Logger.Args(schoolName));
+            WarnUnknownSchoolOnce(schoolName);
+
             return;
         }
 
@@ -429,8 +438,7 @@ internal static class CharacterEffectHelper {
         var index = MagicSchools.GetMagicSchool(schoolName)?.m_schoolIndex ?? -1;
 
         if (index == -1) {
-            Logger.Warning("Could not find magic school {0}.", 
-                Logger.Args(schoolName));
+            WarnUnknownSchoolOnce(schoolName);
 
             return;
         }
@@ -528,6 +536,12 @@ internal static class CharacterEffectHelper {
 
         // Return null or an appropriate value if no match is found
         return null;
+    }
+
+    private static void WarnUnknownSchoolOnce(string schoolName) {
+        if (s_warnedSchoolNames.TryAdd(schoolName ?? string.Empty, 0)) {
+            Logger.Warning("Item stat effects name an unknown magic school \"{School}\"; those bonuses are ignored.", Logger.Args(schoolName));
+        }
     }
 
 }

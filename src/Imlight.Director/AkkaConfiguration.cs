@@ -34,7 +34,7 @@
  *
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -70,11 +70,14 @@ internal static class AkkaConfiguration {
     }
 
     private static bool GetAkkaConfiguration(out Config config) {
-        Logger.Information("Searching for Akka.NET configuration file {ConfigLocation}", Logger.Args(ConfigLocation));
+        Logger.Debug("Searching for Akka.NET configuration file {ConfigLocation}", Logger.Args(ConfigLocation));
         config = default;
 
         try {
             if (!File.Exists(ConfigLocation)) {
+                Logger.Fatal("Missing {ConfigLocation}. Restore Config/akka.conf from the release download.",
+                    Logger.Args(ConfigLocation));
+
                 return false;
             }
 
@@ -85,7 +88,8 @@ internal static class AkkaConfiguration {
             return true;
         }
         catch (Exception e) {
-            Logger.Error(e.Message);
+            Logger.Fatal("Config/akka.conf could not be read: {Reason} Restore it from the release download.",
+                Logger.Args(e.Message));
 
             return false;
         }

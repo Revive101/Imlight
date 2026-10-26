@@ -39,7 +39,7 @@ internal sealed class ResTeleportHandler : BaseResultHandler<ResTeleport> {
         }
 
         if (string.IsNullOrEmpty(Result.m_destinationZone)) {
-            Logger.Warning("Teleport result has an empty destination zone (trigger {0}, location {1}).",
+            Logger.Warning("A teleport result has no destination zone, so the player stays put (trigger {Trigger}, location {Location}).",
                 Logger.Args((context as GenericResultContext)?.TriggerName ?? "none", Result.m_destinationLoc));
 
             return false;

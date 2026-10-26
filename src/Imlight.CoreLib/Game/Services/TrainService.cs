@@ -33,7 +33,7 @@
  * 
  * Created by: Joji
  * Version: KALI 1.0
- * Last Updated: 10/14/2026
+ * Last Updated: 10/25/2026
  */
 
 using Akka.Actor;
@@ -63,7 +63,7 @@ internal class TrainService(SessionActor sessionActor) : MessageService(sessionA
         var response = AskOtherService<ZONE_102_PROTOCOL.MSG_QUERYZONEENTITYRSP>(msg);
         if (response is null || response.ZoneObject is null) {
             var wizardName = GetActiveWizard().PlayerNameBehavior.GetWizardName();
-            Logger.Error("{0} searched for training NPC {1} (mobile ID), but it was not found within the zone.",
+            Logger.Warning("{Wizard} asked to train with NPC {MobileId}, which is not in the zone.",
                 Logger.Args(wizardName, message.MobileID));
 
             return;
@@ -72,7 +72,7 @@ internal class TrainService(SessionActor sessionActor) : MessageService(sessionA
         // Ensure that the interacted object has a TrainerComponent.
         var trainerComponent = response.ZoneObject.GetComponentOfType<InteractTrainerComponent>();
         if (trainerComponent is null) {
-            Logger.Error("NPC {0} does not have a TrainerComponent.", Logger.Args(response.ZoneObject.ActiveGameObject.m_debugName));
+            Logger.Warning("NPC {Npc} is not a trainer.", Logger.Args(response.ZoneObject.ActiveGameObject.m_debugName));
 
             return;
         }
@@ -83,7 +83,7 @@ internal class TrainService(SessionActor sessionActor) : MessageService(sessionA
 
         // Ensure that the training index is within the bounds of the spell inventory.
         if (message.TrainingIndex < 0 || message.TrainingIndex >= trainerComponent.SpellInventory.Count) {
-            Logger.Error("Wizard {0} attempted to train spell at index {1}, but it is out of bounds.",
+            Logger.Warning("{Wizard} tried to train spell {Index} from a list that is shorter.",
                 Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), message.TrainingIndex));
 
             return;
@@ -93,7 +93,7 @@ internal class TrainService(SessionActor sessionActor) : MessageService(sessionA
         var spellTemplate = (SpellTemplate) CoreObjectFactory.GetCoreTemplate(spellEntry.TemplateID);
 
         if (BadgeGate.Blocks(spellTemplate?.m_purchaseRequirements, spellEntry.TemplateID, SessionActor.ActorRef, GetActiveGameObject(), wizard, SessionActor.GetZoneActor())) {
-            Logger.Warning("Wizard {0} attempted to train spell {1} without the badge it requires.",
+            Logger.Warning("{Wizard} tried to train spell {SpellId} without the badge it requires.",
                 Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), spellEntry.TemplateID));
 
             return;
@@ -103,7 +103,7 @@ internal class TrainService(SessionActor sessionActor) : MessageService(sessionA
         // Wizards that are of the same magic school as the spell they are training have a cost of 0.
         var spellCost = wizard.MagicSchoolBehavior.MagicSchool.ToString() == spellTemplate.m_sMagicSchoolName ? 0 : 1;
         if (wizard.MagicSchoolBehavior.TrainingPoints < spellCost) {
-            Logger.Error("Wizard {0} attempted to train spell {1} but does not have enough training points.",
+            Logger.Warning("{Wizard} tried to train spell {SpellId} without enough training points.",
                 Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), spellEntry.TemplateID));
 
             return;
@@ -112,7 +112,7 @@ internal class TrainService(SessionActor sessionActor) : MessageService(sessionA
         var spell = SpellFactory.GetSpell((uint) spellEntry.TemplateID);
         var spellLearnedSuccess = wizard.LearnSpell(spell);
         if (!spellLearnedSuccess) {
-            Logger.Error("Wizard {0} attempted to train spell {1} but failed to learn it.",
+            Logger.Error("{Wizard} could not learn spell {SpellId} from a trainer.",
                 Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), spellEntry.TemplateID));
 
             return;

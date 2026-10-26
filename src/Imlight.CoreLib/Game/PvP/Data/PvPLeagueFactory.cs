@@ -34,12 +34,13 @@
  * 
  * Created by: Jay
  * Version: KALI 1.0
- * Last Updated: 10/18/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Imcodec.Cryptography;
@@ -75,23 +76,19 @@ internal sealed partial class PvPLeagueFactory : RootDirectoryResourceSingleton<
         var seasonsById = new Dictionary<uint, PvPSeasonEntry>();
         EloConfig eloConfig = null;
 
-        foreach (var file in base.Files) {
-            if (!PvPResourceReader.TryRead<PropertyClass>(file.Key, file.Value, out var template)) {
-                continue;
-            }
-
+        foreach (var (file, template) in ReadTemplates<PropertyClass>()) {
             switch (template) {
                 case PvPLeagueTemplate league:
-                    RegisterLeague(league, file.Key.FileName, leaguesByName, leaguesById);
+                    RegisterLeague(league, file.FileName, leaguesByName, leaguesById);
 
                     break;
                 case PvPSeasonTemplate season:
-                    RegisterSeason(season, file.Key.FileName, seasonsByName, seasonsById);
+                    RegisterSeason(season, file.FileName, seasonsByName, seasonsById);
 
                     break;
                 case EloConfig elo:
                     if (eloConfig is not null) {
-                        Logger.Error("The Elo config in {File} is a second one.", Logger.Args(file.Key.FileName));
+                        Logger.Error("The Elo config in {File} is a second one.", Logger.Args(file.FileName));
                     }
 
                     eloConfig = elo;
@@ -99,7 +96,7 @@ internal sealed partial class PvPLeagueFactory : RootDirectoryResourceSingleton<
                     break;
                 default:
                     Logger.Error("PvP file {File} is a {Type}, which no loader handles.",
-                        Logger.Args(file.Key.FileName, template.GetType().Name));
+                        Logger.Args(file.FileName, template.GetType().Name));
 
                     break;
             }
@@ -115,9 +112,8 @@ internal sealed partial class PvPLeagueFactory : RootDirectoryResourceSingleton<
         Logger.Information("Loaded {LeagueCount} PvP leagues and {SeasonCount} seasons.", 
             Logger.Args(leaguesByName.Count, seasonsByName.Count));
         if (eloConfig is null) {
-            Logger.Error("The PvP Elo config is missing from the game data.");
+            throw new InvalidDataException("The PvP rating config is missing from the game data. Re-download the game resources.");
         }
-
     }
 
     private static void BuildRankTables(EloConfig eloConfig, IEnumerable<string> leagueTypes) {
@@ -157,13 +153,13 @@ internal sealed partial class PvPLeagueFactory : RootDirectoryResourceSingleton<
     private static void LogRankTables(IEnumerable<string> leagueTypes) {
         var leagues = leagueTypes.ToHashSet(StringComparer.OrdinalIgnoreCase);
         foreach (var table in s_rankTablesByLeagueType.Values) {
-            Logger.Information("PvP rating table for league type {LeagueType}: {RankCount} ranks, start {Start}, floor {Floor}, rated {IsRated}, league exists {LeagueExists}.",
+            Logger.Debug("PvP rating table for league type {LeagueType}: {RankCount} ranks, start {Start}, floor {Floor}, rated {IsRated}, league exists {LeagueExists}.",
                 Logger.Args(table.LeagueType, table.RankCount, table.StartingElo, table.MinElo, table.IsRated, leagues.Contains(table.LeagueType)));
         }
 
         var withoutTable = leagues.Where(league => !s_rankTablesByLeagueType.ContainsKey(league)).ToList();
         if (withoutTable.Count > 0) {
-            Logger.Information("PvP leagues without their own rating table, which use the default one: {Leagues}.", Logger.Args(string.Join(", ", withoutTable)));
+            Logger.Debug("PvP leagues without their own rating table, which use the default one: {Leagues}.", Logger.Args(string.Join(", ", withoutTable)));
         }
     }
 

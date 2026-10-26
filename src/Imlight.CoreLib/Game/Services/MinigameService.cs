@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/14/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -122,7 +122,7 @@ internal class MinigameService(SessionActor sessionActor) : MessageService(sessi
         var wizardName = wizard.PlayerNameBehavior.GetWizardName();
 
         if (minigameInfo == null) {
-            Logger.Error("{0} tried to start up minigame at non-existing index {1}", 
+            Logger.Warning("{Wizard} tried to start minigame {Index}, which does not exist",
                 Logger.Args(wizardName, minigameIndex));
 
             return;
@@ -184,7 +184,7 @@ internal class MinigameService(SessionActor sessionActor) : MessageService(sessi
         var msg = new WIZARD_12_PROTOCOL.MSG_ENTERMINIGAME();
         SendToSocket(msg);
 
-        Logger.Debug("{0} started minigame {1}",
+        Logger.Debug("{Wizard} started minigame {Minigame}",
             Logger.Args(GetActiveWizard().PlayerNameBehavior.GetWizardName(), minigameInfo.m_name));
 
         Teleport(
@@ -236,7 +236,9 @@ internal class MinigameService(SessionActor sessionActor) : MessageService(sessi
         if (deserializedMsg == null || deserializedMsg.Count <= 0) {
             var hexStringRaw = BitConverter.ToString(messageRawBytes).Replace("-", " ");
             var hexStringAdditions = BitConverter.ToString(frame).Replace("-", " ");
-            Logger.Error("Failed to deserialize message process {0} (manually set as {1})", 
+            Logger.Warning("A minigame message of {Length} bytes could not be read, so it is ignored",
+                Logger.Args(messageRawBytes.Length));
+            Logger.Debug("Unreadable minigame message {Raw} (framed as {Frame})",
                 Logger.Args(hexStringRaw, hexStringAdditions));
 
             return;

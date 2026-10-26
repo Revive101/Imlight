@@ -83,35 +83,6 @@ internal sealed class ZoneObjectSupervisor(Core.Zone zone) : ZoneEntitySuperviso
         ReportLoadedWhenEntitiesLoad();
     }
 
-    private static bool IsObjectEligibleForSpawn(CoreObjectInfo objectInfo) {
-        if (objectInfo is null) {
-            return false;
-        }
-
-        // Do not spawn combat sigils within this supervisor.
-        if (objectInfo is CombatSigilObjectInfo) {
-            return false;
-        }
-
-        // Dungeon-entry sigil pads spawn within ZoneSigilSupervisor.
-        if (objectInfo is MinigameSigilInfo) {
-            return false;
-        }
-
-        return true;
-    }
-
-    private static bool IsCriticalObject(CoreTemplate template) {
-        if (template is not GameObjectTemplate goTemplate) {
-            return false;
-        }
-
-        // Check if the adjectives contain "Critical."
-        var adjectives = goTemplate.m_adjectiveList;
-        return adjectives is not null
-            && adjectives.Any(adj => string.Equals(adj, "Critical", StringComparison.OrdinalIgnoreCase));
-    }
-
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_SPAWNENTITY))]
     private void ReceiveSpawnEntity(ZONE_102_PROTOCOL.MSG_SPAWNENTITY message) {
         var coreObject = message.CoreObject;
@@ -119,7 +90,9 @@ internal sealed class ZoneObjectSupervisor(Core.Zone zone) : ZoneEntitySuperviso
 
         var objectActor = CreateEntityActor(coreObject, template, null);
         if (objectActor is null) {
-            Logger.Error("Failed to spawn entity from MSG_SPAWNENTITY.");
+            Logger.Error("Zone {ZoneName} could not spawn {Object} (template {TemplateId}).",
+                Logger.Args(Zone.ZoneName, coreObject?.m_debugName, coreObject?.m_templateID.Full));
+
             return;
         }
 
@@ -189,6 +162,44 @@ internal sealed class ZoneObjectSupervisor(Core.Zone zone) : ZoneEntitySuperviso
         }
     }
 
+    private sealed class PlacedObject(CoreObjectInfo info, GameObjectTemplate template, CoreObject coreObject, IActorRef actor) {
+
+        public CoreObjectInfo Info { get; } = info;
+        public GameObjectTemplate Template { get; } = template;
+        public CoreObject Object { get; set; } = coreObject;
+        public IActorRef Actor { get; set; } = actor;
+
+    }
+
+    private static bool IsObjectEligibleForSpawn(CoreObjectInfo objectInfo) {
+        if (objectInfo is null) {
+            return false;
+        }
+
+        // Do not spawn combat sigils within this supervisor.
+        if (objectInfo is CombatSigilObjectInfo) {
+            return false;
+        }
+
+        // Dungeon-entry sigil pads spawn within ZoneSigilSupervisor.
+        if (objectInfo is MinigameSigilInfo) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private static bool IsCriticalObject(CoreTemplate template) {
+        if (template is not GameObjectTemplate goTemplate) {
+            return false;
+        }
+
+        // Check if the adjectives contain "Critical."
+        var adjectives = goTemplate.m_adjectiveList;
+        return adjectives is not null
+            && adjectives.Any(adj => string.Equals(adj, "Critical", StringComparison.OrdinalIgnoreCase));
+    }
+
     private static bool IsNamed(PlacedObject placed, string zoneTag)
         => string.Equals(placed.Info.m_zoneTag, zoneTag, StringComparison.OrdinalIgnoreCase);
 
@@ -198,15 +209,6 @@ internal sealed class ZoneObjectSupervisor(Core.Zone zone) : ZoneEntitySuperviso
         };
 
         base.ZoneRef.Tell(msg);
-    }
-
-    private sealed class PlacedObject(CoreObjectInfo info, GameObjectTemplate template, CoreObject coreObject, IActorRef actor) {
-
-        public CoreObjectInfo Info { get; } = info;
-        public GameObjectTemplate Template { get; } = template;
-        public CoreObject Object { get; set; } = coreObject;
-        public IActorRef Actor { get; set; } = actor;
-
     }
 
 }

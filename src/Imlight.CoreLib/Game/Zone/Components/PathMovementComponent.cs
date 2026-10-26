@@ -225,6 +225,22 @@ internal sealed class PathMovementComponent(ZoneEntity entity) : ZoneEntityCompo
         BroadcastServerMove(GetPosition());
     }
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_CREATUREFISHINTERACTIONINTERVAL))]
+    private void ReceiveCreatureFishInteractionInterval() {
+        if (Stopped) {
+            return;
+        }
+
+        Entity.ActiveGameObject.m_location = GetPosition();
+
+        var msg = new ZONE_102_PROTOCOL.MSG_CREATUREMOVE() {
+            CreatureActor = Entity.SelfRef,
+            CreatureObject = Entity.ActiveGameObject,
+            CreatureEntity = Entity
+        };
+        Entity.ZoneRef.Tell(msg);
+    }
+
     private void ArriveAtNode() {
         _isTravelling = false;
         Timers.Cancel(CREATURE_TRAVEL_UPDATE_INTERVAL_LOCK);
@@ -269,22 +285,6 @@ internal sealed class PathMovementComponent(ZoneEntity entity) : ZoneEntityCompo
         var travelUpdateInterval = TimeSpan.FromMilliseconds(TRAVEL_UPDATE_INTERVAL_IN_MS);
         var travelUpdateMsg = new ZONE_102_PROTOCOL.MSG_CREATURETRAVELUPDATEINTERVAL();
         Timers.StartPeriodicTimer(CREATURE_TRAVEL_UPDATE_INTERVAL_LOCK, travelUpdateMsg, travelUpdateInterval);
-    }
-
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_CREATUREFISHINTERACTIONINTERVAL))]
-    private void ReceiveCreatureFishInteractionInterval() {
-        if (Stopped) {
-            return;
-        }
-
-        Entity.ActiveGameObject.m_location = GetPosition();
-
-        var msg = new ZONE_102_PROTOCOL.MSG_CREATUREMOVE() {
-            CreatureActor = Entity.SelfRef,
-            CreatureObject = Entity.ActiveGameObject,
-            CreatureEntity = Entity
-        };
-        Entity.ZoneRef.Tell(msg);
     }
 
     private bool ShouldPause() {

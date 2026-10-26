@@ -37,7 +37,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/26/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -70,9 +70,8 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
     protected override void AfterLoad() {
         var serializer = new BindSerializer();
         if (!serializer.Deserialize(base.Stream.ToArray(), 1, out TemplateManifest)) {
-            Logger.Error("Could not deserialize TemplateManifest.xml.");
-
-            return;
+            throw new InvalidOperationException("TemplateManifest.xml in Root.wad could not be read. The cached " +
+                "game files may not match GameRevision in [Global Settings].");
         }
 
         Logger.Information("Loaded {TCount} CoreTemplates.", Logger.Args(TemplateManifest.m_serializedTemplates.Count));
@@ -90,8 +89,7 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
     public static T InitializeCoreObjectBehaviors<T>(T coreObject, ulong id) where T : CoreObject, new() {
         var template = GetCoreTemplate(id);
         if (template is null) {
-            Logger.Error("Could not initialize CoreObject from TemplateID {Tid}", 
-                Logger.Args(coreObject.m_templateID));
+            Logger.Debug("Could not initialize CoreObject from TemplateID {Tid}", Logger.Args(id));
 
             return coreObject;
         }

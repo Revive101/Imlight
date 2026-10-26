@@ -36,7 +36,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/23/2026
+ * Last Updated: 10/25/2026
  */
 
 using System.Collections.Generic;
@@ -79,19 +79,7 @@ internal class SpellCinematics : RootDirectoryResourceSingleton<SpellCinematics>
     private static readonly Dictionary<string, CinematicTemplate> s_cinematicTemplates = [];
 
     protected override void AfterLoad() {
-        var serializer = new BindSerializer();
-
-        foreach (var file in base.Files) {
-            var fileRecord = file.Key;
-            var fileStream = file.Value;
-
-            if (!serializer.Deserialize<CinematicTemplate>(fileStream?.ToArray(), 1, out var cinematicTemplate)) {
-                Logger.Error("Could not deserialize {0} as {1}", 
-                    Logger.Args(fileRecord.FileName, nameof(CinematicTemplate)));
-
-                continue;
-            }
-
+        foreach (var (fileRecord, cinematicTemplate) in ReadTemplates<CinematicTemplate>(PropertyFlags.Prop_Save)) {
             // Templates can share a name; the one whose file carries that name is the one the spell plays.
             var name = cinematicTemplate.m_name.ToString();
             var fileCarriesName = Path.GetFileNameWithoutExtension(fileRecord.FileName) == name;
@@ -102,8 +90,7 @@ internal class SpellCinematics : RootDirectoryResourceSingleton<SpellCinematics>
             s_cinematicTemplates[name] = cinematicTemplate;
         }
 
-        Logger.Information("Loaded {0} cinematic templates.", 
-            Logger.Args(s_cinematicTemplates.Count));
+        Logger.Information("Loaded {Count} cinematic templates.", Logger.Args(s_cinematicTemplates.Count));
     }
 
     /// <summary>

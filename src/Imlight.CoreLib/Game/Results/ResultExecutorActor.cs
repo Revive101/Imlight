@@ -17,6 +17,7 @@
  */
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
@@ -24,6 +25,7 @@ using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using Type = System.Type;
 
 namespace Imlight.CoreLib.Game.Results;
 
@@ -34,6 +36,7 @@ namespace Imlight.CoreLib.Game.Results;
 public class ResultExecutorActor(IResultContext context) : ReceiveProtocolDispatcher, IWithTimers {
 
     private const uint RESULT_HANDLER_TIMEOUT_MS = 30000;
+    private static readonly ConcurrentDictionary<System.Type, byte> s_reportedTypesWithoutHandler = new();
 
     private readonly IResultContext _context = context;
     private readonly Queue<Result> _resultQueue = new();
@@ -72,7 +75,7 @@ public class ResultExecutorActor(IResultContext context) : ReceiveProtocolDispat
 
         if (!message.Success) {
             _allSuccessful = false;
-            Logger.Warning("Result handler for type {0} reported failure.",
+            Logger.Warning("Result {Result} did not complete.",
                 Logger.Args(message.ResultType.Name));
         } 
 
@@ -112,8 +115,10 @@ public class ResultExecutorActor(IResultContext context) : ReceiveProtocolDispat
         var handlerType = ResultDispatcher.FindHandlerForResult(resultType, _context);
 
         if (handlerType is null) {
-            Logger.Warning("No handler registered for result type: {0}",
-                Logger.Args(resultType.Name));
+            if (s_reportedTypesWithoutHandler.TryAdd(resultType, 0)) {
+                Logger.Warning("Result {Result} is not supported by the server yet, so it is skipped. This is logged once.",
+                    Logger.Args(resultType.Name));
+            }
 
             ProcessNextResult();
             
@@ -141,8 +146,8 @@ public class ResultExecutorActor(IResultContext context) : ReceiveProtocolDispat
         catch (Exception ex) {
             _isExecuting = false;
             _allSuccessful = false;
-            Logger.Error("Failed to create/execute handler for result type {0}: {1}",
-                Logger.Args(resultType.Name, ex.Message));
+            Logger.Error("Result {Result} could not be started, so it is skipped. {Exception}",
+                Logger.Args(resultType.Name, ex));
 
             ProcessNextResult();
         }
