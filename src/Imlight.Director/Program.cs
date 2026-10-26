@@ -40,12 +40,8 @@
  * Last Updated: 10/10/2026
 */
 
-using System;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Globalization;
-using System.IO;
 using Akka.Actor;
+using Imlight.Api;
 using Imlight.Common;
 using Imlight.CoreLib.Auth;
 using Imlight.CoreLib.Login;
@@ -53,9 +49,14 @@ using Imlight.CoreLib.Patch;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData;
+using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models.Player;
-using Imlight.CoreLib.WizardData.Collections;
+using System;
+using System.Globalization;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Imlight.Director;
 
@@ -171,6 +172,9 @@ internal static class Program {
 
             return;
         }
+
+        // Start the API server.
+        ApiServer.StartAsync(s_imlightSystem).GetAwaiter().GetResult();
 
         // Keep program busy with a while loop.
         Logger.Information("Imlight may now be connected to.");
