@@ -204,6 +204,9 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONETRANSFER))]
     private void ReceiveZoneTransferRequest(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message) {
         if (_transferGate.IsQueued) {
+            Logger.Warning("Refused a transfer to {Zone} for character {CharId}: a transfer is already in progress, gate {State}.",
+                Logger.Args(message.DestinationZone, GetActiveWizard()?.CharId, _transferGate.State));
+
             return;
         }
 
@@ -286,6 +289,9 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_STARTSIGILENTRY))]
     private void ReceiveStartSigilEntry(ZONE_102_PROTOCOL.MSG_STARTSIGILENTRY message) {
         if (_transferGate.IsQueued || _activeSigilEntry is not null) {
+            Logger.Warning("Refused the sigil entry to {Zone} for character {CharId}: a transfer is already in progress, gate {State}, sigil entry active {SigilActive}.",
+                Logger.Args(message.DestinationZone, GetActiveWizard()?.CharId, _transferGate.State, _activeSigilEntry is not null));
+
             return;
         }
 
@@ -455,6 +461,9 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         // This button and the GoHome button are locked client-side until level 2.
         // jooty, again? cmon man
         if (_transferGate.IsQueued || Timers.IsTimerActive("zonetransfer")) {
+            Logger.Warning("Refused the go-home request of character {CharId}: a transfer is already in progress, gate {State}, zonetransfer timer active {TimerActive}.",
+                Logger.Args(GetActiveWizard()?.CharId, _transferGate.State, Timers.IsTimerActive("zonetransfer")));
+
             return;
         }
 
@@ -462,6 +471,9 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         var wizard = GetActiveWizard();
         var home = HouseDeeds.ResolveHome(wizard);
         if (home.Lot != 0 && wizard.AttachedLotGid == home.Lot) {
+            Logger.Debug("Ignored the go-home request of character {CharId}: they are already inside their house {LotGid}.",
+                Logger.Args(wizard.CharId, home.Lot));
+
             return;
         }
 
@@ -469,6 +481,7 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
             InformGameClient(failure == HouseGrantFailure.BackpackFull
                 ? BACKPACK_FULL_FOR_HOUSE_TEXT
                 : "Your house is not available right now. Please try again later.", true);
+            Logger.Warning("Character {CharId} cannot go home ({Failure}), so no transfer is started.", Logger.Args(wizard.CharId, failure));
 
             return;
         }
@@ -493,11 +506,16 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_HOUSEDOOR))]
     private void ReceiveHouseDoor(ZONE_102_PROTOCOL.MSG_HOUSEDOOR message) {
         if (_transferGate.IsQueued || Timers.IsTimerActive("zonetransfer")) {
+            Logger.Warning("Refused the house door {DoorGid} for character {CharId}: a transfer is already in progress, gate {State}, zonetransfer timer active {TimerActive}.",
+                Logger.Args(message.DoorGid, GetActiveWizard()?.CharId, _transferGate.State, Timers.IsTimerActive("zonetransfer")));
+
             return;
         }
 
         // The door sits in a house zone, and the house the player is in decides what is on the other side.
         if (!HouseTravel.TryEnterByDoor(GetActiveWizard(), message.DoorGid, out var entry, out var failure)) {
+            Logger.Warning("Character {CharId} cannot use the house door {DoorGid} ({Failure}), so nothing happens.",
+                Logger.Args(GetActiveWizard()?.CharId, message.DoorGid, failure));
             if (failure == HouseTravelFailure.BackpackFull) {
                 InformGameClient(BACKPACK_FULL_FOR_HOUSE_TEXT, true);
             }
@@ -518,6 +536,9 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
     [MessageHandler(typeof(WIZARDHOUSING_50_PROTOCOL.MSG_TELEPORTTOSTART))]
     private void ReceiveTeleportToStart(WIZARDHOUSING_50_PROTOCOL.MSG_TELEPORTTOSTART message) {
         if (_transferGate.IsQueued || Timers.IsTimerActive("zonetransfer")) {
+            Logger.Warning("Refused the teleport to the start of a house for character {CharId}: a transfer is already in progress, gate {State}, zonetransfer timer active {TimerActive}.",
+                Logger.Args(GetActiveWizard()?.CharId, _transferGate.State, Timers.IsTimerActive("zonetransfer")));
+
             return;
         }
 

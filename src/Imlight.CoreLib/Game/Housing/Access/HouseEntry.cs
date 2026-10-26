@@ -42,6 +42,7 @@
  * Last Updated: 10/15/2026
  */
 
+using Imlight.Common;
 using System.Collections.Generic;
 using System.Globalization;
 using Imcodec.MessageLayer;
@@ -149,6 +150,9 @@ public sealed record HouseEntry(
     /// </summary>
     internal HouseEchoStatus Read(WIZARDHOUSING_50_PROTOCOL.MSG_REQUESTDEEDZONE echo) {
         if (Kind != HouseEntryKind.Deed || echo.GlobalID != ObjectGid) {
+            Logger.Warning("Dropped a deed zone echo for {EchoGid}: the pending entry is a {Kind} for {ObjectGid}, so the transfer keeps waiting.",
+                Logger.Args(echo.GlobalID, Kind, ObjectGid));
+
             return HouseEchoStatus.NotForThisEntry;
         }
 
@@ -162,18 +166,36 @@ public sealed record HouseEntry(
     /// <summary>
     /// Reads the client's echo of a teleport request. The client sends it once the zone is ready.
     /// </summary>
-    internal HouseEchoStatus Read(WIZARDHOUSING_50_PROTOCOL.MSG_REQUESTHOUSINGZONETELEPORT echo)
-        => Kind == HouseEntryKind.Teleport && echo.TemplateGID == TemplateId ? HouseEchoStatus.Ready : HouseEchoStatus.NotForThisEntry;
+    internal HouseEchoStatus Read(WIZARDHOUSING_50_PROTOCOL.MSG_REQUESTHOUSINGZONETELEPORT echo) {
+        if (Kind == HouseEntryKind.Teleport && echo.TemplateGID == TemplateId) {
+            return HouseEchoStatus.Ready;
+        }
+
+        Logger.Warning("Dropped a teleport zone echo for template {EchoTemplate}: the pending entry is a {Kind} for template {TemplateId}, so the transfer keeps waiting.",
+            Logger.Args(echo.TemplateGID, Kind, TemplateId));
+
+        return HouseEchoStatus.NotForThisEntry;
+    }
 
     /// <summary>
     /// Reads the client's echo of a door request.
     /// </summary>
     internal HouseEchoStatus Read(WIZARDHOUSING_50_PROTOCOL.MSG_REQUESTHOUSINGZONE echo) {
         if (Kind != HouseEntryKind.Door || echo.GlobalID != ObjectGid) {
+            Logger.Warning("Dropped a door zone echo for {EchoGid}: the pending entry is a {Kind} for {ObjectGid}, so the transfer keeps waiting.",
+                Logger.Args(echo.GlobalID, Kind, ObjectGid));
+
             return HouseEchoStatus.NotForThisEntry;
         }
 
-        return echo.Status == READY_STATUS ? HouseEchoStatus.Ready : HouseEchoStatus.Refused;
+        if (echo.Status != READY_STATUS) {
+            Logger.Warning("The client answered the door zone request for {ObjectGid} with status {Status}, so the house is not ready.",
+                Logger.Args(ObjectGid, echo.Status));
+
+            return HouseEchoStatus.Refused;
+        }
+
+        return HouseEchoStatus.Ready;
     }
 
 }

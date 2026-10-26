@@ -44,6 +44,7 @@
 
 using System;
 using Imcodec.MessageLayer;
+using Imlight.Common;
 using Imlight.CoreLib.Game.Housing.Houses;
 using Imlight.CoreLib.Game.World;
 using Imlight.CoreLib.WizardData.Models.Player;
@@ -121,6 +122,8 @@ internal sealed class HouseZoneHandshake(IHouseZoneHost host) {
         }
 
         host.Send(entry.CreateRequest(location));
+        Logger.Information("Sent the house zone request to character {CharId}: {Kind} entry to {Zone} ({ObjectGid}), waiting for the client's echo.",
+            Logger.Args(host.Character.CharId, entry.Kind, entry.Zone, entry.ObjectGid));
         host.StartTimeout();
     }
 
@@ -130,8 +133,22 @@ internal sealed class HouseZoneHandshake(IHouseZoneHost host) {
     /// <param name="read">Reads the echoed message against the pending entry.</param>
     /// <param name="messageName">The message's name, for the log.</param>
     internal void OnEcho(Func<HouseEntry, HouseEchoStatus> read, string messageName) {
-        var status = _pending is null ? HouseEchoStatus.NotForThisEntry : read(_pending);
-        if (status == HouseEchoStatus.NotForThisEntry || host.TransferGate.State != ZoneTransferState.Requested) {
+        if (_pending is null) {
+            Logger.Warning("Dropped the {Message} echo from character {CharId}: no house zone request is pending.",
+                Logger.Args(messageName, host.Character.CharId));
+
+            return;
+        }
+
+        var status = read(_pending);
+        if (status == HouseEchoStatus.NotForThisEntry) {
+            return;
+        }
+
+        if (host.TransferGate.State != ZoneTransferState.Requested) {
+            Logger.Warning("Dropped the {Message} echo from character {CharId}: the transfer gate is {State}, not Requested.",
+                Logger.Args(messageName, host.Character.CharId, host.TransferGate.State));
+
             return;
         }
 
@@ -142,6 +159,7 @@ internal sealed class HouseZoneHandshake(IHouseZoneHost host) {
                 break;
             case HouseEchoStatus.Patching:
                 // The client is still patching the house zone archive.
+                Logger.Debug("Character {CharId} is still patching the house zone, so the wait restarts.", Logger.Args(host.Character.CharId));
                 host.StartTimeout();
 
                 break;
@@ -175,6 +193,8 @@ internal sealed class HouseZoneHandshake(IHouseZoneHost host) {
     }
 
     private void Abort(string step) {
+        Logger.Warning("Aborted the house entry of character {CharId}: {Step}, so the player stays where they are.",
+            Logger.Args(host.Character.CharId, step));
         host.CancelTimeout();
         var previous = host.TransferGate.State;
         var accepted = host.TransferGate.TryNack();
