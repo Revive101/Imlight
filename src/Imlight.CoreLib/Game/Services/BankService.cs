@@ -61,7 +61,7 @@ internal class BankService(SessionActor sessionActor) : MessageService(sessionAc
         _openBankEntityId = message.EntityId;
         Logger.Debug("BankService of session {0} opens the bank at NPC {1}.",
             Logger.Args(SessionActor.SessionID, message.EntityId));
-        CreateRequests().Open();
+        CreateRequests().Open(message.EntityId);
     }
 
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_MOVEINVTOBANK))]

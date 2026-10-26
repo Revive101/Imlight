@@ -72,17 +72,20 @@ internal sealed class BankRequests(Wizard wizard, IActorRef session, Func<bool> 
     /// <summary>
     /// Opens the bank window: reads the shared bank again, streams the bank and the shared bank, then opens the
     /// window. The window fills its lists from what the client holds when it opens, so the stream goes first.
+    /// The open message names the bank NPC: the client drops it, and tells the server it is done shopping, when
+    /// that id is not its open interaction in range.
     /// </summary>
-    internal void Open() {
+    /// <param name="bankNpcId">The global id of the bank NPC the player picked the bank at.</param>
+    internal void Open(ulong bankNpcId) {
         if (!AccountCollection.ReloadSharedBank(wizard.Account)) {
             Logger.Error("The shared bank of account {AccountId} could not be read again, the window opens with what the session holds.",
                 Logger.Args(wizard.Account.AccountId));
         }
 
         var streamed = BankSync.StreamBank(session, wizard, includeShared: true);
-        session.Tell(new WIZARD_12_PROTOCOL.MSG_OPENBANK { GlobalID = wizard.GameObjectID });
-        Logger.Debug("Sent MSG_OPENBANK to {0} after streaming the bank (complete: {1}).",
-            Logger.Args(wizard.GameObjectID, streamed));
+        session.Tell(new WIZARD_12_PROTOCOL.MSG_OPENBANK { GlobalID = bankNpcId });
+        Logger.Debug("Sent MSG_OPENBANK for NPC {0} to {1} after streaming the bank (complete: {2}).",
+            Logger.Args(bankNpcId, wizard.GameObjectID, streamed));
     }
 
     /// <summary>
