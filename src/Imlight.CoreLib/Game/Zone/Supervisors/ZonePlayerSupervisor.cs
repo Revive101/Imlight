@@ -77,10 +77,10 @@ internal sealed class ZonePlayerSupervisor(Core.Zone zone) : ZoneEntitySuperviso
         base.ReceiveZoneBroadcast(message);
     }
 
-    // If this handler was left to the base class, it would cause a stack overflow.
-    // Players attempt to query a zone entity, which is sent to themselves, which sends this message again.
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEENTITY))]
-    public override void ReceiveQueryEntityObject(ZONE_102_PROTOCOL.MSG_QUERYZONEENTITY message) { }
+    public override void ReceiveQueryEntityObject(ZONE_102_PROTOCOL.MSG_QUERYZONEENTITY message) {
+        // Left to the base class, a player's query would be sent to the player, which sends it here again.
+    }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEHEALTICK))]
     private void ReceiveZoneTick(ZONE_102_PROTOCOL.MSG_ZONEHEALTICK message) =>

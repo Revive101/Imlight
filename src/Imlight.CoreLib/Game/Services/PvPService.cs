@@ -35,7 +35,7 @@
  * 
  * Created by: Jay
  * Version: KALI 1.0
- * Last Updated: 10/14/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -276,7 +276,7 @@ internal class PvPService(SessionActor sessionActor) : MessageService(sessionAct
         try {
             _realmName = AskServer<SERVER_100_PROTOCOL.MSG_SERVERINFO>(new SERVER_100_PROTOCOL.MSG_QUERYSERVER())?.RealmName;
         } catch (Exception ex) {
-            Logger.Error("PvP could not ask the server for its realm name: {Exception}", Logger.Args(ex.Message));
+            Logger.Error("PvP could not ask the server for its realm name. {Exception}", Logger.Args(ex));
         }
 
         return _realmName;

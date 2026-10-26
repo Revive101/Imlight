@@ -40,10 +40,11 @@
  * 
  * Created by: Jay
  * Version: KALI 1.0
- * Last Updated: 10/18/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using Imcodec.ObjectProperty.TypeCache;
@@ -53,6 +54,8 @@ using Imlight.CoreLib.Game.PvP.Data;
 namespace Imlight.CoreLib.Game.PvP.Matchmaking;
 
 internal static class PvPMatchmaker {
+
+    private static readonly ConcurrentDictionary<uint, byte> s_reportedMatchIds = new();
 
     /// <summary>
     /// Gets the rating of a level from a level modifier table, interpolating between the listed levels and
@@ -95,7 +98,10 @@ internal static class PvPMatchmaker {
 
         foreach (var pool in pools) {
             if (!PvPMatchFactory.TryGetMatch(pool.Key.MatchNameId, out var match) || !PvPMatchFactory.IsSupportedLayout(match)) {
-                Logger.Error("Queued match {MatchId} has no template of a supported team layout.", Logger.Args(pool.Key.MatchNameId));
+                if (s_reportedMatchIds.TryAdd(pool.Key.MatchNameId, 0)) {
+                    Logger.Error("Queued match {MatchId} has no template of a supported team layout; its queue never starts.",
+                        Logger.Args(pool.Key.MatchNameId));
+                }
 
                 continue;
             }

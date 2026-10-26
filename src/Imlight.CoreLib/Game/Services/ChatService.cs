@@ -36,7 +36,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/26/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -285,11 +285,8 @@ internal class ChatService(SessionActor sessionActor) : MessageService(sessionAc
             Message = message,
         });
 
-    /// <summary>
-    /// Sends a zone chat message to all online players in the zone, skipping those
-    /// who have ignored the sender.
-    /// </summary>
     private void SendFilteredZoneMessage(IMessage msg, ulong senderCharId, string zoneName) {
+        // Players who ignored the sender do not get the message.
         var blockedBy = BuddyRelationshipCollection.GetCharactersWhoBlocked(senderCharId);
         var playersInZone = OnlinePlayerCollection.GetPlayersInZone(zoneName);
 

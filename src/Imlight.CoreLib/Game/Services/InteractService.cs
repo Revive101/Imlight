@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -76,7 +76,7 @@ internal class InteractService(SessionActor sessionActor) : MessageService(sessi
         // Search for the interaction object.
         var npc = GetZoneObject(getObjectId(message));
         if (npc == null) {
-            Logger.Error("{0} searched for NPC by global ID {1} but one was not found",
+            Logger.Warning("Character {CharId} interacted with NPC {NpcId}, which is not in the zone.",
                 Logger.Args(wizard.CharId, getObjectId(message)));
 
             return;
@@ -85,7 +85,7 @@ internal class InteractService(SessionActor sessionActor) : MessageService(sessi
         // Check if the interacted object contains a service memento component.
         var serviceMementoComponent = npc.GetComponentOfType<InteractServiceMementoComponent>();
         if (serviceMementoComponent == null) {
-            Logger.Error("{0} interacted with NPC {1} but it does not contain a service memento component",
+            Logger.Warning("Character {CharId} interacted with NPC {NpcId}, which offers no services.",
                 Logger.Args(wizard.CharId, getObjectId(message)));
 
             return;

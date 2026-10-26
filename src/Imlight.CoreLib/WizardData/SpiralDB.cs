@@ -109,13 +109,14 @@ public static class SpiralDB {
                 SyncRepository(basePath);
             }
             catch (Exception ex) {
-                Logger.Error("Failed to sync SpiralDB repository: {0}", Logger.Args(ex.Message));
+                Logger.Error("SpiralDB could not be downloaded from {RemoteUrl}: {Reason}", Logger.Args(s_remoteUrl, ex.Message));
                 if (s_rollbackOnFailure && Directory.Exists(basePath)) {
-                    Logger.Information("Rolling back — using existing local SpiralDB data.");
+                    Logger.Information("Using the SpiralDB data already on disk.");
                 }
                 else if (!Directory.Exists(basePath)) {
-                    Logger.Error("No local SpiralDB data available and remote sync failed. " +
-                                 "SpiralDB will be empty.");
+                    Logger.Error("There is no SpiralDB data on disk either, so the world is empty. " +
+                                 "Check Database.SpiralDBRemoteUrl and the network, or copy SpiralDB to {LocalPath}.",
+                        Logger.Args(basePath));
 
                     return;
                 }
@@ -133,11 +134,11 @@ public static class SpiralDB {
         }
 
         if (!Directory.Exists(basePath)) {
-            Logger.Error("SpiralDB local path does not exist: {0}", Logger.Args(basePath));
+            Logger.Error("SpiralDB is not at {LocalPath}, so the world is empty. Set Database.SpiralDBLocalPath or enable the download.", Logger.Args(basePath));
             return;
         }
 
-        Logger.Information("Loading SpiralDB from {0}...", Logger.Args(basePath));
+        Logger.Information("Loading SpiralDB from {LocalPath}...", Logger.Args(basePath));
 
         try {
             // Build into temporary containers so a parse failure leaves old data intact.
@@ -188,9 +189,9 @@ public static class SpiralDB {
             s_playerStatues = playerStatues;
 
             Logger.Information(
-                "SpiralDB loaded {0} files: {1} spellbooks, {2} drop tables, {3} NPC inventories, " +
-                "{4} NPC spell inventories, {5} NPC drop tables, {6} treasure card inventories, " +
-                "{7} quest templates, {8} zone data entries, {9} seamstress NPCs, {10} badge definitions, {11} player statues.",
+                "SpiralDB loaded {Files} files: {Spellbooks} spellbooks, {DropTables} drop tables, {NpcInventories} NPC inventories, " +
+                "{NpcSpellInventories} NPC spell inventories, {NpcDropTables} NPC drop tables, {TreasureCardInventories} treasure card inventories, " +
+                "{QuestTemplates} quest templates, {ZoneData} zone data entries, {Seamstresses} seamstress NPCs, {Badges} badge definitions, {PlayerStatues} player statues.",
                 Logger.Args(
                     filesLoaded,
                     s_creatureSpellbooks.Count,
@@ -206,7 +207,7 @@ public static class SpiralDB {
                     s_playerStatues.Count));
         }
         catch (Exception ex) {
-            Logger.Error("Failed to load SpiralDB: {0}", Logger.Args(ex.Message));
+            Logger.Error("SpiralDB could not be loaded. {Exception}", Logger.Args(ex));
             if (!s_rollbackOnFailure) {
                 // Clear everything.
                 s_creatureSpellbooks.Clear();
@@ -230,7 +231,7 @@ public static class SpiralDB {
     private static void SyncRepository(string basePath) {
         if (!Directory.Exists(basePath)) {
             Logger.Information(
-                "SpiralDB not found... cloning from {0} (branch {1})...",
+                "SpiralDB not found, downloading it from {RemoteUrl} (branch {Branch})...",
                 Logger.Args(s_remoteUrl, s_branch));
 
             var startStopWatch = Stopwatch.GetTimestamp();
@@ -265,7 +266,7 @@ public static class SpiralDB {
         }
 
         Logger.Information(
-            "Fetching SpiralDB updates from {0} (branch {1})...",
+            "Fetching SpiralDB updates from {RemoteUrl} (branch {Branch})...",
             Logger.Args(s_remoteUrl, s_branch));
 
         using var repository = new Repository(basePath);
@@ -301,7 +302,7 @@ public static class SpiralDB {
                 $"Remote branch 'origin/{s_branch}' does not exist.");
 
         if (repository.Head.Tip?.Sha == remoteBranch.Tip.Sha) {
-            Logger.Information("SpiralDB is already up-to-date (commit {0}).", Logger.Args(remoteBranch.Tip.Sha[..7]));
+            Logger.Information("SpiralDB is already up to date (commit {Commit}).", Logger.Args(remoteBranch.Tip.Sha[..7]));
             return;
         }
 
@@ -310,7 +311,7 @@ public static class SpiralDB {
             remoteBranch.Tip
         );
 
-        Logger.Information("SpiralDB updated to commit {0}.", Logger.Args(remoteBranch.Tip.Sha[..7]));
+        Logger.Information("SpiralDB updated to commit {Commit}.", Logger.Args(remoteBranch.Tip.Sha[..7]));
     }
 
     public static CreatureSpellbook GetCreatureSpellbook(string deckName)
@@ -374,7 +375,7 @@ public static class SpiralDB {
                     Interlocked.Increment(ref count);
                 }
             } catch (Exception e) {
-                Logger.Warning("Failed to load creature spellbook {0}: {1}",
+                Logger.Warning("SpiralDB creature spellbook {File} could not be read and was skipped: {Reason}",
                     Logger.Args(Path.GetFileName(file), e.Message));
             }
         });
@@ -400,7 +401,7 @@ public static class SpiralDB {
                     Interlocked.Increment(ref count);
                 }
             } catch (Exception e) {
-                Logger.Warning("Failed to load drop table {0}: {1}",
+                Logger.Warning("SpiralDB drop table {File} could not be read and was skipped: {Reason}",
                     Logger.Args(Path.GetFileName(file), e.Message));
             }
         });
@@ -426,7 +427,7 @@ public static class SpiralDB {
                     count++;
                 }
             } catch (Exception e) {
-                Logger.Warning("Failed to load global registry {0}: {1}",
+                Logger.Warning("SpiralDB global registry {File} could not be read and was skipped: {Reason}",
                     Logger.Args(Path.GetFileName(file), e.Message));
             }
         }
@@ -451,7 +452,7 @@ public static class SpiralDB {
                     Interlocked.Increment(ref count);
                 }
             } catch (Exception e) {
-                Logger.Warning("Failed to load NPC inventory {0}: {1}",
+                Logger.Warning("SpiralDB NPC inventory {File} could not be read and was skipped: {Reason}",
                     Logger.Args(Path.GetFileName(file), e.Message));
             }
         });
@@ -476,7 +477,7 @@ public static class SpiralDB {
                     Interlocked.Increment(ref count);
                 }
             } catch (Exception e) {
-                Logger.Warning("Failed to load NPC spell inventory {0}: {1}",
+                Logger.Warning("SpiralDB NPC spell inventory {File} could not be read and was skipped: {Reason}",
                     Logger.Args(Path.GetFileName(file), e.Message));
             }
         });
@@ -501,7 +502,7 @@ public static class SpiralDB {
                     Interlocked.Increment(ref count);
                 }
             } catch (Exception e) {
-                Logger.Warning("Failed to load NPC drop table {0}: {1}",
+                Logger.Warning("SpiralDB NPC drop table {File} could not be read and was skipped: {Reason}",
                     Logger.Args(Path.GetFileName(file), e.Message));
             }
         });
@@ -526,7 +527,7 @@ public static class SpiralDB {
                     Interlocked.Increment(ref count);
                 }
             } catch (Exception e) {
-                Logger.Warning("Failed to load treasure card inventory {0}: {1}",
+                Logger.Warning("SpiralDB treasure card inventory {File} could not be read and was skipped: {Reason}",
                     Logger.Args(Path.GetFileName(file), e.Message));
             }
         });
@@ -551,7 +552,7 @@ public static class SpiralDB {
                     Interlocked.Increment(ref count);
                 }
             } catch (Exception e) {
-                Logger.Warning("Failed to load NPC seamstress {0}: {1}",
+                Logger.Warning("SpiralDB NPC seamstress {File} could not be read and was skipped: {Reason}",
                     Logger.Args(Path.GetFileName(file), e.Message));
             }
         });
@@ -575,12 +576,12 @@ public static class SpiralDB {
                     if (target.TryAdd(badge.Id, badge)) {
                         Interlocked.Increment(ref count);
                     } else {
-                        Logger.Warning("Duplicate badge definition id {0} in {1} skipped.",
+                        Logger.Warning("Duplicate badge definition id {Id} in {File} skipped.",
                             Logger.Args(badge.Id, Path.GetFileName(file)));
                     }
                 }
             } catch (Exception e) {
-                Logger.Warning("Failed to load badge definition {0}: {1}",
+                Logger.Warning("SpiralDB badge definition {File} could not be read and was skipped: {Reason}",
                     Logger.Args(Path.GetFileName(file), e.Message));
             }
         });
@@ -604,20 +605,20 @@ public static class SpiralDB {
                     return;
                 }
                 if (!s_statueIdPattern.IsMatch(statue.Id ?? string.Empty)) {
-                    Logger.Warning("Player statue in {0} has an invalid id and was skipped.",
+                    Logger.Warning("Player statue in {File} has an invalid id and was skipped.",
                         Logger.Args(Path.GetFileName(file)));
 
                     return;
                 }
                 if (!target.TryAdd(statue.Id, statue)) {
-                    Logger.Warning("Duplicate player statue id {0} in {1} skipped.",
+                    Logger.Warning("Duplicate player statue id {Id} in {File} skipped.",
                         Logger.Args(statue.Id, Path.GetFileName(file)));
 
                     return;
                 }
                 Interlocked.Increment(ref count);
             } catch (Exception e) {
-                Logger.Warning("Failed to load player statue {0}: {1}",
+                Logger.Warning("SpiralDB player statue {File} could not be read and was skipped: {Reason}",
                     Logger.Args(Path.GetFileName(file), e.Message));
             }
         });
@@ -645,7 +646,7 @@ public static class SpiralDB {
                     Interlocked.Increment(ref count);
                 }
             } catch (Exception e) {
-                Logger.Warning("Failed to load quest template {0}: {1}",
+                Logger.Warning("SpiralDB quest template {File} could not be read and was skipped: {Reason}",
                     Logger.Args(Path.GetFileName(file), e.Message));
             }
         });
@@ -670,7 +671,7 @@ public static class SpiralDB {
                     Interlocked.Increment(ref count);
                 }
             } catch (Exception e) {
-                Logger.Warning("Failed to load zone data {0}: {1}",
+                Logger.Warning("SpiralDB zone data {File} could not be read and was skipped: {Reason}",
                     Logger.Args(Path.GetFileName(file), e.Message));
             }
         });

@@ -34,7 +34,7 @@
  * 
  * Created by: Jay
  * Version: KALI 1.0
- * Last Updated: 10/14/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -54,14 +54,10 @@ internal sealed class DuelModifierFactory : RootDirectoryResourceSingleton<DuelM
     protected override void AfterLoad() {
         var byName = new Dictionary<string, DuelModifierTemplate>(StringComparer.Ordinal);
 
-        foreach (var file in base.Files) {
-            if (!PvPResourceReader.TryRead<DuelModifierTemplate>(file.Key, file.Value, out var modifier)) {
-                continue;
-            }
-
+        foreach (var (file, modifier) in ReadTemplates<DuelModifierTemplate>()) {
             string name = modifier.m_name;
             if (!byName.TryAdd(name, modifier)) {
-                Logger.Error("Duel modifier {Name} in {File} is defined twice.", Logger.Args(name, file.Key.FileName));
+                Logger.Error("Duel modifier {Name} in {File} is defined twice.", Logger.Args(name, file.FileName));
             }
         }
 

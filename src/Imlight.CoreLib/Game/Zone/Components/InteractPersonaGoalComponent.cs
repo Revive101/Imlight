@@ -217,6 +217,63 @@ internal sealed class InteractPersonaGoalComponent(ZoneEntity entity)
         }
     }
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_STARTSEAMLESSTRANSITION))]
+    private void HandleStartSeamlessTransition(ZONE_102_PROTOCOL.MSG_STARTSEAMLESSTRANSITION message) {
+        var playerActor = message.PlayerActor;
+        var playerCharacter = message.PlayerCharacter;
+        var playerObject = message.PlayerObject;
+
+        var serviceMementoComponent = Entity.GetComponentOfType<InteractServiceMementoComponent>();
+        if (serviceMementoComponent == null) {
+            Logger.Warning("Cannot trigger service re-evaluation: NPC {0} does not have InteractServiceMementoComponent",
+                Logger.Args(Entity.ActiveGameObject.m_nMobileID));
+
+            return;
+        }
+
+        var reinteractMsg = new QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC {
+            GlobalID = Entity.ActiveGameObject.m_nMobileID,
+            ServiceName = "",
+            Reinteract = 2,
+            ServiceIndex = 0,
+            RequestedSigilMode = 0
+        };
+        playerActor.Tell(reinteractMsg);
+
+        var delayedQuestOfferMsg = new ZONE_102_PROTOCOL.MSG_TRIGGERSEAMLESSTRANSITION {
+            PlayerActor = playerActor,
+            PlayerCharacter = playerCharacter,
+            PlayerObject = playerObject
+        };
+
+        Timers.StartSingleTimer(
+            "delayed_quest_offer",
+            delayedQuestOfferMsg,
+            TimeSpan.FromMilliseconds(QUEST_COMPLETION_TRANSITION_DELAY_MS));
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_TRIGGERSEAMLESSTRANSITION))]
+    private void HandleSeamlessTransition(ZONE_102_PROTOCOL.MSG_TRIGGERSEAMLESSTRANSITION message) {
+        var serviceMementoComponent = Entity.GetComponentOfType<InteractServiceMementoComponent>();
+        if (serviceMementoComponent == null) {
+            Logger.Warning("No service memento component found for delayed quest offer");
+
+            return;
+        }
+
+        var questOfferMsg = new ZONE_102_PROTOCOL.MSG_ZONEINTERACTION {
+            GlobalID = Entity.ActiveGameObject.m_nMobileID,
+            ServiceName = "QuestOfferService",
+            ServiceIndex = 0,
+            PlayerActor = message.PlayerActor,
+            PlayerCharacter = message.PlayerCharacter,
+            PlayerObject = message.PlayerObject,
+            Reinteract = 2
+        };
+
+        serviceMementoComponent.ActorRef.Tell(questOfferMsg);
+    }
+
     private PlayerPersonaGoalState GetOrUpdatePlayerState(Wizard wizard, bool forceUpdate = false) {
         var playerId = wizard.CharId;
         var now = DateTime.UtcNow;
@@ -370,63 +427,6 @@ internal sealed class InteractPersonaGoalComponent(ZoneEntity entity)
         }
 
         return false;
-    }
-
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_STARTSEAMLESSTRANSITION))]
-    private void HandleStartSeamlessTransition(ZONE_102_PROTOCOL.MSG_STARTSEAMLESSTRANSITION message) {
-        var playerActor = message.PlayerActor;
-        var playerCharacter = message.PlayerCharacter;
-        var playerObject = message.PlayerObject;
-
-        var serviceMementoComponent = Entity.GetComponentOfType<InteractServiceMementoComponent>();
-        if (serviceMementoComponent == null) {
-            Logger.Warning("Cannot trigger service re-evaluation: NPC {0} does not have InteractServiceMementoComponent",
-                Logger.Args(Entity.ActiveGameObject.m_nMobileID));
-
-            return;
-        }
-
-        var reinteractMsg = new QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC {
-            GlobalID = Entity.ActiveGameObject.m_nMobileID,
-            ServiceName = "",
-            Reinteract = 2,
-            ServiceIndex = 0,
-            RequestedSigilMode = 0
-        };
-        playerActor.Tell(reinteractMsg);
-
-        var delayedQuestOfferMsg = new ZONE_102_PROTOCOL.MSG_TRIGGERSEAMLESSTRANSITION {
-            PlayerActor = playerActor,
-            PlayerCharacter = playerCharacter,
-            PlayerObject = playerObject
-        };
-
-        Timers.StartSingleTimer(
-            "delayed_quest_offer",
-            delayedQuestOfferMsg,
-            TimeSpan.FromMilliseconds(QUEST_COMPLETION_TRANSITION_DELAY_MS));
-    }
-
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_TRIGGERSEAMLESSTRANSITION))]
-    private void HandleSeamlessTransition(ZONE_102_PROTOCOL.MSG_TRIGGERSEAMLESSTRANSITION message) {
-        var serviceMementoComponent = Entity.GetComponentOfType<InteractServiceMementoComponent>();
-        if (serviceMementoComponent == null) {
-            Logger.Warning("No service memento component found for delayed quest offer");
-
-            return;
-        }
-
-        var questOfferMsg = new ZONE_102_PROTOCOL.MSG_ZONEINTERACTION {
-            GlobalID = Entity.ActiveGameObject.m_nMobileID,
-            ServiceName = "QuestOfferService",
-            ServiceIndex = 0,
-            PlayerActor = message.PlayerActor,
-            PlayerCharacter = message.PlayerCharacter,
-            PlayerObject = message.PlayerObject,
-            Reinteract = 2
-        };
-
-        serviceMementoComponent.ActorRef.Tell(questOfferMsg);
     }
 
 }

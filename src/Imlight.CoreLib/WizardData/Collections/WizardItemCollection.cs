@@ -360,7 +360,7 @@ public static class WizardItemCollection {
 
         // Search through the item behaviors to find the deck behavior.
         if (!CoreObjectFactory.FindBehaviorInstance<DeckBehavior>(associatedDeck, out var deckBehavior)) {
-            Logger.Error("Failed to find the deck behavior for item {0}.", 
+            Logger.Error("Item {DeckId} is not a deck, so its spells were not saved.",
                 Logger.Args(associatedDeck.m_globalID));
 
             return false;
@@ -408,7 +408,7 @@ public static class WizardItemCollection {
 
         // Search through the item behaviors to find the deck behavior.
         if (!CoreObjectFactory.FindBehaviorInstance<DeckBehavior>(associatedDeck, out var deckBehavior)) {
-            Logger.Error("Failed to find the deck behavior for item {0}.", Logger.Args(associatedDeck.m_globalID));
+            Logger.Error("Item {DeckId} is not a deck, so its spells were not saved.", Logger.Args(associatedDeck.m_globalID));
             return;
         }
 

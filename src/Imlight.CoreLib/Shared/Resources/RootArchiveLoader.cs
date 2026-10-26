@@ -44,15 +44,16 @@ internal static class RootArchiveLoader {
     /// Reloads the Root.wad file into memory.
     /// </summary>
     public static void ReloadRootWad() {
-        Logger.Information("Loading Root.wad into memory..");
+        Logger.Debug("Loading Root.wad into memory..");
 
         // todo: dispose the old archive here once Imcodec's Archive is disposable; it holds the wad stream.
-        s_rootWad = ResourceWad();
-        if (s_rootWad is not null) {
-            IsLoaded = true;
-        }
+        s_rootWad = ResourceManager.ResourceWad(ROOT_WAD_NAME)
+            ?? throw new InvalidOperationException("No game files: Root.wad is not in the local cache and could not " +
+                "be downloaded. Start the patch server, or copy a filled cache (LocalWadCachePath in " +
+                "[Patch Server]), then restart.");
+        IsLoaded = true;
 
-        Logger.Information("Root.wad successfully loaded into memory.");
+        Logger.Debug("Root.wad successfully loaded into memory.");
     }
 
     /// <summary>
@@ -135,32 +136,6 @@ internal static class RootArchiveLoader {
         }
     }
 
-    private static Archive LoadNamedWad(string wadName) {
-        var cachedWad = LocalWadCache.GetCachedWad(wadName);
-        if (cachedWad is not null) {
-            return cachedWad;
-        }
-
-        if (!PatchServerFascade.EndpointReached) {
-            Logger.Error("Patch server is not reachable. Cannot load {WadName}.", Logger.Args(wadName));
-
-            return null;
-        }
-
-        var fullName = wadName.EndsWith(".wad", StringComparison.OrdinalIgnoreCase) ? wadName : wadName + ".wad";
-        if (!PatchServerFascade.DownloadWadFromPatchServer(fullName, out var stream)) {
-            Logger.Error("Failed to download wad {WadName} from patch server", Logger.Args(fullName));
-
-            return null;
-        }
-
-        stream.Seek(0, SeekOrigin.Begin);
-        var wad = ArchiveParser.Parse(stream);
-        LocalWadCache.CacheWad(fullName, wad);
-
-        return wad;
-    }
-
     /// <summary>
     /// Retrieves a dictionary of file records and memory streams for files within a specified directory.
     /// </summary>
@@ -185,31 +160,10 @@ internal static class RootArchiveLoader {
         return files;
     }
 
-    private static Archive ResourceWad() {
-        // Check if the file is already cached. If it is, just return that.
-        var cachedWad = LocalWadCache.GetCachedWad(ROOT_WAD_NAME);
-        if (cachedWad is not null) {
-            return cachedWad;
-        }
+    private static Archive LoadNamedWad(string wadName) {
+        var fullName = wadName.EndsWith(".wad", StringComparison.OrdinalIgnoreCase) ? wadName : wadName + ".wad";
 
-        // Otherwise, download it from the patch server.
-        // If Imlight is running without the patch server, we'll just return null.
-        if (!PatchServerFascade.EndpointReached) {
-            throw new Exception("Patch server is not reachable. Cannot load Root.wad.");
-        }
-
-        if (!PatchServerFascade.DownloadWadFromPatchServer(ROOT_WAD_NAME, out var stream)) {
-            Logger.Error("Failed to download wad {WadName} from patch server", Logger.Args(ROOT_WAD_NAME));
-
-            return null;
-        }
-
-        // If we successfully downloaded it, we'll also cache it so we don't have to do that again.
-        stream.Seek(0, SeekOrigin.Begin);
-        var wad = ArchiveParser.Parse(stream);
-        LocalWadCache.CacheWad(ROOT_WAD_NAME, wad);
-
-        return wad;
+        return ResourceManager.ResourceWad(fullName);
     }
 
 }

@@ -41,7 +41,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/14/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -264,8 +264,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         }
     });
 
-    // Client packets go to the players only: creatures and summoned minions are server entities that read none.
     internal new void PlayerBroadcast(IMessage message) => EnactActionOnSubCircles(circle => {
+        // Client packets go to the players only: creatures and summoned minions are server entities that read none.
         if (circle.OccupiedTeam == CombatTeam.Player && !circle.IsSummonedMinion) {
             circle.ParticipantActor.Tell(message);
         }
@@ -362,18 +362,6 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         }
 
         ForfeitPvPDuel(subCircle);
-    }
-
-    private void ActivateSigil() {
-        _renderComponent.Enable();
-
-        // Broadcast MSG_DUEL to inform all clients a duel is now active.
-        // The live server sends this to enable 3D combat targeting.
-        BroadcastDuel();
-
-        // Fire a message to self to start the duel after the grace period has ended.
-        var delay = TimeSpan.FromSeconds(DUEL_GRACE_PERIOD_IN_SECONDS);
-        Timers.StartSingleTimer(GRACE_TIME_KEY, new COMBAT_106_PROTOCOL.MSG_NEWROUND(), delay);
     }
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_NEWROUND))]
@@ -587,41 +575,6 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         ExecutePlanningPhaseOver();
     }
 
-    private void SkipFailedPvPHalfTurn() {
-        _awaitingCombatMoves = false;
-        Duel.m_duelPhase = kDuelPhase.kPhase_Resolution;
-        SendCombatPhase((byte) Duel.m_duelPhase);
-        ContinuePvPDuel();
-    }
-
-    private void ExecutePlanningPhaseOver() {
-        // The execution phase begins. This is where combat actions take place and we actually see spell cinematics.
-        _awaitingCombatMoves = false;
-        Duel.m_duelPhase = kDuelPhase.kPhase_Execution;
-        SendCombatPhase((byte) Duel.m_duelPhase);
-
-        // Determine how long the cinematics will take.
-        var cinematicTimeInSeconds = CombatResolver.ApplyQueuedCombatActions(out var actions);
-        var actionExecutionTime = TimeSpan.FromSeconds(cinematicTimeInSeconds);
-        Duel.m_executionPhaseTimer = (float) actionExecutionTime.TotalSeconds;
-
-        // Serialize the combat actions and send them to the clients.
-        if (!_serializer.Serialize(actions, _combatParticipantHandFlags, out var buffer)) {
-            Logger.Error("Failed to serialize combat actions for duel {0}",
-                Logger.Args(SigilId));
-
-            return;
-        }
-
-        var msg = new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATACTIONS {
-            DuelID = SigilId,
-            ActionData = buffer,
-        };
-        ZoneBroadcast(msg);
-
-        Timers.StartSingleTimer(RESOUTION_TIME_KEY, new COMBAT_106_PROTOCOL.MSG_ROUNDRESOLUTION(), actionExecutionTime);
-    }
-
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ROUNDRESOLUTION))]
     private void ReceiveRoundResolution(COMBAT_106_PROTOCOL.MSG_ROUNDRESOLUTION message) {
         if (!_isActive) {
@@ -658,6 +611,276 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         }
 
         EndDuel();
+    }
+
+    [MessageHandler(typeof(DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_ENDDUEL))]
+    private void DespawnDuel() {
+        _isActive = false;
+
+        // Minions are children of this sigil entity, which persists between fights; MSG_COMBATDEATH
+        // deletes them outright.
+        EnactActionOnSubCircles(circle => {
+            if (circle.IsSummonedMinion && circle.ParticipantActor is not null) {
+                circle.ParticipantActor.Tell(new COMBAT_106_PROTOCOL.MSG_COMBATDEATH());
+            }
+        });
+
+        _renderComponent?.Disable();
+        Entity.DespawnObject();
+        _entitiesInRange.Clear();
+        _groupReservations.Clear();
+    }
+
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT))]
+    private void ReceiveClientDisconnect(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT message) {
+        if (!_isActive) {
+            return;
+        }
+
+        // Find the sub circle that the client was in and remove them from the duel.
+        var subCircle = SubCircles.FirstOrDefault(x => x.ParticipantActor == Sender);
+        if (subCircle is null) {
+            return;
+        }
+
+        _pvp?.MarkDisconnected(Sender);
+
+        // Handle this as if it were the flee action.
+        HandleFleeAction(subCircle);
+    }
+
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_QUERY_LOGOUT))]
+    private void ReceiveQueryLogout(GAME_5_PROTOCOL.MSG_QUERY_LOGOUT message) {
+        if (!_isActive) {
+            return;
+        }
+
+        // Find the sub circle that the client was in and remove them from the duel.
+        var subCircle = SubCircles.FirstOrDefault(x => x.ParticipantActor == Sender);
+        if (subCircle is null) {
+            return;
+        }
+
+        _pvp?.MarkDisconnected(Sender);
+
+        // Handle this as if it were the flee action.
+        HandleFleeAction(subCircle);
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_DEFERREDMINIONSUMMON))]
+    private void ReceiveDeferredMinionSummon(ZONE_102_PROTOCOL.MSG_DEFERREDMINIONSUMMON message) {
+        // Drop if the duel ended or restarted during the summon animation.
+        if (!_isActive || message.Caster is null || Array.IndexOf(SubCircles, message.Caster) < 0) {
+            Logger.Debug("Duel {DuelId} | deferred minion summon (tid {CreatureTid}) dropped, duel no longer active.",
+                Logger.Args(Duel.m_duelID.Full, message.CreatureTid));
+
+            return;
+        }
+
+        SpawnAndAssignMinion(message.CreatureTid, message.Caster);
+    }
+
+    internal void SummonMinion(uint creatureTid, CombatDuelSubCircle caster) {
+        if (CoreObjectFactory.GetCoreTemplate(creatureTid) is null) {
+            Logger.Warning("Duel {0} | minion summon: no template for creature tid {1}.",
+                Logger.Args(Duel.m_duelID.Full, creatureTid));
+
+            return;
+        }
+
+        // Cinematics before this cast plus the summon animation: the minion appears mid-cast.
+        var castOffset = CurrentActionCinematicOffsetSeconds;
+        var spawnDelay = castOffset + MINION_SUMMON_ANIMATION_DELAY;
+        Timers.StartSingleTimer(
+            $"minionSummon_{Guid.NewGuid():N}",
+            new ZONE_102_PROTOCOL.MSG_DEFERREDMINIONSUMMON { CreatureTid = creatureTid, Caster = caster },
+            TimeSpan.FromSeconds(spawnDelay));
+    }
+
+    internal static void OnMinionRemoved(CombatDuelSubCircle circle)
+        => circle.RemoveParticipant();
+
+    [MessageHandler(typeof(GROUP_109_PROTOCOL.MSG_JOINRESERVEDDUEL))]
+    private void ReceiveJoinReservedDuel(GROUP_109_PROTOCOL.MSG_JOINRESERVEDDUEL message) {
+        if (!_isActive || !_groupReservations.IsReservedFor(message.CharId)) {
+            return;
+        }
+
+        var subCircle = _groupReservations.ChoosePlayerCircle(message.CharId, SubCircles);
+        if (subCircle is null) {
+            return;
+        }
+
+        // The group mate may be anywhere in the zone; put them on their circle before they join.
+        ZoneBroadcast(new GAME_5_PROTOCOL.MSG_SERVERTELEPORT {
+            LocationX = CompressTeleportCoordinate(subCircle.WorldPosition.X),
+            LocationY = CompressTeleportCoordinate(subCircle.WorldPosition.Y),
+            LocationZ = CompressTeleportCoordinate(subCircle.WorldPosition.Z),
+            Direction = (byte) Math.Round(subCircle.WorldRotation / (2 * Math.PI) * 250),
+            MobileID = message.PlayerObject.m_nMobileID,
+        });
+
+        AddParticipant(message.PlayerObject, message.PlayerActor);
+    }
+
+    internal void SendCurrentCombatHand(CombatDuelSubCircle circle) {
+        // As-is, no draw or refill, so a discarded slot stays visibly open for the vault draw.
+        if (circle is null || circle.IsAiCreature) {
+            return;
+        }
+
+        var hand = circle.GetCurrentHand();
+        if (!_serializer.Serialize(hand, _combatParticipantHandFlags, out var buffer)) {
+            Logger.Error("Failed to serialize current combat hand for duel {0}", Logger.Args(SigilId));
+
+            return;
+        }
+
+        var msg = new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATHAND {
+            DeckCount = (byte) circle.AvailableSpells,
+            TotalDeckCount = (ushort) circle.TotalSpells,
+            TreasureCardCount = (ushort) circle.VaultRemainingCount,
+            ParticipantID = circle.ParticipantObject.m_globalID,
+            HandData = buffer,
+        };
+
+        circle.ParticipantActor.Tell(msg);
+    }
+
+    internal void SendCombatPips() {
+        var pips = new CombatPipListObj {
+            m_pipList = new List<ParticipantPipData>(),
+            m_duelID = SigilId
+        };
+
+        EnactActionOnSubCircles(circle => {
+            if (!circle.AddedToDuel || !circle.IsAlive) {
+                return;
+            }
+
+            var genericPips = circle.CombatParticipant.m_pipCount.m_genericPips;
+            var powerPips = circle.CombatParticipant.m_pipCount.m_powerPips;
+            var participantPipData = new ParticipantPipData {
+                m_acq = 1,
+                m_partID = (GID) circle.ParticipantObject.m_globalID,
+                m_pips = new PipCount() {
+                    m_genericPips = genericPips,
+                    m_powerPips = powerPips,
+                }
+            };
+            pips.m_pipList.Add(participantPipData);
+        });
+
+        // Serialize the combat pips and send it to each participant.
+        if (!_serializer.Serialize(pips, _combatParticipantStatFlags, out var buffer)) {
+            Logger.Error("Failed to serialize combat pips for duel {0}",
+                Logger.Args(SigilId));
+
+            return;
+        }
+
+        ZoneBroadcast(new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATPIPS {
+            DuelID = SigilId,
+            PipData = buffer,
+        });
+    }
+
+    internal bool IsScriptedDuel()
+        => _tutorialDirector.IsActive;
+
+    private bool IsAlternatingPvP => IsPvPDuel && _pvp.Rules.AlternateTurns;
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_CHEATINSTAWIN))]
+    private void ReceiveCheatInstaWin(COMBAT_106_PROTOCOL.MSG_CHEATINSTAWIN message) {
+        // The cheat kills the creatures; the red side of a PvP duel is made of wizards.
+        if (!_isActive || IsPvPDuel) {
+            return;
+        }
+
+        // EndDuel derives the winner from the alive creature count, so zero them first.
+        Timers.CancelAll();
+        EnactActionOnSubCircles(circle => {
+            if (circle.OccupiedTeam == CombatTeam.Monster) {
+                circle.DamageParticipant(int.MaxValue);
+            }
+        });
+
+        EndDuel();
+    }
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_CHEATINSTANTCINEMATICS))]
+    private void ReceiveCheatInstantCinematics(COMBAT_106_PROTOCOL.MSG_CHEATINSTANTCINEMATICS message)
+        => CheatInstantCinematics = message.Enabled;
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_CHEATNOFIZZLE))]
+    private void ReceiveCheatNoFizzle(COMBAT_106_PROTOCOL.MSG_CHEATNOFIZZLE message) {
+        var subCircle = SubCircles.FirstOrDefault(x => x.ParticipantActor == message.Actor);
+        if (subCircle is null) {
+            return;
+        }
+
+        subCircle.CheatNoFizzle = message.Enabled;
+    }
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_PVPVICTORYSEEN))]
+    private void ReceivePvPVictorySeen(COMBAT_106_PROTOCOL.MSG_PVPVICTORYSEEN message) {
+        if (IsPvPDuel && _isActive && _pvp.IsEnding && _pvp.StopWaitingFor(message.Actor)) {
+            FinishPvPDuel();
+        }
+    }
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_PVPENDGRACEOVER))]
+    private void ReceivePvPEndGraceOver(COMBAT_106_PROTOCOL.MSG_PVPENDGRACEOVER message) {
+        if (IsPvPDuel && _isActive) {
+            FinishPvPDuel();
+        }
+    }
+
+    private void ActivateSigil() {
+        _renderComponent.Enable();
+
+        // Broadcast MSG_DUEL to inform all clients a duel is now active.
+        // The live server sends this to enable 3D combat targeting.
+        BroadcastDuel();
+
+        // Fire a message to self to start the duel after the grace period has ended.
+        var delay = TimeSpan.FromSeconds(DUEL_GRACE_PERIOD_IN_SECONDS);
+        Timers.StartSingleTimer(GRACE_TIME_KEY, new COMBAT_106_PROTOCOL.MSG_NEWROUND(), delay);
+    }
+
+    private void SkipFailedPvPHalfTurn() {
+        _awaitingCombatMoves = false;
+        Duel.m_duelPhase = kDuelPhase.kPhase_Resolution;
+        SendCombatPhase((byte) Duel.m_duelPhase);
+        ContinuePvPDuel();
+    }
+
+    private void ExecutePlanningPhaseOver() {
+        // The execution phase begins. This is where combat actions take place and we actually see spell cinematics.
+        _awaitingCombatMoves = false;
+        Duel.m_duelPhase = kDuelPhase.kPhase_Execution;
+        SendCombatPhase((byte) Duel.m_duelPhase);
+
+        // Determine how long the cinematics will take.
+        var cinematicTimeInSeconds = CombatResolver.ApplyQueuedCombatActions(out var actions);
+        var actionExecutionTime = TimeSpan.FromSeconds(cinematicTimeInSeconds);
+        Duel.m_executionPhaseTimer = (float) actionExecutionTime.TotalSeconds;
+
+        // Serialize the combat actions and send them to the clients.
+        if (!_serializer.Serialize(actions, _combatParticipantHandFlags, out var buffer)) {
+            Logger.Error("Failed to serialize combat actions for duel {0}",
+                Logger.Args(SigilId));
+
+            return;
+        }
+
+        var msg = new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATACTIONS {
+            DuelID = SigilId,
+            ActionData = buffer,
+        };
+        ZoneBroadcast(msg);
+
+        Timers.StartSingleTimer(RESOUTION_TIME_KEY, new COMBAT_106_PROTOCOL.MSG_ROUNDRESOLUTION(), actionExecutionTime);
     }
 
     private void ContinuePvPDuel() {
@@ -726,73 +949,6 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         }
 
         return true;
-    }
-
-    [MessageHandler(typeof(DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_ENDDUEL))]
-    private void DespawnDuel() {
-        _isActive = false;
-
-        // Minions are children of this sigil entity, which persists between fights; MSG_COMBATDEATH
-        // deletes them outright.
-        EnactActionOnSubCircles(circle => {
-            if (circle.IsSummonedMinion && circle.ParticipantActor is not null) {
-                circle.ParticipantActor.Tell(new COMBAT_106_PROTOCOL.MSG_COMBATDEATH());
-            }
-        });
-
-        _renderComponent?.Disable();
-        Entity.DespawnObject();
-        _entitiesInRange.Clear();
-        _groupReservations.Clear();
-    }
-
-    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT))]
-    private void ReceiveClientDisconnect(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT message) {
-        if (!_isActive) {
-            return;
-        }
-
-        // Find the sub circle that the client was in and remove them from the duel.
-        var subCircle = SubCircles.FirstOrDefault(x => x.ParticipantActor == Sender);
-        if (subCircle is null) {
-            return;
-        }
-
-        _pvp?.MarkDisconnected(Sender);
-
-        // Handle this as if it were the flee action.
-        HandleFleeAction(subCircle);
-    }
-
-    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_QUERY_LOGOUT))]
-    private void ReceiveQueryLogout(GAME_5_PROTOCOL.MSG_QUERY_LOGOUT message) {
-        if (!_isActive) {
-            return;
-        }
-
-        // Find the sub circle that the client was in and remove them from the duel.
-        var subCircle = SubCircles.FirstOrDefault(x => x.ParticipantActor == Sender);
-        if (subCircle is null) {
-            return;
-        }
-
-        _pvp?.MarkDisconnected(Sender);
-
-        // Handle this as if it were the flee action.
-        HandleFleeAction(subCircle);
-    }
-
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_DEFERREDMINIONSUMMON))]
-    private void ReceiveDeferredMinionSummon(ZONE_102_PROTOCOL.MSG_DEFERREDMINIONSUMMON message) {
-        // Drop if the duel ended or restarted during the summon animation.
-        if (!_isActive || message.Caster is null || Array.IndexOf(SubCircles, message.Caster) < 0) {
-            Logger.Information("Duel {0} | deferred minion summon (tid {1}) dropped, duel no longer active.",
-                Logger.Args(Duel.m_duelID.Full, message.CreatureTid));
-
-            return;
-        }
-
-        SpawnAndAssignMinion(message.CreatureTid, message.Caster);
     }
 
     private void InitializeDuel(Dictionary<IActorRef, CoreObject> startingParticipants) {
@@ -1025,31 +1181,11 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         return subCircle.AssignParticipant(actorRef, coreObject, isSummonedMinion, minionOwnerSubCircle) is not null;
     }
 
-    internal void SummonMinion(uint creatureTid, CombatDuelSubCircle caster) {
-        if (CoreObjectFactory.GetCoreTemplate(creatureTid) is null) {
-            Logger.Warning("Duel {0} | minion summon: no template for creature tid {1}.",
-                Logger.Args(Duel.m_duelID.Full, creatureTid));
-
-            return;
-        }
-
-        // Cinematics before this cast plus the summon animation: the minion appears mid-cast.
-        var castOffset = CurrentActionCinematicOffsetSeconds;
-        var spawnDelay = castOffset + MINION_SUMMON_ANIMATION_DELAY;
-        Timers.StartSingleTimer(
-            $"minionSummon_{Guid.NewGuid():N}",
-            new ZONE_102_PROTOCOL.MSG_DEFERREDMINIONSUMMON { CreatureTid = creatureTid, Caster = caster },
-            TimeSpan.FromSeconds(spawnDelay));
-    }
-
-    internal static void OnMinionRemoved(CombatDuelSubCircle circle)
-        => circle.RemoveParticipant();
-
     private void SpawnAndAssignMinion(uint creatureTid, CombatDuelSubCircle caster) {
         // A PvE minion fights for the wizards whoever summoned it; in PvP it fights for its summoner.
         var slot = Duel.m_bPVP ? GetAvailableSubCircle(caster.OccupiedTeam) : GetAvailableSubCircleTeamPlayer();
         if (slot is null) {
-            Logger.Information("Duel {0} | minion summon (tid {1}) skipped, no free slot on the side of the caster.",
+            Logger.Debug("Duel {DuelId} | minion summon (tid {CreatureTid}) skipped, no free slot on the side of the caster.",
                 Logger.Args(Duel.m_duelID.Full, creatureTid));
 
             return;
@@ -1090,7 +1226,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
             return;
         }
 
-        Logger.Information("Duel {0} | summoned minion tid {1} into player-team slot {2} (caught up next round).",
+        Logger.Debug("Duel {DuelId} | summoned minion tid {CreatureTid} into player-team slot {Slot} (caught up next round).",
             Logger.Args(Duel.m_duelID.Full, creatureTid, slot.SlotIndex));
     }
 
@@ -1125,29 +1261,6 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         if (isPlayer) {
             ReserveCirclesForGroupOf(participantObject);
         }
-    }
-
-    [MessageHandler(typeof(GROUP_109_PROTOCOL.MSG_JOINRESERVEDDUEL))]
-    private void ReceiveJoinReservedDuel(GROUP_109_PROTOCOL.MSG_JOINRESERVEDDUEL message) {
-        if (!_isActive || !_groupReservations.IsReservedFor(message.CharId)) {
-            return;
-        }
-
-        var subCircle = _groupReservations.ChoosePlayerCircle(message.CharId, SubCircles);
-        if (subCircle is null) {
-            return;
-        }
-
-        // The group mate may be anywhere in the zone; put them on their circle before they join.
-        ZoneBroadcast(new GAME_5_PROTOCOL.MSG_SERVERTELEPORT {
-            LocationX = CompressTeleportCoordinate(subCircle.WorldPosition.X),
-            LocationY = CompressTeleportCoordinate(subCircle.WorldPosition.Y),
-            LocationZ = CompressTeleportCoordinate(subCircle.WorldPosition.Z),
-            Direction = (byte) Math.Round(subCircle.WorldRotation / (2 * Math.PI) * 250),
-            MobileID = message.PlayerObject.m_nMobileID,
-        });
-
-        AddParticipant(message.PlayerObject, message.PlayerActor);
     }
 
     private CombatDuelSubCircle ChoosePlayerSubCircle(CoreObject playerObject) {
@@ -1330,68 +1443,6 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         });
     }
 
-    internal void SendCurrentCombatHand(CombatDuelSubCircle circle) {
-        // As-is, no draw or refill, so a discarded slot stays visibly open for the vault draw.
-        if (circle is null || circle.IsAiCreature) {
-            return;
-        }
-
-        var hand = circle.GetCurrentHand();
-        if (!_serializer.Serialize(hand, _combatParticipantHandFlags, out var buffer)) {
-            Logger.Error("Failed to serialize current combat hand for duel {0}", Logger.Args(SigilId));
-
-            return;
-        }
-
-        var msg = new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATHAND {
-            DeckCount = (byte) circle.AvailableSpells,
-            TotalDeckCount = (ushort) circle.TotalSpells,
-            TreasureCardCount = (ushort) circle.VaultRemainingCount,
-            ParticipantID = circle.ParticipantObject.m_globalID,
-            HandData = buffer,
-        };
-
-        circle.ParticipantActor.Tell(msg);
-    }
-
-    internal void SendCombatPips() {
-        var pips = new CombatPipListObj {
-            m_pipList = new List<ParticipantPipData>(),
-            m_duelID = SigilId
-        };
-
-        EnactActionOnSubCircles(circle => {
-            if (!circle.AddedToDuel || !circle.IsAlive) {
-                return;
-            }
-
-            var genericPips = circle.CombatParticipant.m_pipCount.m_genericPips;
-            var powerPips = circle.CombatParticipant.m_pipCount.m_powerPips;
-            var participantPipData = new ParticipantPipData {
-                m_acq = 1,
-                m_partID = (GID) circle.ParticipantObject.m_globalID,
-                m_pips = new PipCount() {
-                    m_genericPips = genericPips,
-                    m_powerPips = powerPips,
-                }
-            };
-            pips.m_pipList.Add(participantPipData);
-        });
-
-        // Serialize the combat pips and send it to each participant.
-        if (!_serializer.Serialize(pips, _combatParticipantStatFlags, out var buffer)) {
-            Logger.Error("Failed to serialize combat pips for duel {0}",
-                Logger.Args(SigilId));
-
-            return;
-        }
-
-        ZoneBroadcast(new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATPIPS {
-            DuelID = SigilId,
-            PipData = buffer,
-        });
-    }
-
     private void SendCombatHealth() {
         var healthList = new CombatHealthListObj {
             m_healthList = new List<ParticipantParameter>(),
@@ -1568,9 +1619,6 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     private static CombatTeam DetermineFirstTeam()
         => (CombatTeam) new Random().Next(0, 2);
 
-    internal bool IsScriptedDuel()
-        => _tutorialDirector.IsActive;
-
     private byte GetUpFirstSigilSlot() {
         // Prefer the acting team's first living participant, else any living participant.
         var upFirst = SubCircles.FirstOrDefault(s => s is not null && s.AddedToDuel && s.IsAlive
@@ -1623,8 +1671,6 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         Logger.Debug("Duel {0} | Starting pips: {1}", Logger.Args(Duel.m_duelID.Full, string.Join(", ", pips)));
     }
 
-    private bool IsAlternatingPvP => IsPvPDuel && _pvp.Rules.AlternateTurns;
-
     private void DoPipGain(CombatTeam? onlyTeam = null) {
         EnactActionOnSubCircles(circle => {
             if (!circle.AddedToDuel || !circle.IsAlive) {
@@ -1646,38 +1692,6 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         });
         Logger.Debug("Duel {0} | Pip gain for {1}: {2}",
             Logger.Args(Duel.m_duelID.Full, onlyTeam?.ToString() ?? "all teams", string.Join(", ", pips)));
-    }
-
-    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_CHEATINSTAWIN))]
-    private void ReceiveCheatInstaWin(COMBAT_106_PROTOCOL.MSG_CHEATINSTAWIN message) {
-        // The cheat kills the creatures; the red side of a PvP duel is made of wizards.
-        if (!_isActive || IsPvPDuel) {
-            return;
-        }
-
-        // EndDuel derives the winner from the alive creature count, so zero them first.
-        Timers.CancelAll();
-        EnactActionOnSubCircles(circle => {
-            if (circle.OccupiedTeam == CombatTeam.Monster) {
-                circle.DamageParticipant(int.MaxValue);
-            }
-        });
-
-        EndDuel();
-    }
-
-    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_CHEATINSTANTCINEMATICS))]
-    private void ReceiveCheatInstantCinematics(COMBAT_106_PROTOCOL.MSG_CHEATINSTANTCINEMATICS message)
-        => CheatInstantCinematics = message.Enabled;
-
-    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_CHEATNOFIZZLE))]
-    private void ReceiveCheatNoFizzle(COMBAT_106_PROTOCOL.MSG_CHEATNOFIZZLE message) {
-        var subCircle = SubCircles.FirstOrDefault(x => x.ParticipantActor == message.Actor);
-        if (subCircle is null) {
-            return;
-        }
-
-        subCircle.CheatNoFizzle = message.Enabled;
     }
 
     private void EndDuel() {
@@ -1812,20 +1826,6 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         }
 
         FinishPvPDuel();
-    }
-
-    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_PVPVICTORYSEEN))]
-    private void ReceivePvPVictorySeen(COMBAT_106_PROTOCOL.MSG_PVPVICTORYSEEN message) {
-        if (IsPvPDuel && _isActive && _pvp.IsEnding && _pvp.StopWaitingFor(message.Actor)) {
-            FinishPvPDuel();
-        }
-    }
-
-    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_PVPENDGRACEOVER))]
-    private void ReceivePvPEndGraceOver(COMBAT_106_PROTOCOL.MSG_PVPENDGRACEOVER message) {
-        if (IsPvPDuel && _isActive) {
-            FinishPvPDuel();
-        }
     }
 
     private void FinishPvPDuel() {

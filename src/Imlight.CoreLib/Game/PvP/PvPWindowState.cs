@@ -35,7 +35,7 @@
  * 
  * Created by: Jay
  * Version: KALI 1.0
- * Last Updated: 10/18/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -96,7 +96,7 @@ internal sealed class PvPWindowState {
         var ranked = message.MatchType == RANKED_MATCH_TYPE && PvPSettings.RankedEnabled;
         if (message.MatchType != PRACTICE_MATCH_TYPE && !ranked) {
             if (message.MatchType != RANKED_MATCH_TYPE) {
-                Logger.Warning("{CharId} opened a PvP window of unknown match type {MatchType}.",
+                Logger.Debug("{CharId} opened a PvP window of unknown match type {MatchType}.",
                     Logger.Args(wizard.CharId, message.MatchType));
             }
 
@@ -134,25 +134,10 @@ internal sealed class PvPWindowState {
            && PvPLeagueFactory.TryGetRankTable(league.m_leagueType, out var table)
            && table.IsRated;
 
-    private static bool TryGetOpenTournament(bool ranked, out TournamentTemplate tournament) {
-        if (ranked) {
-            if (PvPTournamentFactory.TryGetRankedTournament(out tournament)) {
-                return true;
-            }
-
-            Logger.Error("No tournament of the data can be used for ranked play.");
-
-            return false;
-        }
-
-        if (PvPTournamentFactory.TryGetPracticeTournament(out tournament)) {
-            return true;
-        }
-
-        Logger.Error("No tournament of the data can be used for practice play.");
-
-        return false;
-    }
+    private static bool TryGetOpenTournament(bool ranked, out TournamentTemplate tournament)
+        => ranked
+            ? PvPTournamentFactory.TryGetRankedTournament(out tournament)
+            : PvPTournamentFactory.TryGetPracticeTournament(out tournament);
 
     public IReadOnlyList<IMessage> CanJoin(WIZARD3_56_PROTOCOL.MSG_PVP5THAGECANJOINMATCH message, IActorRef playerActor,
                                            CoreObject playerObject, Wizard wizard, DateTime utcNow) {
@@ -174,7 +159,7 @@ internal sealed class PvPWindowState {
         }
 
         if (!HasWindow || message.TournamentNameID != TournamentNameId || message.LeagueID != LeagueId || message.SeasonID != SeasonId) {
-            Logger.Warning("{CharId} echoed a PvP kiosk window that is not the one opened.", Logger.Args(wizard.CharId));
+            Logger.Debug("{CharId} echoed a PvP kiosk window that is not the one opened.", Logger.Args(wizard.CharId));
 
             return [];
         }
@@ -184,13 +169,13 @@ internal sealed class PvPWindowState {
 
     public IReadOnlyList<IMessage> UpdateRequest(WIZARD_12_PROTOCOL.MSG_PVPUPDATEREQUEST message, Wizard wizard) {
         if (!TryReadRequest(message.InfoRequest, out var request)) {
-            Logger.Warning("{CharId} sent a PvP update request that does not deserialize.", Logger.Args(wizard.CharId));
+            Logger.Debug("{CharId} sent a PvP update request that does not deserialize.", Logger.Args(wizard.CharId));
 
             return [];
         }
 
         if (!HasWindow || request.m_tournamentNameID != TournamentNameId) {
-            Logger.Warning("{CharId} asked for the PvP tournament {TournamentId}, which is not the one opened.",
+            Logger.Debug("{CharId} asked for the PvP tournament {TournamentId}, which is not the one opened.",
                 Logger.Args(wizard.CharId, request.m_tournamentNameID));
 
             return [];
@@ -227,7 +212,7 @@ internal sealed class PvPWindowState {
             case LEAVE_COMMAND:
                 return ([], new PVP_111_PROTOCOL.MSG_LEAVEQUEUE { CharId = wizard.CharId });
             default:
-                Logger.Warning("{CharId} sent PvP intent command {Command}, which practice does not offer.",
+                Logger.Debug("{CharId} sent PvP intent command {Command}, which practice does not offer.",
                     Logger.Args(wizard.CharId, message.Command));
 
                 return ([PvPArenaErrors.Message(PvPArenaErrors.INVALID_TOURNAMENT_TYPE)], null);
@@ -254,7 +239,7 @@ internal sealed class PvPWindowState {
 
         if (!HasWindow || message.TournamentNameID != TournamentNameId
             || !PvPTournamentFactory.TryGetTournament(TournamentNameId, out var tournament)) {
-            Logger.Warning("{CharId} tried to join tournament {TournamentId} match {MatchId} without that window.",
+            Logger.Debug("{CharId} tried to join tournament {TournamentId} match {MatchId} without that window.",
                 Logger.Args(wizard.CharId, message.TournamentNameID, message.MatchID));
 
             return ([], null);
@@ -322,7 +307,7 @@ internal sealed class PvPWindowState {
 
         if (!HasWindow || message.TournamentNameID != TournamentNameId
             || !PvPTournamentFactory.TryGetTournament(TournamentNameId, out var tournament)) {
-            Logger.Warning("{CharId} tried to host in tournament {TournamentId} without that window.",
+            Logger.Debug("{CharId} tried to host in tournament {TournamentId} without that window.",
                 Logger.Args(wizard.CharId, message.TournamentNameID));
 
             return ([], null);
@@ -333,7 +318,7 @@ internal sealed class PvPWindowState {
         }
 
         if (!TryRead<PvPMatchRequest>(message.TargetData, out var request) || !IsHostTeam(request, wizard.CharId)) {
-            Logger.Warning("{CharId} sent a PvP match request that does not deserialize or has no host team.", Logger.Args(wizard.CharId));
+            Logger.Debug("{CharId} sent a PvP match request that does not deserialize or has no host team.", Logger.Args(wizard.CharId));
 
             return ([HostReply(wizard, HOST_FAILURE)], null);
         }
@@ -391,7 +376,7 @@ internal sealed class PvPWindowState {
     private string GetOpenRefusal(uint leagueId, uint seasonId, IActorRef playerActor, CoreObject playerObject, Wizard wizard,
                                   DateTime utcNow, bool requireKiosk = true) {
         if (requireKiosk && (_kioskLeagueId == 0 || leagueId != _kioskLeagueId)) {
-            Logger.Warning("{CharId} opened a PvP window without using a kiosk of that league.", Logger.Args(wizard.CharId));
+            Logger.Debug("{CharId} opened a PvP window without using a kiosk of that league.", Logger.Args(wizard.CharId));
 
             return PvPArenaErrors.PLAYER_INELIGIBLE;
         }

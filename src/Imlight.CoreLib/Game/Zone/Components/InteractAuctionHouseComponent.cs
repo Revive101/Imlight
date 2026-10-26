@@ -62,36 +62,7 @@ internal sealed class InteractAuctionHouseComponent(ZoneEntity entity)
         ];
 
     public void OnServiceInteraction(IActorRef playerActor, Wizard playerCharacter, CoreObject playerObject, uint serviceOptionIndex) {
-        SendPlayerIntoWizbang(playerObject.m_globalID);
-        SendPlayerIntoState(playerObject.m_globalID);
-    }
-
-    private void SendPlayerIntoWizbang(ulong playerObjID) {
-        // Create the wiz bang message, and wrap it in a broadcast message.
-        var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG {
-            WizBangID = (uint) WizBang,
-            GameObjectID = playerObjID
-        };
-        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
-            Message = wizBangMsg,
-            Selfless = false,
-        };
-
-        Entity.ZoneRef.Tell(broadcastMsg);
-    }
-
-    private void SendPlayerIntoState(ulong playerObjID) {
-        // Create the change state message, and wrap it in a broadcast message.
-        var changeStateMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
-            State = StringHash.Compute(StateName),
-            GameObjectID = playerObjID
-        };
-        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
-            Message = changeStateMsg,
-            Selfless = false,
-        };
-
-        Entity.ZoneRef.Tell(broadcastMsg);
+        BroadcastPlayerEnteringService(playerObject.m_globalID, (uint) WizBang, StateName);
     }
 
 }
