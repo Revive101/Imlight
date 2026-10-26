@@ -80,6 +80,11 @@ public static class ResultDispatcher {
             results = new ResultList { m_results = results.m_results.Where(r => !ChangesZone(r)).ToList() };
         }
 
+        // A loop outlives its player; with nobody to act on, only the results that change the zone itself still run.
+        if (playerRef is null && results?.m_results is not null) {
+            results = new ResultList { m_results = results.m_results.Where(RunsWithoutPlayer).ToList() };
+        }
+
         // Results carry their own requirements in the data; evaluate them here, before the executor
         // is created, so an executor actor only ever handles results whose requirements were met.
         var filteredResults = FilterResultsByRequirements(
@@ -116,6 +121,11 @@ public static class ResultDispatcher {
 
     private static bool ChangesZone(Result result)
         => result is not null && s_zoneEffectTypes.Contains(result.GetType());
+
+    private static bool RunsWithoutPlayer(Result result) {
+        // The dynamod results are saved on the player they are told to, so they have no zone-wide form.
+        return result is ResWait || (ChangesZone(result) && result is not (ResAddDynaMod or ResRemoveDynaMod));
+    }
 
     private static ResultList FilterResultsByRequirements(ResultList results,
                                                            IActorRef playerRef,

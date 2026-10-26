@@ -16,6 +16,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
+using System.Collections.Concurrent;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
 using Imlight.CoreLib.WizardData.Models.World;
@@ -23,6 +24,8 @@ using Imlight.CoreLib.WizardData.Models.World;
 namespace Imlight.CoreLib.WizardData.Collections;
 
 public static class GlobalRegistryCollection {
+
+    private static readonly ConcurrentDictionary<string, byte> s_missingEntries = new();
 
     /// <summary>
     /// Gets the global registry from SpiralDB.
@@ -41,8 +44,10 @@ public static class GlobalRegistryCollection {
         }
 
         if (!model.GlobalRegistryValues.ContainsKey(entry)) {
-            Logger.Warning("Global registry entry {0} does not exist.",
-                Logger.Args(entry));
+            if (s_missingEntries.TryAdd(entry, 0)) {
+                Logger.Warning("Global registry entry {0} does not exist.",
+                    Logger.Args(entry));
+            }
 
             return 0;
         }

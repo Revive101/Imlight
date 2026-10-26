@@ -17,6 +17,7 @@
  */
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
@@ -24,6 +25,7 @@ using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using Type = System.Type;
 
 namespace Imlight.CoreLib.Game.Results;
 
@@ -34,6 +36,8 @@ namespace Imlight.CoreLib.Game.Results;
 public class ResultExecutorActor(IResultContext context) : ReceiveProtocolDispatcher, IWithTimers {
 
     private const uint RESULT_HANDLER_TIMEOUT_MS = 30000;
+
+    private static readonly ConcurrentDictionary<Type, byte> s_unhandledResultTypes = new();
 
     private readonly IResultContext _context = context;
     private readonly Queue<Result> _resultQueue = new();
@@ -112,8 +116,10 @@ public class ResultExecutorActor(IResultContext context) : ReceiveProtocolDispat
         var handlerType = ResultDispatcher.FindHandlerForResult(resultType, _context);
 
         if (handlerType is null) {
-            Logger.Warning("No handler registered for result type: {0}",
-                Logger.Args(resultType.Name));
+            if (s_unhandledResultTypes.TryAdd(resultType, 0)) {
+                Logger.Warning("No handler registered for result type: {0}",
+                    Logger.Args(resultType.Name));
+            }
 
             ProcessNextResult();
             

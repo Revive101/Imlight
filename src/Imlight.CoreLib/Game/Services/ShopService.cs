@@ -129,7 +129,7 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
             item.m_secondaryColor = message.decal;
         }
 
-        var goldCost = CalculateItemCost(template);
+        var goldCost = PriceModifiersConfig.GetShopBuyCost(template, message.texture, message.decal);
 
         // Check if the user can afford the item.
         if (playerWizard.GameStats.m_currentGold >= goldCost) {
@@ -512,21 +512,6 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
         }
 
         return goldValue;
-    }
-
-    private static int CalculateItemCost(WizItemTemplate template) {
-        var goldCost = (int) template.m_baseCost;
-
-        // The client's shop window shows a pet's base price whatever its texture choices are.
-        if (PetFactory.IsPetTemplate(template.m_templateID)) {
-            return goldCost;
-        }
-
-        if (template.m_numPrimaryColors != 1 && template.m_numSecondaryColors != 0) {
-            goldCost = (int) Math.Ceiling(goldCost * DYED_ITEM_COST_MULTIPLIER) + 1;
-        }
-
-        return goldCost;
     }
 
 }

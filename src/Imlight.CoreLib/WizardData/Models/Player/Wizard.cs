@@ -1280,6 +1280,36 @@ public class Wizard {
         return true;
     }
 
+    public bool IncrementRegistryValue(string key) {
+        var incrementSuccess = QuestBehavior.IncrementRegistryValue(key);
+        if (!incrementSuccess) {
+            Logger.Warning("Could not increment registry value {Key} for player {PlayerName}.",
+                Logger.Args(key, PlayerNameBehavior.GetWizardName()));
+
+            return false;
+        }
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterQuestBehavior(this);
+
+        return true;
+    }
+
+    public bool IncrementQuestRegistryValue(string questName, string key) {
+        var incrementSuccess = QuestBehavior.IncrementQuestRegistryValue(questName, key);
+        if (!incrementSuccess) {
+            Logger.Warning("Could not increment quest registry value {Key} for quest {QuestName} for player {PlayerName}.",
+                Logger.Args(key, questName, PlayerNameBehavior.GetWizardName()));
+
+            return false;
+        }
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterQuestBehavior(this);
+
+        return true;
+    }
+
     public void UpdatePotions(Single newPotionCharge, Single newPotionMax) {
         GameStats.m_potionCharge = newPotionCharge;
         GameStats.m_potionMax = newPotionMax;
