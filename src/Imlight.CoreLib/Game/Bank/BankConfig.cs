@@ -21,8 +21,8 @@
  *
  * PURPOSE:
  * Reads the bank settings of Imlight.ini: the default capacities of a character's bank and of an account's
- * shared bank, the shared jewel cap, the object names of the NPCs that open the bank and the two settings of
- * an expansion.
+ * shared bank, the shared jewel cap and the two settings of an
+ * expansion.
  *
  * USAGE EXAMPLE:
  * if (BankConfig.IsEnabled) { ... }
@@ -39,7 +39,6 @@
  */
 
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using Imlight.Common;
 
@@ -53,7 +52,6 @@ internal static class BankConfig {
     private const string MAX_BANK_ITEMS_KEY = "Character.MaxBankItems";
     private const string MAX_SHARED_BANK_ITEMS_KEY = "Character.MaxSharedBankItems";
     private const string SHARED_JEWEL_CAP_KEY = "Bank.SharedJewelCap";
-    private const string OBJECT_NAMES_KEY = "Bank.ObjectNames";
     private const string EXPAND_ELIXIR_AMOUNT_KEY = "Bank.ExpandElixirAmount";
     private const string MAX_BANK_LIMIT_KEY = "Bank.MaxBankItems";
 
@@ -69,21 +67,6 @@ internal static class BankConfig {
         => Math.Max(0, ConfigurationManager.GetValue(EXPAND_ELIXIR_AMOUNT_KEY, 0));
     internal static int MaxBankLimit 
         => Math.Max(0, ConfigurationManager.GetValue(MAX_BANK_LIMIT_KEY, 0));
-
-    /// <summary>
-    /// The object names of the NPCs that open the bank.
-    /// </summary>
-    internal static IReadOnlySet<string> ObjectNames {
-        get {
-            var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var configured = ConfigurationManager.GetValue(OBJECT_NAMES_KEY, string.Empty);
-            foreach (var name in configured.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)) {
-                names.Add(name);
-            }
-
-            return names;
-        }
-    }
 
     /// <summary>
     /// Whether the bank is on: both default capacities are set above 0.

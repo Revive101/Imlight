@@ -27,9 +27,9 @@
  * The requests of the window are handled by BankService.
  *
  * NOTE:
- * Attaches only to NPCs whose object name is in [Bank] ObjectNames, and only while both bank capacities are
- * set, so the bank is not offered until the owner sets them. The NPC stands in the dorm and the housing
- * interiors, see WC_RVW-Bank.
+ * Attaches only to NPC templates that have a NpcBank record in SpiralDB, and only while both bank capacities
+ * are set, so the bank is not offered until the owner sets them. The bank NPC stands in the dorm and the
+ * housing interiors.
  *
  * TODO:
  * What is the m_serviceName the live server sends for the bank option?
@@ -49,6 +49,7 @@ using Imlight.CoreLib.Game.Bank;
 using Imlight.CoreLib.Game.WizBang;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.WizardData;
 using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
@@ -67,8 +68,7 @@ internal sealed class InteractBankComponent(ZoneEntity entity) : ZoneEntityCompo
     public static bool ShouldAttachToEntity(CoreTemplate template)
         => template is GameObjectTemplate goTemplate
         && goTemplate.m_behaviors?.Any(x => x is NPCBehaviorTemplate) == true
-        && !goTemplate.m_objectName.IsEmpty // Some templates carry a null object name.
-        && BankConfig.ObjectNames.Contains(goTemplate.m_objectName.ToString())
+        && SpiralDB.TryGetNpcBank(goTemplate.m_templateID, out _)
         && BankConfig.IsEnabled;
 
     public IEnumerable<ServiceOptionBase> GetServiceOptions(Wizard _)
