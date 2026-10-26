@@ -27,13 +27,15 @@
  * 
  * NOTE:
  * Dynamically resolves vendor inventory from World database.
+ * A shopping behavior whose window kind is the furniture window is a housing shop: it offers the housing option and
+ * the client opens its furniture window, where houses are bought with gold or Crowns (ShopService).
  * 
  * TODO:
  * - Investigate CSR test shop configuration
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 10/25/2026
  */
 
 using System.Collections.Generic;
@@ -64,12 +66,15 @@ internal sealed class InteractVendorComponent(ZoneEntity entity) : ZoneEntityCom
     public WizBangs WizBang       => WizBangs.Shopping;
     public string StateName       => "Shop"; // Forbids the player from moving.
     public string InteractWizBang => "Registrar";
-    public string DisplayKey      => "GUI_ShopOptionEquipment";
+    public string DisplayKey      => _isHousingShop ? "GUI_ShopOptionHousing" : "GUI_ShopOptionEquipment";
+
+    private const int FURNITURE_SHOP_WINDOW_KIND = 1;
 
     private List<GID> _inventory;
     private string _shopTitle = "Unknown Shop";
     private int _shopType = 0;
     private bool _csrTestShop = false;
+    private bool _isHousingShop;
 
     public static bool ShouldAttachToEntity(CoreTemplate template)
         // Attach if the template is an NPC and has an inventory in Dragon database,
@@ -96,20 +101,27 @@ internal sealed class InteractVendorComponent(ZoneEntity entity) : ZoneEntityCom
             }
             _shopType = shoppingBehavior.m_shopType;
             _csrTestShop = shoppingBehavior.m_CSRTestShop;
+            _isHousingShop = shoppingBehavior.m_furnitureShop == FURNITURE_SHOP_WINDOW_KIND;
         }
     }
 
     public IEnumerable<ServiceOptionBase> GetServiceOptions(Wizard _)
         => [
-            new EquipmentShopOption {
-                m_displayKey = DisplayKey,
-                m_iconKey = NpcIcon,
-                m_serviceName = ServiceName,
-            }
+            _isHousingShop
+                ? new HousingShopOption {
+                    m_displayKey = DisplayKey,
+                    m_iconKey = NpcIcon,
+                    m_serviceName = ServiceName,
+                }
+                : new EquipmentShopOption {
+                    m_displayKey = DisplayKey,
+                    m_iconKey = NpcIcon,
+                    m_serviceName = ServiceName,
+                }
         ];
 
     public void OnServiceInteraction(IActorRef playerActor, Wizard playerCharacter, CoreObject playerObject, uint serviceOptionIndex) {
-        SendShopOfferings(playerActor);
+        SendShopOfferings(playerActor, playerCharacter.Account?.Crowns ?? 0);
         SendPlayerIntoWizbang(playerObject.m_globalID);
         SendPlayerIntoState(playerObject.m_globalID);
     }
@@ -117,7 +129,7 @@ internal sealed class InteractVendorComponent(ZoneEntity entity) : ZoneEntityCom
     public bool HasItem(GID itemGID)
         => _inventory.Any(x => x.MParts.TemplateId == itemGID.MParts.TemplateId);
 
-    private void SendShopOfferings(IActorRef playerActor) {
+    private void SendShopOfferings(IActorRef playerActor, int crowns) {
         var shopOffering = new WizShopOffering() {
             m_sellModifier = 0.05f,
             m_shopTitle = _shopTitle,
@@ -128,6 +140,7 @@ internal sealed class InteractVendorComponent(ZoneEntity entity) : ZoneEntityCom
             m_shopType = _shopType,
             // todo: figure this out for QA
             m_CSRTestShop = _csrTestShop,
+            m_furnitureShop = _isHousingShop ? FURNITURE_SHOP_WINDOW_KIND : 0,
         };
 
         // Serialize the offerings and send them to the player.
@@ -144,7 +157,9 @@ internal sealed class InteractVendorComponent(ZoneEntity entity) : ZoneEntityCom
 
         var shopListMsg = new WIZARD_12_PROTOCOL.MSG_SHOPLIST() {
             GlobalID = Entity.ActiveGameObject.m_globalID.Full,
-            Data = serializedShopList
+            Data = serializedShopList,
+            // The client shows this balance when the player pays with Crowns.
+            Credits = crowns,
         };
         playerActor.Tell(shopListMsg);
     }
