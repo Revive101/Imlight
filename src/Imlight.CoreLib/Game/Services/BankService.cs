@@ -41,6 +41,7 @@
 
 using Akka.Actor;
 using Imcodec.MessageLayer.Generated;
+using Imlight.Common;
 using Imlight.CoreLib.Game.Bank;
 using Imlight.CoreLib.Game.Zone.Components;
 using Imlight.CoreLib.Shared.Networking;
@@ -58,6 +59,8 @@ internal class BankService(SessionActor sessionActor) : MessageService(sessionAc
     [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_BEGINBANKSESSION))]
     private void ReceiveBeginBankSession(CHARACTER_103_PROTOCOL.MSG_BEGINBANKSESSION message) {
         _openBankEntityId = message.EntityId;
+        Logger.Debug("BankService of session {0} opens the bank at NPC {1}.",
+            Logger.Args(SessionActor.SessionID, message.EntityId));
         CreateRequests().Open();
     }
 

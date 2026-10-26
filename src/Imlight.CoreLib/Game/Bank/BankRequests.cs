@@ -79,8 +79,10 @@ internal sealed class BankRequests(Wizard wizard, IActorRef session, Func<bool> 
                 Logger.Args(wizard.Account.AccountId));
         }
 
-        BankSync.StreamBank(session, wizard, includeShared: true);
+        var streamed = BankSync.StreamBank(session, wizard, includeShared: true);
         session.Tell(new WIZARD_12_PROTOCOL.MSG_OPENBANK { GlobalID = wizard.GameObjectID });
+        Logger.Debug("Sent MSG_OPENBANK to {0} after streaming the bank (complete: {1}).",
+            Logger.Args(wizard.GameObjectID, streamed));
     }
 
     /// <summary>
