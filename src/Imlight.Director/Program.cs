@@ -43,8 +43,8 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Globalization;
 using System.IO;
+using System.Reflection;
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.CoreLib.Auth;
@@ -56,6 +56,7 @@ using Imlight.CoreLib.WizardData;
 using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.CoreLib.WizardData.Collections;
+using Imlight.CoreLib.Game.CrownShop;
 
 namespace Imlight.Director;
 
@@ -73,8 +74,9 @@ internal static class Program {
     // Imlight - PROTO   -- Marks the beginning of the project. Very early serialization and networking.
     // Imlight - NETHRA  -- We are in-game. The game is playable and mostly stable, but not feature complete.
     // Imlight - KALI    -- We feel very confident in the stability of previous systems, and are becoming feature complete.
+    // Imlight - KALPA   -- Beta. The release number is <Version> in Imlight.Director.csproj.
     private const string ActorSystemName = "Imlight";
-    private const string MajorVersion = "KALI";
+    private const string MajorVersion = "KALPA";
     private const string ADMIN_ACCOUNT_PLACEHOLDER_EMAIL = "testtest@r101.com";
     private const string SHIPPED_ADMIN_ACCOUNT_PASSWORD = "compsci";
 
@@ -123,6 +125,7 @@ internal static class Program {
             return;
         }
 
+        Logger.Information("Imlight {Version} starting", Logger.Args(GetFormattedVersion()));
         Logger.Information("Imlight configuration loaded.");
 
         // =============================================================
@@ -207,6 +210,8 @@ internal static class Program {
         if (SpiralDB.ZoneData.Count == 0) {
             throw new InvalidOperationException("SpiralDB loaded no world data.");
         }
+
+        CrownShopHandler.Load();
     }
 
     private static IActorRef StartLoginServer() {
@@ -358,24 +363,25 @@ internal static class Program {
         Console.Write("   :: L&G Boot ::    ");
         Console.ForegroundColor = ConsoleColor.White;
 
-        // Write the version. Our schema is NNyWWc, where NN is the two-digit year, and WW is the week of the year.
-        // c is the build configuration, which is either DEBUG or RELEASE.
+        // Version schema: (ERA release commit configuration), e.g. KALPA 1.0.0-beta 95e87fc canary.
         var buildConfiguration = GetBuildConfiguration();
         Console.Write(@"|___/");
         Console.ForegroundColor = ConsoleColor.DarkGray;
-
-        // Get the current year and week of the year.
-        var year = DateTime.Now.Year.ToString().Substring(2);
-        DateTime today = DateTime.Now;
-        int quarter = (today.Month - 1) / 3 + 1;
-        // Get the ISO week number
-        int week = CultureInfo.InvariantCulture.Calendar.GetWeekOfYear(
-                        today,
-                        CalendarWeekRule.FirstDay,
-                        DayOfWeek.Monday);
-
-        Console.Write($" ({MajorVersion} {year}Q{quarter}.{week}c {buildConfiguration})\n");
+        Console.Write($" ({MajorVersion} {GetFormattedVersion()} {buildConfiguration})\n");
         Console.WriteLine("");
+    }
+
+    private static string GetFormattedVersion() {
+        var informationalVersion = typeof(Program).Assembly
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "unknown";
+        var separatorIndex = informationalVersion.IndexOf('+');
+        if (separatorIndex < 0) {
+            return informationalVersion;
+        }
+
+        var commit = informationalVersion[(separatorIndex + 1)..];
+
+        return $"{informationalVersion[..separatorIndex]} {commit[..Math.Min(7, commit.Length)]}";
     }
 
     private static string GetBuildConfiguration() {

@@ -17,6 +17,7 @@
  */
 
 using System;
+using Imcodec.IO;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.Types;
 using Imlight.CoreLib.Shared.Resources;
@@ -27,7 +28,7 @@ namespace Imlight.CoreLib.Game;
 public static class WizardObjectLoader {
 
     private const uint WIZARD_OBJECT_TEMPLATE_ID = 1;
-    
+
     public static WizClientObject GetPlayerGameObject(Wizard character) {
         var clientObject = CoreObjectFactory.InitializeCoreObjectBehaviors(new WizClientObject(), 1);
 
@@ -60,6 +61,7 @@ public static class WizardObjectLoader {
         SetPetOwnerBehavior(clientObject, ref character);
         SetAlchemyBehavior(clientObject, ref character);
         SetBadgeBehavior(clientObject, ref character);
+        SetWishlistBehavior(clientObject, ref character);
 
         return clientObject;
     }
@@ -188,6 +190,22 @@ public static class WizardObjectLoader {
         }
     }
 
+    public static void SetWishlistBehavior(WizClientObject clientObject, ref Wizard character) {
+        var wishlistData = character.CrownShopWishlist.IsEmpty
+            ? WishlistData.Empty
+            : character.CrownShopWishlist;
+
+        if (CoreObjectFactory.FindBehaviorInstance<WishlistBehavior>(clientObject, out var existingBehavior)) {
+            existingBehavior.m_wishlistData = wishlistData;
+        }
+        else {
+            clientObject.m_inactiveBehaviors.Add(new WishlistBehavior {
+                m_behaviorTemplateNameID = 0x174F46F4,
+                m_wishlistData = wishlistData
+            });
+        }
+    }
+
     public static void SetBadgeBehavior(WizClientObject clientObject, ref Wizard character) {
         if (CoreObjectFactory.FindBehaviorInstance<BadgeBehavior>(clientObject, out var badgeBehavior)) {
             var idx = clientObject.m_inactiveBehaviors.IndexOf(badgeBehavior);
@@ -198,3 +216,4 @@ public static class WizardObjectLoader {
     }
     
 }
+
