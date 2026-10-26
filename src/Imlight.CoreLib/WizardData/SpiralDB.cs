@@ -72,6 +72,7 @@ public static class SpiralDB {
     private static ConcurrentDictionary<string, PlayerStatue> s_playerStatues
         = new(StringComparer.OrdinalIgnoreCase);
 
+
     public static IReadOnlyDictionary<string, CreatureSpellbook> CreatureSpellbooks => s_creatureSpellbooks;
     public static IReadOnlyDictionary<string, DropTable> DropTables => s_dropTables;
     public static GlobalRegistryModel GlobalRegistry => s_globalRegistry;
@@ -84,6 +85,7 @@ public static class SpiralDB {
     public static IReadOnlyDictionary<ulong, NpcSeamstress> NpcSeamstresses => s_npcSeamstresses;
     public static IReadOnlyDictionary<uint, BadgeDefinition> BadgeDefinitions => s_badgeDefinitions;
     public static IReadOnlyDictionary<string, PlayerStatue> PlayerStatues => s_playerStatues;
+
 
     /// <summary>
     /// Fetches the spiralDB repository (if remote is enabled) and loads all JSON
@@ -172,6 +174,7 @@ public static class SpiralDB {
                 () => Interlocked.Add(ref filesLoaded, LoadBadgeDefinitions(basePath, badgeDefinitions)),
                 () => Interlocked.Add(ref filesLoaded, LoadPlayerStatues(basePath, playerStatues))
             );
+
 
             // Atomically swap.
             s_creatureSpellbooks = spellbooks;
@@ -678,5 +681,4 @@ public static class SpiralDB {
 
         return count;
     }
-
 }
