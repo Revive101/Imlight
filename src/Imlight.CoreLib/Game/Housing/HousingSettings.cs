@@ -29,12 +29,13 @@
  * - DeedZoneTimeoutSeconds: how long to wait for the client to confirm that a house zone archive is ready.
  * - StarterDeeds: the templates every character is given on the first Home click, as a comma-separated list.
  * - AtticLimit: how many items an attic holds.
+ * - IslandLimit: how many deeds a character may hold. The client refuses to buy a deed past it.
  * 
  * TODO:
  * 
  * Created by: Jay
  * Version: KALI 1.0
- * Last Updated: 10/15/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -52,8 +53,10 @@ internal static class HousingSettings {
     private const string DEED_ZONE_TIMEOUT_KEY = "Housing.DeedZoneTimeoutSeconds";
     private const string STARTER_DEEDS_KEY = "Housing.StarterDeeds";
     private const string ATTIC_LIMIT_KEY = "Housing.AtticLimit";
+    private const string ISLAND_LIMIT_KEY = "Housing.IslandLimit";
     private const int DEFAULT_DEED_ZONE_TIMEOUT_SECONDS = 90;
     private const int DEFAULT_ATTIC_LIMIT = 100;
+    private const int DEFAULT_ISLAND_LIMIT = 30;
 
     /// <summary>
     /// How long to wait for the client to confirm that a house zone archive is ready:
@@ -75,6 +78,18 @@ internal static class HousingSettings {
             var configured = ConfigurationManager.Settings[ATTIC_LIMIT_KEY].AsInt();
 
             return configured > 0 ? configured : DEFAULT_ATTIC_LIMIT;
+        }
+    }
+
+    /// <summary>
+    /// How many deeds a character may hold: <c>Housing.IslandLimit</c>, or 30 when it is not a positive number.
+    /// The client reads it as the character's maximum number of islands.
+    /// </summary>
+    internal static int IslandLimit {
+        get {
+            var configured = ConfigurationManager.Settings[ISLAND_LIMIT_KEY].AsInt();
+
+            return configured > 0 ? configured : DEFAULT_ISLAND_LIMIT;
         }
     }
 

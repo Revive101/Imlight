@@ -30,7 +30,8 @@
  * NOTE:
  * The vendor and the housing shop both send MSG_SHOPBUYREQUEST, so both buy here.
  * A house bought from a housing shop is issued through HouseDeeds, with its structure, and paid in the currency the
- * client chose: gold at the item's cost, or Crowns at its Crowns cost.
+ * client chose: gold at the item's cost, or Crowns at its Crowns cost. A deed past Housing.IslandLimit is refused, as the
+ * client refuses it.
  * 
  * TODO:
  * 
@@ -55,6 +56,7 @@ using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.CoreLib.Game.Badges;
+using Imlight.CoreLib.Game.Housing;
 using Imlight.CoreLib.Game.Housing.Houses;
 using Imlight.CoreLib.Game.Pet;
 using Imlight.CoreLib.Game.Zone.Components;
@@ -123,7 +125,15 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
             return;
         }
 
-        if (HouseTemplates.TryGet(itemTemplateID, out _)) {
+        if (HouseTemplates.TryGet(itemTemplateID, out var house)) {
+            if (!house.IsStructure && CountHeldDeeds(playerWizard) >= HousingSettings.IslandLimit) {
+                Logger.Warning("Character {CharId} holds {Limit} deeds and cannot buy another.",
+                    Logger.Args(playerWizard.CharId, HousingSettings.IslandLimit));
+                SendHouseDenyMessage(GetActiveAccount());
+
+                return;
+            }
+
             ProcessHousePurchase(playerWizard, template, itemTemplateID, message.CurrencyType == CROWNS_CURRENCY_TYPE);
 
             return;
@@ -569,6 +579,10 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
         // The client takes the confirm's Credits as the Crowns balance while the player pays with Crowns.
         SendToSocket(new WIZARD_12_PROTOCOL.MSG_SHOPBUYCONFIRM { Failure = 1, Credits = account.Crowns });
     }
+
+    private static int CountHeldDeeds(Wizard wizard)
+        => wizard.InventoryBehavior.Items.Concat(wizard.EquipmentBehavior?.EquippedItems ?? [])
+            .Count(item => HouseTemplates.TryGet(ItemHelper.GetTemplateId(item), out var held) && !held.IsStructure);
 
     private void HandleIllegalPurchaseAttempt(uint itemTemplateID, ulong interactedObjectGID) {
         var account = GetActiveAccount();
