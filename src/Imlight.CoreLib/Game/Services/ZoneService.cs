@@ -244,7 +244,8 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         // Check if the destination zone is the same as the current zone. If so, just teleport the player.
         var wizard = GetActiveWizard();
         if (message.DestinationZone == wizard.Zone && message.HouseLotGid == wizard.AttachedLotGid) {
-            DoTeleport(message.DestinationLocation);
+            // A named location is only known to the zone, which answered with the spot it stands for.
+            DoTeleport(Util.GetCompactStringFromVector(zoneDetails.Location, new Imcodec.Math.Vector3(0, 0, zoneDetails.Orientation)));
 
             return;
         }
@@ -507,6 +508,32 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         ReceiveZoneTransferRequest(new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
             DestinationZone = entry.Zone,
             DestinationLocation = string.IsNullOrEmpty(message.LocationName) ? HouseDeeds.ENTRY_LOCATION : message.LocationName,
+            SendToClient = true,
+            IsPrivate = true,
+            OwnerCharId = entry.OwnerCharId,
+            HouseEntry = entry,
+        });
+    }
+
+    [MessageHandler(typeof(WIZARDHOUSING_50_PROTOCOL.MSG_TELEPORTTOSTART))]
+    private void ReceiveTeleportToStart(WIZARDHOUSING_50_PROTOCOL.MSG_TELEPORTTOSTART message) {
+        if (_transferGate.IsQueued || Timers.IsTimerActive("zonetransfer")) {
+            return;
+        }
+
+        var wizard = GetActiveWizard();
+        if (!HouseTravel.TryEnterStart(wizard, message.Inside != 0, out var entry, out var failure)) {
+            Logger.Debug("Character {CharId} asked to teleport to the start of a house ({Failure}).", Logger.Args(wizard.CharId, failure));
+            if (failure == HouseTravelFailure.BackpackFull) {
+                InformGameClient(BACKPACK_FULL_FOR_HOUSE_TEXT, true);
+            }
+
+            return;
+        }
+
+        ReceiveZoneTransferRequest(new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
+            DestinationZone = entry.Zone,
+            DestinationLocation = HouseDeeds.ENTRY_LOCATION,
             SendToClient = true,
             IsPrivate = true,
             OwnerCharId = entry.OwnerCharId,

@@ -143,6 +143,28 @@ internal static class HouseTravel {
             => HouseEntry.ForTeleport(lotGid, owner.CharId, target, newItems), out entry, out failure);
     }
 
+    /// <summary>
+    /// Prepares the teleport to the start of the residence a player stands in, inside the house or outside it.
+    /// </summary>
+    /// <param name="player">The player who asked; the house they are in names the owner.</param>
+    /// <param name="inside">Whether the start is the one inside the house, else the one outside.</param>
+    /// <param name="entry">What the zone transfer needs when this returns <c>true</c>.</param>
+    /// <param name="failure">Why the player cannot be teleported when this returns <c>false</c>.</param>
+    /// <returns><c>false</c> when the player is not in a house, or may not enter the other side of it.</returns>
+    internal static bool TryEnterStart(Wizard player, bool inside, out HouseEntry entry, out HouseTravelFailure failure) {
+        entry = null;
+        if (!TryLoadCurrentHouse(player, out var owner, out var template, out failure)) {
+            return false;
+        }
+
+        var hasPartner = TryGetPartner(template, owner.HouseLots, out var partner);
+        var interior = !template.IsStructure && hasPartner ? partner : template;
+        var exterior = template.IsStructure && hasPartner ? partner : template;
+
+        return TryOpen(player, owner, inside ? interior : exterior, (lotGid, newItems)
+            => HouseEntry.ForTeleport(lotGid, owner.CharId, inside ? interior : exterior, newItems), out entry, out failure);
+    }
+
     private static bool TryLoadCurrentHouse(Wizard player, out Wizard owner, out HouseTemplateInfo template, out HouseTravelFailure failure) {
         owner = null;
         template = default;
