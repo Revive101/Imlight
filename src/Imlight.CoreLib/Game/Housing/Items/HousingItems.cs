@@ -220,8 +220,8 @@ internal static class HousingItems {
     internal static byte[] CustomDataOf(string subType, WizClientObjectItem item, ulong itemGid) {
         try {
             return subType switch {
-                PET_SUB_TYPE => (byte[]) HousingBlobs.Serialize(PetBehaviorOf(item), PET_PROPERTY_MASK),
-                MOUNT_SUB_TYPE => (byte[]) HousingBlobs.Serialize(MountBehaviorOf(item, itemGid), MOUNT_PROPERTY_MASK),
+                PET_SUB_TYPE => (byte[]) HousingBlobs.Serialize(PetBehaviorOf(item), PET_PROPERTY_MASK, versionable: true),
+                MOUNT_SUB_TYPE => (byte[]) HousingBlobs.Serialize(MountBehaviorOf(item, itemGid), MOUNT_PROPERTY_MASK, versionable: true),
                 _ => null,
             };
         } catch (InvalidOperationException exception) {

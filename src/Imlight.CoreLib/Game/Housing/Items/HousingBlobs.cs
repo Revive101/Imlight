@@ -102,10 +102,11 @@ internal static class HousingBlobs {
     /// </summary>
     /// <param name="value">The object to serialize.</param>
     /// <param name="propertyMask">The property flags a property needs to be written; the blob and its requests use the default.</param>
+    /// <param name="versionable"><c>true</c> to write the size prefix the client expects on a housed mount's or pet's custom data.</param>
     /// <returns>The bytes the client reads.</returns>
     /// <exception cref="InvalidOperationException">The object cannot be serialized or does not fit a string field.</exception>
-    internal static ByteString Serialize(PropertyClass value, uint propertyMask = SERIALIZE_MASK) {
-        if (!NewSerializer().Serialize(value, propertyMask, out var serialized)) {
+    internal static ByteString Serialize(PropertyClass value, uint propertyMask = SERIALIZE_MASK, bool versionable = false) {
+        if (!NewSerializer(versionable).Serialize(value, propertyMask, out var serialized)) {
             throw new InvalidOperationException($"Could not serialize {value.GetType().Name}.");
         }
 
@@ -193,7 +194,7 @@ internal static class HousingBlobs {
         }
     }
 
-    private static ObjectSerializer NewSerializer()
-        => new(Versionable: false, Behaviors: SerializerFlags.None);
+    private static ObjectSerializer NewSerializer(bool versionable = false)
+        => new(Versionable: versionable, Behaviors: SerializerFlags.None);
 
 }
