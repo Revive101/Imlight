@@ -589,6 +589,18 @@ internal class HousingService(SessionActor sessionActor) : MessageService(sessio
         });
     }
 
+    [MessageHandler(typeof(WIZARDHOUSING_50_PROTOCOL.MSG_UPDATEHOUSINGPET))]
+    private void ReceiveUpdateHousingPet(WIZARDHOUSING_50_PROTOCOL.MSG_UPDATEHOUSINGPET message) {
+        if (_house is null || _house.LotGid != message.ZoneID) {
+            Logger.Debug("Character {CharId} sent a housing pet update for zone {ZoneId} from outside that house, so it is ignored.",
+                Logger.Args(GetActiveWizard().CharId, message.ZoneID));
+
+            return;
+        }
+
+        ZoneBroadcast(message, isSelfless: true, ZoneBroadcastTarget.Players);
+    }
+
     private bool TryGetHouse(string request, out HouseState house, bool allowDecorators = false) {
         house = _house;
         if (house is null) {
