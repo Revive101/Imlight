@@ -1052,7 +1052,7 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         NamedEffect effect = new NamedEffect {
             m_effectNameID = StringHash.Compute("CantGoHome"),
             m_endTime = (uint) unixTimeStart.AddSeconds(30).ToUnixTimeSeconds(),
-            m_internalID = wizard.GameEffects.Count,
+            m_internalID = wizard.NextEffectInternalId(),
         };
 
         wizard.GameEffects.Add(effect);
@@ -1079,7 +1079,7 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         var effect = new NamedEffect {
             m_effectNameID = StringHash.Compute("RecallHome"),
             m_endTime = (uint) time.AddSeconds(200).ToUnixTimeSeconds(),
-            m_internalID = wizard.GameEffects.Count,
+            m_internalID = wizard.NextEffectInternalId(),
         };
 
         wizard.GameEffects.Add(effect);

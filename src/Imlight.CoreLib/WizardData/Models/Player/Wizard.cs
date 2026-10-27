@@ -133,6 +133,7 @@ public class Wizard {
     // Set when attachment replaces the offline data object; does not imply zone entry.
     [JsonIgnore] public bool HasInitializedGameObject { get; private set; }
     [JsonIgnore] public List<GameEffectBase> GameEffects = [];
+    [JsonIgnore] private int _lastEffectInternalId = -1;
     [JsonIgnore] public string GameServerIp;
     [JsonIgnore] public ushort GameServerPort;
     [JsonIgnore] public string QueuedZoneName;
@@ -202,6 +203,16 @@ public class Wizard {
 
     public void SaveLocation()
         => WizardCollection.UpdateCharacterLocation(this, Location, Orientation.Z);
+
+    public int NextEffectInternalId() {
+        foreach (var effect in GameEffects) {
+            if (effect.m_internalID > _lastEffectInternalId) {
+                _lastEffectInternalId = (int) effect.m_internalID;
+            }
+        }
+
+        return ++_lastEffectInternalId;
+    }
 
     public void SetPersistentLocation(Imcodec.Math.Vector3 loc) {
         Location = loc;
