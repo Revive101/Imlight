@@ -41,6 +41,7 @@
 
 using System;
 using System.Linq;
+using Imcodec.Cryptography;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.Types;
 using Imlight.Common;
@@ -61,6 +62,13 @@ internal static class CharacterHelper {
     /// <param name="wizard">The wizard whose game stats need to be recalculated.</param>
     internal static void RecalculateGameStats(Wizard wizard) {
         Logger.Debug("Recalculation of game stats for {0}.", Logger.Args(wizard.PlayerNameBehavior.GetWizardName()));
+
+        foreach (var providedSpellEffect in wizard.GameEffects.OfType<ProvideSpellEffect>()) {
+            var spellHash = StringHash.Compute(providedSpellEffect.m_spellName);
+            for (var i = 0; i < providedSpellEffect.m_numSpells; i++) {
+                wizard.RemoveTemporarySpell(spellHash);
+            }
+        }
 
         // Reset the base stats to the default values.
         wizard.GameStats.SetBaseStats();
