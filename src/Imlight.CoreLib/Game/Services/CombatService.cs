@@ -500,7 +500,7 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
         }
 
         var charObjId = charObj.m_globalID;
-        var effectInternalId = wizard.GameEffects.Count + 1;
+        var effectInternalId = wizard.NextEffectInternalId();
 
         var epoch = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         var endTime = epoch + NO_AGGRO_EFFECT_DURATION_IN_SECONDS;
