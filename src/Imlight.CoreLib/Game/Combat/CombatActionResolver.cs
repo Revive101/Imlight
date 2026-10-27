@@ -101,6 +101,12 @@ internal static class CombatActionResolver {
         };
 
         foreach (var spellEffect in action.SpellTemplate.m_effects) {
+            if (spellEffect is ShadowSpellEffect or ShadowPactSpellEffect) {
+                Logger.Debug("Shadow effect {0} skipped; shadow mechanics are not implemented yet.", [spellEffect.GetType().Name]);
+
+                continue;
+            }
+
             var chosenEffect = spellEffect;
 
             // A spell effect may ask us to choose a random effect from a list of effects.
