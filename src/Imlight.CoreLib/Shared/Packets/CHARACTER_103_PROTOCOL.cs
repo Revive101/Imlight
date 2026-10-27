@@ -476,14 +476,38 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
     }
 
     /// <summary>
+    /// Sent by the EquipmentService to the RentalService after a rental item was equipped: the timer of the rental
+    /// starts if it has not started yet.
+    /// </summary>
+    public sealed class MSG_STARTRENTAL : IServerMessage {
+
+        public byte MessageOrder { get; } = 60;
+        public byte ServiceID { get; } = 103;
+
+        public ulong ItemId;
+
+    }
+
+    /// <summary>
     /// Sent to the PetService after an egg was laid into a free morphing slot, so it shows the slot and starts the hatch timer.
     /// </summary>
     public sealed class MSG_PETEGGLAID : IServerMessage {
 
-        public byte MessageOrder { get; } = 42;
+        public byte MessageOrder { get; } = 63;
         public byte ServiceID { get; } = 103;
 
         public ulong EggGlobalId;
+
+    }
+
+    /// <summary>
+    /// Internal timer message and request to the RentalService: expires every rental of the player that has run out,
+    /// then arms the timer for the next one.
+    /// </summary>
+    public sealed class MSG_CHECKRENTALS : IServerMessage {
+
+        public byte MessageOrder { get; } = 61;
+        public byte ServiceID { get; } = 103;
 
     }
 
@@ -493,7 +517,7 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
     /// </summary>
     public sealed class MSG_HATCHPARTNERPETS : IServerMessage {
 
-        public byte MessageOrder { get; } = 43;
+        public byte MessageOrder { get; } = 64;
         public byte ServiceID { get; } = 103;
 
         public ulong CharId;
@@ -506,7 +530,7 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
     /// </summary>
     public sealed class MSG_HATCHPARTNERPICK : IServerMessage {
 
-        public byte MessageOrder { get; } = 44;
+        public byte MessageOrder { get; } = 65;
         public byte ServiceID { get; } = 103;
 
         public ulong CharId;
@@ -519,7 +543,7 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
     /// </summary>
     public sealed class MSG_HATCHPARTNERCHOICE : IServerMessage {
 
-        public byte MessageOrder { get; } = 45;
+        public byte MessageOrder { get; } = 66;
         public byte ServiceID { get; } = 103;
 
         public ulong CharId;
@@ -532,7 +556,7 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
     /// </summary>
     public sealed class MSG_HATCHPARTNERREADY : IServerMessage {
 
-        public byte MessageOrder { get; } = 46;
+        public byte MessageOrder { get; } = 67;
         public byte ServiceID { get; } = 103;
 
         public ulong CharId;
@@ -545,8 +569,20 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
     /// </summary>
     public sealed class MSG_HATCHROOMEXPIRED : IServerMessage {
 
-        public byte MessageOrder { get; } = 47;
+        public byte MessageOrder { get; } = 68;
         public byte ServiceID { get; } = 103;
+
+    }
+
+    /// <summary>
+    /// Sent by the RentalService to the EquipmentService: the rental has run out, so it is taken off the player and removed.
+    /// </summary>
+    public sealed class MSG_EXPIRERENTAL : IServerMessage {
+
+        public byte MessageOrder { get; } = 62;
+        public byte ServiceID { get; } = 103;
+
+        public ulong ItemId;
 
     }
 
@@ -555,7 +591,7 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
     /// </summary>
     public sealed class MSG_HATCHRETURN : IServerMessage {
 
-        public byte MessageOrder { get; } = 48;
+        public byte MessageOrder { get; } = 69;
         public byte ServiceID { get; } = 103;
 
     }
@@ -565,7 +601,7 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
     /// </summary>
     public sealed class MSG_HATCHPARTNERWAITOVER : IServerMessage {
 
-        public byte MessageOrder { get; } = 49;
+        public byte MessageOrder { get; } = 70;
         public byte ServiceID { get; } = 103;
 
     }
@@ -575,7 +611,7 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
     /// </summary>
     public sealed class MSG_HATCHPARTNERHATCHED : IServerMessage {
 
-        public byte MessageOrder { get; } = 50;
+        public byte MessageOrder { get; } = 71;
         public byte ServiceID { get; } = 103;
 
         public ulong CharId;

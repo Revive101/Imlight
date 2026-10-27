@@ -326,6 +326,12 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
         }
 
         var wizard = GetActiveWizard();
+        if (!wizard.InventoryBehavior.HasItem(_cachedMountId)) {
+            _cachedMountId = 0;
+
+            return;
+        }
+
         var wizEquipmentBehavior = wizard.EquipmentBehavior;
         var slot = wizEquipmentBehavior.GetSlotOfItem(_cachedMountId);
 
@@ -355,6 +361,12 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
         }
 
         var wizard = GetActiveWizard();
+        if (!wizard.InventoryBehavior.HasItem(_cachedMountId)) {
+            _cachedMountId = 0;
+
+            return;
+        }
+
         if (!wizard.InventoryToEquipmentTransfer(_cachedMountId, out var addedEffects, out var _)) {
             Logger.Warning("Mount {ItemId} of {Wizard} could not be equipped again after combat.", Logger.Args(_cachedMountId, wizard.PlayerNameBehavior.GetWizardName()));
             return;

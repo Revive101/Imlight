@@ -19,6 +19,7 @@
 
 using Imcodec.ObjectProperty.Attributes;
 using Imcodec.ObjectProperty.TypeCache;
+using Imlight.CoreLib.Game.Rentals;
 
 namespace Imlight.CoreLib.Shared.Resources;
 
@@ -109,7 +110,7 @@ public static class BehaviorCache {
         0x75588889 => new ClientPetItemBehavior(),
         0x640B088B => new ClientPetNameBehavior(),
         0x2933F2E5 => new ClientQuantityBehavior(),
-        0x3614A5EE => new ClientRentalBehavior(),
+        0x3614A5EE => new ClientRentalBehavior { m_expireTime = RentalItems.UNSET },
         0x346B28D0 => new ClientSpellCardAttachmentBehavior(),
         0x22FD694B => new ClientTextureRemapBehavior(),
         0x6323D8C1 => new ClientTimedItemBehavior(),

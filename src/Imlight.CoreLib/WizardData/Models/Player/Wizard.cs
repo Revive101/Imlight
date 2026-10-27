@@ -36,6 +36,8 @@ using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.Shared.Utilities;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.Game.Pet.Progression;
+using Imlight.CoreLib.Game.Rentals;
+using Raven.Client.Exceptions;
 
 namespace Imlight.CoreLib.WizardData.Models.Player;
 
@@ -664,19 +666,7 @@ public class Wizard {
             return false;
         }
 
-        // If this object is a mount, we'll also want to update the mount owner behavior.
-        if (slot.SlotType == EquipmentSlotType.Mount) {
-            UnequipMount();
-        }
-        if (slot.SlotType == EquipmentSlotType.Pet) {
-            UnequipPet();
-        }
-        if (slot.SlotType == EquipmentSlotType.PIITeleportEffect) {
-            UnequipTeleportEffect();
-        }
-        if (slot.SlotType == EquipmentSlotType.PIIVictoryDance) {
-            UnequipVictoryDance();
-        }
+        unequipEffects = ResetUnequippedSlot(template, slot.SlotType);
 
         // Persistent save.
         WizardCollection.UpdateCharacterItems(this);
@@ -685,7 +675,43 @@ public class Wizard {
         Logger.Debug("{Wizard} unequips item {ItemId}.",
             Logger.Args(PlayerNameBehavior.GetWizardName(), itemId));
 
-        unequipEffects = CharacterEffectHelper.RemoveEffectsFromWizard(this, template);
+        return true;
+    }
+
+    /// <summary>
+    /// Takes a rental item away, worn or in the backpack. A worn item does not pass through the backpack, so a full backpack cannot block it.
+    /// </summary>
+    /// <param name="itemId">The global id of the rental item.</param>
+    /// <param name="removal">What the caller needs to tell the client; null if the wizard does not have the item.</param>
+    /// <returns>False if the wizard has no such item.</returns>
+    internal bool RemoveRentalItem(ulong itemId, out RentalRemoval removal) {
+        removal = null;
+
+        var worn = EquipmentBehavior.GetItem(itemId);
+        var item = worn ?? InventoryBehavior.GetItem(itemId);
+        if (item is null) {
+            return false;
+        }
+
+        removal = worn is null ? RentalRemoval.FromBackpack(item) : UnequipWornRental(item);
+
+        if (InventoryBehavior.HasItem(itemId)) {
+            InventoryBehavior.RemoveItem(itemId, out _);
+        }
+
+        if (InteriorStowedMountId == itemId) {
+            InteriorStowedMountId = 0;
+            WizardCollection.UpdateCharacterInteriorStowedMount(this);
+        }
+
+        WizardCollection.UpdateCharacterItems(this);
+
+        // A document that outlives a failed delete is not in the id lists, so the rental cannot come back.
+        try {
+            WizardItemCollection.RemoveItem(CharId, itemId);
+        } catch (Exception ex) when (ex is TimeoutException or RavenException) {
+            Logger.Error("Failed to delete the document of expired rental {0}: {1}", Logger.Args(itemId, ex.Message));
+        }
 
         return true;
     }
@@ -1452,6 +1478,7 @@ public class Wizard {
         AfterDatabaseLoadPets();
         AfterDatabaseLoadAlchemyBehavior();
         AfterDatabaseLoadQuestBehavior();
+        AfterDatabaseLoadRentals();
 
         ObjectStateBehavior ??= new ServerObjectStateBehavior("PlayerMobileStates");
         FriendsBehavior ??= new ServerFriendBehavior();
@@ -1548,6 +1575,34 @@ public class Wizard {
 
         // Persistent save.
         WizardCollection.UpdateCharacterMount(this);
+    }
+
+    private RentalRemoval UnequipWornRental(WizClientObjectItem item) {
+        var template = ItemHelper.GetItemTemplate(item);
+        var slotType = ItemHelper.GetItemSlot(template).SlotType;
+        var slotIndex = EquipmentBehavior.GetSlotOfItem(item.m_globalID);
+        EquipmentBehavior.UnequipItem(item.m_globalID);
+        var removedEffects = ResetUnequippedSlot(template, slotType);
+
+        return new RentalRemoval(true, slotType, slotIndex, removedEffects, item.m_templateID.Full);
+    }
+
+    private List<GameEffectBase> ResetUnequippedSlot(WizItemTemplate template, EquipmentSlotType slotType) {
+        // If this object is a mount, we'll also want to update the mount owner behavior.
+        if (slotType == EquipmentSlotType.Mount) {
+            UnequipMount();
+        }
+        if (slotType == EquipmentSlotType.Pet) {
+            UnequipPet();
+        }
+        if (slotType == EquipmentSlotType.PIITeleportEffect) {
+            UnequipTeleportEffect();
+        }
+        if (slotType == EquipmentSlotType.PIIVictoryDance) {
+            UnequipVictoryDance();
+        }
+
+        return CharacterEffectHelper.RemoveEffectsFromWizard(this, template);
     }
 
     private void UnequipMount() {
@@ -1686,6 +1741,15 @@ public class Wizard {
 
     private void InitializeSpellbookBehavior() {
         SpellbookBehavior = new ServerWizSpellbookBehavior();
+    }
+
+    private void AfterDatabaseLoadRentals() {
+        // A stored 0 predates the not-started default, and the client would show it as a started timer.
+        foreach (var (_, behavior) in RentalItems.Enumerate(this)) {
+            if (behavior.m_expireTime == 0) {
+                behavior.m_expireTime = RentalItems.UNSET;
+            }
+        }
     }
 
     private void InitializeDefaultPetSnackBehavior() {
