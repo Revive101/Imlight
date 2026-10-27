@@ -1,3 +1,4 @@
+using Imlight.Api.Auth;
 using Imlight.CoreLib.Shared.Utilities;
 using Imlight.CoreLib.WizardData;
 using Imlight.CoreLib.WizardData.Databases;
@@ -27,7 +28,7 @@ public static class ApiTokenCollection {
         DateTime? expiresAt = null) {
 
         var prefix = Convert.ToHexString(RandomNumberGenerator.GetBytes(4)).ToLowerInvariant();
-        var secret = Convert.ToHexString(RandomNumberGenerator.GetBytes(32)).ToLowerInvariant();
+        var secret = Convert.ToHexString(RandomNumberGenerator.GetBytes(JwtTokenService.s_minSecretLength)).ToLowerInvariant();
         var plaintextKey = $"iml_{prefix}_{secret}";
 
         var token = new ApiToken {
