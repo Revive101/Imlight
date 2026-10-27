@@ -1,5 +1,7 @@
 using Akka.Actor;
+using Imlight.Api.Auth;
 using Imlight.Common;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -36,6 +38,16 @@ public class ApiServer
         // Register ActorSystem for DI
         builder.Services.AddSingleton(actorSystem);
 
+        builder.Services
+            .AddAuthentication(AuthHandler.SchemeName)
+            .AddScheme<AuthenticationSchemeOptions, AuthHandler>(AuthHandler.SchemeName, null);
+
+        builder.Services.AddAuthorization(options => {
+            foreach (var scope in ApiScopes.All) {
+                options.AddPolicy(scope, policy => policy.RequireClaim("scope", scope));
+            }
+        });
+
         builder.Services.AddControllers();
         builder.Services.AddSignalR();
 
@@ -50,6 +62,8 @@ public class ApiServer
 
         s_app = builder.Build();
         s_app.UseCors();
+        s_app.UseAuthentication();
+        s_app.UseAuthorization();
         s_app.MapControllers();
 
         // Health check endpoint.
