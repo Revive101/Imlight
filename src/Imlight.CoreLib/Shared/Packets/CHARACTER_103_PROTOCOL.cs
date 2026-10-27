@@ -475,12 +475,25 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
     }
 
     /// <summary>
+    /// Sent by the EquipmentService to the RentalService after a rental item was equipped: the timer of the rental
+    /// starts if it has not started yet.
+    /// </summary>
+    public sealed class MSG_STARTRENTAL : IServerMessage {
+
+        public byte MessageOrder { get; } = 60;
+        public byte ServiceID { get; } = 103;
+
+        public ulong ItemId;
+
+    }
+
+    /// <summary>
     /// Sent by a bank NPC to the BankService of the player who picked its bank option: the bank counts as open
     /// until the window is closed, the zone changes or the session attaches again.
     /// </summary>
     public sealed class MSG_BEGINBANKSESSION : IServerMessage {
 
-        public byte MessageOrder { get; } = 50;
+        public byte MessageOrder { get; } = 63;
         public byte ServiceID { get; } = 103;
 
         /// <summary>
@@ -491,11 +504,34 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
     }
 
     /// <summary>
+    /// Internal timer message and request to the RentalService: expires every rental of the player that has run out,
+    /// then arms the timer for the next one.
+    /// </summary>
+    public sealed class MSG_CHECKRENTALS : IServerMessage {
+
+        public byte MessageOrder { get; } = 61;
+        public byte ServiceID { get; } = 103;
+
+    }
+
+    /// <summary>
+    /// Sent by the RentalService to the EquipmentService: the rental has run out, so it is taken off the player and removed.
+    /// </summary>
+    public sealed class MSG_EXPIRERENTAL : IServerMessage {
+
+        public byte MessageOrder { get; } = 62;
+        public byte ServiceID { get; } = 103;
+
+        public ulong ItemId;
+
+    }
+
+    /// <summary>
     /// Sent by the owner's session to a friend who was made a decorator of a house, or taken off its decorators.
     /// </summary>
     public sealed class MSG_DECORATORBUDDYFWD : IServerMessage {
 
-        public byte MessageOrder { get; } = 51;
+        public byte MessageOrder { get; } = 64;
         public byte ServiceID { get; } = 103;
 
         public ulong TargetCharId;
