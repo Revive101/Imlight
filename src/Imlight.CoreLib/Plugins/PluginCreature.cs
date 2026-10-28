@@ -21,6 +21,8 @@
  */
 
 using Imcodec.ObjectProperty.TypeCache;
+using Imlight.CoreLib.Game.Zone.Components;
+using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.PluginApi;
 
@@ -30,26 +32,45 @@ namespace Imlight.CoreLib.Plugins;
 /// Exposes a creature to plugins as an <see cref="ICreature"/>.
 /// </summary>
 /// <remarks>
-/// Reads the creature's live object, which its own actor moves, the same way <see cref="PluginPlayer"/> reads its wizard.
+/// Reads the creature's live object and components, which its own actor changes, the same way <see cref="PluginPlayer"/>
+/// reads its wizard. Only combat creatures are wrapped, and every one has an NPC, stats and AI component.
 /// </remarks>
-internal sealed class PluginCreature(CoreObject creature, CoreTemplate template, IZone zone) : ICreature {
+internal sealed class PluginCreature(ZoneEntity entity, IZone zone) : ICreature {
 
-    private readonly string _name = ResolveName(template);
+    private readonly CoreObject _creature = entity.ActiveGameObject;
+    private readonly string _name = ResolveName(entity.Template);
+    private readonly NpcComponent _npc = entity.GetComponentOfType<NpcComponent>();
+    private readonly StatsComponent _stats = entity.GetComponentOfType<StatsComponent>();
+    private readonly CombatCreatureAIComponent _ai = entity.GetComponentOfType<CombatCreatureAIComponent>();
 
-    public CoreObject Creature => creature;
+    public ZoneEntity Entity => entity;
 
-    public ulong GlobalId => creature.m_globalID.Full;
+    public ulong GlobalId => _creature.m_globalID.Full;
 
-    public ulong TemplateId => creature.m_templateID.Full;
+    public ulong TemplateId => _creature.m_templateID.Full;
 
     public string Name => _name;
 
     public IZone Zone => zone;
 
     public System.Numerics.Vector3 Location
-        => new(creature.m_location.X, creature.m_location.Y, creature.m_location.Z);
+        => new(_creature.m_location.X, _creature.m_location.Y, _creature.m_location.Z);
 
-    public float Orientation => creature.m_orientation.Z;
+    public float Orientation => _creature.m_orientation.Z;
+
+    public int Level => _npc.Level;
+
+    public School School => _npc.MagicSchool.ToPluginSchool();
+
+    public int Health => _stats.Stats.m_currentHitpoints;
+
+    public int MaxHealth => _stats.Stats.m_baseHitpoints;
+
+    public bool IsBoss => _npc.IsBossMonster;
+
+    public bool IsMinion => entity.IsCombatOnlyMinion;
+
+    public bool InCombat => _ai.InDuel;
 
     private static string ResolveName(CoreTemplate template) {
         if (template is GameObjectTemplate gameObjectTemplate) {

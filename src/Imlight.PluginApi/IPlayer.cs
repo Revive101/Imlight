@@ -65,6 +65,11 @@ public interface IPlayer {
     int Level { get; }
 
     /// <summary>
+    /// The wizard's school of magic.
+    /// </summary>
+    School School { get; }
+
+    /// <summary>
     /// The wizard's total experience points.
     /// </summary>
     int Experience { get; }

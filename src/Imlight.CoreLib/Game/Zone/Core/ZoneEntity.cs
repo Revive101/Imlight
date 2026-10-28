@@ -251,7 +251,7 @@ public class ZoneEntity(
             Context, results, playerActor, playerObject, zoneActor: ZoneRef, triggerName: triggerName);
 
     protected override void PostStop() {
-        _pluginZone?.RemoveCreature(ActiveGameObject);
+        _pluginZone?.RemoveCreature(this);
         base.PostStop();
     }
 
@@ -280,7 +280,7 @@ public class ZoneEntity(
         // Any combat creature is a creature to plugins.
         if (ActiveGameObject is not null && GetComponentOfType<CombatCreatureAIComponent>() is not null) {
             _pluginZone = PluginZone.Of(ZoneRef);
-            _pluginZone?.AddCreature(ActiveGameObject, Template);
+            _pluginZone?.AddCreature(this);
         }
 
         Sender.Tell(new ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADRESULTS());

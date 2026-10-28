@@ -59,6 +59,8 @@ internal sealed class PluginPlayer(Wizard wizard, IActorRef sessionActor, IZone 
 
     public int Level => wizard.MagicSchoolBehavior.Level;
 
+    public School School => wizard.MagicSchoolBehavior.MagicSchool.ToPluginSchool();
+
     public int Experience => wizard.MagicSchoolBehavior.ExperiencePoints;
 
     public int Gold => wizard.GameStats.m_currentGold;

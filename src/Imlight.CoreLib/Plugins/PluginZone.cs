@@ -44,6 +44,7 @@ using System.Threading;
 using Akka.Actor;
 using Imcodec.MessageLayer;
 using Imcodec.ObjectProperty.TypeCache;
+using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.PluginApi;
@@ -100,13 +101,12 @@ internal sealed class PluginZone(string name, bool isInstance, IActorRef zoneAct
     public void RemovePlayer(IActorRef sessionActor)
         => _players = Without(sessionActor);
 
-    public void AddCreature(CoreObject creature, CoreTemplate template)
-        => ImmutableInterlocked.Update(ref _creatures, x => x.Add(new PluginCreature(creature, template, this)));
+    public void AddCreature(ZoneEntity entity)
+        => ImmutableInterlocked.Update(ref _creatures, x => x.Add(new PluginCreature(entity, this)));
 
-    // CoreObject is a record, so this matches by reference rather than by its values.
-    public void RemoveCreature(CoreObject creature)
+    public void RemoveCreature(ZoneEntity entity)
         => ImmutableInterlocked.Update(ref _creatures,
-            x => x.RemoveAll(c => ReferenceEquals(((PluginCreature) c).Creature, creature)));
+            x => x.RemoveAll(c => ReferenceEquals(((PluginCreature) c).Entity, entity)));
 
     /// <summary>
     /// Sends a message through the zone's broadcast, as if the zone itself sent it.

@@ -64,4 +64,39 @@ public interface ICreature {
     /// </summary>
     float Orientation { get; }
 
+    /// <summary>
+    /// The creature's level.
+    /// </summary>
+    int Level { get; }
+
+    /// <summary>
+    /// The creature's school of magic, or <see cref="PluginApi.School.None"/> if it has none.
+    /// </summary>
+    School School { get; }
+
+    /// <summary>
+    /// The creature's current health. In a duel it changes as the creature takes damage and heals.
+    /// </summary>
+    int Health { get; }
+
+    /// <summary>
+    /// The creature's maximum health.
+    /// </summary>
+    int MaxHealth { get; }
+
+    /// <summary>
+    /// True if the creature is a boss.
+    /// </summary>
+    bool IsBoss { get; }
+
+    /// <summary>
+    /// True if the creature is a minion summoned in a duel. A minion exists only in that duel.
+    /// </summary>
+    bool IsMinion { get; }
+
+    /// <summary>
+    /// True while the creature is fighting in a duel. A creature that joins a duel stays in it until it dies or despawns.
+    /// </summary>
+    bool InCombat { get; }
+
 }

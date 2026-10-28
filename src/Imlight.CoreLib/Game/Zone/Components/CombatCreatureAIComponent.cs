@@ -94,8 +94,14 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
         => [.. _currentDuelComponent.ActiveSubCircles.Where(x => x.OccupiedTeam == _currentSubCircle.OccupiedTeam)];
     private bool _isHealingViable
         => _friendlySubcircles.Any(x => x.ParticipantGameStats.m_currentHitpoints / x.ParticipantGameStats.m_baseHitpoints < _healingThreshold);
-    private bool _sentFinalKill;
-    private bool _isInDuel;
+    // Volatile because plugins read InDuel from other threads.
+    private volatile bool _sentFinalKill;
+    private volatile bool _isInDuel;
+
+    /// <summary>
+    /// True from when the creature joins a duel until it dies. A creature never leaves a duel alive.
+    /// </summary>
+    public bool InDuel => _isInDuel && !_sentFinalKill;
 
     public static bool ShouldAttachToEntity(CoreTemplate template)
         => template is GameObjectTemplate gameObjectTemplate
