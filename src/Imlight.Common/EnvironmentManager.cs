@@ -135,7 +135,7 @@ public static class EnvironmentManager {
         value = string.Empty;
         var trimmed = line.Trim();
 
-        if (string.IsNullOrWhiteSpace(trimmed) || trimmed.StartsWith('#') || trimmed.StartsWith(';')) {
+        if (string.IsNullOrWhiteSpace(trimmed) || trimmed.StartsWith('#')) {
             return false;
         }
 
