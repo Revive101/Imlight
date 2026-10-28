@@ -51,23 +51,23 @@ public static class EnvironmentManager {
     /// <summary>
     /// Gets an environment variable from System.Environment (auto-initializing from .env if needed).
     /// </summary>
-    public static string? Get(string key) {
+    public static bool Get(string key, out string value) {
         EnsureInitialized();
-        return Environment.GetEnvironmentVariable(key);
+        value = Environment.GetEnvironmentVariable(key) ?? string.Empty;
+
+        return !string.IsNullOrWhiteSpace(value);
     }
 
     /// <summary>
     /// Gets an environment variable, or generates and saves it to .env if it is missing or empty.
     /// </summary>
-    public static string GetOrCreate(string key, Func<string> valueFactory, string? comment = null) {
-        var existing = Get(key);
-
-        if (!string.IsNullOrWhiteSpace(existing)) {
+    public static string GetOrCreate(string key, Func<string> valueFactory) {
+        if (Get(key, out string existing)) {
             return existing;
         }
 
         var generated = valueFactory();
-        Set(key, generated, comment);
+        Set(key, generated);
 
         return generated;
     }
@@ -75,7 +75,7 @@ public static class EnvironmentManager {
     /// <summary>
     /// Sets an environment variable in System.Environment and persists it to the .env file on disk.
     /// </summary>
-    public static void Set(string key, string value, string? comment = null) {
+    public static void Set(string key, string value) {
         if (string.IsNullOrWhiteSpace(key)) {
             throw new ArgumentException("Environment key cannot be empty.", nameof(key));
         }
@@ -86,7 +86,7 @@ public static class EnvironmentManager {
         Environment.SetEnvironmentVariable(key, value);
         // 2. Persist to .env file so it survives restarts
         lock (s_fileLock) {
-            PersistKeyToFile(key, value, comment);
+            PersistKeyToFile(key, value);
         }
     }
 
@@ -98,7 +98,7 @@ public static class EnvironmentManager {
         }
     }
 
-    private static void PersistKeyToFile(string targetKey, string newValue, string? comment) {
+    private static void PersistKeyToFile(string targetKey, string newValue) {
         var lines = File.Exists(s_envFilePath)
             ? new List<string>(File.ReadAllLines(s_envFilePath))
             : [];
@@ -120,9 +120,6 @@ public static class EnvironmentManager {
         if (!updated) {
             if (lines.Count > 0 && !string.IsNullOrWhiteSpace(lines[^1])) {
                 lines.Add(string.Empty);
-            }
-            if (!string.IsNullOrWhiteSpace(comment)) {
-                lines.Add($"# {comment}");
             }
             lines.Add($"{targetKey}={formattedValue}");
         }
@@ -181,7 +178,7 @@ public static class EnvironmentManager {
 
     public sealed class EnvSettings {
         public ConfigurationManager.ConfigValue this[string key] {
-            get => new(Get(key) ?? string.Empty);
+            get => new(Get(key, out string value) ? value : string.Empty);
             set => Set(key, value.AsString());
         }
     }
