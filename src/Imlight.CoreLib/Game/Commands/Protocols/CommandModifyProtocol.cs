@@ -27,6 +27,8 @@ using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Game.Bank;
 using Imlight.CoreLib.Game.Cantrips;
 using Imlight.CoreLib.Game.Pet;
+using Imlight.CoreLib.Game.Pet.Config;
+using Imlight.CoreLib.Game.Pet.Progression;
 using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
@@ -244,6 +246,116 @@ internal class CommandModifyProtocol : CommandProtocol {
         Context.SessionActor.Tell(updateMessage, null);
 
         InformSenderClient($"Added snack {snackObj.m_debugName} to snack bag.");
+    }
+
+    [Command("petlevel")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void SetPetLevelCommand(string level) {
+        if (!int.TryParse(level, NumberStyles.Integer, CultureInfo.InvariantCulture, out var petLevel)) {
+            InformSenderClient("Invalid pet level.");
+
+            return;
+        }
+
+        if (!TryGetEquippedPet(out var pet)) {
+            return;
+        }
+
+        if (!PetProgression.SetLevel(pet, petLevel)) {
+            InformSenderClient($"Cannot set the pet to level {petLevel}.");
+
+            return;
+        }
+
+        SendPetBehavior(pet);
+        InformSenderClient($"Set the pet to level {petLevel}.");
+    }
+
+    [Command("petxp")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void AddPetXpCommand(string xp) {
+        if (!uint.TryParse(xp, NumberStyles.Integer, CultureInfo.InvariantCulture, out var amount) || amount == 0) {
+            InformSenderClient("Invalid XP amount.");
+
+            return;
+        }
+
+        if (!TryGetEquippedPet(out var pet)) {
+            return;
+        }
+
+        var result = PetXpAward.Give(Context.SessionActor, Context.CharacterObject, Context.Character, pet, amount, PetXpSource.Command);
+        if (!result.Applied) {
+            InformSenderClient("This pet cannot gain XP.");
+
+            return;
+        }
+
+        InformSenderClient($"Gave the pet {result.Granted} XP and {result.LevelsGained} levels.");
+    }
+
+    [Command("pethappiness")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void SetPetHappinessCommand(string happiness) {
+        if (!uint.TryParse(happiness, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value)) {
+            InformSenderClient("Invalid happiness.");
+
+            return;
+        }
+
+        if (!TryGetEquippedPet(out var pet)) {
+            return;
+        }
+
+        if (!PetProgression.SetHappiness(pet, value)) {
+            InformSenderClient("This pet cannot have its happiness set.");
+
+            return;
+        }
+
+        SendPetBehavior(pet);
+        InformSenderClient($"Set the pet's happiness to {value}, up to its maximum.");
+    }
+
+    [Command("pettalent")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void GivePetTalentCommand(string talentName) {
+        if (!PetTalentRegistry.TryGetByName(talentName, out var talent)) {
+            InformSenderClient($"No pet talent is named {talentName}.");
+
+            return;
+        }
+
+        if (!TryGetEquippedPet(out var pet)) {
+            return;
+        }
+
+        if (!PetProgression.GiveTalent(pet, talent)) {
+            InformSenderClient("This pet cannot be given a talent.");
+
+            return;
+        }
+
+        SendPetBehavior(pet);
+        InformSenderClient($"Gave the pet the talent {talent.Name}.");
+    }
+
+    private bool TryGetEquippedPet(out WizClientObjectItem pet) {
+        pet = Context.Character.GetEquippedPetItem();
+        if (pet is null) {
+            InformSenderClient("Equip a pet first.");
+
+            return false;
+        }
+        return true;
+    }
+
+    private void SendPetBehavior(WizClientObjectItem pet) {
+        Context.Character.SavePet(pet);
+
+        if (PetBehaviorUpdate.TryCreate(pet, out var update)) {
+            Context.SessionActor.Tell(update, null);
+        }
     }
 
     [Command("addreagent")]

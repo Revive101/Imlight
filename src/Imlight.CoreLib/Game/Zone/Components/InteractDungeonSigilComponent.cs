@@ -45,16 +45,12 @@
  */
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Akka.Actor;
-using Imcodec.Math;
 using Imcodec.ObjectProperty.TypeCache;
-using Imlight.CoreLib.Game.WizBang;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Packets;
-using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.CoreLib.WizardData.Models.World;
@@ -62,27 +58,13 @@ using Imlight.CoreLib.WizardData.Models.World;
 namespace Imlight.CoreLib.Game.Zone.Components;
 
 internal sealed partial class InteractDungeonSigilComponent(ZoneEntity entity)
-    : ZoneEntityComponent(entity), IServiceComponent, IComponentFactory {
+    : InteractSigilComponentBase(entity), IComponentFactory {
 
     private const uint SIGIL_TEMPLATE_ID = 107081;
-    private const float DEFAULT_PAD_RADIUS = 370.0f;
-
-    public string ServiceName => "Interact";
-    public string NpcIcon => "";
-    public string NpcNameKey => "";
-    public string NpcTextKey => "";
-    public WizBangs WizBang => WizBangs.None;
-    public string StateName => null;
-    public string InteractWizBang => null;
-    public string DisplayKey => null;
-
-    public float DEFAULT_INTERACTION_RADIUS
-        => SigilInfo is not null && SigilInfo.m_radius > 0 ? SigilInfo.m_radius : DEFAULT_PAD_RADIUS;
 
     private ResolvedSigil _resolved;
-    private MinigameSigilInfo SigilInfo 
-        => Entity.Info as MinigameSigilInfo;
-    private bool IsAvailable
+
+    protected override bool IsAvailable
          => SigilInfo is not null && TryResolveDestination(out _);
 
     public static bool ShouldAttachToEntity(CoreTemplate template) {
@@ -107,36 +89,17 @@ internal sealed partial class InteractDungeonSigilComponent(ZoneEntity entity)
             || name.Contains("TeleportFullCircle");
     }
 
-    public IEnumerable<ServiceOptionBase> GetServiceOptions(Wizard _) {
-        if (!IsAvailable) {
-            return [];
-        }
-
-        return [
-            new InteractableOption { m_serviceName = ServiceName }
-        ];
-    }
-
-    public override void OnPlayerJoin(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) {
-        if (IsAvailable) {
-            Entity.ChangeStateExclusiveSender("Glowy", playerActor);
-        }
-    }
-
-    public void OnServiceInteraction(IActorRef playerActor, Wizard playerCharacter, CoreObject playerObject, uint serviceOptionIndex) {
+    public override void OnServiceInteraction(IActorRef playerActor, Wizard playerCharacter, CoreObject playerObject, uint serviceOptionIndex) {
         if (!TryResolveDestination(out var sigil)) {
             return;
         }
 
         var obj = Entity.ActiveGameObject;
-        var pad = obj.m_location;
-        var heading = obj.m_orientation.Z;
-        var sigilLoc = Util.GetCompactStringFromVector(new Vector4(pad.X, pad.Y, pad.Z, heading));
 
         // Hand off to the player's session, which owns dismount + snap + countdown + transfer. The pad
         // object's gid lets the session trip the client's native on-face countdown on it.
         playerActor.Tell(new ZONE_102_PROTOCOL.MSG_STARTSIGILENTRY {
-            SigilLoc = sigilLoc,
+            SigilLoc = GetPadLocation(),
             SigilGID = (ulong) obj.m_globalID,
             SigilType = SigilInfo.m_sigilType.ToString() ?? "",
             Radius = DEFAULT_INTERACTION_RADIUS,

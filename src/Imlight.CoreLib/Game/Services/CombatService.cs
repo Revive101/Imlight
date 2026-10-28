@@ -53,6 +53,7 @@ using Imlight.Common;
 using Imlight.CoreLib.Game.Combat;
 using Imlight.CoreLib.Game.DropTables;
 using Imlight.CoreLib.Game.Spells;
+using Imlight.CoreLib.Game.Pet.Progression;
 using Imlight.CoreLib.Shared.Items;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
@@ -163,6 +164,8 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
             XP = xpGained,
         };
         TellOtherServices(msg);
+
+        PetCombatXp.Award(SessionActor.ActorRef, GetActiveGameObject(), GetActiveWizard());
 
         GrantMobLoot(message.MobTemplateIds);
     }

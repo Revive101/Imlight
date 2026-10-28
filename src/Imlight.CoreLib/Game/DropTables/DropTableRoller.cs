@@ -33,6 +33,26 @@ namespace Imlight.CoreLib.Game.DropTables;
 
 public static class DropTableRoller {
 
+    private static readonly ConcurrentDictionary<string, byte> s_missingTables = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// Keeps the drop table names that SpiralDB has.
+    /// </summary>
+    /// <param name="names">The drop table names.</param>
+    /// <returns>The names SpiralDB has, in order. A name it lacks is left out and logged the first time.</returns>
+    internal static string[] KeepKnownTables(IEnumerable<string> names) {
+        List<string> known = [];
+        foreach (var name in names) {
+            if (DropTableCollection.GetDropTable(name) is not null) {
+                known.Add(name);
+            } else if (s_missingTables.TryAdd(name, 0)) {
+                Logger.Warning("The loot table {Table} is not in SpiralDB, so it is skipped.", Logger.Args(name));
+            }
+        }
+
+        return [.. known];
+    }
+
     private static readonly ConcurrentDictionary<string, byte> s_warnedTableNames = new();
 
     /// <summary>

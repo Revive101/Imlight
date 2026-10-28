@@ -35,6 +35,7 @@ using Imlight.CoreLib.Shared.Items;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.Shared.Utilities;
 using Imlight.CoreLib.WizardData.Collections;
+using Imlight.CoreLib.Game.Pet.Progression;
 using Imlight.CoreLib.Game.Rentals;
 using Raven.Client.Exceptions;
 
@@ -537,6 +538,8 @@ public class Wizard {
     }
 
     public bool AddPetToInventory(WizClientObjectItem pet) {
+        // Completing the pet first lets the first save store its genes and stats.
+        PetProgression.EnsureInitialized(pet);
         if (!InventoryBehavior.AddItem(pet)) {
             Logger.Warning("Could not add pet {ItemId} to the inventory of {Wizard}.",
                 Logger.Args(pet.m_globalID, PlayerNameBehavior.GetWizardName()));
@@ -546,6 +549,39 @@ public class Wizard {
 
         // Persistent save.
         return SaveItemsOrRollBack(() => InventoryBehavior.RemoveItem(pet), pet);
+    }
+
+    /// <summary>
+    /// Finds a pet item among the inventory items and the equipped items.
+    /// </summary>
+    /// <param name="petItemId">The global id of the pet item.</param>
+    /// <returns>The item, or null if the wizard does not have it.</returns>
+    public WizClientObjectItem FindPetItem(ulong petItemId)
+        => InventoryBehavior?.GetItem(petItemId) ?? EquipmentBehavior?.GetItem(petItemId);
+
+    /// <summary>
+    /// Gets the pet item in the pet equipment slot.
+    /// </summary>
+    /// <returns>The item, or null if no pet is equipped.</returns>
+    public WizClientObjectItem GetEquippedPetItem() {
+        var petItemId = EquipmentBehavior?.GetEquippedPetId() ?? 0;
+
+        return petItemId == 0 ? null : EquipmentBehavior.GetItem(petItemId);
+    }
+
+    /// <summary>
+    /// Saves a pet's item behavior to the database.
+    /// </summary>
+    /// <param name="pet">The pet item.</param>
+    /// <returns>True if the stored pet was found and saved.</returns>
+    public bool SavePet(WizClientObjectItem pet) {
+        if (WizardItemCollection.SavePetBehavior(pet)) {
+            return true;
+        }
+
+        Logger.Warning("Pet {PetId} of {CharId} is not stored, so its state was not saved.", Logger.Args(pet?.m_globalID.Full, CharId));
+
+        return false;
     }
 
     public bool RemoveItemFromInventory(ulong itemId) {
@@ -905,8 +941,18 @@ public class Wizard {
         return true;
     }
 
-    public bool RemoveSnack(ulong globalId, out ClientPetSnackItem snack) {
-        if (!PetSnackBehavior.RemoveSnack(globalId, out snack)) {
+    public bool RemoveSnack(ulong globalId, out ClientPetSnackItem snack)
+        => RemoveSnack(globalId, 1, out snack);
+
+    /// <summary>
+    /// Takes several snacks out of a stack in the snack bag and saves the bag.
+    /// </summary>
+    /// <param name="globalId">The global id of the snack stack.</param>
+    /// <param name="count">How many snacks to take, at least 1 and at most the stack's quantity.</param>
+    /// <param name="snack">The stack after the snacks were taken.</param>
+    /// <returns>True if the snacks were taken.</returns>
+    public bool RemoveSnack(ulong globalId, int count, out ClientPetSnackItem snack) {
+        if (!PetSnackBehavior.RemoveSnack(globalId, count, out snack)) {
             Logger.Warning("Could not remove snack {ItemId} from the snack bag of {Wizard}.",
                 Logger.Args(globalId, PlayerNameBehavior.GetWizardName()));
 
@@ -1607,6 +1653,7 @@ public class Wizard {
         AfterDatabaseLoadSpellbookBehavior();
         AfterDatabaseloadMountOwnerBehavior();
         AfterDatabaseLoadPetOwnerBehavior();
+        AfterDatabaseLoadPets();
         AfterDatabaseLoadAlchemyBehavior();
         AfterDatabaseLoadQuestBehavior();
         AfterDatabaseLoadRentals();
@@ -1824,6 +1871,8 @@ public class Wizard {
                 Logger.Args(_defaultPetTemplateId, CharId));
         }
         else {
+            PetProgression.EnsureInitialized(defaultPet);
+
             // Add pet to inventory.
             itemsToAdd.Add(defaultPet);
             InventoryBehavior.InventoryItemIds.Add(defaultPet.m_globalID);
@@ -1991,6 +2040,33 @@ public class Wizard {
             CraftingSlots = [],
             ReagentItemIds = []
         };
+    }
+
+    private bool TryCompletePet(WizClientObjectItem pet) {
+        try {
+            return PetProgression.EnsureInitialized(pet);
+        } catch (Exception ex) {
+            Logger.Error("Could not complete pet {PetId} of {CharId}: {Message}", Logger.Args(pet.m_globalID.Full, CharId, ex.Message));
+
+            return false;
+        }
+    }
+
+    private void AfterDatabaseLoadPets() {
+        List<WizClientObjectItem> completedPets = [.. (InventoryBehavior?.Items ?? []).Concat(EquipmentBehavior?.EquippedItems ?? []).Where(TryCompletePet)];
+
+        if (completedPets.Count == 0) {
+            return;
+        }
+
+        try {
+            var saved = WizardItemCollection.SavePetBehaviors(CharId, completedPets);
+            if (saved != completedPets.Count) {
+                Logger.Warning("Completed {Count} pets of {CharId}, but only {Saved} are stored.", Logger.Args(completedPets.Count, CharId, saved));
+            }
+        } catch (Exception ex) {
+            Logger.Error("Could not save the completed pets of {CharId}: {Message}", Logger.Args(CharId, ex.Message));
+        }
     }
 
     private void AfterDatabaseLoadPetOwnerBehavior() {

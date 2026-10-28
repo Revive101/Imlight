@@ -504,7 +504,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_SPAWNENTITY))]
     private void ReceiveSpawnEntity(ZONE_102_PROTOCOL.MSG_SPAWNENTITY message)
-        => _supervisors.ForEach(supervisor => supervisor.Forward(message));
+        => _objectSupervisor.Forward(message);
 
     #endregion
 

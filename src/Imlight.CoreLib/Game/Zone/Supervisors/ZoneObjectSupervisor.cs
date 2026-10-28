@@ -97,13 +97,6 @@ internal sealed class ZoneObjectSupervisor(Core.Zone zone) : ZoneEntitySuperviso
         }
 
         Context.Watch(objectActor);
-
-        // Reply with the created entity.
-        var rsp = new ZONE_102_PROTOCOL.MSG_SPAWNENTITYRSP {
-            EntityActor = objectActor,
-            SpawnedObject = coreObject
-        };
-        Sender.Tell(rsp);
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVETRIGGEROBJECT))]

@@ -249,7 +249,7 @@ public class PetFactory : RootDirectoryResourceSingleton<PetFactory>, IMemoryStr
         };
     }
 
-    private static PetItemBehaviorTemplate GetPetItemBehaviorTemplate(uint templateId) {
+    internal static PetItemBehaviorTemplate GetPetItemBehaviorTemplate(uint templateId) {
         var template = s_petTemplates.GetValueOrDefault(templateId)
             ?? CoreObjectFactory.GetCoreTemplate(templateId) as GameObjectTemplate;
 
@@ -259,7 +259,21 @@ public class PetFactory : RootDirectoryResourceSingleton<PetFactory>, IMemoryStr
     private static int GetDyeTexture(List<PetDyeToTexture> dyeToTexture, int dye)
         => dyeToTexture?.FirstOrDefault(entry => entry?.m_dye == dye)?.m_texture ?? dye;
 
+    /// <summary>
+    /// Gets how long an egg of a pet template takes to hatch.
+    /// </summary>
+    /// <param name="templateId">The pet template.</param>
+    /// <returns>The seconds from the template's hatch rate, or 0 if it has none.</returns>
+    internal static uint GetHatchSeconds(uint templateId)
+        => ParseHatchSeconds(GetPetItemBehaviorTemplate(templateId)?.m_sHatchRate);
+
     private static long ParseHatchRate(string hatchRateString) {
+        var hatchSeconds = ParseHatchSeconds(hatchRateString);
+
+        return hatchSeconds == 0 ? 0 : DateTimeOffset.UtcNow.ToUnixTimeSeconds() + hatchSeconds;
+    }
+
+    private static uint ParseHatchSeconds(string hatchRateString) {
         if (string.IsNullOrEmpty(hatchRateString)) {
             return 0;
         }
@@ -267,11 +281,11 @@ public class PetFactory : RootDirectoryResourceSingleton<PetFactory>, IMemoryStr
         // The hatch rate will be a stirng like "360m", which means 360 minutes.
         // It also may be 'h' or 's' or 'd' for hours, seconds, or days, respectively.
         var timeMultiplier = hatchRateString.Last() switch {
-            's' => 1,
-            'm' => 60,
-            'h' => 60 * 60,
-            'd' => 60 * 60 * 24,
-            _ => 0
+            's' => 1u,
+            'm' => 60u,
+            'h' => 60u * 60,
+            'd' => 60u * 60 * 24,
+            _ => 0u
         };
 
         if (timeMultiplier == 0) {
@@ -289,10 +303,7 @@ public class PetFactory : RootDirectoryResourceSingleton<PetFactory>, IMemoryStr
             return 0;
         }
 
-        // Then, the amount of seconds since epoch PLUS the hatch time will give us the hatch time for this pet.
-        var hatchTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + timeValue * timeMultiplier;
-
-        return hatchTime;
+        return timeValue * timeMultiplier;
     }
 
     public void DisposeStream() => s_petTemplates.Clear();

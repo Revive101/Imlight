@@ -16,6 +16,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System.Collections.Generic;
 using Akka.Actor;
 using Imcodec.IO;
 using Imcodec.MessageLayer.Generated;
@@ -555,4 +556,110 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
 
     }
 
+    /// <summary>
+    /// Sent to the PetService after an egg was laid into a free morphing slot, so it shows the slot and starts the hatch timer.
+    /// </summary>
+    public sealed class MSG_PETEGGLAID : IServerMessage {
+
+        public byte MessageOrder { get; } = 65;
+        public byte ServiceID { get; } = 103;
+
+        public ulong EggGlobalId;
+
+    }
+
+    /// <summary>
+    /// Sent by a player's HatchingService to the partner's session in the hatching room: the pets the
+    /// player can hatch with.
+    /// </summary>
+    public sealed class MSG_HATCHPARTNERPETS : IServerMessage {
+
+        public byte MessageOrder { get; } = 66;
+        public byte ServiceID { get; } = 103;
+
+        public ulong CharId;
+        public List<WizClientObjectItem> Pets;
+
+    }
+
+    /// <summary>
+    /// Sent by a player's HatchingService to the partner's session: the pet the player picked.
+    /// </summary>
+    public sealed class MSG_HATCHPARTNERPICK : IServerMessage {
+
+        public byte MessageOrder { get; } = 67;
+        public byte ServiceID { get; } = 103;
+
+        public ulong CharId;
+        public ulong PetId;
+
+    }
+
+    /// <summary>
+    /// Sent by a player's HatchingService to the partner's session: the player picked Hatch or Lend.
+    /// </summary>
+    public sealed class MSG_HATCHPARTNERCHOICE : IServerMessage {
+
+        public byte MessageOrder { get; } = 68;
+        public byte ServiceID { get; } = 103;
+
+        public ulong CharId;
+        public bool Lends;
+
+    }
+
+    /// <summary>
+    /// Sent by a player's HatchingService to the partner's session: the player ticked or cleared the ready box.
+    /// </summary>
+    public sealed class MSG_HATCHPARTNERREADY : IServerMessage {
+
+        public byte MessageOrder { get; } = 69;
+        public byte ServiceID { get; } = 103;
+
+        public ulong CharId;
+        public bool Ready;
+
+    }
+
+    /// <summary>
+    /// Internal timer message: the player's time in the hatching room is up.
+    /// </summary>
+    public sealed class MSG_HATCHROOMEXPIRED : IServerMessage {
+
+        public byte MessageOrder { get; } = 70;
+        public byte ServiceID { get; } = 103;
+
+    }
+
+    /// <summary>
+    /// Internal timer message: the player goes back from the hatching room to the sigil.
+    /// </summary>
+    public sealed class MSG_HATCHRETURN : IServerMessage {
+
+        public byte MessageOrder { get; } = 71;
+        public byte ServiceID { get; } = 103;
+
+    }
+
+    /// <summary>
+    /// Internal timer message: the partner did not reach the hatching room in time, so the player hatches alone.
+    /// </summary>
+    public sealed class MSG_HATCHPARTNERWAITOVER : IServerMessage {
+
+        public byte MessageOrder { get; } = 72;
+        public byte ServiceID { get; } = 103;
+
+    }
+
+    /// <summary>
+    /// Sent by a player's HatchingService to the partner's session: the player's egg was made, so a lent pet counts.
+    /// </summary>
+    public sealed class MSG_HATCHPARTNERHATCHED : IServerMessage {
+
+        public byte MessageOrder { get; } = 73;
+        public byte ServiceID { get; } = 103;
+
+        public ulong CharId;
+
+    }
 }
