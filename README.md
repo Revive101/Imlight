@@ -20,79 +20,77 @@ Imlight is a framework for building a private server. Do not expect a full game 
 
 The game client does not ship with all of the data required to run a true server, and thus some of it must be recollected manually. You can find the data we've managed to collect in the [spiraldb](https://github.com/Revive101/spiraldb) repository.
 
-If you care to contribute to the data recollection effort, you may use [Imview](#imview). Imview is Imlight's one-stop tool for managing Imlight, as well as data recollection.
-
-### What you can expect
-- [x] Character management
-- [x] Moving through the world *
-- [x] Zone objects
-- [x] Mobs
-- [x] Inventory and equipment
-- [x] Multiplayer
-- [x] Chat
-- [x] Friends
-- [x] Shops *
-- [x] Dye Shop
-- [x] Mounts
-- [ ] Multi-person Mounts
-- [x] Spell Training *
-- [x] Most parts of combat
-- [x] Reagents 
-- [x] Minigames
-- [x] Creating spell decks
-- [x] Dungeons
-- [x] Cantrips
-- [x] In-game commands
-- [x] Potions
-- [x] NPC interactions
-- [x] Bazaar
-- [x] Realms
-- [x] Pets (partial)
-- [ ] Pet minigames
-- [ ] Crafting
-- [ ] Housing
-- [x] Quests *
-- [x] Drop tables *
-
-* Engine is fully implemented. However, actual content depends on [SpiralDB](https://github.com/Revive101/spiraldb) data, which may not be available in all places.
+### Status
+Most of the core game works: characters, combat, quests, dungeons, pets and housing. How much content you get depends on [SpiralDB](https://github.com/Revive101/spiraldb) data, which may not be available in all places.
 
 ## Getting Started
-The only true requirement is the patch server. The rest of the components are optional, but are recommended.
+### Requirements
+The only true requirement is a file host. The rest of the components are optional, but are recommended.
 
-#### Patch Server
-You may use our open source option, [Aurorium](https://github.com/Revive101/Aurorium), to host one yourself. Both Imlight and your game client may be pointed to an Aurorium instance to serve game patches and data.
+- The [.NET 10 SDK](https://dotnet.microsoft.com/download).
+- A copy of the original game client.
+- A file host (required).
+- A player database (optional).
+- Spiral Database (optional, recommended).
 
-Aurorium's first boot will take time.
+### File Host
+Imlight does not ship game files. It downloads them from a file host and keeps them in a local cache, and it tells game clients where to find the same files. You may use our open source option, [Aurorium](https://github.com/Revive101/Aurorium), to host one yourself.
 
-#### Player Database
-Imlight uses [RavenDB](https://ravendb.net/) for player-generated data such as accounts, characters, chat logs, and friendships. If you do not provide a remote URL in the configuration, Imlight will spool up an embedded instance. If you <i>do</i> provide one, a certificate path must be provided as well.
+Point `PatchServerInternalUrl` in the `[Patch Server]` section of the configuration at your host. It points at a local host by default: `http://127.0.0.1:12369`. Imlight looks for the files under `<PatchServerInternalUrl>/V_<revision>`. Downloaded files are stored in `LocalWadCachePath`. If the host cannot be reached, Imlight uses the local cache only. Without a host and without a filled cache, it cannot start.
 
-#### Spiral Database 
-World data — NPC inventories, zone transfers, quest templates, drop tables, and other static content the game client does not ship with — is served by **SpiralDB**. On boot, Imlight fetches the latest data from the [spiraldb](https://github.com/Revive101/spiraldb) GitHub repository (or uses a local cache) and loads it directly into memory. No RavenDB instance is needed for world data.
+Aurorium's first boot takes a while, and the game files take up roughly 25 GB of disk space.
 
-You may control the SpiralDB behaviors in the configuration file, such as changing the remote and cache paths, and whether to fetch the latest data on boot.
+### Player Database
+Imlight uses [RavenDB](https://ravendb.net/) for player-generated data such as accounts, characters, chat logs, and friendships. If `PlayerDatabaseUrl` is empty, Imlight will spool up an embedded instance. If you <i>do</i> provide one, set `PlayerDatabaseCertificatePath` to its client certificate (`.pfx`) when the server requires one.
+
+### Spiral Database
+World data (NPC inventories, zone transfers, quest templates, drop tables, and other static content the game client does not ship with) is served by **SpiralDB**. On boot, Imlight fetches the latest data from the [spiraldb](https://github.com/Revive101/spiraldb) GitHub repository (or uses a local cache) and loads it directly into memory. No RavenDB instance is needed for world data.
+
+You may control the SpiralDB behaviors in the `[Database]` section of the configuration: `SpiralDBRemoteUrl`, `SpiralDBBranch`, `SpiralDBLocalPath`, `SpiralDBAutoFetch` and `SpiralDBDisableRemote`.
 
 ### Configuration
-Imlight's configuration is stored in `Imlight.ini`. It is recommended to review the configuration file and adjust it to your needs before booting the server. Additionally, an admin account is always created and the details for this account can be found in the configuration file as well. You should change these details before booting the server.
+Imlight's configuration is stored in `Imlight.ini`, found in `src/Imlight.Director/Config/` and copied to `Config/` in the build output (the copy is what the server reads). Review it and adjust it to your needs before booting the server. The settings you will most likely touch:
+
+- `[Login Server]`: `LoginServerPort` (12000 by default).
+- `[Game Server]`: `GameServerIP`, `GameServerPort`, `GameServerCount` and `RealmNames`.
+- `[Patch Server]`: `PatchServerInternalUrl` and `LocalWadCachePath`.
+- `[Database]`: the player database and SpiralDB settings above, and `AdminAccountUsername` and `AdminAccountPassword`.
+
+An admin account is always created from the `AdminAccountUsername` and `AdminAccountPassword` settings. Change them before booting the server.
 
 ### Client
 You can start the game client with a launch argument to connect to your server. `-L 127.0.0.1 12000` will work fine.
 
 ## Building
+Imlight needs the [.NET 10 SDK](https://dotnet.microsoft.com/download). [Imcodec](https://github.com/Jooty/Imcodec) is imported as a submodule and provides tooling required by Imlight for handling proprietary game data, so clone with submodules:
 
-#### Imcodec
-[Imcodec](https://github.com/Jooty/Imcodec) is imported as a submodule and provides tooling required by Imlight for handling proprietary game data. 
+```bash
+git clone --recurse-submodules <repository url>
+```
 
-##### Building Imcodec
-Imcodec relies on compile-time source generation to produce C# classes from game data definitions.
-1. Obtain a type dump JSON file using [wiztype](https://github.com/wizspoil/wiztype). This file should be saved in
-    ```
-    /submodule/Imcodec/src/Imcodec.ObjectProperty/GeneratorInput/
-    ```
-2. Unpack the root archive using Imcodec itself (via `imcodec wad unpack`). Inside, locate the message definition files which can be matched with a wildcard of `*Messages*.xml`. Place these files in:
-   ```
-   /submodule/Imcodec/src/Imcodec.MessageLayer/GeneratorInput/
-   ```
+If you already cloned without them:
+
+```bash
+git submodule update --init --recursive
+```
+
+Imcodec relies on compile-time source generation to produce C# classes from the client's data definitions, and that data is not distributed. Point `ImcodecClientDir` at your client install and the build extracts what it needs for you:
+
+```bash
+export ImcodecClientDir=<client install directory>
+dotnet build src/Imlight.sln
+```
+
+To supply the inputs by hand instead, or to refresh them after a client update, see the "Building" section of the [Imcodec README](submodule/Imcodec/README.md).
+
+## Running
+Make sure the file host is up and `Imlight.ini` is configured, then start the Director:
+
+```bash
+dotnet run --project src/Imlight.Director
+```
+
+The Director starts the login, game and patch servers. The first boot takes a while as game files are downloaded and cached.
 
 ## Information
 * The Kronos teams' [Grimoire](https://kronos-project.github.io/grimoire/foreword.html).
