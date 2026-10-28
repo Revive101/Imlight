@@ -121,6 +121,11 @@ internal static class Program {
         );
         Logger.Information("Imlight configuration loaded.");
 
+        EnvironmentManager.Initialize(
+            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Config/.env")
+        );
+        Logger.Information("Environment variables loaded from .env file.");
+
         // =============================================================
         // AKKA.NET CONFIGURATION
         // =============================================================
