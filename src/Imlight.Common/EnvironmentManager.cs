@@ -14,7 +14,7 @@ public static class EnvironmentManager {
     private static bool s_isInitialized = false;
     private static string s_envFilePath = string.Empty;
 
-    private static readonly string s_defaultContent = @"""
+    private static readonly string s_defaultContent = """
             # Imlight Environment Secrets (auto-generated)
             
             # This file is used to store environment variables for Imlight.
