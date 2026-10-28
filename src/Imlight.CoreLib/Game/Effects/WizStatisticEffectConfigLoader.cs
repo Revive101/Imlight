@@ -83,6 +83,17 @@ internal class WizStatisticEffectConfigLoader : RootSingleResourceSingleton<WizS
     internal static int GetCriticalHitLevelThreshold() 
         => s_config?.m_criticalHitLevelThreshold ?? 0;
 
+    /// <summary>
+    /// The shadow pip cap of a wizard who has unlocked shadow magic.
+    /// </summary>
+    internal static int GetShadowPipMax()
+        => s_config?.m_shadowPipMax ?? 0;
+
+    /// <summary>
+    /// The loaded config, or null when it failed to load.
+    /// </summary>
+    internal static WizStatisticEffectConfig Config => s_config;
+
     public void DisposeStream()
         => base.Stream.Dispose();
 

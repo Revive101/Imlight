@@ -92,7 +92,7 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
     private Hand _roundHand;
     private string _passReason = "nothing castable";
     private CombatDuelSubCircle[] _friendlySubcircles
-        => [.. _currentDuelComponent.ActiveSubCircles.Where(x => x.OccupiedTeam == _currentSubCircle.OccupiedTeam)];
+        => [.. _currentDuelComponent.ActiveSubCircles.Where(x => x.CurrentTeam == _currentSubCircle.CurrentTeam)];
     private bool _isHealingViable
         => _friendlySubcircles.Any(x => x.ParticipantGameStats.m_currentHitpoints / x.ParticipantGameStats.m_baseHitpoints < _healingThreshold);
     private bool _sentFinalKill;
@@ -196,7 +196,7 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
                                                     or kSpellEffects.kHealPercent;
 
         // Ignore if the caster is on my team.
-        var isOnMyTeam = message.Caster.OccupiedTeam == _currentSubCircle.OccupiedTeam;
+        var isOnMyTeam = message.Caster.CurrentTeam == _currentSubCircle.CurrentTeam;
         if (isOnMyTeam) {
             return;
         }
@@ -206,7 +206,10 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
             var isProvoke = message.Effect.m_effectType is kSpellEffects.kTaunt;
 
             int hateValue;
-            if (isPacify) {
+            if (message.Effect.m_effectType == kSpellEffects.kModifyHate) {
+                hateValue = message.Effect.m_effectParam;
+            }
+            else if (isPacify) {
                 hateValue = -_pacifyAggroDecrease;
             }
             else if (isProvoke) {
@@ -290,11 +293,22 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
     }
 
     private COMBAT_106_PROTOCOL.MSG_ACTORCOMBATMOVE DetermineTurnAction() {
-        // If I'm stunned, pass.
+        // If I'm stunned, pass. The resolver ticks the stun down when the action resolves.
         if (_currentSubCircle.CombatParticipant.m_stunned > 0) {
-            _currentSubCircle.CombatParticipant.m_stunned--;
-
             Logger.Debug("Duel {0} | Slot {1} | Stunned. Passing.",
+                Logger.Args(_currentDuelComponent.SigilId, _currentSubCircle.SlotIndex));
+
+            return new COMBAT_106_PROTOCOL.MSG_ACTORCOMBATMOVE {
+                Actor = Entity.SelfRef,
+                MoveType = (byte) CombatMoveType.Pass,
+                SpellSelection = 0,
+                SpellTarget = 0,
+            };
+        }
+
+        // todo: a lone controlled creature has no enemy to pick and passes (guess, unconfirmed).
+        if (_currentSubCircle.IsMindControlled && !GetControlledEnemies().Any()) {
+            Logger.Debug("Duel {0} | Slot {1} | Mind controlled with no enemy. Passing.",
                 Logger.Args(_currentDuelComponent.SigilId, _currentSubCircle.SlotIndex));
 
             return new COMBAT_106_PROTOCOL.MSG_ACTORCOMBATMOVE {
@@ -563,7 +577,18 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
         UpdateHateTable(targetIdx, 1);
     }
 
+    private IEnumerable<CombatDuelSubCircle> GetControlledEnemies()
+        => _currentDuelComponent.ActiveSubCircles
+            .Where(x => x.IsAlive && x.CurrentTeam != _currentSubCircle.CurrentTeam && CombatParticipantStates.CanBeTargeted(x));
+
     private int GetMostHatedTarget() {
+        // A controlled creature picks a random enemy of its current team instead of using its hate table.
+        if (_currentSubCircle.IsMindControlled) {
+            var enemies = GetControlledEnemies().ToArray();
+
+            return enemies.Length == 0 ? 0 : enemies[_random.Next(enemies.Length)].SlotIndex;
+        }
+
         var orderedHateTable = _hateTable.OrderByDescending(x => x.Value);
 
         // Pick the highest hated target that is still alive.
@@ -573,7 +598,7 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
                 continue;
             }
 
-            if (target.IsAlive) {
+            if (target.IsAlive && CombatParticipantStates.CanBeTargeted(target)) {
                 return targetIdx;
             }
         }

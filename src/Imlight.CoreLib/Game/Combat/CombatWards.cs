@@ -74,6 +74,7 @@ internal static class CombatWards {
             kHangingDisposition.kHarmful => harmfulWards,
             _ => [.. beneficialWards, .. harmfulWards]
         };
+        wards = CombatDamageModifiers.WithoutOverTimeWards(wards, spellEffect);
 
         return [.. wards.DistinctBy(x => x.m_spellTemplateID)];
     }
@@ -86,6 +87,10 @@ internal static class CombatWards {
     /// <returns>The modified incoming damage.</returns>
     internal static int GetIncomingDamageFromWards(List<SpellEffect> wards, int initialDamage = 0) {
         foreach (var ward in wards) {
+            if (CombatDamageModifiers.TryApplyIncomingModifier(ward, ref initialDamage)) {
+                continue;
+            }
+
             if (ward.m_effectType == kSpellEffects.kAbsorbDamage) {
                 // Absorbs will absorb the flat damage, up to the effect param.
                 var absorbAmount = ward.m_effectParam;
@@ -154,6 +159,8 @@ internal static class CombatWards {
     private static IEnumerable<SpellEffect> GetDamageWards(CombatDuelSubCircle target) => target._hangingEffects
             .Where(x => x.m_effectType is kSpellEffects.kModifyIncomingDamage
                                        or kSpellEffects.kAbsorbDamage
-                                       or kSpellEffects.kModifyIncomingDamageType);
+                                       or kSpellEffects.kModifyIncomingDamageType
+                                       or kSpellEffects.kModifyIncomingDamageOverTime
+                     || CombatDamageModifiers.IsIncomingModifier(x.m_effectType));
 
 }

@@ -93,6 +93,7 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
     private readonly CombatDuelSubCircle[] _subCircles = actorSubCircles;
     private CombatDuelSubCircle[] ActiveSubCircles => [.. _subCircles.Where(x => x.Occupied)];
     private List<QueuedCombatAction> _queuedCombatActions;
+    private Dictionary<CombatDuelSubCircle, int> _mindControlSnapshot = [];
 
     /// <summary>
     /// The team that plans and acts now. When set, the other team queues no moves and is not made to pass. When
@@ -117,6 +118,10 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
         // Some subcircles may not have queued actions. Ensure they do by adding a pass action.
         AddCasterPassActionIfNeeded();
         SortQueuedActions();
+
+        _mindControlSnapshot = _subCircles
+            .Where(x => x?.CombatParticipant is not null)
+            .ToDictionary(x => x, x => x.CombatParticipant.m_mindcontrolled);
 
         var cinematicTime = ProcessQueuedActions(combatActionListObj);
 
@@ -248,6 +253,7 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
             // Every participant this action kills plays a death before the next action.
             var aliveBeforeAction = ActiveSubCircles.Where(x => x.IsAlive).ToArray();
             cinematicTime += ProcessQueuedAction(action, combatActionList, cinematicTime);
+            CombatParticipantStates.EndTurn(action.SpellCaster);
             cinematicTime += aliveBeforeAction.Count(x => !x.IsAlive) * SpellCinematics.GetDeathTime();
         }
 
@@ -255,9 +261,12 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
     }
 
     private float ProcessQueuedAction(QueuedCombatAction action, CombatActionListObj combatActionList, float actionStartTime) {
+        TickMindControl(action.SpellCaster);
+
         // We want to invoke the overtime effects after we check for death.
         // This is because the overtime effects can kill a participant, and we want to see the animation.
         var cinematicTime = InvokeOverTimeEffects(action.SpellCaster);
+        cinematicTime += CombatTurnStart.Apply(action);
 
         // A caster an over-time tick kills loses its action; the client moves straight on to the next one.
         if (!action.SpellCaster.IsAlive) {
@@ -265,6 +274,19 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
                 Logger.Args(_duel.m_duelID.Full, action.SpellCaster.SlotIndex));
 
             return cinematicTime;
+        }
+
+        // A stunned caster loses this action whether or not a spell was queued.
+        // todo: the client ticks m_stunned on a turn only in alternating-turn duels, and plays its 2 s Unstunned stage on the first
+        // turn after a stun when m_stunnedDisplay is set; the server neither sets m_stunnedDisplay nor times that stage.
+        // todo: confirm whether a stunned client sends a move (else queue a pass at planning begin).
+        if (action.SpellCaster.CombatParticipant.m_stunned > 0) {
+            action.SpellCaster.CombatParticipant.m_stunned--;
+
+            Logger.Debug("Duel {0} | Slot {1} | Caster is stunned. Passing.",
+                Logger.Args(_duel.m_duelID.Full, action.SpellCaster.SlotIndex));
+
+            return cinematicTime + HandlePassAction(action, combatActionList);
         }
 
         // A null spell indicates the caster is passing their turn.
@@ -275,15 +297,9 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
             return cinematicTime + HandlePassAction(action, combatActionList);
         }
 
-        // If our target is gone or we're stunned, pass the turn.
-        // todo: the client ticks m_stunned on a turn only in alternating-turn duels, and plays its 2 s Unstunned stage on the first
-        // turn after a stun when m_stunnedDisplay is set; the server neither sets m_stunnedDisplay nor times that stage.
-        if (    action.SpellCaster.CombatParticipant.m_stunned > 0 
-            || !action.SelectedTarget.IsAlive
-            || !action.SelectedTarget.AddedToDuel) {
-            action.SpellCaster.CombatParticipant.m_stunned--;
-
-            Logger.Debug("Duel {0} | Slot {1} | Spell cannot occur because target is dead or caster is stunned.",
+        // If our target is gone, pass the turn.
+        if (!action.SelectedTarget.IsAlive || !action.SelectedTarget.AddedToDuel) {
+            Logger.Debug("Duel {0} | Slot {1} | Spell cannot occur because target is dead.",
                 Logger.Args(_duel.m_duelID.Full, action.SpellCaster.SlotIndex));
 
             return cinematicTime + HandlePassAction(action, combatActionList);
@@ -301,6 +317,20 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
         action.SpellCaster._duelActor.CurrentActionCinematicOffsetSeconds = actionStartTime + cinematicTime;
 
         return cinematicTime + HandleSuccessfulAction(action, combatActionList);
+    }
+
+    private void TickMindControl(CombatDuelSubCircle caster) {
+        var turns = caster.CombatParticipant.m_mindcontrolled;
+        if (turns < 1 || !_mindControlSnapshot.TryGetValue(caster, out var snapshot) || snapshot != turns) {
+            return;
+        }
+
+        // todo: confirm the client ticks m_mindcontrolled before the cast, and whether a controlled caster's AoE resolves by current team.
+        caster.EndMindControlTick();
+
+        Logger.Debug("Duel {0} | Slot {1} | Mind control ticked to {2} | Team {3}",
+            Logger.Args(_duel.m_duelID.Full, caster.SlotIndex, caster.CombatParticipant.m_mindcontrolled,
+                caster.CombatParticipant.m_teamID));
     }
 
     private float HandleFizzleAction(QueuedCombatAction action, CombatActionListObj combatActionList) {
@@ -505,6 +535,7 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
 
         // Deduce the players mana by the rank of the spell.
         caster.DeductMana(action.m_spell.m_pipCost.m_spellRank);
+        CombatShadowPips.DeductShadowPips(caster, action.m_spell);
 
         // X-pip spells spend what they used (same GetXPipCost that chose the tier).
         if (CombatActionResolver.IsXPipSpell(action.m_spell)) {

@@ -128,6 +128,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     public byte AliveAndInDuelCreatureCount
         => (byte) SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Monster && x.IsAlive && x.AddedToDuel);
     public ulong SigilId => Entity.ActiveGameObject.m_globalID;
+    internal CombatSigilTemplate SigilTemplate => _sigilTemplate;
     internal bool IsPvPDuel => _pvp is not null;
     internal uint PvPLeagueId => _pvp?.LeagueId ?? 0;
     private byte PlanningSeconds => IsPvPDuel ? PvPSettings.PracticePlanningSeconds : PLANNING_TIME;
@@ -463,6 +464,16 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         SendCurrentCombatHand(caster);
     }
 
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ACTORSETARCHMASTERYSCHOOL))]
+    private void ReceiveSetArchmasterySchool(COMBAT_106_PROTOCOL.MSG_ACTORSETARCHMASTERYSCHOOL message) {
+        var circle = SubCircles.FirstOrDefault(x => x.ParticipantActor == message.Actor);
+        if (circle is null || !CombatArchmastery.SelectSchool(circle, message.School)) {
+            return;
+        }
+
+        SendCombatPips();
+    }
+
     [MessageHandler(typeof(TUTORIAL_108_PROTOCOL.MSG_TUTORIALREBUILDDUELHAND))]
     private void ReceiveTutorialRebuildDuelHand(TUTORIAL_108_PROTOCOL.MSG_TUTORIALREBUILDDUELHAND message) {
         if (!_isActive) {
@@ -758,15 +769,12 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
                 return;
             }
 
-            var genericPips = circle.CombatParticipant.m_pipCount.m_genericPips;
-            var powerPips = circle.CombatParticipant.m_pipCount.m_powerPips;
             var participantPipData = new ParticipantPipData {
-                m_acq = 1,
+                m_acq = circle.AcquiredPipType,
                 m_partID = (GID) circle.ParticipantObject.m_globalID,
-                m_pips = new PipCount() {
-                    m_genericPips = genericPips,
-                    m_powerPips = powerPips,
-                }
+                m_pips = CombatPipPayment.Copy(circle.CombatParticipant.m_pipCount),
+                m_arch = circle.CombatParticipant.m_archmasterySchool,
+                m_archPoints = circle.CombatParticipant.m_archmasteryPoints,
             };
             pips.m_pipList.Add(participantPipData);
         });
@@ -1686,7 +1694,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
     private void DoPipGain(CombatTeam? onlyTeam = null) {
         EnactActionOnSubCircles(circle => {
-            if (!circle.AddedToDuel || !circle.IsAlive) {
+            if (!circle.AddedToDuel || !circle.IsAlive || circle.CombatParticipant.m_PipsSuspended) {
                 return;
             }
 
@@ -1695,6 +1703,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
             }
 
             circle.DoPipGain();
+            CombatShadowPips.RollShadowPip(circle);
+            CombatArchmastery.Accumulate(circle, SubCircles);
         });
 
         var pips = new List<string>();

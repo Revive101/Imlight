@@ -134,6 +134,7 @@ internal static class GameEffectFactory {
             case var _ when effectName.Contains("Block"): effect.m_blockRating = val; break;
             case var _ when effectName.Contains("PipConversion"): effect.m_pipConversionRating = val; break;
             case var _ when effectName.Contains("ShadowPipRating"): effect.m_shadowPipRating = val; break;
+            case var _ when effectName.Contains("Archmastery"): effect.m_archmastery = val; break;
             case var _ when effectName.Contains("PowerPip"): effect.m_powerPipBonusPercent = val; break;
             case var _ when effectName.Contains("ReduceDamage"): effect.m_damageReducePercent = val; break;
             case var _ when effectName.Contains("Damage"): effect.m_damageBonusPercent = val; break;

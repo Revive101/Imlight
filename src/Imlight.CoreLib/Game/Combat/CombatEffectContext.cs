@@ -21,10 +21,10 @@
  * 
  * PURPOSE:
  * Carries the per-action values every effect handler needs: the source spell's
- * template id and the rolled crit multiplier.
+ * template id, the rolled crit multiplier and the rolled stun resist.
  * 
  * USAGE EXAMPLE:
- * var context = new CombatEffectContext(spell.m_templateID, critMultiplier);
+ * var context = new CombatEffectContext(spell.m_templateID, critMultiplier, stunResistRoll);
  * CombatEffectApplicator.ApplyEffect(effect, charms, caster, targets, context);
  * 
  * NOTE:
@@ -45,4 +45,5 @@ namespace Imlight.CoreLib.Game.Combat;
 /// </summary>
 /// <param name="SpellTemplateId">The template id of the spell being cast.</param>
 /// <param name="CritMultiplier">The crit multiplier rolled for the action.</param>
-internal readonly record struct CombatEffectContext(uint SpellTemplateId, float CritMultiplier);
+/// <param name="StunResistRoll">The 1-100 stun resist roll rolled for the action.</param>
+internal readonly record struct CombatEffectContext(uint SpellTemplateId, float CritMultiplier, int StunResistRoll);

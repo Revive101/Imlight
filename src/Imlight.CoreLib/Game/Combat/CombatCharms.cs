@@ -95,7 +95,7 @@ internal static class CombatCharms {
             }
         }
 
-        return [.. appliedCharms.DistinctBy(x => x.m_spellTemplateID)];
+        return [.. appliedCharms.DistinctBy(x => x.m_spellTemplateID), .. CombatDamageModifiers.FindOutgoingModifiers(caster, effects)];
     }
 
     /// <summary>
@@ -106,6 +106,10 @@ internal static class CombatCharms {
     /// <returns>The calculated outgoing damage.</returns>
     internal static int GetOutgoingDamageFromCharms(SpellEffect[] charms, int initialDamage = 0) {
         foreach (var charm in charms) {
+            if (CombatDamageModifiers.IsOutgoingModifier(charm.m_effectType)) {
+                continue;
+            }
+
             var damageChange = charm.m_effectParam / 100.0f;
             initialDamage = (int) Math.Floor(initialDamage * (1 + damageChange));
         }

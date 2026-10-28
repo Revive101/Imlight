@@ -50,7 +50,9 @@ using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
+using Imlight.CoreLib.Game.Combat;
 using Imlight.CoreLib.Game.DropTables;
+using Imlight.CoreLib.Game.Spells;
 using Imlight.CoreLib.Shared.Items;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
@@ -197,6 +199,19 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
             Actor = SessionActor.ActorRef
         };
         _currentDuelActor.Tell(msg);
+    }
+
+    [MessageHandler(typeof(WIZARD3_56_PROTOCOL.MSG_SetDeckArchmastery))]
+    private void ReceiveSetDeckArchmastery(WIZARD3_56_PROTOCOL.MSG_SetDeckArchmastery message) {
+        if (!CombatPipPayment.IsSchoolPipSchool(message.School)) {
+            return;
+        }
+
+        DeckArchmastery.SetSchool(GetActiveWizard(), message.ItemGID, message.School);
+        _currentDuelActor?.Tell(new COMBAT_106_PROTOCOL.MSG_ACTORSETARCHMASTERYSCHOOL {
+            Actor = SessionActor.ActorRef,
+            School = message.School
+        });
     }
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_CHEATINSTAWIN))]

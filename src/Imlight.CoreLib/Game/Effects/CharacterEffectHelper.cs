@@ -228,8 +228,10 @@ internal static class CharacterEffectHelper {
         stats.m_baseMana += (int) statistic.m_manaBonus;
         stats.m_energyMax += (int) statistic.m_energyBonus;
         stats.m_powerPipBonusPercentAll += statistic.m_powerPipBonusPercent;
+        stats.m_archmasteryBonus += statistic.m_archmastery;
         stats.m_healBonusPercentAll += statistic.m_healBonusPercent;
         stats.m_healIncBonusPercentAll += statistic.m_healIncBonusPercent;
+        stats.m_bonusShadowPipRating += statistic.m_shadowPipRating;
 
         if (effectName.Contains("Damage") && !effectName.Contains("Reduce")) {
             ApplyDamageIncrease(stats, effectName, statistic);
@@ -277,8 +279,10 @@ internal static class CharacterEffectHelper {
         stats.m_baseMana -= (int) statistic.m_manaBonus;
         stats.m_energyMax -= (int) statistic.m_energyBonus;
         stats.m_powerPipBonusPercentAll -= statistic.m_powerPipBonusPercent;
+        stats.m_archmasteryBonus -= statistic.m_archmastery;
         stats.m_healBonusPercentAll -= statistic.m_healBonusPercent;
         stats.m_healIncBonusPercentAll -= statistic.m_healIncBonusPercent;
+        stats.m_bonusShadowPipRating -= statistic.m_shadowPipRating;
 
         if (effectName.Contains("Damage") && !effectName.Contains("Reduce")) {
             RemoveDamageIncrease(stats, effectName, statistic);

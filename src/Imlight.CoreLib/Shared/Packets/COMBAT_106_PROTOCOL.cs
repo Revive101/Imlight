@@ -154,6 +154,7 @@ public sealed class COMBAT_106_PROTOCOL : IServerProtocol {
         public int CombatLevel;
         public MagicSchool MagicSchool;
         public List<SpellData> SpellList;
+        public bool IsBoss;
 
     }
 
@@ -287,6 +288,16 @@ public sealed class COMBAT_106_PROTOCOL : IServerProtocol {
 
         public byte MessageOrder => 28;
         public byte ServiceID => 106;
+
+    }
+
+    internal sealed class MSG_ACTORSETARCHMASTERYSCHOOL : IServerMessage {
+
+        public byte MessageOrder => 29;
+        public byte ServiceID => 106;
+
+        public IActorRef Actor;
+        public uint School;
 
     }
 

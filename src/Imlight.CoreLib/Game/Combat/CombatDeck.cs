@@ -61,6 +61,9 @@ internal class CombatDeck {
     private readonly List<CombatDeckSpellData> _usedUpSpellData;
     private readonly List<CombatDeckSpellData> _treasureVaultUsed;
     private readonly List<Spell> _cardsDiscardedThisTurn;
+    private readonly List<uint> _topOfPile = [];
+    private readonly List<uint> _addedRandomPool = [];
+    private readonly HashSet<Spell> _addedCards = new(ReferenceEqualityComparer.Instance);
 
     // ctor
     internal CombatDeck(List<CombatDeckSpellData> spellDatas, List<CombatDeckSpellData> treasureVault, byte handSize) {
@@ -107,6 +110,11 @@ internal class CombatDeck {
         foreach (var spell in _cardsDiscardedThisTurn) {
             LastGivenHand.Remove(spell);
 
+            // Added battle cards were never part of the deck's counts, so they leave no trace.
+            if (_addedCards.Remove(spell)) {
+                continue;
+            }
+
             var spellData = _usedUpSpellData.FirstOrDefault(s => s.TemplateId == spell.m_templateID);
             if (spellData == null) {
                 // The spell may not be in this list if the previous hand used them all.
@@ -126,8 +134,24 @@ internal class CombatDeck {
         // Refill the hand with new cards.
         var cardsToRefill = _handSize - LastGivenHand.Count;
         for (var i = 0; i < cardsToRefill; i++) {
-            if (RemainingCardCount <= 0) {
+            if (_topOfPile.Count > 0) {
+                newCards.Add(CreateAddedCard(_topOfPile[0]));
+                _topOfPile.RemoveAt(0);
+
+                continue;
+            }
+
+            var poolCount = _addedRandomPool.Count;
+            if (RemainingCardCount + poolCount <= 0) {
                 break; // No more spells available.
+            }
+
+            var pick = Random.Shared.Next(0, RemainingCardCount + poolCount);
+            if (pick < poolCount) {
+                newCards.Add(CreateAddedCard(_addedRandomPool[pick]));
+                _addedRandomPool.RemoveAt(pick);
+
+                continue;
             }
 
             var randomIndex = Random.Shared.Next(0, _usedUpSpellData.Count);
@@ -158,6 +182,39 @@ internal class CombatDeck {
     }
 
     /// <summary>
+    /// Adds copies of a battle card to the deck, either on top of the draw pile or to the random pool.
+    /// </summary>
+    /// <param name="templateId">The template id of the spell to add.</param>
+    /// <param name="copies">How many copies to add.</param>
+    /// <param name="onTop">Whether the copies go on top of the draw pile instead of the random pool.</param>
+    /// <returns>True if the copies were added, false if the template is not a spell.</returns>
+    internal bool AddBattleCards(uint templateId, int copies, bool onTop) {
+        if (SpellFactory.GetSpell(templateId) is null) {
+            return false;
+        }
+
+        for (var i = 0; i < Math.Max(1, copies); i++) {
+            if (onTop) {
+                _topOfPile.Insert(0, templateId);
+            }
+            else {
+                _addedRandomPool.Add(templateId);
+            }
+        }
+
+        return true;
+    }
+
+    private Spell CreateAddedCard(uint templateId) {
+        var spell = SpellFactory.GetSpell(templateId)
+            ?? throw new InvalidOperationException("Spell could not be created from template id.");
+        spell.m_battleCard = true;
+        _addedCards.Add(spell);
+
+        return spell;
+    }
+
+    /// <summary>
     /// Discards a spell from the current hand. Treasure cards are returned to the vault.
     /// </summary>
     /// <param name="spell">The spell to discard.</param>
@@ -179,6 +236,7 @@ internal class CombatDeck {
     internal void ClearHand() {
         LastGivenHand.Clear();
         _cardsDiscardedThisTurn.Clear();
+        _addedCards.Clear();
         TreasureCardsInHand = 0;
     }
 
@@ -307,6 +365,8 @@ internal class CombatDeck {
         }
 
         _cardsDiscardedThisTurn.Clear();
+
+        // todo: unconfirmed whether battle cards return on reshuffle. For now, undrawn added cards stay queued and drawn ones are gone.
     }
     
 }
