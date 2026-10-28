@@ -488,6 +488,22 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
     }
 
     /// <summary>
+    /// Sent by a bank NPC to the BankService of the player who picked its bank option: the bank counts as open
+    /// until the window is closed, the zone changes or the session attaches again.
+    /// </summary>
+    public sealed class MSG_BEGINBANKSESSION : IServerMessage {
+
+        public byte MessageOrder { get; } = 63;
+        public byte ServiceID { get; } = 103;
+
+        /// <summary>
+        /// The global id of the bank NPC.
+        /// </summary>
+        public ulong EntityId;
+
+    }
+
+    /// <summary>
     /// Internal timer message and request to the RentalService: expires every rental of the player that has run out,
     /// then arms the timer for the next one.
     /// </summary>
@@ -507,6 +523,21 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
         public byte ServiceID { get; } = 103;
 
         public ulong ItemId;
+
+    }
+
+    /// <summary>
+    /// Sent by the owner's session to a friend who was made a decorator of a house, or taken off its decorators.
+    /// </summary>
+    public sealed class MSG_DECORATORBUDDYFWD : IServerMessage {
+
+        public byte MessageOrder { get; } = 64;
+        public byte ServiceID { get; } = 103;
+
+        public ulong TargetCharId;
+        public ulong LotGid;
+        public bool Added;
+        public ByteString OwnerName;
 
     }
 

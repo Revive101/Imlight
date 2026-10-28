@@ -45,9 +45,12 @@ internal sealed class ResTeleportHandler : BaseResultHandler<ResTeleport> {
             return false;
         }
 
+        var destinationZone = Result.m_destinationZone;
+        var destinationLocation = Result.m_destinationLoc;
+
         var msg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
-            DestinationZone = Result.m_destinationZone,
-            DestinationLocation = Result.m_destinationLoc,
+            DestinationZone = destinationZone,
+            DestinationLocation = destinationLocation,
             SendToClient = true,
             OwnerCharId = playerObj.m_characterId
         };

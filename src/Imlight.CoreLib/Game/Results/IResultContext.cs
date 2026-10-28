@@ -64,6 +64,12 @@ public interface IResultContext {
     float GetXpScale() => 1f;
 
     /// <summary>
+    /// Gets the path of the zone the results run in, if applicable
+    /// </summary>
+    /// <returns>The zone path, or null when the results do not belong to a zone</returns>
+    string GetZonePath() => null;
+
+    /// <summary>
     /// Gets whether the results run for a player who spawned inside the volume that raised the event.
     /// </summary>
     /// <returns>True until the results first wait</returns>

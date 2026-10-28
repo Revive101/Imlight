@@ -40,7 +40,7 @@
  * 
  * Created by: Jay
  * Version: KALI 1.0
- * Last Updated: 09/26/2026
+ * Last Updated: 10/15/2026
  */
 
 using System;
@@ -49,6 +49,7 @@ using System.Linq;
 using Akka.Actor;
 using Imcodec.Math;
 using Imcodec.MessageLayer.Generated;
+using Imlight.Common;
 using Imlight.CoreLib.Game.Groups;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
@@ -198,12 +199,7 @@ internal class GroupService(SessionActor sessionActor) : MessageService(sessionA
             return;
         }
 
-        Teleport(
-            destinationZone: target.CurrentZone,
-            destinationLocation: Util.GetCompactStringFromVector((Vector4) targetCharacter.Wizard.Location),
-            doTeleportEffects: true,
-            ownerCharId: targetCharId
-        );
+        TeleportToPlayer(targetCharacter.Wizard, targetCharId, target.CurrentZone);
     }
 
     [MessageHandler(typeof(WIZARD2_53_PROTOCOL.MSG_GotoPlayerConfirm))]

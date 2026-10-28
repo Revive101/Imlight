@@ -62,11 +62,13 @@ Your command context will not drop. If you select a player, that player will sti
 | levelup | Quality Assurance | `.mod levelup` | Levels up your character. |
 | level | Quality Assurance | `.mod level $level` | Levels up your character to a certain level. |
 | speed | Quality Assurance | `.mod speed $speed`| Changes your speed. The number matches the ingame, so `40` would give you mount speed. |
-| additem | Quality Assurance | `.mod additem $id` | Adds an item to your inventory by ID. |
+| additem | Quality Assurance | `.mod additem $id` | Adds an item to your inventory by ID. When the inventory is full it goes to the bank, a jewel to the shared bank first. |
 | addsnack | Quality Assurance | `.mod addsnack $id` | Adds a snack to your pet snack bag. |
 | name | Quality Assurance | `.mod name $newName` | Adds a new name override to your character. |
 | maxgold | Quality Assurance | `.mod maxgold $newMaxGold` | Changes the amount of max gold you can carry. |
 | addgold | Quality Assurance | `.mod addgold $gold` | Adds gold to your wizard. |
+| maxbank | Quality Assurance | `.mod maxbank $limit` | Sets how many items your bank holds. |
+| expandbank | Quality Assurance | `.mod expandbank` | Raises your bank capacity by the configured elixir amount, up to the configured maximum. |
 | maxhealth | Quality Assurance | `.mod maxhealth $newHealth` | Changes your base health value. |
 | maxmana | Quality Assurance | `.mod maxmana $newMana` | Changes your base mana value. |
 | maxenergy | Quality Assurance | `.mod maxenergy $newValue` | Changes the maximum energy of your character. |

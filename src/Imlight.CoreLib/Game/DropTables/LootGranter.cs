@@ -53,6 +53,7 @@ using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.Types;
 using Imlight.Common;
+using Imlight.CoreLib.Game.Bank;
 using Imlight.CoreLib.Game.Spells;
 using Imlight.CoreLib.Shared.Items;
 using Imlight.CoreLib.Shared.Packets;
@@ -284,18 +285,20 @@ public static class LootGranter {
     }
 
     internal static bool GrantItem(IActorRef playerActor, Wizard wizard, DropItemResult item, ulong templateId) {
-        if (!wizard.AddItemToInventory(templateId, out var addedItem)) {
-            Logger.Error("Failed to add item {0} to wizard {1}'s inventory.",
+        if (!wizard.TryCreateItem(templateId, out var createdItem)) {
+            Logger.Error("Failed to create item {0} for wizard {1}.",
                 Logger.Args(item.ItemId, wizard.CharId));
 
             return false;
         }
 
-        // The attach payload (which carries the inventory) was already sent, so push each
-        // item to the client explicitly or the reward stays invisible this session.
-        ItemSync.SendAdded(playerActor, wizard, addedItem);
+        // The attach payload (which carries the inventory) was already sent, so push each item
+        // to the client explicitly or the reward stays invisible this session. An item that
+        // overflows into the bank is told before the loot popup, which shows it with the bank wording.
+        var placement = ItemPlacement.Place(wizard, createdItem);
+        ItemPlacement.Announce(playerActor, wizard, createdItem, placement);
 
-        return true;
+        return placement != Placement.Lost;
     }
 
     private static void GrantSpell(IActorRef playerActor, Wizard wizard, DropTableResult results,

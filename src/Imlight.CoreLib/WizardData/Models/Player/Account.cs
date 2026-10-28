@@ -97,6 +97,7 @@ public class Account {
     public bool IsLocked { get; set; }
     public int PurchasedCharacterSlots { get; set; }
     public int Crowns { get; set; }
+    public AccountSharedBank SharedBank { get; set; } = new();
     public List<Mail> GiftMailbox { get; set; } = new();
 
     [JsonIgnore] public List<Wizard> Characters = new();

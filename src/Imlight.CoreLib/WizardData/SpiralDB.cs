@@ -67,6 +67,7 @@ public static class SpiralDB {
         = new(StringComparer.OrdinalIgnoreCase);
     private static ConcurrentDictionary<ulong, NpcTreasureCardInventory> s_treasureCardInventories = new();
     private static ConcurrentDictionary<ulong, NpcSeamstress> s_npcSeamstresses = new();
+    private static ConcurrentDictionary<ulong, NpcBank> s_npcBanks = new();
     private static ConcurrentDictionary<uint, BadgeDefinition> s_badgeDefinitions = new();
     private static readonly Regex s_statueIdPattern = new("^[a-z0-9-]{1,32}$", RegexOptions.Compiled);
     private static ConcurrentDictionary<string, PlayerStatue> s_playerStatues
@@ -83,6 +84,7 @@ public static class SpiralDB {
     public static IReadOnlyDictionary<string, WizardZoneData> ZoneData => s_zoneData;
     public static IReadOnlyDictionary<ulong, NpcTreasureCardInventory> TreasureCardInventories => s_treasureCardInventories;
     public static IReadOnlyDictionary<ulong, NpcSeamstress> NpcSeamstresses => s_npcSeamstresses;
+    public static IReadOnlyDictionary<ulong, NpcBank> NpcBanks => s_npcBanks;
     public static IReadOnlyDictionary<uint, BadgeDefinition> BadgeDefinitions => s_badgeDefinitions;
     public static IReadOnlyDictionary<string, PlayerStatue> PlayerStatues => s_playerStatues;
 
@@ -155,6 +157,7 @@ public static class SpiralDB {
             var zoneData = new ConcurrentDictionary<string, WizardZoneData>(StringComparer.OrdinalIgnoreCase);
             var treasureCardInventories = new ConcurrentDictionary<ulong, NpcTreasureCardInventory>();
             var npcSeamstresses = new ConcurrentDictionary<ulong, NpcSeamstress>();
+            var npcBanks = new ConcurrentDictionary<ulong, NpcBank>();
             var badgeDefinitions = new ConcurrentDictionary<uint, BadgeDefinition>();
             var playerStatues = new ConcurrentDictionary<string, PlayerStatue>(StringComparer.OrdinalIgnoreCase);
 
@@ -169,6 +172,7 @@ public static class SpiralDB {
                 () => Interlocked.Add(ref filesLoaded, LoadNpcDropTables(basePath, npcDropTables)),
                 () => Interlocked.Add(ref filesLoaded, LoadTreasureCardInventories(basePath, treasureCardInventories)),
                 () => Interlocked.Add(ref filesLoaded, LoadNpcSeamstresses(basePath, npcSeamstresses)),
+                () => Interlocked.Add(ref filesLoaded, LoadNpcBanks(basePath, npcBanks)),
                 () => Interlocked.Add(ref filesLoaded, LoadQuestTemplates(basePath, questTemplatesBag, questTemplatesByName)),
                 () => Interlocked.Add(ref filesLoaded, LoadZoneData(basePath, zoneData)),
                 () => Interlocked.Add(ref filesLoaded, LoadBadgeDefinitions(basePath, badgeDefinitions)),
@@ -188,13 +192,14 @@ public static class SpiralDB {
             s_zoneData = zoneData;
             s_treasureCardInventories = treasureCardInventories;
             s_npcSeamstresses = npcSeamstresses;
+            s_npcBanks = npcBanks;
             s_badgeDefinitions = badgeDefinitions;
             s_playerStatues = playerStatues;
 
             Logger.Information(
                 "SpiralDB loaded {Files} files: {Spellbooks} spellbooks, {DropTables} drop tables, {NpcInventories} NPC inventories, " +
                 "{NpcSpellInventories} NPC spell inventories, {NpcDropTables} NPC drop tables, {TreasureCardInventories} treasure card inventories, " +
-                "{QuestTemplates} quest templates, {ZoneData} zone data entries, {Seamstresses} seamstress NPCs, {Badges} badge definitions, {PlayerStatues} player statues.",
+                "{QuestTemplates} quest templates, {ZoneData} zone data entries, {Seamstresses} seamstress NPCs, {Badges} badge definitions, {PlayerStatues} player statues, {BankNpcs} bank NPCs.",
                 Logger.Args(
                     filesLoaded,
                     s_creatureSpellbooks.Count,
@@ -207,7 +212,8 @@ public static class SpiralDB {
                     s_zoneData.Count,
                     s_npcSeamstresses.Count,
                     s_badgeDefinitions.Count,
-                    s_playerStatues.Count));
+                    s_playerStatues.Count,
+                    s_npcBanks.Count));
         }
         catch (Exception ex) {
             Logger.Error("SpiralDB could not be loaded. {Exception}", Logger.Args(ex));
@@ -221,6 +227,7 @@ public static class SpiralDB {
                 s_npcDropTables.Clear();
                 s_treasureCardInventories.Clear();
                 s_npcSeamstresses.Clear();
+                s_npcBanks.Clear();
                 s_questTemplates.Clear();
                 s_questTemplatesByName.Clear();
                 s_zoneData.Clear();
@@ -337,6 +344,9 @@ public static class SpiralDB {
 
     public static bool TryGetNpcSeamstress(ulong templateID, out NpcSeamstress npcSeamstress)
         => s_npcSeamstresses.TryGetValue(templateID, out npcSeamstress);
+
+    public static bool TryGetNpcBank(ulong templateID, out NpcBank npcBank)
+        => s_npcBanks.TryGetValue(templateID, out npcBank);
 
     public static bool TryGetBadgeDefinition(uint badgeId, out BadgeDefinition badgeDefinition)
         => s_badgeDefinitions.TryGetValue(badgeId, out badgeDefinition);
@@ -556,6 +566,31 @@ public static class SpiralDB {
                 }
             } catch (Exception e) {
                 Logger.Warning("SpiralDB NPC seamstress {File} could not be read and was skipped: {Reason}",
+                    Logger.Args(Path.GetFileName(file), e.Message));
+            }
+        });
+
+        return count;
+    }
+
+    private static int LoadNpcBanks(string basePath, ConcurrentDictionary<ulong, NpcBank> target) {
+        var dir = Path.Combine(basePath, "NpcBank");
+        if (!Directory.Exists(dir)) {
+            return 0;
+        }
+        var files = Directory.GetFiles(dir, "*.json");
+        var count = 0;
+
+        Parallel.ForEach(files, file => {
+            try {
+                using var stream = File.OpenRead(file);
+                var bank = JsonSerializer.Deserialize<NpcBank>(stream, s_jsonOptions);
+                if (bank != null) {
+                    target[bank.TemplateID] = bank;
+                    Interlocked.Increment(ref count);
+                }
+            } catch (Exception e) {
+                Logger.Warning("Failed to load NPC bank {0}: {1}",
                     Logger.Args(Path.GetFileName(file), e.Message));
             }
         });

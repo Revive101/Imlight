@@ -29,13 +29,14 @@
  * 
  * NOTE:
  * - In memory only: an assignment cannot outlive the session that made it.
- * - Read by AttachService, because the client attaches again after every zone transfer.
+ * - Read by AttachService, because the client attaches again after every zone transfer. A house overrides it: the
+ *   attach always lands in the owner's container, so the lot decides and nothing is assigned for a visit.
  * 
  * TODO:
  * 
  * Created by: Jay
  * Version: KALI 1.0
- * Last Updated: 10/14/2026
+ * Last Updated: 10/15/2026
  */
 
 using System;
@@ -81,6 +82,20 @@ internal static class ZoneInstanceOwners {
         ownerCharId = 0;
 
         return zoneName is not null && s_owners.TryGetValue((charId, zoneName), out ownerCharId);
+    }
+
+    /// <summary>
+    /// Decides which instance container an attach lands in and whether the zone is private to it. A house is always in
+    /// its owner's container, whoever visits; otherwise an assignment decides; otherwise the character's own container.
+    /// </summary>
+    /// <param name="charId">The character who attaches.</param>
+    /// <param name="zoneName">The zone name, compared without regard to case.</param>
+    /// <param name="houseOwnerCharId">The owner of the house the character attaches to, or 0 for a zone that is not a house.</param>
+    /// <returns>The owner of the container, and whether the zone is private to it.</returns>
+    internal static (ulong OwnerCharId, bool IsPrivate) Resolve(ulong charId, string zoneName, ulong houseOwnerCharId) {
+        var hasOwner = houseOwnerCharId != 0 || TryGetOwner(charId, zoneName, out houseOwnerCharId);
+
+        return (hasOwner ? houseOwnerCharId : charId, hasOwner || IsAlwaysPrivate(zoneName));
     }
 
     /// <summary>

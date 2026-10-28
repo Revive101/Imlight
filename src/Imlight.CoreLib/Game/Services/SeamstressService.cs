@@ -41,7 +41,6 @@ using Akka.Actor;
 using Imcodec.MessageLayer.Generated;
 using Imlight.CoreLib.Game.Seamstress;
 using Imlight.CoreLib.Shared.Networking;
-using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Services;
@@ -67,10 +66,6 @@ internal class SeamstressService(SessionActor sessionActor) : MessageService(ses
 
     private SeamstressRequests CreateRequests(Wizard wizard)
         => new(wizard, SessionActor.ActorRef, GetZoneObject, GetActiveGameObject, UnequipItem);
-
-    private bool UnequipItem(ulong itemId)
-        => AskOtherService<CHARACTER_103_PROTOCOL.MSG_UNEQUIPITEMRSP>(
-            new CHARACTER_103_PROTOCOL.MSG_UNEQUIPITEM { ItemId = itemId }).Success;
 
     private void SendConfirm(Wizard wizard, bool success)
         => SendToSocket(new WIZARD_12_PROTOCOL.MSG_STITCHITEMSCONFIRM {

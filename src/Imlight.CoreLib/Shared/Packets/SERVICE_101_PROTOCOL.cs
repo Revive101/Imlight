@@ -17,6 +17,7 @@
  */
 
 using System.Collections.Generic;
+using Imlight.CoreLib.Game.Housing.Access;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Game.Minigames;
 using Imlight.CoreLib.Shared.Networking;
@@ -123,6 +124,7 @@ internal sealed class SERVICE_101_PROTOCOL : IServerProtocol {
         public string DestinationLocation;
         public bool MakePrivate;
         public ulong OwnerCharId;
+        public HouseEntry HouseEntry;
 
     }
 
@@ -170,7 +172,7 @@ internal sealed class SERVICE_101_PROTOCOL : IServerProtocol {
         public ulong UserId;
         public ulong CharId;
         public string FallbackZone;
-        public uint FallbackZoneId;
+        public ulong FallbackZoneId;
         public string FallbackLocation;
         public string GameServerIp;
         public ushort GameServerPort;
@@ -204,7 +206,7 @@ internal sealed class SERVICE_101_PROTOCOL : IServerProtocol {
         public ulong UserId;
         public ulong CharId;
         public string FallbackZone;
-        public uint FallbackZoneId;
+        public ulong FallbackZoneId;
         public string FallbackLocation;
         public string GameServerIp;
         public ushort GameServerPort;
@@ -231,6 +233,16 @@ internal sealed class SERVICE_101_PROTOCOL : IServerProtocol {
     public class MSG_SYNC_PET_FOR_MOUNT : IServerMessage {
 
         public byte MessageOrder { get; } = 20;
+        public byte ServiceID { get; } = 101;
+
+    }
+
+    /// <summary>
+    /// Timer signal indicating the client never confirmed that the house zone is ready.
+    /// </summary>
+    public class MSG_DEEDZONE_TIMEOUT : IServerMessage {
+
+        public byte MessageOrder { get; } = 22;
         public byte ServiceID { get; } = 101;
 
     }

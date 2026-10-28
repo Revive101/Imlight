@@ -31,6 +31,7 @@
  * - Supports item equip and unequip operations
  * - Manages equipment-related effects and broadcasts
  * - Implements security checks for suspicious equipment actions
+ * - A house is equipped in the Islands and Structure slots, which only house items fit (HouseEquipment)
  * 
  * TODO:
  * - Enhance error handling for equipment transfers
@@ -53,6 +54,7 @@ using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.Types;
 using Imlight.Common;
+using Imlight.CoreLib.Game.Housing.Houses;
 using Imlight.CoreLib.Game.Effects;
 using Imlight.CoreLib.Game.Elixirs;
 using Imlight.CoreLib.Game.Pet;
@@ -162,6 +164,18 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
         if (RentalItems.TryGetBehavior(item, out var rental) && RentalItems.IsDue(rental, DateTimeOffset.UtcNow.ToUnixTimeSeconds())) {
             Logger.Debug("Player tried to equip rental {0}, which has run out.", Logger.Args(itemId));
             TellOtherServices(new CHARACTER_103_PROTOCOL.MSG_CHECKRENTALS());
+
+            return;
+        }
+
+        // A house goes in a house slot and nothing else does.
+        if (!HouseEquipment.Allows(item, message.SlotName)) {
+            var infractionText = $"Player tried to equip item {itemId} in slot {message.SlotName}, which does not take it!";
+            account.AddInfraction(InfractionType.SuspiciousBehavior, infractionText);
+
+            Logger.Warning("Player tried to equip item {0} in slot {1}, which does not take it."
+                        + " This has been logged as suspicious behavior.",
+                Logger.Args(itemId, message.SlotName));
 
             return;
         }
@@ -696,7 +710,7 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
                 levelUpElixir,
                 SendToSocket,
                 (msg, selfless, target) => ZoneBroadcast(msg, selfless, target),
-                Teleport,
+                (zone, doEffects, makePrivate, ownerCharId, location) => Teleport(zone, doEffects, makePrivate, ownerCharId, location),
                 PlaySound
             );
             return;

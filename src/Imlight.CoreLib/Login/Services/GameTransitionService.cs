@@ -43,6 +43,7 @@ using Imcodec.Math;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.Types;
 using Imlight.Common;
+using Imlight.CoreLib.Game.Housing.Houses;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
@@ -178,12 +179,12 @@ internal class GameTransitionService(SessionActor sessionActor) : MessageService
 
     private string DetermineZone(Wizard wizard) {
         // The player may have logged out in a zone we can't put them back into.
-        if (!IsMinigameZone(wizard.Zone)) {
+        if (!IsUnreachableOnLogin(wizard.Zone)) {
             return wizard.Zone;
         }
 
-        // A transfer started inside a minigame zone also saves that zone as the previous one.
-        return string.IsNullOrEmpty(wizard.PreviousZone) || IsMinigameZone(wizard.PreviousZone)
+        // A transfer started inside a minigame or house zone also saves that zone as the previous one.
+        return string.IsNullOrEmpty(wizard.PreviousZone) || IsUnreachableOnLogin(wizard.PreviousZone)
             ? ConfigurationManager.Settings["Character.StartingZone"]
             : wizard.PreviousZone;
     }
@@ -191,13 +192,18 @@ internal class GameTransitionService(SessionActor sessionActor) : MessageService
     private static bool IsMinigameZone(string zone)
         => zone?.StartsWith(MinigameWorldPrefix) == true;
 
+    private static bool IsUnreachableOnLogin(string zone) {
+        // A house needs its lot from the Home button, and a login carries none.
+        return IsMinigameZone(zone) || HouseZoneIndex.IsHouseZone(zone);
+    }
+
     private string DetermineLocation(Wizard wizard) {
         if (wizard.Location == Vector3.Zero) {
             return "Start";
         }
 
         // The player may have logged out in a zone we can't put them back into.
-        if (IsMinigameZone(wizard.Zone)) {
+        if (IsUnreachableOnLogin(wizard.Zone)) {
             return "Start";
         }
 

@@ -36,7 +36,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/14/2026
+ * Last Updated: 10/15/2026
  */
 
 using System;
@@ -51,6 +51,9 @@ using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.Types;
 using Imlight.Common;
+using Imlight.CoreLib.Game.Housing.Access;
+using Imlight.CoreLib.Game.Housing.Attics;
+using Imlight.CoreLib.Game.Housing.Houses;
 using Imlight.CoreLib.Game.World;
 using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Networking;
@@ -196,9 +199,21 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
             CloseStaleSession();
         }
 
+        // The client chooses the zone and the lot, so a house zone has to be one the character may enter before it is loaded.
+        if (!HouseAttach.TryAuthorize(_wizard, zoneName, message.ZoneID, out var house, out _)) {
+            Logger.Warning("Session {SessionId} MSG_ATTACH refused: house zone {Zone} is not available to character {CharId}",
+                Logger.Args(SessionActor.SessionID, zoneName, _wizard.CharId));
+
+            SendToSocket(new GAME_5_PROTOCOL.MSG_ATTACHFAILED {
+                Error = 1
+            });
+
+            return;
+        }
+
         // Tell the game server that the user has attached, and now we need to find a zone process for their
         // zone, or create a new one. This is an internal zone transfer that does not involve the client.
-        var zoneDetails = InternalZoneTransfer(zoneName, location);
+        var zoneDetails = InternalZoneTransfer(zoneName, location, house?.OwnerCharId ?? 0);
         if (zoneDetails is null || zoneDetails.ErrorCode != 0) {
             Logger.Warning("Session {SessionId} could not enter zone {Zone}: the zone transfer failed with error {ErrorCode}.",
                 Logger.Args(SessionActor.SessionID, zoneName, zoneDetails?.ErrorCode ?? 1));
@@ -214,6 +229,11 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
         _wizard.SetZone(zoneName, zoneDetails.ZoneDisplayName);
         _wizard.SetPersistentLocation(zoneDetails.Location);
         _wizard.SetPersistentOrientation(zoneDetails.Orientation);
+
+        // The services that answer MSG_PRELOGIN read the lot, and the client's owner check reads it from the deed.
+        _wizard.AttachedLotGid = house?.LotGid ?? 0;
+        HouseDeeds.ApplyLots(_wizard);
+        AtticRegistry.Describe(_wizard);
 
         // Tiny anti-cheat measure. When the character object is created, we recalculate the game stats.
         CharacterHelper.RecalculateGameStats(_wizard);
@@ -270,7 +290,7 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
 
             // Set zone data.
             ZoneName = zoneName,
-            ZoneID = message.ZoneID,
+            ZoneID = house is null ? message.ZoneID : house.LotGid,
             DynamicZoneID = zoneDetails.DynamicZoneId,
             DynamicServerProcID = zoneDetails.DynamicZoneId,
             CriticalObjects = criticalObjectData,
@@ -278,7 +298,10 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
 
             // Misc
             ShowSubscriberIcon = 0,
-            TestServer = 0 // TODO: This must be disabled in order for gifts to work!
+            TestServer = 0,
+
+            // Every captured login sends 1, in every zone; the client hides its Pick Up All button while it is 0.
+            PickUpAllEnabled = 1
         };
 
         // Send MSG_PRELOGIN so other services may do their work before we send the final login complete message.
@@ -444,14 +467,14 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
         this._wizard = character;
     }
 
-    private ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP InternalZoneTransfer(string zoneName, string location) {
-        var hasAssignedOwner = ZoneInstanceOwners.TryGetOwner(_wizard.CharId, zoneName, out var assignedOwner);
+    private ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP InternalZoneTransfer(string zoneName, string location, ulong houseOwnerCharId = 0) {
+        var (ownerCharId, isPrivate) = ZoneInstanceOwners.Resolve(_wizard.CharId, zoneName, houseOwnerCharId);
         var zoneMsg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
             DestinationZone = zoneName,
             DestinationLocation = location,
             SendToClient = false,
-            OwnerCharId = hasAssignedOwner ? assignedOwner : _wizard.CharId,
-            IsPrivate = hasAssignedOwner || ZoneInstanceOwners.IsAlwaysPrivate(zoneName),
+            OwnerCharId = ownerCharId,
+            IsPrivate = isPrivate,
         };
 
         return AskOtherService<ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP>(zoneMsg);

@@ -28,6 +28,10 @@
  * for player inventory and economic interactions.
  * 
  * NOTE:
+ * The vendor and the housing shop both send MSG_SHOPBUYREQUEST, so both buy here.
+ * A house bought from a housing shop is issued through HouseDeeds, with its structure, and paid in the currency the
+ * client chose: gold at the item's cost, or Crowns at its Crowns cost. A deed past Housing.IslandLimit is refused, as the
+ * client refuses it.
  * 
  * TODO:
  * 
@@ -37,6 +41,7 @@
  */
 
 using System;
+using System.Linq;
 using Akka.Actor;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
@@ -51,6 +56,8 @@ using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.CoreLib.Game.Badges;
+using Imlight.CoreLib.Game.Housing;
+using Imlight.CoreLib.Game.Housing.Houses;
 using Imlight.CoreLib.Game.Pet;
 using Imlight.CoreLib.Game.Rentals;
 using Imlight.CoreLib.Game.Zone.Components;
@@ -65,6 +72,7 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
     // Public equipment carries each dye layer in 5 bits.
     private const int MaxDye = 31;
     private const PropertyFlags EquippedItemMask = PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit;
+    private const byte CROWNS_CURRENCY_TYPE = 1;
 
     private static readonly CoreObjectSerializer s_itemSerializer = new(
         behaviors: Imcodec.ObjectProperty.SerializerFlags.None
@@ -86,10 +94,11 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
             return;
         }
 
-        // Ensure that the interacted object is a vendor.
+        // Ensure that the interacted object is a vendor or a housing shop; both send this request.
         var vendorComponent = interactedObject.GetComponentOfType<InteractVendorComponent>();
-        if (vendorComponent is null) {
-            Logger.Warning("A shop purchase named NPC {NpcId}, which is not a vendor, so it is refused.",
+        var housingShopComponent = interactedObject.GetComponentOfType<InteractHousingShopComponent>();
+        if (vendorComponent is null && housingShopComponent is null) {
+            Logger.Warning("A shop purchase named NPC {NpcId}, which is neither a vendor nor a housing shop, so it is refused.",
                 Logger.Args(message.npcGlobalID));
             var shopDenyMsg = new WIZARD_12_PROTOCOL.MSG_SHOPBUYCONFIRM { Failure = 1 };
             SendToSocket(shopDenyMsg);
@@ -99,7 +108,7 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
 
         // Ensure that the vendor has the item that the player is trying to purchase.
         var itemTemplateID = new GID(message.ShopID).MParts.TemplateId;
-        if (!vendorComponent.HasItem((GID) message.ShopID)) {
+        if (!(vendorComponent?.HasItem((GID) message.ShopID) ?? housingShopComponent.HasItem((GID) message.ShopID))) {
             HandleIllegalPurchaseAttempt(itemTemplateID, message.npcGlobalID);
 
             return;
@@ -122,6 +131,20 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
             Logger.Warning("{0} tried to buy rental {1} while owning a rental of the same type.",
                 Logger.Args(playerWizard.PlayerNameBehavior.GetWizardName(), itemTemplateID));
             SendShopDenyMessage();
+
+            return;
+        }
+
+        if (HouseTemplates.TryGet(itemTemplateID, out var house)) {
+            if (!house.IsStructure && CountHeldDeeds(playerWizard) >= HousingSettings.IslandLimit) {
+                Logger.Warning("Character {CharId} holds {Limit} deeds and cannot buy another.",
+                    Logger.Args(playerWizard.CharId, HousingSettings.IslandLimit));
+                SendHouseDenyMessage(GetActiveAccount());
+
+                return;
+            }
+
+            ProcessHousePurchase(playerWizard, template, itemTemplateID, message.CurrencyType == CROWNS_CURRENCY_TYPE);
 
             return;
         }
@@ -502,6 +525,74 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
         var shopConfirmMsg = new WIZARD_12_PROTOCOL.MSG_SHOPBUYCONFIRM();
         SendToSocket(shopConfirmMsg);
     }
+
+    private void ProcessHousePurchase(Wizard wizard, WizItemTemplate template, uint templateId, bool paysWithCrowns) {
+        var account = GetActiveAccount();
+        var cost = paysWithCrowns ? (int) template.m_creditsCost : PriceModifiersConfig.GetShopBuyCost(template, 0, 0);
+        var balance = paysWithCrowns ? account.Crowns : wizard.GameStats.m_currentGold;
+        if (cost <= 0 || balance < cost) {
+            SendHouseDenyMessage(account);
+
+            return;
+        }
+
+        var grant = HouseDeeds.Issue(wizard, templateId);
+        foreach (var created in grant.Created) {
+            ItemSync.SendAdded(SessionActor.ActorRef, wizard, created);
+        }
+
+        // Issuing a house the character already holds creates only what is missing, so nothing was bought.
+        var deed = grant.Created.FirstOrDefault(created => ItemHelper.GetTemplateId(created) == templateId);
+        if (!grant.Succeeded || deed is null) {
+            Logger.Warning("Character {CharId} could not buy house template {TemplateId}: {Failure}.",
+                Logger.Args(wizard.CharId, templateId, grant.Succeeded ? "already held" : grant.Failure.ToString()));
+            SendHouseDenyMessage(account);
+
+            return;
+        }
+
+        ChargeHouse(wizard, account, cost, paysWithCrowns);
+
+        SendToSocket(new WIZARD2_53_PROTOCOL.MSG_ITEMACQUISITION {
+            ItemGlobalID = deed.m_globalID,
+            ItemTemplateID = templateId,
+            ItemLocation = 1,
+        });
+        SendToSocket(new WIZARD_12_PROTOCOL.MSG_SHOPBUYCONFIRM { Credits = account.Crowns });
+    }
+
+    private void ChargeHouse(Wizard wizard, Account account, int cost, bool paysWithCrowns) {
+        if (!paysWithCrowns) {
+            wizard.RemoveGold(cost);
+            SendToSocket(new WIZARD_12_PROTOCOL.MSG_UPDATEGOLD {
+                Gold = wizard.GameStats.m_currentGold,
+                MaxGold = wizard.GameStats.m_baseGoldPouch
+            });
+
+            return;
+        }
+
+        if (!account.SetCrowns(account.Crowns - cost)) {
+            Logger.Error("Could not store the Crowns of account {AccountId} after character {CharId} bought a house.",
+                Logger.Args(account.AccountId, wizard.CharId));
+        }
+
+        SendToSocket(new WIZARD_12_PROTOCOL.MSG_CROWNBALANCE {
+            Failure = 0,
+            TotalCrowns = account.Crowns,
+            CharacterID = wizard.GameObjectID,
+            CacheBalanceForCSSegmentation = 1
+        });
+    }
+
+    private void SendHouseDenyMessage(Account account) {
+        // The client takes the confirm's Credits as the Crowns balance while the player pays with Crowns.
+        SendToSocket(new WIZARD_12_PROTOCOL.MSG_SHOPBUYCONFIRM { Failure = 1, Credits = account.Crowns });
+    }
+
+    private static int CountHeldDeeds(Wizard wizard)
+        => wizard.InventoryBehavior.Items.Concat(wizard.EquipmentBehavior?.EquippedItems ?? [])
+            .Count(item => HouseTemplates.TryGet(ItemHelper.GetTemplateId(item), out var held) && !held.IsStructure);
 
     private void HandleIllegalPurchaseAttempt(uint itemTemplateID, ulong interactedObjectGID) {
         var account = GetActiveAccount();

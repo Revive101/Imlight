@@ -125,7 +125,64 @@ public static class AccountCollection {
 
         account.InfractionHistory = new InfractionHistory(account.AccountId, infractions);
 
+        if (!characterListOnly) {
+            account.SharedBank ??= new AccountSharedBank();
+            LoadSharedBank(session, account.AccountId, account.SharedBank);
+        }
+
         return account;
+    }
+
+    private static void LoadSharedBank(IDocumentSession session, ulong accountId, AccountSharedBank sharedBank) {
+        // The shared bank items are stored like character items, owned by the account id.
+        sharedBank.Items = LoadSharedDocuments<WizClientObjectItem>(session, WizardItemCollection.CollectionName, accountId, sharedBank.ItemIds);
+        sharedBank.Reagents = LoadSharedDocuments<ClientReagentItem>(session, WizardReagentCollection.CollectionName, accountId, sharedBank.ReagentIds);
+        sharedBank.Snacks = LoadSharedDocuments<ClientPetSnackItem>(session, WizardPetSnackCollection.CollectionName, accountId, sharedBank.SnackIds);
+    }
+
+    /// <summary>
+    /// Reads the shared bank of a loaded account again from the database, so the lists the session holds match
+    /// what another session of the same account has moved since. It takes the account lane, so no move runs
+    /// while the ids and the documents are read.
+    /// </summary>
+    /// <param name="account">The account whose shared bank is replaced.</param>
+    /// <returns><c>false</c> when the account is not stored or the read failed; the shared bank is left as it was.</returns>
+    internal static bool ReloadSharedBank(Account account) {
+        try {
+            return WithWriteLane(account.AccountId, () => {
+                using var session = s_store.OpenSession();
+                var storedAccount = session.Query<Account>(collectionName: CollectionName)
+                    .FirstOrDefault(stored => stored.AccountId == account.AccountId);
+                if (storedAccount is null) {
+                    return false;
+                }
+
+                var reloaded = storedAccount.SharedBank ?? new AccountSharedBank();
+                LoadSharedBank(session, account.AccountId, reloaded);
+                account.SharedBank = reloaded;
+
+                return true;
+            });
+        } catch (Exception ex) {
+            Logger.Error("Failed to reload the shared bank of account {AccountId}: {Reason}",
+                Logger.Args(account.AccountId, ex.Message));
+
+            return false;
+        }
+    }
+
+    internal static List<T> LoadSharedDocuments<T>(IDocumentSession session, string collectionName, ulong accountId, List<ulong> ids)
+        where T : WizClientObjectItem {
+        if (ids.Count == 0) {
+            return [];
+        }
+
+        // Waits for the index, because a document that just changed owner has to be found too.
+        return [.. session.Query<T>(collectionName: collectionName)
+            .Customize(query => query.WaitForNonStaleResults())
+            .Where(x => x.m_characterId == accountId)
+            .ToList()
+            .Where(item => ids.Contains(item.m_globalID))];
     }
 
     /// <summary>
@@ -184,6 +241,11 @@ public static class AccountCollection {
             foreach (var characterId in account.CharacterIds) {
                 WizardCollection.DeleteCharacter(characterId);
             }
+
+            // Delete the items of the shared bank.
+            WizardItemCollection.DeleteInventory(accountId);
+            WizardReagentCollection.DeleteReagentBag(accountId);
+            WizardPetSnackCollection.DeleteSnackBag(accountId);
 
             // Delete the account.
             session.Delete(account);

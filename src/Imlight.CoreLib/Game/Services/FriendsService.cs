@@ -581,6 +581,20 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_GOTOPLAYER))]
     private void ReceiveGoToPlayer(GAME_5_PROTOCOL.MSG_GOTOPLAYER message) {
         var targetID = message.TargetCharacterID;
+        var wizard = GetActiveWizard();
+
+        // The friends list only offers Go To for friends.
+        if (!BuddyRelationshipCollection.AreFriends(wizard.CharId, targetID)) {
+            Logger.Warning("Player {0} tried to teleport to character ID {1}, who is not a friend.",
+                Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), targetID));
+
+            SendToSocket(new GAME_5_PROTOCOL.MSG_GOTOPLAYERRESP {
+                TargetCharacterID = targetID,
+                Error = 1
+            });
+
+            return;
+        }
 
         // Check if the target is online.
         if (!TryGetOnlinePlayer(targetID, out var onlinePlayer)) {
@@ -603,14 +617,7 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
             .Result;
 
         if (queryResult?.Wizard is not null) {
-            var coordinates = Util.GetCompactStringFromVector((Vector4) queryResult.Wizard.Location);
-
-            Teleport(
-                destinationZone: onlinePlayer.CurrentZone,
-                destinationLocation: coordinates,
-                doTeleportEffects: true,
-                ownerCharId: targetID
-            );
+            TeleportToPlayer(queryResult.Wizard, targetID, onlinePlayer.CurrentZone);
         } else {
             Logger.Warning("Character {CharId} could not teleport to character {TargetId}: the target's character could not be read.",
                 Logger.Args(GetActiveWizard().CharId, targetID));

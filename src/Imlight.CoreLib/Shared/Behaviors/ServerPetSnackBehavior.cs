@@ -32,6 +32,11 @@ public class ServerPetSnackBehavior : IClientBehaviorProvider<ClientPetSnackBeha
 
     private static readonly int s_maxSnackStackAllowed = 999;
 
+    /// <summary>
+    /// The most units one pet snack stack holds.
+    /// </summary>
+    internal static int MaxStack => s_maxSnackStackAllowed;
+
     public List<ulong> SnackItemIds { get; set; }
 
     [JsonIgnore] public List<ClientPetSnackItem> Snacks { get; set; }

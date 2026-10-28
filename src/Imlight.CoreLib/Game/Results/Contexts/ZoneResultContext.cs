@@ -52,4 +52,7 @@ public class ZoneResultContext(ZoneTrigger trigger,
     public IActorRef GetReplyTo() 
         => ReplyTo;
 
+    public string GetZonePath()
+        => Zone?.ZonePath;
+
 }

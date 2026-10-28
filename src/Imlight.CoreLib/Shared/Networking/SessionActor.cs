@@ -348,11 +348,15 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
             }
 
             if (!wasDispatched) {
+                Logger.Warning("SessionActor {Id} had no service to hand {Type} to, so it was dropped.",
+                    Logger.Args(SessionID, msg.GetType().Name));
                 Unhandled(msg);
             }
             return;
         }
 
+        Logger.Warning("SessionActor {Id} has no service that handles {Type}, so it was dropped.",
+            Logger.Args(SessionID, msg.GetType().Name));
         Unhandled(msg);
     }
 

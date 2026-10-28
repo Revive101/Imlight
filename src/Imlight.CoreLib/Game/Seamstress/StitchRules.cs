@@ -67,7 +67,6 @@ internal static class StitchRules {
 
     private const int MAX_DYE = 31;
     private const int PATTERN_WITHOUT_LOCK = 0x7FFFFFFF;
-    private const string RENTAL_ADJECTIVE = "Rental";
 
     internal static readonly IReadOnlyList<EquipmentSlotType> s_stitchableSlots = [
         EquipmentSlotType.Hat,
@@ -84,7 +83,7 @@ internal static class StitchRules {
     /// <returns>False for a rental, a template without exactly one slot adjective, or any other slot.</returns>
     internal static bool TryGetStitchableSlot(WizItemTemplate template, out EquipmentSlotType slot) {
         slot = default;
-        if (template?.m_adjectiveList is null || IsRental(template)) {
+        if (template?.m_adjectiveList is null || ItemHelper.IsRental(template)) {
             return false;
         }
 
@@ -203,10 +202,6 @@ internal static class StitchRules {
 
         return true;
     }
-
-    private static bool IsRental(WizItemTemplate template)
-        => template.m_adjectiveList.Any(adjective => string.Equals(adjective, RENTAL_ADJECTIVE, StringComparison.OrdinalIgnoreCase))
-           || template.m_behaviors?.OfType<RentalBehaviorTemplate>().Any() == true;
 
     private static bool IsDye(int color) => color is >= 0 and <= MAX_DYE;
 

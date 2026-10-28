@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/14/2026
+ * Last Updated: 10/25/2026
  */
 
 using System.Collections.Generic;
@@ -78,6 +78,7 @@ internal sealed class InteractVendorComponent(ZoneEntity entity) : ZoneEntityCom
         // or if the template is a vendor as per game client data.
         => template is GameObjectTemplate goTemplate
         && goTemplate.m_behaviors.Any(x => x is NPCBehaviorTemplate)
+        && !InteractHousingShopComponent.IsHousingShop(goTemplate)
         && (NpcInventoryCollection.TryGetNpcInventory(goTemplate.m_templateID, out _)
         || WorldVendorLocations.IsVendor(goTemplate.m_templateID));
 

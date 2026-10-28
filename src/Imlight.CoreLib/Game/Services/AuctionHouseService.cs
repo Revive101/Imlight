@@ -188,6 +188,15 @@ internal class AuctionHouseService(SessionActor sessionActor) : MessageService(s
         }
         var goldCost = entry.m_buyPrice;
 
+        // A full backpack denies the buy before the stock or the gold is touched.
+        if (wizard.InventoryBehavior.FreeSlots < 1 || !wizard.AddItemToInventory(item)) {
+            Logger.Warning("Could not add bazaar item {0} to the inventory of {1}, so the purchase is denied.",
+                Logger.Args(templateId, wizard.CharId));
+            SendToSocket(new WIZARD_12_PROTOCOL.MSG_SHOPBUYCONFIRM { Failure = 1, WebFailure = 0, Credits = 0 });
+
+            return;
+        }
+
         // Update stock and push to database.
         entry.m_numForSale -= 1;
         if (entry.m_numForSale < 1) {
@@ -206,15 +215,12 @@ internal class AuctionHouseService(SessionActor sessionActor) : MessageService(s
         };
         SendToSocket(auctionUpdateMsg);
 
-        // Add item to inventory
+        // Tell the client about the item. It is in the inventory already.
         var addItemMsg = new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_ADDITEM {
             GlobalID = wizard.GameObjectID,
             SerializedItem = itemData,
         };
         SendToSocket(addItemMsg);
-
-        // Add item to inventory after message to prevent crashes.
-        wizard.AddItemToInventory(item);
 
         // Alert client of new item.
         var itemAcqMsg = new WIZARD2_53_PROTOCOL.MSG_ITEMACQUISITION {

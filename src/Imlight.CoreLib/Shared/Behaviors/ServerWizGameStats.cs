@@ -23,6 +23,7 @@ using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Game.Combat;
 using Imlight.CoreLib.Game.Effects;
+using Imlight.CoreLib.Game.Housing;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.IO;
 using Imlight.Common;
@@ -314,6 +315,7 @@ public class ServerWizGameStats : IClientTypeProvider<WizGameStats> {
             m_showItemLock = m_showItemLock,
             m_questFinderEnabled = m_questFinderEnabled,
             m_buddyListLimit = m_buddyListLimit,
+            m_maximumNumberOfIslands = HousingSettings.IslandLimit,
             m_dontAllowFriendFinderCodes = m_dontAllowFriendFinderCodes,
             m_shadowMagicUnlocked = m_shadowMagicUnlocked,
             m_fishingLevel = m_fishingLevel,

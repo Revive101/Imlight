@@ -37,7 +37,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/14/2026
+ * Last Updated: 10/21/2026
  */
 
 using System;
@@ -51,7 +51,9 @@ using Imlight.CoreLib.WizardData.Models.Player;
 namespace Imlight.CoreLib.Shared.Items;
 
 internal static class ItemHelper {
-    
+
+    private const string RENTAL_ADJECTIVE = "Rental";
+
     /// <summary>
     /// Gets the <see cref="EquippedItemInfoList"/> for a <see cref="Wizard"/>. This is a lightweight version of the
     /// actual equipment that is used to publicly display the character's equipment.
@@ -82,11 +84,28 @@ internal static class ItemHelper {
     }
 
     /// <summary>
+    /// Gets the template id of an item as the 32-bit id every template lookup uses.
+    /// </summary>
+    /// <param name="item">The item in question.</param>
+    /// <returns>The template id, capped at the largest 32-bit value.</returns>
+    internal static uint GetTemplateId(WizClientObjectItem item)
+        => (uint) Math.Min((ulong) item.m_templateID, uint.MaxValue);
+
+    /// <summary>
     /// Whether the item was stitched, meaning it shows the look of a different item template.
     /// </summary>
     /// <param name="item">The item in question.</param>
     /// <returns>True when the item carries an appearance template.</returns>
     internal static bool IsStitched(WizClientObjectItem item) => (uint) item.m_displayID != 0;
+
+    /// <summary>
+    /// Whether an item template is a rental: it has the Rental adjective or a rental behavior.
+    /// </summary>
+    /// <param name="template">The item template, or null when the item has none.</param>
+    /// <returns>True for a rental.</returns>
+    internal static bool IsRental(WizItemTemplate template)
+        => template?.m_adjectiveList?.Any(adjective => string.Equals(adjective, RENTAL_ADJECTIVE, StringComparison.OrdinalIgnoreCase)) == true
+           || template?.m_behaviors?.OfType<RentalBehaviorTemplate>().Any() == true;
 
     /// <summary>
     /// Gets the id of the template that decides how an item looks: the appearance template of a stitched

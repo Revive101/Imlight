@@ -42,14 +42,19 @@ using System.Linq;
 using Akka.Actor;
 using Imcodec.CoreObject;
 using Imcodec.Cryptography;
+using Imcodec.MessageLayer;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
+using Imlight.CoreLib.Game.Housing.Access;
+using Imlight.CoreLib.Game.Housing.Houses;
+using Imlight.CoreLib.Game.Housing;
 using Imlight.CoreLib.Game.Sigils;
 using Imlight.CoreLib.Game.WizBang;
 using Imlight.CoreLib.Game.World;
 using Imlight.CoreLib.Shared.Character;
+using Imlight.CoreLib.Shared.Items;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
@@ -58,7 +63,7 @@ using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Services;
 
-internal class ZoneService(SessionActor sessionActor) : MessageService(sessionActor) {
+internal class ZoneService(SessionActor sessionActor) : MessageService(sessionActor), IHouseZoneHost {
 
     private const int ZONE_REMOVAL_WAIT_TIME_IN_SECONDS = 8;
     private const int ZONE_HEAL_TICK_INTERVAL_IN_SECONDS = 5;
@@ -69,6 +74,8 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
     // The official server sends MSG_SERVERTRANSFER about 400 ms after the ACK; saving the wizard adds about 50 ms.
     private const int ZoneTransferDelayMs = 350;
 
+    private const string DEED_ZONE_TIMEOUT_KEY = "deedzone-timeout";
+    private const string BACKPACK_FULL_FOR_HOUSE_TEXT = "Your backpack is full. Make room for your house deed and try again.";
     private readonly uint _resetStateId = StringHash.Compute("Unremarkable");
     private readonly uint _teleportStateId = StringHash.Compute("Teleport");
 
@@ -79,6 +86,7 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         = ConfigurationManager.Settings["April Fools.RandomBackFlips"].AsBool();
     private readonly ZoneTransferGate _transferGate = new();
     private uint _currentDynamicZoneId;
+    private HouseZoneHandshake _houseZone;
 
     private const string SIGIL_ENTER_TIMER_KEY = "sigilenter";
     private const float SIGIL_COUNTDOWN_SECONDS = 10.0f;
@@ -96,6 +104,8 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
 
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new ZoneService(parentActor));
+
+    private HouseZoneHandshake HouseZone => _houseZone ??= new HouseZoneHandshake(this);
 
     protected override void OnPreDispose() {
         var gameObj = GetActiveGameObject();
@@ -197,6 +207,24 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONETRANSFER))]
     private void ReceiveZoneTransferRequest(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message) {
         if (_transferGate.IsQueued) {
+            Logger.Debug("Refused a transfer to {Zone} for character {CharId}: a transfer is already in progress, gate {State}.",
+                Logger.Args(message.DestinationZone, GetActiveWizard()?.CharId, _transferGate.State));
+
+            return;
+        }
+
+        // A trigger or a script that teleports into a house zone names no lot, so the player's own house in that zone is used.
+        if (message.SendToClient && message.HouseEntry is null && HouseZoneIndex.IsHouseZone(message.DestinationZone)
+            && !TryUseOwnHouse(message)) {
+            return;
+        }
+
+        // The client loads a house zone from the entry, so every way into a house has to bring one for that zone.
+        if (message.SendToClient && !HouseZoneHandshake.IsValidTransfer(message.HouseEntry, message.DestinationZone)) {
+            Logger.Warning("Session {SessionId} refused a transfer to {Zone}: the house entry {Entry} does not fit.",
+                Logger.Args(SessionActor.SessionID, message.DestinationZone, message.HouseEntry?.Zone));
+            InformGameClient("You cannot travel to that house.", true);
+
             return;
         }
 
@@ -220,8 +248,10 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         }
 
         // Check if the destination zone is the same as the current zone. If so, just teleport the player.
-        if (message.DestinationZone == GetActiveWizard().Zone) {
-            DoTeleport(message.DestinationLocation);
+        var wizard = GetActiveWizard();
+        if (message.DestinationZone == wizard.Zone && message.HouseLotGid == wizard.AttachedLotGid) {
+            // A named location is only known to the zone, which answered with the spot it stands for.
+            DoTeleport(Util.GetCompactStringFromVector(zoneDetails.Location, new Imcodec.Math.Vector3(0, 0, zoneDetails.Orientation)));
 
             return;
         }
@@ -262,6 +292,9 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_STARTSIGILENTRY))]
     private void ReceiveStartSigilEntry(ZONE_102_PROTOCOL.MSG_STARTSIGILENTRY message) {
         if (_transferGate.IsQueued || _activeSigilEntry is not null) {
+            Logger.Debug("Refused the sigil entry to {Zone} for character {CharId}: a transfer is already in progress, gate {State}, sigil entry active {SigilActive}.",
+                Logger.Args(message.DestinationZone, GetActiveWizard()?.CharId, _transferGate.State, _activeSigilEntry is not null));
+
             return;
         }
 
@@ -385,6 +418,7 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
 
         character.QueuedZoneName = character.Zone;
         character.QueuedZoneLocation = Util.GetCompactStringFromVector(character.Location, character.Orientation);
+        character.QueuedLotGid = character.AttachedLotGid;
         LogTransferStep("ZONETRANSFERREQUEST sent", previous, true);
     }
 
@@ -416,19 +450,26 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         // this teleports the wizard to the world hub, NOT their home/dorm. for that you want MSG_GOTODORM. goofy ahh naming scheme
         var wizard = GetActiveWizard();
         var currentZone = wizard.Zone;
-        var zoneMap = WorldHubZones.GetHubForZone(currentZone);
-        if (zoneMap is null) {
-            Logger.Warning("Zone {Zone} has no world hub, so the go home button does nothing there.",
-                Logger.Args(currentZone));
 
-            return;
+        // A visitor the owner sends away answers with this message too, so a house zone leaves the way its exit trigger does.
+        if (!HouseExits.TryResolve(currentZone, out var destinationZone, out var destinationLocation)) {
+            var zoneMap = WorldHubZones.GetHubForZone(currentZone);
+            if (zoneMap is null) {
+                Logger.Warning("Zone {Zone} has no world hub, so the go home button does nothing there.",
+                    Logger.Args(currentZone));
+
+                return;
+            }
+
+            destinationZone = zoneMap.m_hubZone;
+            destinationLocation = zoneMap.m_location;
         }
 
         SendTeleportEffects();
 
         var tpmsg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
-            DestinationZone = zoneMap.m_hubZone,
-            DestinationLocation = zoneMap.m_location,
+            DestinationZone = destinationZone,
+            DestinationLocation = destinationLocation,
             SendToClient = true,
             OwnerCharId = wizard.CharId,
         };
@@ -440,23 +481,109 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
     }
 
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_GOTODORM))]
-    private void ReceiveGotoDorm(WIZARD_12_PROTOCOL.MSG_GOTODORM message) {
+    private void ReceiveGotoHouse(WIZARD_12_PROTOCOL.MSG_GOTODORM message) {
         // This button and the GoHome button are locked client-side until level 2.
         // jooty, again? cmon man
+        if (_transferGate.IsQueued || Timers.IsTimerActive("zonetransfer")) {
+            Logger.Debug("Refused the go-home request of character {CharId}: a transfer is already in progress, gate {State}, zonetransfer timer active {TimerActive}.",
+                Logger.Args(GetActiveWizard()?.CharId, _transferGate.State, Timers.IsTimerActive("zonetransfer")));
+
+            return;
+        }
+
+        // The client has no in-house check for its Home button, and a same-zone teleport cannot name a house location.
         var wizard = GetActiveWizard();
+        var home = HouseDeeds.ResolveHome(wizard);
+        if (home.Lot != 0 && wizard.AttachedLotGid == home.Lot) {
+            Logger.Debug("Ignored the go-home request of character {CharId}: they are already inside their house {LotGid}.",
+                Logger.Args(wizard.CharId, home.Lot));
+
+            return;
+        }
+
+        if (!HouseDeeds.TryPrepareHome(wizard, out var entry, out var failure)) {
+            InformGameClient(failure == HouseGrantFailure.BackpackFull
+                ? BACKPACK_FULL_FOR_HOUSE_TEXT
+                : "Your house is not available right now. Please try again later.", true);
+            Logger.Warning("Character {CharId} cannot go home ({Failure}), so no transfer is started.", Logger.Args(wizard.CharId, failure));
+
+            return;
+        }
+
         SendTeleportEffects();
 
         var tpmsg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
-            DestinationZone = "WizardCity/QA_SpawnRate", // just teleporting to gm for now
-            DestinationLocation = "Start",
+            DestinationZone = entry.Zone,
+            DestinationLocation = HouseDeeds.ENTRY_LOCATION,
             SendToClient = true,
-            OwnerCharId = wizard.CharId,
+            IsPrivate = true,
+            OwnerCharId = entry.OwnerCharId,
+            HouseEntry = entry,
         };
 
         wizard.SetTimeHomeLastClicked(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
 
         var delay = TimeSpan.FromSeconds(TELEPORT_EFFECTS_TIME);
         Timers.StartSingleTimer("zonetransfer", tpmsg, delay);
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_HOUSEDOOR))]
+    private void ReceiveHouseDoor(ZONE_102_PROTOCOL.MSG_HOUSEDOOR message) {
+        if (_transferGate.IsQueued || Timers.IsTimerActive("zonetransfer")) {
+            Logger.Debug("Refused the house door {DoorGid} for character {CharId}: a transfer is already in progress, gate {State}, zonetransfer timer active {TimerActive}.",
+                Logger.Args(message.DoorGid, GetActiveWizard()?.CharId, _transferGate.State, Timers.IsTimerActive("zonetransfer")));
+
+            return;
+        }
+
+        // The door sits in a house zone, and the house the player is in decides what is on the other side.
+        if (!HouseTravel.TryEnterByDoor(GetActiveWizard(), message.DoorGid, out var entry, out var failure)) {
+            Logger.Warning("Character {CharId} cannot use the house door {DoorGid} ({Failure}), so nothing happens.",
+                Logger.Args(GetActiveWizard()?.CharId, message.DoorGid, failure));
+            if (failure == HouseTravelFailure.BackpackFull) {
+                InformGameClient(BACKPACK_FULL_FOR_HOUSE_TEXT, true);
+            }
+
+            return;
+        }
+
+        ReceiveZoneTransferRequest(new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
+            DestinationZone = entry.Zone,
+            DestinationLocation = string.IsNullOrEmpty(message.LocationName) ? HouseDeeds.ENTRY_LOCATION : message.LocationName,
+            SendToClient = true,
+            IsPrivate = true,
+            OwnerCharId = entry.OwnerCharId,
+            HouseEntry = entry,
+        });
+    }
+
+    [MessageHandler(typeof(WIZARDHOUSING_50_PROTOCOL.MSG_TELEPORTTOSTART))]
+    private void ReceiveTeleportToStart(WIZARDHOUSING_50_PROTOCOL.MSG_TELEPORTTOSTART message) {
+        if (_transferGate.IsQueued || Timers.IsTimerActive("zonetransfer")) {
+            Logger.Debug("Refused the teleport to the start of a house for character {CharId}: a transfer is already in progress, gate {State}, zonetransfer timer active {TimerActive}.",
+                Logger.Args(GetActiveWizard()?.CharId, _transferGate.State, Timers.IsTimerActive("zonetransfer")));
+
+            return;
+        }
+
+        var wizard = GetActiveWizard();
+        if (!HouseTravel.TryEnterStart(wizard, message.Inside != 0, out var entry, out var failure)) {
+            Logger.Debug("Character {CharId} asked to teleport to the start of a house ({Failure}).", Logger.Args(wizard.CharId, failure));
+            if (failure == HouseTravelFailure.BackpackFull) {
+                InformGameClient(BACKPACK_FULL_FOR_HOUSE_TEXT, true);
+            }
+
+            return;
+        }
+
+        ReceiveZoneTransferRequest(new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
+            DestinationZone = entry.Zone,
+            DestinationLocation = HouseDeeds.ENTRY_LOCATION,
+            SendToClient = true,
+            IsPrivate = true,
+            OwnerCharId = entry.OwnerCharId,
+            HouseEntry = entry,
+        });
     }
 
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_WORLDTELEPORTREQUEST))]
@@ -829,6 +956,18 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
             return;
         }
 
+        character.QueuedZoneName = message.DestinationZone;
+        character.QueuedZoneLocation = message.DestinationLocation;
+        character.QueuedLotGid = message.HouseLotGid;
+        HouseZone.Track(message.HouseEntry);
+
+        if (message.HouseEntry is not null) {
+            HouseZone.SendRequest(message.HouseEntry, message.DestinationLocation);
+            LogTransferStep($"house zone request ({message.HouseEntry.Kind}) sent", previous, true);
+
+            return;
+        }
+
         // Ask the client if it's okay with being transferred.
         var msg = new GAME_5_PROTOCOL.MSG_ZONETRANSFERREQUEST {
             ZoneName = message.DestinationZone,
@@ -836,10 +975,65 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         };
         SendToSocket(msg);
 
-        character.QueuedZoneName = message.DestinationZone;
-        character.QueuedZoneLocation = message.DestinationLocation;
         LogTransferStep("ZONETRANSFERREQUEST sent", previous, true);
     }
+
+    private bool TryUseOwnHouse(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message) {
+        if (HouseTravel.TryEnterZone(GetActiveWizard(), message.DestinationZone, out var entry, out var failure)) {
+            message.HouseEntry = entry;
+            message.IsPrivate = true;
+            message.OwnerCharId = entry.OwnerCharId;
+
+            return true;
+        }
+
+        Logger.Warning("Session {SessionId} cannot teleport into house zone {Zone}: {Failure}.",
+            Logger.Args(SessionActor.SessionID, message.DestinationZone, failure));
+        InformGameClient(failure == HouseTravelFailure.BackpackFull ? BACKPACK_FULL_FOR_HOUSE_TEXT : "You cannot travel to that house.", true);
+
+        return false;
+    }
+
+    [MessageHandler(typeof(WIZARDHOUSING_50_PROTOCOL.MSG_REQUESTDEEDZONE))]
+    private void ReceiveDeedZoneEcho(WIZARDHOUSING_50_PROTOCOL.MSG_REQUESTDEEDZONE message)
+        => HouseZone.OnEcho(pending => pending.Read(message), "REQUESTDEEDZONE");
+
+    [MessageHandler(typeof(WIZARDHOUSING_50_PROTOCOL.MSG_REQUESTHOUSINGZONETELEPORT))]
+    private void ReceiveHousingZoneTeleportEcho(WIZARDHOUSING_50_PROTOCOL.MSG_REQUESTHOUSINGZONETELEPORT message)
+        => HouseZone.OnEcho(pending => pending.Read(message), "REQUESTHOUSINGZONETELEPORT");
+
+    [MessageHandler(typeof(WIZARDHOUSING_50_PROTOCOL.MSG_REQUESTHOUSINGZONE))]
+    private void ReceiveHousingZoneEcho(WIZARDHOUSING_50_PROTOCOL.MSG_REQUESTHOUSINGZONE message)
+        => HouseZone.OnEcho(pending => pending.Read(message), "REQUESTHOUSINGZONE");
+
+    [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_DEEDZONE_TIMEOUT))]
+    private void OnDeedZoneTimeout(SERVICE_101_PROTOCOL.MSG_DEEDZONE_TIMEOUT _) => HouseZone.OnTimeout();
+
+    ZoneTransferGate IHouseZoneHost.TransferGate => _transferGate;
+
+    Wizard IHouseZoneHost.Character => GetActiveWizard();
+
+    void IHouseZoneHost.Send(IMessage message) => SendToSocket(message);
+
+    void IHouseZoneHost.SendNewItem(ulong itemGid) {
+        var character = GetActiveWizard();
+        var item = character.InventoryBehavior.GetItem(itemGid);
+        if (item is null || !ItemSync.SendAdded(SessionActor.ActorRef, character, item)) {
+            Logger.Error("Session {SessionId} could not send the new house item {ItemId} to the client.",
+                Logger.Args(SessionActor.SessionID, itemGid));
+        }
+    }
+
+    void IHouseZoneHost.StartTimeout()
+        => Timers.StartSingleTimer(DEED_ZONE_TIMEOUT_KEY, new SERVICE_101_PROTOCOL.MSG_DEEDZONE_TIMEOUT(), HousingSettings.DeedZoneTimeout);
+
+    void IHouseZoneHost.CancelTimeout() => Timers.Cancel(DEED_ZONE_TIMEOUT_KEY);
+
+    void IHouseZoneHost.Inform(string text) => InformGameClient(text, true);
+
+    void IHouseZoneHost.LogStep(string step, ZoneTransferState previous, bool accepted) => LogTransferStep(step, previous, accepted);
+
+    void IHouseZoneHost.BeginTransfer() => DoZoneTransfer();
 
     private void LogTransferStep(string step, ZoneTransferState previous, bool accepted) {
         Logger.Debug("Session {SessionId} {Step} -> {Zone}, gate {Previous} -> {Current}, accepted={Accepted}",
@@ -894,6 +1088,8 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         WizardCollection.UpdateCharacterZone(character, character.Zone, character.ZoneDisplayName);
         WizardCollection.UpdateCharacterLocation(character, character.Location, character.Orientation.Z);
 
+        // A failed transfer out of a house falls back into it, and the house is named by its lot.
+        var fallbackZoneId = character.AttachedLotGid != 0 ? character.AttachedLotGid : _currentDynamicZoneId;
         var serverTransfer = new GAME_5_PROTOCOL.MSG_SERVERTRANSFER() {
             IP = character.GameServerIp,
             TCPPort = character.GameServerPort,
@@ -901,6 +1097,7 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
             UserID = account.AccountId,
             CharID = character.CharId,
             ZoneName = character.QueuedZoneName,
+            ZoneID = character.QueuedLotGid,
             Location = character.QueuedZoneLocation,
             Slot = 0,
             SessionSlot = 0,
@@ -911,7 +1108,7 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
             FallbackTCPPort = character.GameServerPort,
             FallbackUDPPort = character.GameServerPort,
             FallbackZone = character.Zone,
-            FallbackZoneID = _currentDynamicZoneId
+            FallbackZoneID = fallbackZoneId
         };
         SendToSocket(serverTransfer);
         Logger.Debug("Session {SessionId} SERVERTRANSFER sent -> {Zone} {Ip}:{Port}",
@@ -924,7 +1121,7 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
             UserId = account.AccountId,
             CharId = character.CharId,
             FallbackZone = character.Zone,
-            FallbackZoneId = _currentDynamicZoneId,
+            FallbackZoneId = fallbackZoneId,
             FallbackLocation = Util.GetCompactStringFromVector(character.Location, character.Orientation),
             GameServerIp = character.GameServerIp,
             GameServerPort = character.GameServerPort

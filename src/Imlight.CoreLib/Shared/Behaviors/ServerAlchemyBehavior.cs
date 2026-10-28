@@ -32,6 +32,11 @@ public class ServerAlchemyBehavior : IClientBehaviorProvider<ClientAlchemyBehavi
 
     private static readonly int s_maxReagentStackAllowed = 999;
 
+    /// <summary>
+    /// The most units one reagent stack holds.
+    /// </summary>
+    internal static int MaxStack => s_maxReagentStackAllowed;
+
     public List<ulong> ReagentItemIds { get; set; }
 
     [JsonIgnore] public List<ClientReagentItem> Reagents { get; set; }

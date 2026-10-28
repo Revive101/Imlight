@@ -23,6 +23,7 @@ using Imcodec.Math;
 using Imcodec.IO;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Game.Combat;
+using Imlight.CoreLib.Game.Housing.Access;
 using Imlight.CoreLib.Game.PvP;
 using Imlight.CoreLib.Game.PvP.Arena;
 using Imlight.CoreLib.Game.Zone.Core;
@@ -750,6 +751,16 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         /// </summary>
         public bool ResetInstance;
 
+        /// <summary>
+        /// How the client is asked to load the house zone the player is entering. Null for every ordinary zone.
+        /// </summary>
+        public HouseEntry HouseEntry;
+
+        /// <summary>
+        /// The lot of the house the player is entering. Zero for every ordinary zone.
+        /// </summary>
+        public ulong HouseLotGid => HouseEntry?.LotGid ?? 0;
+
     }
 
     /// <summary>
@@ -1283,6 +1294,20 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public IActorRef Origin;
         public string QuestName;
         public string GoalName;
+
+    }
+
+    /// <summary>
+    /// Sent to a player's session by a house door the player walked up to: the session works out the house on the
+    /// other side and starts the zone transfer.
+    /// </summary>
+    public sealed class MSG_HOUSEDOOR : IServerMessage {
+
+        public byte MessageOrder { get; } = 80;
+        public byte ServiceID { get; } = 102;
+
+        public ulong DoorGid;
+        public string LocationName;
 
     }
 
