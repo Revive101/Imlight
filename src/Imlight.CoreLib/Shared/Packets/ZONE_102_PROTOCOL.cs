@@ -1369,7 +1369,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     /// </summary>
     public sealed class MSG_SIGILPARTNERJOINED : IServerMessage {
 
-        public byte MessageOrder { get; } = 88;
+        public byte MessageOrder { get; } = 89;
         public byte ServiceID { get; } = 102;
 
         public ulong PartnerCharId;
@@ -1383,7 +1383,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     /// </summary>
     public sealed class MSG_SIGILPARTNERLEFT : IServerMessage {
 
-        public byte MessageOrder { get; } = 89;
+        public byte MessageOrder { get; } = 90;
         public byte ServiceID { get; } = 102;
 
     }
@@ -1394,7 +1394,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     /// </summary>
     public sealed class MSG_SIGILOCCUPANTLEFT : IServerMessage {
 
-        public byte MessageOrder { get; } = 90;
+        public byte MessageOrder { get; } = 91;
         public byte ServiceID { get; } = 102;
 
         public ulong CharId;
@@ -1411,7 +1411,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     /// </summary>
     public sealed class MSG_SIGILROOMENTERING : IServerMessage {
 
-        public byte MessageOrder { get; } = 91;
+        public byte MessageOrder { get; } = 92;
         public byte ServiceID { get; } = 102;
 
         public string DestinationZone;
@@ -1435,7 +1435,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     /// </summary>
     public sealed class MSG_PETGAMEROOMJOINED : IServerMessage {
 
-        public byte MessageOrder { get; } = 92;
+        public byte MessageOrder { get; } = 93;
         public byte ServiceID { get; } = 102;
 
         /// <summary>
@@ -1455,7 +1455,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     /// </summary>
     public sealed class MSG_PETGAMEROOMPLAYERJOINED : IServerMessage {
 
-        public byte MessageOrder { get; } = 93;
+        public byte MessageOrder { get; } = 94;
         public byte ServiceID { get; } = 102;
 
         public ulong CharId;
@@ -1468,7 +1468,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     /// </summary>
     public sealed class MSG_PETGAMEROOMPLAYERLEFT : IServerMessage {
 
-        public byte MessageOrder { get; } = 94;
+        public byte MessageOrder { get; } = 95;
         public byte ServiceID { get; } = 102;
 
         public ulong CharId;
@@ -1480,7 +1480,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     /// </summary>
     public sealed class MSG_SIGILRELIGHT : IServerMessage {
 
-        public byte MessageOrder { get; } = 95;
+        public byte MessageOrder { get; } = 96;
         public byte ServiceID { get; } = 102;
 
     }
@@ -1490,7 +1490,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     /// </summary>
     public sealed class MSG_SERVICEOPTIONS_RESULT : IServerMessage {
 
-        public byte MessageOrder { get; } = 96;
+        public byte MessageOrder { get; } = 97;
         public byte ServiceID { get; } = 102;
 
         public IActorRef PlayerActor;
@@ -1505,7 +1505,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     /// </summary>
     public sealed class MSG_PUBLICZONEIDLE : IServerMessage {
 
-        public byte MessageOrder { get; } = 97;
+        public byte MessageOrder { get; } = 98;
         public byte ServiceID { get; } = 102;
 
         public string ZoneName;
@@ -1518,7 +1518,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     /// </summary>
     public sealed class MSG_PUBLICZONESTOPCHECK : IServerMessage {
 
-        public byte MessageOrder { get; } = 98;
+        public byte MessageOrder { get; } = 99;
         public byte ServiceID { get; } = 102;
 
     }
@@ -1529,7 +1529,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     /// </summary>
     public sealed class MSG_PUBLICZONEKEEP : IServerMessage {
 
-        public byte MessageOrder { get; } = 99;
+        public byte MessageOrder { get; } = 100;
         public byte ServiceID { get; } = 102;
 
         public string ZoneName;
@@ -1542,7 +1542,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     /// </summary>
     public sealed class MSG_INSTANCECONTAINERIDLE : IServerMessage {
 
-        public byte MessageOrder { get; } = 100;
+        public byte MessageOrder { get; } = 101;
         public byte ServiceID { get; } = 102;
 
     }
@@ -1553,7 +1553,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     /// </summary>
     public sealed class MSG_INSTANCECONTAINEREMPTY : IServerMessage {
 
-        public byte MessageOrder { get; } = 101;
+        public byte MessageOrder { get; } = 102;
         public byte ServiceID { get; } = 102;
 
         public ulong OwnerCharId;
@@ -1566,7 +1566,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     /// </summary>
     public sealed class MSG_CREATURETRAVELUPDATEINTERVAL : IServerMessage {
 
-        public byte MessageOrder { get; } = 102;
+        public byte MessageOrder { get; } = 103;
         public byte ServiceID { get; } = 102;
 
     }
