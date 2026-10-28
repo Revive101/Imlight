@@ -20,35 +20,38 @@
  * ========================================================================
  * 
  * PURPOSE:
- * Manages the lifecycle and reward calculation for individual minigame instances,
- * handling player connections, score tracking, and reward distribution.
+ * Manages the lifecycle and score settlement for individual minigame instances,
+ * handling player connections, round tracking, score validation, and leaderboard replies.
  * 
  * USAGE EXAMPLE:
  * Create a new MinigameProcess with a process name, ID, and minigame index.
- * Process automatically handles message routing, leaderboard updates, and rewards.
+ * Process automatically handles message routing, leaderboard updates, and score settlement.
  * 
  * NOTE:
  * Utilizes Akka.NET actor system for process management.
- * Implements reward calculation with multiple tiers.
+ * A score settles once per round: the client opens a round, then reports one score.
+ * A kiosk round grants its rewards before the window reply is sent.
+ * A silver chest round (a chest game context is set) is won by reporting at least the success score of the
+ * chest's minigame result, pays out of the chest loot, and ends the process right after the reply, because
+ * the chest game scripts never end themselves.
+ * A chest that refuses the game (another player holds it) makes the round pay nothing.
  * 
  * TODO:
- * - Refactor reward calculation logic
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/27/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
-using Imcodec.IO;
 using Imcodec.MessageLayer;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
+using Imlight.CoreLib.Game.Minigames;
 using Imlight.CoreLib.Game.Processes;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
@@ -56,42 +59,30 @@ using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
 
 /// <summary>
-/// Manages the lifecycle and reward system for a specific minigame instance.
+/// Manages the lifecycle and score settlement for a specific minigame instance.
 /// </summary>
 internal sealed class MinigameProcess : Process {
 
     private const uint QUERY_WIZARD_TIMEOUT_IN_MS = 5000;
+    private const long LOGGED_SCORE_CAP_MULTIPLIER = 100;
 
     private bool IsMinigameActive { get; set; }
-
-    // todo: change this below. The rewards should come from the actual drop tables.
-    private static readonly RewardTier[] s_manaTiers = [
-        new RewardTier(0, 0),          // No reward for first threshold
-        new RewardTier(0.25f, 0.5f),   // Bronze tier
-        new RewardTier(0.5f, 0.75f),   // Silver tier
-        new RewardTier(1.0f, 1.0f)     // Gold tier
-    ];
-
-    private static readonly RewardTier[] s_goldTiers = [
-        new RewardTier(0, 0),    // No gold before gold tier
-        new RewardTier(5, 10),   // Bronze gold tier
-        new RewardTier(10, 15),  // Silver gold tier
-        new RewardTier(15, 30)   // Gold gold tier
-    ];
-
-    private record RewardTier(float MinPercent, float MaxPercent);
+    private bool _roundOpen;
+    private bool _chestSettled;
+    private bool _chestRefused;
 
     private readonly byte _minigameIndex;
     private readonly MinigameInfo _minigameInfo;
+    private readonly ChestGameContext _chestGame;
     private readonly ObjectSerializer _serializer = new(
         Versionable: false,
         Behaviors: SerializerFlags.None
     );
-    private readonly byte[] _allowedProtocolIds = [25, 40, 41, 42, 43, 44, 45, 46, 47, 54];
 
     // ctor
-    public MinigameProcess(string processName, uint processId, byte minigameIndex) : base(processName, processId) {
+    public MinigameProcess(string processName, uint processId, byte minigameIndex, ChestGameContext chestGame) : base(processName, processId) {
         this._minigameIndex = minigameIndex;
+        this._chestGame = chestGame;
         this._minigameInfo = Imlight.CoreLib.Game.Minigames.MinigameConfig.GetMinigameInfo(minigameIndex);
 
         if (this._minigameInfo == null) {
@@ -99,28 +90,43 @@ internal sealed class MinigameProcess : Process {
         }
     }
 
+    protected override void PreStart() {
+        base.PreStart();
+
+        _chestGame?.ChestRef?.Tell(new ZONE_102_PROTOCOL.MSG_CHEST_GAME_STARTED { CharId = _chestGame.CharId }, Self);
+    }
+
+    protected override void PostStop() {
+        // A chest game that ended without a result (pre-game exit, disconnect, idle kill) frees the chest.
+        if (_chestGame is not null && !_chestSettled && !_chestRefused) {
+            _chestGame.ChestRef?.Tell(new ZONE_102_PROTOCOL.MSG_CHEST_GAME_ABORTED { CharId = _chestGame.CharId }, Self);
+        }
+
+        base.PostStop();
+    }
+
+    [MessageHandler(typeof(PROCESS_107_PROTOCOL.MSG_CHEST_GAME_REFUSED))]
+    private void ReceiveChestGameRefused(PROCESS_107_PROTOCOL.MSG_CHEST_GAME_REFUSED _)
+        => _chestRefused = true;
+
     [MessageHandler(typeof(IMessage))]
     internal void ReceiveElse(IMessage message) {
         HadActivity = true;
 
-        if (!_allowedProtocolIds.Contains(message.ServiceId)) {
+        if (!MinigameProtocol.IsKnownService(message.ServiceId)) {
             return;
         }
 
-        // Ignore any message ID of 2. This is a movement message that's not used by the client.
-        if (message.MessageOrder == 1) {
-            // This is a connect message.
+        if (MinigameProtocol.IsRoundStart(message)) {
             HandleConnect();
-        }
-        else if (message.MessageOrder == 3) {
-            // This is a rewards message. 
-            var score = GetScoreFromGenericIMessage(message);
+        } else if (MinigameProtocol.TryGetScore(message, out var score)) {
             HandleRewards(score);
         }
     }
 
     private void HandleConnect() {
         IsMinigameActive = true;
+        _roundOpen = true;
 
         var msg = new WIZARD_12_PROTOCOL.MSG_ENTERMINIGAME();
         Sender.Tell(msg, Self);
@@ -128,37 +134,123 @@ internal sealed class MinigameProcess : Process {
 
     private void HandleRewards(int score) {
         var leaderboard = CreateScoreTrackingList();
-        if (!_serializer.Serialize(leaderboard, 5, out var leaderboardData)) {
-            Logger.Error("{0} {1} failed to serialize leaderboard data.",
-                Logger.Args(nameof(MinigameProcess), ProcessName));
-
-            return;
-        }
 
         // Handle leaderboard query before game completion.
         if (score == -1) {
-            SendLeaderboardResponse(leaderboardData);
+            SendLeaderboardResponse(leaderboard);
 
             return;
         }
 
-        var wizard = QuerySenderWizard();
-        if (wizard == null) {
-            Logger.Error("{0} {1} failed to query character data.",
-                Logger.Args(nameof(MinigameProcess), ProcessName));
+        if (score < -1) {
+            Logger.Debug("{Process} ignored the invalid score {Score}",
+                Logger.Args(ProcessName, score));
+            SendLeaderboardResponse(leaderboard);
 
             return;
         }
 
-        // Generate and send final rewards response.
-        var loot = GetLootInfo(score, wizard);
-        SendFinalRewardsResponse(score, leaderboard, loot, wizard);
+        if (!_roundOpen) {
+            Logger.Debug("{Process} ignored the score {Score}, no round is open",
+                Logger.Args(ProcessName, score));
+            SendLeaderboardResponse(leaderboard);
+
+            return;
+        }
+
+        _roundOpen = false;
+
+        var character = QuerySenderCharacter();
+        if (character is null) {
+            SendLeaderboardResponse(leaderboard);
+
+            return;
+        }
+
+        SettleRound(score, character, leaderboard);
     }
 
-    private void SendLeaderboardResponse(byte[] leaderboardData) {
+    private void SettleRound(int score, CHARACTER_103_PROTOCOL.MSG_CHARACTER character, ScoreTrackingList leaderboard) {
+        if (_chestGame is not null) {
+            SettleChestRound(score, character, leaderboard);
+
+            return;
+        }
+
+        SettleKioskRound(score, character, leaderboard);
+    }
+
+    private bool IsChestGameWon(int score)
+        => score > 0 && score >= _chestGame.SuccessScore;
+
+    private void SettleChestRound(int score, CHARACTER_103_PROTOCOL.MSG_CHARACTER character, ScoreTrackingList leaderboard) {
+        var won = !_chestRefused && IsChestGameWon(score);
+        var reward = ChestRewardGranter.NoReward();
+        _chestSettled = true;
+
+        if (won) {
+            try {
+                reward = ChestRewardGranter.Grant(Sender, character, _chestGame.ChestTemplateId, _chestGame.LootTables);
+            } catch (Exception ex) {
+                Logger.Error("{Process} failed to grant the loot of chest {Template}: {Reason}",
+                    Logger.Args(ProcessName, _chestGame.ChestTemplateId, ex.GetBaseException().Message));
+            }
+        }
+
+        SendRewardsReply(score, leaderboard, reward);
+        if (!_chestRefused) {
+            _chestGame.ChestRef?.Tell(new ZONE_102_PROTOCOL.MSG_CHEST_GAME_RESULT { CharId = _chestGame.CharId, Won = won }, Self);
+        }
+
+        // The chest game scripts never end themselves after a report, so the session ends here.
+        KillProcess();
+    }
+
+    private void SettleKioskRound(int score, CHARACTER_103_PROTOCOL.MSG_CHARACTER character, ScoreTrackingList leaderboard) {
+        if (ExceedsScoreCap(score, character.Wizard)) {
+            SendLeaderboardResponse(leaderboard);
+
+            return;
+        }
+
+        var reward = MinigameRewardGranter.Grant(Sender, character.Wizard, _minigameInfo, score);
+        SendFinalRewardsResponse(score, leaderboard, reward, character.Wizard);
+    }
+
+    private bool ExceedsScoreCap(int score, Wizard wizard) {
+        var thresholds = _minigameInfo.m_scoreThresholds;
+        if (thresholds is null || thresholds.Count == 0) {
+            return false;
+        }
+
+        // The cap is a multiple of the top threshold. Left unset, scores far above it are only logged.
+        var topThreshold = thresholds[^1];
+        var capMultiplier = ConfigurationManager.GetValue("Minigames.ScoreCapMultiplier", 0.0);
+        if (capMultiplier > 0 && score > capMultiplier * topThreshold) {
+            Logger.Warning("{Process} rejected the score {Score} of {Wizard}, above {Multiplier} times {Threshold}",
+                Logger.Args(ProcessName, score, wizard.PlayerNameBehavior.GetWizardName(), capMultiplier, topThreshold));
+
+            return true;
+        }
+
+        if (capMultiplier <= 0 && score > LOGGED_SCORE_CAP_MULTIPLIER * topThreshold) {
+            Logger.Warning("{Process} accepted the unusually high score {Score} of {Wizard}, top threshold {Threshold}",
+                Logger.Args(ProcessName, score, wizard.PlayerNameBehavior.GetWizardName(), topThreshold));
+        }
+
+        return false;
+    }
+
+    private void SendLeaderboardResponse(ScoreTrackingList leaderboard) {
+        if (!_serializer.Serialize(leaderboard, 5, out var leaderboardData)) {
+            Logger.Error("{Process} failed to serialize leaderboard data.", Logger.Args(ProcessName));
+
+            return;
+        }
+
         var reply = new WIZARD_12_PROTOCOL.MSG_MINIGAMEREWARDS {
             Data = "",
-            Scores = new ByteString(leaderboardData),
+            Scores = leaderboardData,
             MinigameIndex = _minigameIndex,
             FinalPhase = 0,
             Score = -1,
@@ -167,7 +259,7 @@ internal sealed class MinigameProcess : Process {
         Sender.Tell(reply, Self);
     }
 
-    private void SendFinalRewardsResponse(int score, ScoreTrackingList leaderboard, LootInfoList loot, Wizard wizard) {
+    private void SendFinalRewardsResponse(int score, ScoreTrackingList leaderboard, MinigameRewardResult reward, Wizard wizard) {
         // Track the score for the player.
         var genderString = wizard.PlayerNameBehavior.Gender.ToString();
         genderString = genderString.Replace("eGender.", "");
@@ -179,78 +271,81 @@ internal sealed class MinigameProcess : Process {
             GamerNameOverride = wizard.PlayerNameBehavior.NameOverride,
             GamerGender = genderString
         };
-        ScoreTrackingCollection.AddScoreTracking(scoreTrack);
+        var best = StoreScore(scoreTrack);
 
-        // Check if the user's score has beaten any of the top scores.
-        for (var i = 0; i < leaderboard.m_scores.Count; i++) {
-            if (score > leaderboard.m_scores[i].m_gameScore) {
-                leaderboard.m_scores[i] = scoreTrack.GetClientBehaviorInstance();
-                break;
-            }
-        }
+        // The board shows each gamer once, with their best score.
+        var shown = leaderboard.m_scores
+            .Where(x => x.m_gamerID.Full != best.GamerId.Full)
+            .Append(best.GetClientBehaviorInstance())
+            .OrderByDescending(x => x.m_gameScore)
+            .Take(ScoreTrackingCollection.LeaderboardSize);
+        leaderboard.m_scores = [.. shown];
 
+        SendRewardsReply(score, leaderboard, reward);
+    }
+
+    private void SendRewardsReply(int score, ScoreTrackingList leaderboard, MinigameRewardResult reward) {
         // Serialize the leaderboard data.
         if (!_serializer.Serialize(leaderboard, 5, out var leaderboardData)) {
-            Logger.Error("{0} {1} failed to serialize leaderboard data.",
-                Logger.Args(nameof(MinigameProcess), ProcessName));
+            Logger.Error("{Process} failed to serialize leaderboard data.", Logger.Args(ProcessName));
 
             return;
         }
+
+        // A reply always carries a gold info (even for 0 gold) and the empty rarity list the loot path sends.
+        reward.Loot.m_goldInfo ??= new GoldLootInfo { m_lootType = LOOT_TYPE.LOOT_TYPE_GOLD, m_goldAmount = 0 };
+        reward.Loot.m_lootRarityList ??= new LootRarityList { m_loot = [] };
 
         // Serialize the loot.
-        if (!_serializer.Serialize(loot, 5, out var lootData)) {
-            Logger.Error("{0} {1} failed to serialize loot data.",
-                Logger.Args(nameof(MinigameProcess), ProcessName));
+        if (!_serializer.Serialize(reward.Loot, 5, out var lootData)) {
+            Logger.Error("{Process} failed to serialize loot data.", Logger.Args(ProcessName));
 
             return;
         }
-
-        // Success is only true if the user has gotten any of the rewards.
-        var success = loot.m_loot.Count > 0 || loot.m_goldInfo.m_goldAmount > 0 ? 1 : 0;
 
         var replyEnd = new WIZARD_12_PROTOCOL.MSG_MINIGAMEREWARDS {
             Data = lootData,
             Scores = leaderboardData,
             MinigameIndex = _minigameIndex,
-            FinalPhase = 1,
+            FinalPhase = reward.FinalPhase,
             Score = score,
-            Success = success
+            Success = reward.Success ? 1 : 0
         };
         Sender.Tell(replyEnd, Self);
     }
 
-    private LootInfoList GetLootInfo(int score, Wizard wizard) {
-        // Find the score threshold that the player has reached.
-        var scoreThresholds = _minigameInfo.m_scoreThresholds;
-        var thresholdIndex = FindThresholdIndex(score, scoreThresholds);
-        var lootInfo = new LootInfoList() {
-            m_goldInfo = new GoldLootInfo(),
-            m_loot = [],
-            m_lootRarityList = new(),
-        };
+    private Imlight.CoreLib.WizardData.Models.Misc.ScoreTracking StoreScore(Imlight.CoreLib.WizardData.Models.Misc.ScoreTracking scoreTrack) {
+        try {
+            return ScoreTrackingCollection.AddScoreTracking(scoreTrack);
+        } catch (Exception ex) {
+            // The rewards were granted already, so the window still opens with this score on the board.
+            Logger.Error("{Process} failed to store the score {Score}: {Reason}",
+                Logger.Args(ProcessName, scoreTrack.GameScore, ex.GetBaseException().Message));
 
-        AddManaReward(score, thresholdIndex, wizard, lootInfo);
-        AddGoldReward(thresholdIndex, lootInfo);
-
-        return lootInfo;
+            return scoreTrack;
+        }
     }
 
-    private Wizard QuerySenderWizard() {
+    private CHARACTER_103_PROTOCOL.MSG_CHARACTER QuerySenderCharacter() {
         var queryMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
+        var reason = "the reply holds no wizard";
         try {
             var timeout = TimeSpan.FromMilliseconds(QUERY_WIZARD_TIMEOUT_IN_MS);
             var response = Sender
                 .Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(queryMsg, timeout)
                 .Result;
 
-            return response.Wizard;
+            if (response?.Wizard is not null) {
+                return response;
+            }
+        } catch (Exception ex) {
+            reason = ex.GetBaseException().Message;
         }
-        catch {
-            Logger.Error("{0} {1} failed to query character data in {2} ms.",
-                Logger.Args(nameof(MinigameProcess), ProcessName, QUERY_WIZARD_TIMEOUT_IN_MS));
 
-            return null;
-        }
+        Logger.Error("{Process} did not get the character data within {Timeout} ms: {Reason}",
+            Logger.Args(ProcessName, QUERY_WIZARD_TIMEOUT_IN_MS, reason));
+
+        return null;
     }
 
     private ScoreTrackingList CreateScoreTrackingList() {
@@ -264,79 +359,6 @@ internal sealed class MinigameProcess : Process {
         }
 
         return scoreTrackingList;
-    }
-
-    private int GetScoreFromGenericIMessage(IMessage message) {
-        try {
-            var scoreField = message.GetType().GetField("score",
-                System.Reflection.BindingFlags.Public |
-                System.Reflection.BindingFlags.NonPublic |
-                System.Reflection.BindingFlags.Instance);
-
-            return scoreField != null
-                ? (int) scoreField.GetValue(message)
-                : -1;
-        }
-        catch (Exception ex) {
-            Logger.Error("{0} {1} failed to get score: {2}",
-                Logger.Args(nameof(MinigameProcess), ProcessName, ex.Message));
-            return -1;
-        }
-    }
-
-    private static int FindThresholdIndex(int score, List<int> scoreThresholds) {
-        for (var i = 0; i < scoreThresholds.Count; i++) {
-            if (score < scoreThresholds[i]) {
-                return i;
-            }
-        }
-        return scoreThresholds.Count - 1;
-    }
-
-    private static int CalculateReward(int score, int thresholdIndex, RewardTier[] tiers) {
-        if (thresholdIndex < 1 || thresholdIndex >= tiers.Length) {
-            return 0;
-        }
-
-        var tier = tiers[thresholdIndex];
-
-        // For mana, calculate based on score and percentage
-        if (tiers == s_manaTiers) {
-            float rewardPercent = tier.MinPercent == tier.MaxPercent
-                ? tier.MinPercent
-                : Random.Shared.NextSingle() * (tier.MaxPercent - tier.MinPercent) + tier.MinPercent;
-            return (int) (score * rewardPercent);
-        }
-
-        // For gold, return random amount in range
-        return Random.Shared.Next((int) tier.MinPercent, (int) tier.MaxPercent + 1);
-    }
-
-    private static void AddManaReward(int score, int thresholdIndex, Wizard wizard, LootInfoList lootInfo) {
-        var manaReward = CalculateReward(score, thresholdIndex, s_manaTiers);
-        if (manaReward <= 0) {
-            return;
-        }
-
-        var wizardMana = wizard.GameStats.m_baseMana;
-        var manaAmount = Math.Clamp(wizardMana * manaReward, 0, wizardMana);
-
-        lootInfo.m_loot.Add(new ManaLootInfo {
-            m_lootType = LOOT_TYPE.LOOT_TYPE_MANA,
-            m_manaAmount = manaAmount
-        });
-    }
-
-    private static void AddGoldReward(int thresholdIndex, LootInfoList lootInfo) {
-        var goldReward = CalculateReward(0, thresholdIndex, s_goldTiers);
-        if (goldReward <= 0) {
-            return;
-        }
-
-        lootInfo.m_goldInfo = new GoldLootInfo {
-            m_lootType = LOOT_TYPE.LOOT_TYPE_GOLD,
-            m_goldAmount = goldReward
-        };
     }
 
 }

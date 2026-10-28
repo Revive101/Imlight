@@ -36,13 +36,14 @@
  * 
  * Created by: Joji
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 10/25/2026
  */
 
 using System;
 using System.Linq;
 using System.Collections.Generic;
 using Akka.Actor;
+using Imlight.CoreLib.Shared.Items;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Collections;
@@ -175,7 +176,8 @@ internal class AuctionHouseService(SessionActor sessionActor) : MessageService(s
 
         // Try serializing item data.
         if (!_itemSerializer.Serialize(item, 1, out var itemData)) {
-            Logger.Error("Failed to serialize item data.");
+            Logger.Error("Item template {TemplateId} could not be serialized, so {Wizard} could not buy it.",
+                Logger.Args(templateId, wizard.PlayerNameBehavior.GetWizardName()));
 
             return;
         }
@@ -185,6 +187,15 @@ internal class AuctionHouseService(SessionActor sessionActor) : MessageService(s
             return;
         }
         var goldCost = entry.m_buyPrice;
+
+        // A full backpack denies the buy before the stock or the gold is touched.
+        if (wizard.InventoryBehavior.FreeSlots < 1 || !wizard.AddItemToInventory(item)) {
+            Logger.Warning("Could not add bazaar item {0} to the inventory of {1}, so the purchase is denied.",
+                Logger.Args(templateId, wizard.CharId));
+            SendToSocket(new WIZARD_12_PROTOCOL.MSG_SHOPBUYCONFIRM { Failure = 1, WebFailure = 0, Credits = 0 });
+
+            return;
+        }
 
         // Update stock and push to database.
         entry.m_numForSale -= 1;
@@ -204,15 +215,12 @@ internal class AuctionHouseService(SessionActor sessionActor) : MessageService(s
         };
         SendToSocket(auctionUpdateMsg);
 
-        // Add item to inventory
+        // Tell the client about the item. It is in the inventory already.
         var addItemMsg = new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_ADDITEM {
             GlobalID = wizard.GameObjectID,
             SerializedItem = itemData,
         };
         SendToSocket(addItemMsg);
-
-        // Add item to inventory after message to prevent crashes.
-        wizard.AddItemToInventory(item);
 
         // Alert client of new item.
         var itemAcqMsg = new WIZARD2_53_PROTOCOL.MSG_ITEMACQUISITION {
@@ -259,7 +267,7 @@ internal class AuctionHouseService(SessionActor sessionActor) : MessageService(s
 
         var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID);
 
-        var isNoAuction = template.m_adjectiveList.Any(x => x == "FLAG_NoAuction");
+        var isNoAuction = template.m_adjectiveList.Any(x => x == "FLAG_NoAuction") || ItemHelper.IsStitched(item);
         if (isNoAuction) { // The item cannot be sold to the bazaar.
             // Todo: respond with error
             var auctionRspErrorMsg = new WIZARD_12_PROTOCOL.MSG_AUCTIONRESPONSE {

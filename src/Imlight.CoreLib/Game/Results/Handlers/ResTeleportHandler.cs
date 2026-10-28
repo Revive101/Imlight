@@ -18,6 +18,8 @@
 
 using Akka.Actor;
 using Imcodec.ObjectProperty.TypeCache;
+using Imlight.Common;
+using Imlight.CoreLib.Game.Results.Contexts;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.PluginApi.Events;
 
@@ -27,6 +29,8 @@ internal sealed class ResTeleportHandler : BaseResultHandler<ResTeleport> {
 
     public override bool Execute(IResultContext context) {
         if (context.GetPlayerObj() is not WizClientObject playerObj) {
+            Logger.Warning("Teleport result skipped: the player object is not a client object.");
+
             return false;
         }
 
@@ -36,12 +40,18 @@ internal sealed class ResTeleportHandler : BaseResultHandler<ResTeleport> {
         }
 
         if (string.IsNullOrEmpty(Result.m_destinationZone)) {
+            Logger.Warning("A teleport result has no destination zone, so the player stays put (trigger {Trigger}, location {Location}).",
+                Logger.Args((context as GenericResultContext)?.TriggerName ?? "none", Result.m_destinationLoc));
+
             return false;
         }
 
+        var destinationZone = Result.m_destinationZone;
+        var destinationLocation = Result.m_destinationLoc;
+
         var msg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
-            DestinationZone = Result.m_destinationZone,
-            DestinationLocation = Result.m_destinationLoc,
+            DestinationZone = destinationZone,
+            DestinationLocation = destinationLocation,
             SendToClient = true,
             OwnerCharId = playerObj.m_characterId,
             Cause = ZoneChangeCause.Door,

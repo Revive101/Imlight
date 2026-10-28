@@ -19,6 +19,7 @@
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.WizardData.Databases;
 using Raven.Client.Documents;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Imlight.CoreLib.WizardData.Collections;
@@ -41,7 +42,9 @@ internal sealed class WizardReagentCollection {
         using var session = s_store.OpenSession();
 
         // Check if the player already has this reagent. If so, increase the quantity.
+        // Waits for the index, so a reagent stored a moment ago is found too.
         var existingReagent = session.Query<ClientReagentItem>(collectionName: CollectionName)
+            .Customize(query => query.WaitForNonStaleResults())
             .FirstOrDefault(x => x.m_characterId == reagentItem.m_characterId
                               && x.m_templateID == reagentItem.m_templateID);
         if (existingReagent != null) {
@@ -107,6 +110,28 @@ internal sealed class WizardReagentCollection {
         associatedReagent.m_quantity = reagent.m_quantity;
 
         session.SaveChanges();
+        return true;
+    }
+
+    /// <summary>
+    /// Tries to retrieve the entire reagent bag of a player.
+    /// </summary>
+    /// <param name="charId">The ID of the player.</param>
+    /// <param name="reagentBag">The list of ClientReagentItem representing the player's reagents.</param>
+    /// <returns>True if the reagent bag was successfully retrieved, false otherwise.</returns>
+    public static bool TryGetWizardReagentBag(ulong charId, out List<ClientReagentItem> reagentBag) {
+        using var session = s_store.OpenSession();
+
+        var reagents = session.Query<ClientReagentItem>(collectionName: CollectionName)
+            .Where(x => x.m_characterId == charId)
+            .ToList();
+
+        if (reagents.Count == 0) {
+            reagentBag = null;
+            return false;
+        }
+
+        reagentBag = [.. reagents];
         return true;
     }
 

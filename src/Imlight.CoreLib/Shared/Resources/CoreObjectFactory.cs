@@ -37,7 +37,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/26/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -70,9 +70,8 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
     protected override void AfterLoad() {
         var serializer = new BindSerializer();
         if (!serializer.Deserialize(base.Stream.ToArray(), 1, out TemplateManifest)) {
-            Logger.Error("Could not deserialize TemplateManifest.xml.");
-
-            return;
+            throw new InvalidOperationException("TemplateManifest.xml in Root.wad could not be read. The cached " +
+                "game files may not match GameRevision in [Global Settings].");
         }
 
         Logger.Information("Loaded {TCount} CoreTemplates.", Logger.Args(TemplateManifest.m_serializedTemplates.Count));
@@ -90,8 +89,7 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
     public static T InitializeCoreObjectBehaviors<T>(T coreObject, ulong id) where T : CoreObject, new() {
         var template = GetCoreTemplate(id);
         if (template is null) {
-            Logger.Error("Could not initialize CoreObject from TemplateID {Tid}", 
-                Logger.Args(coreObject.m_templateID));
+            Logger.Debug("Could not initialize CoreObject from TemplateID {Tid}", Logger.Args(id));
 
             return coreObject;
         }
@@ -217,22 +215,36 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
     }
 
     /// <summary>
+    /// Gets the ID of the core template that matches the specified predicate, or 0 if not found.
+    /// </summary>
+    /// <param name="predicate">The predicate used to match the template.</param>
+    /// <param name="templateId">The ID of the matching core template, or 0 if not found.</param>
+    /// <returns>True if a matching template is found; otherwise, false.</returns>
+    public static bool TryGetCoreTemplateID(Func<TemplateLocation, bool> predicate, out uint templateId) {
+        templateId = 0;
+        var template = TemplateManifest?.m_serializedTemplates
+            .AsParallel()
+            .FirstOrDefault(predicate);
+
+        if (template is null) {
+            return false;
+        }
+
+        templateId = template.m_id;
+        return true;
+    }
+
+    /// <summary>
     /// Gets the ID of the core template that matches the specified predicate.
     /// </summary>
     /// <param name="predicate">The predicate used to match the template.</param>
     /// <returns>The ID of the matching core template.</returns>
     public static uint GetCoreTemplateID(Func<TemplateLocation, bool> predicate) {
-        var templateOrNull = TemplateManifest.m_serializedTemplates
-            .AsParallel()
-            .FirstOrDefault(predicate);
-
-        if (templateOrNull is null) {
+        if (!TryGetCoreTemplateID(predicate, out uint templateId)) {
             Logger.Error("Could not find CoreTemplate by predicate.");
-
-            return 0;
         }
 
-        return templateOrNull.m_id;
+        return templateId;
     }
 
     /// <summary>

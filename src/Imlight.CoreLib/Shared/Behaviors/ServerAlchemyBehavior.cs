@@ -32,6 +32,11 @@ public class ServerAlchemyBehavior : IClientBehaviorProvider<ClientAlchemyBehavi
 
     private static readonly int s_maxReagentStackAllowed = 999;
 
+    /// <summary>
+    /// The most units one reagent stack holds.
+    /// </summary>
+    internal static int MaxStack => s_maxReagentStackAllowed;
+
     public List<ulong> ReagentItemIds { get; set; }
 
     [JsonIgnore] public List<ClientReagentItem> Reagents { get; set; }
@@ -128,6 +133,15 @@ public class ServerAlchemyBehavior : IClientBehaviorProvider<ClientAlchemyBehavi
     /// <param name="templateId">The template ID of the reagent to get.</param>
     /// <returns>Returns the reagent object with the specified template ID, otherwise null.</returns>
     public ClientReagentItem GetReagent(ulong templateId) => Reagents?.FirstOrDefault(reagent => reagent.m_templateID == templateId) ?? null;
+
+    /// <summary>
+    /// Checks if the reagent bag has space to hold the specified number of reagents for a given template ID.
+    /// </summary>
+    /// <param name="templateId">The template ID of the reagent to check.</param>
+    /// <param name="count">The number of reagents to add.</param>
+    /// <returns><c>true</c> if the reagent stack has enough space; otherwise, <c>false</c>.</returns>
+    public bool HasReagentSpace(ulong templateId, int count = 1)
+        => count >= 0 && (GetReagent(templateId)?.m_quantity ?? 0) + count <= s_maxReagentStackAllowed;
 
     public ClientAlchemyBehavior GetClientBehaviorInstance() => new() {
         m_reagentBag = new ObjectBag() {

@@ -36,7 +36,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/27/2026
+ * Last Updated: 10/14/2026
  */
 
 using System;
@@ -46,6 +46,7 @@ using Akka.Actor;
 using Akka.Util.Internal;
 using Imcodec.Cryptography;
 using Imlight.Common;
+using Imlight.CoreLib.Game.Housing.Houses;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
@@ -71,6 +72,9 @@ public class GameWorld : ReceiveProtocolDispatcher, IWithTimers {
     private readonly Dictionary<string, IActorRef> _zoneLoaderActors = [];
     private readonly GameServer _server;
 
+    private readonly Dictionary<string, List<(ZONE_102_PROTOCOL.MSG_ZONETRANSFER Transfer, IActorRef Sender)>> _stoppingZones = [];
+    private int _instanceContainerSerial;
+
     private readonly Dictionary<ulong, IActorRef> _instanceContainers = [];
     private readonly Dictionary<string, (ulong Owner, bool Private)> _instanceCreationCalledByMap = [];
 
@@ -83,6 +87,9 @@ public class GameWorld : ReceiveProtocolDispatcher, IWithTimers {
         NpcSpellInventoryCollection.PreloadNpcSpellInventories();
         CreatureSpellbookCollection.PreloadSpellbooks();
         NpcDropTableCollection.PreloadDropTables();
+        HouseZoneIndex.Preload();
+        HouseTemplates.ValidateStarters();
+        HouseTextures.ValidateProxy();
     }
 
     public static Props Props(GameServer server)
@@ -220,6 +227,80 @@ public class GameWorld : ReceiveProtocolDispatcher, IWithTimers {
         _dynamicZoneIds.Remove(dynamicId);
     }
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_MATCHCONTAINEREMPTY))]
+    private void ReceiveMatchContainerEmpty(ZONE_102_PROTOCOL.MSG_MATCHCONTAINEREMPTY message) {
+        if (!_instanceContainers.Remove(message.OwnerId, out var instanceContainer)) {
+            return;
+        }
+
+        Logger.Information("Game world removes the empty instance container of {OwnerId}.", Logger.Args(message.OwnerId));
+
+        Context.Stop(instanceContainer);
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PUBLICZONEIDLE))]
+    private void ReceivePublicZoneIdle(ZONE_102_PROTOCOL.MSG_PUBLICZONEIDLE message) {
+        if (!_publicZones.TryGetValue(message.ZoneName, out var zone) || !zone.Equals(Sender)) {
+            return;
+        }
+
+        _stoppingZones.TryAdd(message.ZoneName, []);
+        Sender.Tell(new ZONE_102_PROTOCOL.MSG_PUBLICZONESTOPCHECK());
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PUBLICZONEKEEP))]
+    private void ReceivePublicZoneKeep(ZONE_102_PROTOCOL.MSG_PUBLICZONEKEEP message) {
+        if (!_stoppingZones.Remove(message.ZoneName, out var held)) {
+            return;
+        }
+
+        Logger.Debug("Public zone {ZoneName} stays loaded.", Logger.Args(message.ZoneName));
+
+        foreach (var (transfer, transferSender) in held) {
+            Sender.Tell(transfer, transferSender);
+        }
+    }
+
+    [MessageHandler(typeof(Terminated))]
+    private void ReceiveZoneTerminated(Terminated message) {
+        var zoneName = _publicZones.FirstOrDefault(zone => zone.Value.Equals(message.ActorRef)).Key;
+        if (zoneName is null) {
+            return;
+        }
+
+        _publicZones.Remove(zoneName);
+        Logger.Information("Game world dropped stopped zone {ZoneName}.", Logger.Args(zoneName));
+
+        // Anyone held back meanwhile starts over, which loads the zone again as on a first visit.
+        if (!_stoppingZones.Remove(zoneName, out var held)) {
+            return;
+        }
+
+        foreach (var (transfer, transferSender) in held) {
+            Self.Tell(transfer, transferSender);
+        }
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_INSTANCECONTAINEREMPTY))]
+    private void ReceiveInstanceContainerEmpty(ZONE_102_PROTOCOL.MSG_INSTANCECONTAINEREMPTY message) {
+        if (!_instanceContainers.TryGetValue(message.OwnerCharId, out var container) || !container.Equals(Sender)) {
+            return;
+        }
+
+        // A load or transfer for this owner is on its way to the container; it asks again when still empty.
+        var ownerPending = _awaitingTransfers.Keys.Any(t => t.OwnerCharId == message.OwnerCharId)
+                        || _instanceCreationCalledByMap.Values.Any(c => c.Owner == message.OwnerCharId);
+        if (ownerPending) {
+            return;
+        }
+
+        _instanceContainers.Remove(message.OwnerCharId);
+        Context.Stop(container);
+
+        Logger.Information("Game world stopped empty instance container of owner {OwnerId}.",
+            Logger.Args(message.OwnerCharId));
+    }
+
     private static string SanitizeZoneName(string zoneName)
         => zoneName.Replace('/', '-');
 
@@ -227,7 +308,7 @@ public class GameWorld : ReceiveProtocolDispatcher, IWithTimers {
         // A PRIVATE transfer (sigil dungeon / solo entry) must NEVER be satisfied by a shared public copy;
         // that would drop the player into a public instance of a dungeon they asked to enter privately.
         if (!message.IsPrivate && _publicZones.TryGetValue(message.DestinationZone, out var zone)) {
-            zone.Forward(message);
+            ForwardToPublicZone(zone, message);
 
             return;
         }
@@ -240,7 +321,13 @@ public class GameWorld : ReceiveProtocolDispatcher, IWithTimers {
         };
         var timeOut = TimeSpan.FromSeconds(5);
 
-        _instanceContainers[message.OwnerCharId]
+        if (!_instanceContainers.TryGetValue(message.OwnerCharId, out var container)) {
+            Self.Tell(message, originalSender);
+
+            return;
+        }
+
+        container
             .Ask<ZONE_102_PROTOCOL.MSG_INSTANCECONTAINERHASZONERSP>(hasZoneMsg, timeOut)
             .ContinueWith(t => new ZONE_102_PROTOCOL.MSG_INSTANCECONTAINER_QUERY_RESULT {
                 OriginalSender = originalSender,
@@ -269,8 +356,14 @@ public class GameWorld : ReceiveProtocolDispatcher, IWithTimers {
             return;
         }
 
-        // Instance container has the zone; forward the transfer to it.
-        _instanceContainers[message.OwnerCharId].Tell(message, result.OriginalSender);
+        // Instance container has the zone; forward the transfer to it. It may have stopped since; start over then.
+        if (!_instanceContainers.TryGetValue(message.OwnerCharId, out var container)) {
+            Self.Tell(message, result.OriginalSender);
+
+            return;
+        }
+
+        container.Tell(message, result.OriginalSender);
     }
 
     public void HandleOtherZoneTransfer(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message) {
@@ -287,8 +380,19 @@ public class GameWorld : ReceiveProtocolDispatcher, IWithTimers {
         }
         else {
             // If the zone is already loaded, we can transfer the player immediately.
-            zone.Forward(message);
+            ForwardToPublicZone(zone, message);
         }
+    }
+
+    private void ForwardToPublicZone(IActorRef zone, ZONE_102_PROTOCOL.MSG_ZONETRANSFER message) {
+        // A zone that asked to stop gets no new transfers until it answers or terminates.
+        if (_stoppingZones.TryGetValue(message.DestinationZone, out var held)) {
+            held.Add((message, Sender));
+
+            return;
+        }
+
+        zone.Forward(message);
     }
 
     private IActorRef CreateZoneLoader(string zonePath) {
@@ -333,6 +437,7 @@ public class GameWorld : ReceiveProtocolDispatcher, IWithTimers {
         // Zones created here are always the shared public copy; see ReceiveZoneLoadResults for
         // the isInstancedZone determination that routes instanced zones to an InstanceContainer instead.
         var zone = Context.ActorOf(Zone.Core.Zone.Props(zoneName, zoneId, false), zoneActorName);
+        Context.Watch(zone);
 
         // Log the new zone creation.
         Logger.Information("Game world created new zone: {ZoneName}",
@@ -342,9 +447,10 @@ public class GameWorld : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     private IActorRef CreateInstanceContainer(ulong ownerId) {
-        var zoneActorName = $"{nameof(InstanceContainer)}_{ownerId}"; // Append the owner ID to the zone name.
+        // The serial keeps the name free while a stopped container for the same owner is still shutting down.
+        var zoneActorName = $"{nameof(InstanceContainer)}_{ownerId}_{_instanceContainerSerial++}";
 
-        var instanceContainer = Context.ActorOf(InstanceContainer.Props(ownerId), zoneActorName);
+        var instanceContainer = Context.ActorOf(InstanceContainer.Props(ownerId, PvP.PvPRegistry.IsMatchInstanceOwner(ownerId)), zoneActorName);
         _instanceContainers.Add(ownerId, instanceContainer);
 
         // Log the new instance container creation.

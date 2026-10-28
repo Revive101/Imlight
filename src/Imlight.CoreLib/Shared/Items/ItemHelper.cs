@@ -37,15 +37,12 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 10/21/2026
  */
 
 using System;
 using System.Linq;
-using Imcodec.CoreObject;
 using Imcodec.Cryptography;
-using Imcodec.MessageLayer.Generated;
-using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.Bit;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Game.Pet;
@@ -55,7 +52,9 @@ using Imlight.CoreLib.WizardData.Models.Player;
 namespace Imlight.CoreLib.Shared.Items;
 
 internal static class ItemHelper {
-    
+
+    private const string RENTAL_ADJECTIVE = "Rental";
+
     /// <summary>
     /// Gets the <see cref="EquippedItemInfoList"/> for a <see cref="Wizard"/>. This is a lightweight version of the
     /// actual equipment that is used to publicly display the character's equipment.
@@ -68,6 +67,7 @@ internal static class ItemHelper {
             m_pattern = (Bui5) item.m_pattern,
             m_baseColor = (Bui5) item.m_primaryColor,
             m_trimColor = (Bui5) item.m_secondaryColor,
+            m_displayID = (uint) item.m_displayID,
         };
 
         return publicItem;
@@ -83,6 +83,47 @@ internal static class ItemHelper {
 
         return (WizItemTemplate) template;
     }
+
+    /// <summary>
+    /// Gets the template id of an item as the 32-bit id every template lookup uses.
+    /// </summary>
+    /// <param name="item">The item in question.</param>
+    /// <returns>The template id, capped at the largest 32-bit value.</returns>
+    internal static uint GetTemplateId(WizClientObjectItem item)
+        => (uint) Math.Min((ulong) item.m_templateID, uint.MaxValue);
+
+    /// <summary>
+    /// Whether the item was stitched, meaning it shows the look of a different item template.
+    /// </summary>
+    /// <param name="item">The item in question.</param>
+    /// <returns>True when the item carries an appearance template.</returns>
+    internal static bool IsStitched(WizClientObjectItem item) => (uint) item.m_displayID != 0;
+
+    /// <summary>
+    /// Whether an item template is a rental: it has the Rental adjective or a rental behavior.
+    /// </summary>
+    /// <param name="template">The item template, or null when the item has none.</param>
+    /// <returns>True for a rental.</returns>
+    internal static bool IsRental(WizItemTemplate template)
+        => template?.m_adjectiveList?.Any(adjective => string.Equals(adjective, RENTAL_ADJECTIVE, StringComparison.OrdinalIgnoreCase)) == true
+           || template?.m_behaviors?.OfType<RentalBehaviorTemplate>().Any() == true;
+
+    /// <summary>
+    /// Gets the id of the template that decides how an item looks: the appearance template of a stitched
+    /// item, otherwise the item's own template.
+    /// </summary>
+    /// <param name="item">The item in question.</param>
+    /// <returns>The template id used for the item's look and dye layers.</returns>
+    internal static uint GetDisplayTemplateId(WizClientObjectItem item)
+        => IsStitched(item) ? (uint) item.m_displayID : (uint) item.m_templateID;
+
+    /// <summary>
+    /// Gets the template that decides how an item looks. See <see cref="GetDisplayTemplateId"/>.
+    /// </summary>
+    /// <param name="item">The item in question.</param>
+    /// <returns>The appearance template. Null, if it wasn't found.</returns>
+    internal static WizItemTemplate GetDisplayTemplate(WizClientObjectItem item)
+        => CoreObjectFactory.GetCoreTemplate(GetDisplayTemplateId(item)) as WizItemTemplate;
 
     /// <summary>
     /// Gets the slot of a WizClientObjectItem from the template adjectives.
@@ -107,6 +148,22 @@ internal static class ItemHelper {
             }
         }
 
+        // The client dynamically adds "PIITeleportEffect" to m_adjectiveList in CustomEmoteBehaviorTemplate::OnPostLoad
+        // when m_emoteType == CustomEmoteType.CE_Teleport, so it is not present in the raw Root.wad template data.
+        if (itemTemplate.m_behaviors?.OfType<CustomEmoteBehaviorTemplate>().Any(b => b.m_emoteType == CustomEmoteType.CE_Teleport) == true) {
+            return new EquipmentSlot {
+                SlotType = EquipmentSlotType.PIITeleportEffect,
+            };
+        }
+
+        // The client dynamically adds "PIIVictoryDance" to m_adjectiveList in CustomEmoteBehaviorTemplate::OnPostLoad
+        // when m_emoteType == CustomEmoteType.CE_Emote, so it is not present in the raw Root.wad template data.
+        if (itemTemplate.m_behaviors?.OfType<CustomEmoteBehaviorTemplate>().Any(b => b.m_emoteType == CustomEmoteType.CE_Emote) == true) {
+            return new EquipmentSlot {
+                SlotType = EquipmentSlotType.PIIVictoryDance,
+            };
+        }
+
         return null;
     }
 
@@ -123,7 +180,7 @@ internal static class ItemHelper {
     }
 
     /// <summary>
-    /// Checks that a template can be given to a wizard as an inventory item.
+    /// Checks that a template can be given to a wizard as an item.
     /// </summary>
     /// <param name="templateId">The item template ID.</param>
     /// <returns>Why the item cannot be given, or null if it can.</returns>
@@ -156,34 +213,6 @@ internal static class ItemHelper {
         }
 
         return null;
-    }
-
-    /// <summary>
-    /// Adds a new copy of an item to a wizard's inventory. Check the template with <see cref="CheckGiveable"/> first.
-    /// </summary>
-    /// <param name="wizard">The wizard to give the item to.</param>
-    /// <param name="templateId">The item template ID.</param>
-    /// <param name="item">The item that was added.</param>
-    /// <returns>The message that shows the item to the wizard's client, or null if the item could not be added.</returns>
-    internal static GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_ADDITEM GiveItem(Wizard wizard, ulong templateId,
-                                                                          out WizClientObjectItem item) {
-        var added = PetFactory.IsPetTemplate((uint) templateId)
-            ? wizard.AddHatchedPetToInventory((uint) templateId, out item)
-            : wizard.AddItemToInventory(templateId, out item);
-        if (!added) {
-            return null;
-        }
-
-        var coSerializer = new CoreObjectSerializer(behaviors: SerializerFlags.None);
-        if (!coSerializer.Serialize(item, (uint) (PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit),
-                                    out var serializedItem)) {
-            return null;
-        }
-
-        return new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_ADDITEM {
-            GlobalID = wizard.GameObjectID,
-            SerializedItem = serializedItem
-        };
     }
 
 }

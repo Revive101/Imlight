@@ -37,7 +37,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/09/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -45,11 +45,15 @@ using System.Collections.Generic;
 using Akka.Actor;
 using Imcodec.CoreObject;
 using Imcodec.IO;
+using Imcodec.Math;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
+using Imlight.CoreLib.Game.Combat;
 using Imlight.CoreLib.Game.DropTables;
+using Imlight.CoreLib.Game.Spells;
+using Imlight.CoreLib.Game.Pet.Progression;
 using Imlight.CoreLib.Shared.Items;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
@@ -61,7 +65,7 @@ namespace Imlight.CoreLib.Game.Services;
 internal class CombatService(SessionActor sessionActor) : MessageService(sessionActor) {
 
     private const uint NO_AGGRO_EFFECT_STRINGID = 1618528611;
-    private const uint NO_AGGRO_EFFECT_DURATION_IN_SECONDS = 3;
+    private const uint NO_AGGRO_EFFECT_DURATION_IN_SECONDS = 20;
 
     private readonly CoreObjectSerializer _effectSerializer = new(
         behaviors: SerializerFlags.None
@@ -130,6 +134,20 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
         TellOtherServices(hubMsg);
     }
 
+    [MessageHandler(typeof(DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATVICTORY))]
+    private void ReceiveVictorySceneDone(DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATVICTORY message) {
+        // The client sends this when its victory scene is over; a PvP duel waits for it before it lets everyone go.
+        _currentDuelActor?.Tell(new COMBAT_106_PROTOCOL.MSG_PVPVICTORYSEEN { Actor = SessionActor.ActorRef });
+    }
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_PVPDUELENDED))]
+    private void ReceivePvPDuelEnded(COMBAT_106_PROTOCOL.MSG_PVPDUELENDED message) {
+        // A PvP duel grants no experience or loot and sends nobody to a hub; the director sends the players back.
+        GetActiveWizard().IsInDuel = false;
+        _currentDuelActor = null;
+        EquipMount();
+    }
+
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_COMBATWIN))]
     private void ReceiveCombatVictory(COMBAT_106_PROTOCOL.MSG_COMBATWIN message) {
         GetActiveWizard().IsInDuel = false;
@@ -137,11 +155,9 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
         EquipMount();
         SetNoAggroGrace();
 
-        // Send a message to ourselves to end the no aggro grace period.
-        var noAggroGraceOverMsg = new COMBAT_106_PROTOCOL.MSG_NOAGGROGRACEOVER();
         Timers.StartSingleTimer(
             "NoAggroGraceOver",
-            noAggroGraceOverMsg,
+            new COMBAT_106_PROTOCOL.MSG_NOAGGROGRACEOVER(),
             TimeSpan.FromSeconds(NO_AGGRO_EFFECT_DURATION_IN_SECONDS));
 
         // Gain 3 XP per pip used in the duel.
@@ -152,6 +168,8 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
             XP = xpGained,
         };
         TellOtherServices(msg);
+
+        PetCombatXp.Award(SessionActor.ActorRef, GetActiveGameObject(), GetActiveWizard());
 
         GrantMobLoot(message.MobTemplateIds);
     }
@@ -188,6 +206,19 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
             Actor = SessionActor.ActorRef
         };
         _currentDuelActor.Tell(msg);
+    }
+
+    [MessageHandler(typeof(WIZARD3_56_PROTOCOL.MSG_SetDeckArchmastery))]
+    private void ReceiveSetDeckArchmastery(WIZARD3_56_PROTOCOL.MSG_SetDeckArchmastery message) {
+        if (!CombatPipPayment.IsSchoolPipSchool(message.School)) {
+            return;
+        }
+
+        DeckArchmastery.SetSchool(GetActiveWizard(), message.ItemGID, message.School);
+        _currentDuelActor?.Tell(new COMBAT_106_PROTOCOL.MSG_ACTORSETARCHMASTERYSCHOOL {
+            Actor = SessionActor.ActorRef,
+            School = message.School
+        });
     }
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_CHEATINSTAWIN))]
@@ -256,6 +287,29 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
     private void ReceiveNoAggroGraceOver()
         => RemoveNoAggroEffect();
 
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENTMOVE))]
+    private void ReceiveClientMove(GAME_5_PROTOCOL.MSG_CLIENTMOVE message) {
+        var wizard = GetActiveWizard();
+        if (wizard is not null && wizard.IsInCombatGrace) {
+            RemoveNoAggroEffect();
+        }
+    }
+
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_JUMP))]
+    private void ReceiveClientJump(GAME_5_PROTOCOL.MSG_JUMP message) {
+        var wizard = GetActiveWizard();
+        if (wizard is not null && wizard.IsInCombatGrace) {
+            RemoveNoAggroEffect();
+        }
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_SENDTOHUB))]
+    private void ReceiveSendToHub(ZONE_102_PROTOCOL.MSG_SENDTOHUB message) {
+        if (GetActiveWizard()?.IsInCombatGrace == true) {
+            RemoveNoAggroEffect();
+        }
+    }
+
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT))]
     private void ReceiveClientDisconnect(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT message) {
         if (_currentDuelActor != null) {
@@ -291,6 +345,12 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
         }
 
         var wizard = GetActiveWizard();
+        if (!wizard.InventoryBehavior.HasItem(_cachedMountId)) {
+            _cachedMountId = 0;
+
+            return;
+        }
+
         var wizEquipmentBehavior = wizard.EquipmentBehavior;
         var slot = wizEquipmentBehavior.GetSlotOfItem(_cachedMountId);
 
@@ -300,7 +360,7 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
             // Send a message to the client to assure them that the server does not have the item equipped.
             SendUnequipItem("Mount", slot, _cachedMountId);
 
-            Logger.Warning("Equip failed on item {0}", Logger.Args(_cachedMountId));
+            Logger.Warning("Mount {ItemId} of {Wizard} could not be equipped again after combat.", Logger.Args(_cachedMountId, wizard.PlayerNameBehavior.GetWizardName()));
             return;
         }
 
@@ -320,8 +380,14 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
         }
 
         var wizard = GetActiveWizard();
+        if (!wizard.InventoryBehavior.HasItem(_cachedMountId)) {
+            _cachedMountId = 0;
+
+            return;
+        }
+
         if (!wizard.InventoryToEquipmentTransfer(_cachedMountId, out var addedEffects, out var _)) {
-            Logger.Warning("Equip failed on item {0}", Logger.Args(_cachedMountId));
+            Logger.Warning("Mount {ItemId} of {Wizard} could not be equipped again after combat.", Logger.Args(_cachedMountId, wizard.PlayerNameBehavior.GetWizardName()));
             return;
         }
 
@@ -360,7 +426,7 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
             // Send a message to the client to assure them that the server does not have the item equipped.
             SendUnequipItem("Mount", slot, _cachedMountId);
 
-            Logger.Warning("Unequip failed on item {0}", Logger.Args(_cachedMountId));
+            Logger.Warning("Mount {ItemId} of {Wizard} could not be put away for combat.", Logger.Args(_cachedMountId, wizard.PlayerNameBehavior.GetWizardName()));
             return;
         }
 
@@ -373,8 +439,8 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
         // Serialize item and broadcast equip action to other players.
         var pubItem = ItemHelper.GetPublicItem(item);
 
-        if (_itemSerializer.Serialize(pubItem, PropertyFlags.Prop_Transmit, out var data)) {
-            Logger.Error("Failed to serialize item {0}", Logger.Args(item.m_globalID));
+        if (!_itemSerializer.Serialize(pubItem, PropertyFlags.Prop_Transmit, out var data)) {
+            Logger.Error("Item {ItemId} could not be serialized, so other players do not see it equipped.", Logger.Args(item.m_globalID));
 
             return;
         }
@@ -413,7 +479,8 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
             wizardObj = GetActiveWizard()?.GetInitializedGameObject();
 
             if (wizardObj is null) {
-                Logger.Error("Failed to get wizard object for adding effects.");
+                Logger.Warning("Session {SessionId} has no character in the zone yet, so its equipment effects are not sent.",
+                    Logger.Args(SessionActor.SessionID));
                 return;
             }
         }
@@ -423,7 +490,7 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
         foreach (var effect in effects) {
             var flags = PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit;
             if (!_effectSerializer.Serialize(effect, flags, out var effectSerializedData)) {
-                Logger.Error("Failed to serialize effect {0}", Logger.Args(effect.m_effectNameID));
+                Logger.Error("Effect {Effect} could not be serialized, so the client does not get it.", Logger.Args(effect.m_effectNameID));
 
                 continue;
             }
@@ -449,8 +516,13 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
 
     private void SetNoAggroGrace() {
         var wizard = GetActiveWizard();
-        var charObjId = GetActiveGameObject().m_globalID;
-        var effectInternalId = wizard.GameEffects.Count + 1;
+        var charObj = GetActiveGameObject();
+        if (wizard is null || charObj is null) {
+            return;
+        }
+
+        var charObjId = charObj.m_globalID;
+        var effectInternalId = wizard.NextEffectInternalId();
 
         var epoch = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         var endTime = epoch + NO_AGGRO_EFFECT_DURATION_IN_SECONDS;
@@ -466,7 +538,7 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
         wizard.IsInCombatGrace = true;
 
         if (!_effectSerializer.Serialize(effect, PropertyFlags.Prop_Transmit, out var effectSerializedData)) {
-            Logger.Error("Failed to serialize effect {0}", Logger.Args(effect.m_effectNameID));
+            Logger.Error("Effect {Effect} could not be serialized, so the client does not get it.", Logger.Args(effect.m_effectNameID));
 
             return;
         }
@@ -478,8 +550,19 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
     }
 
     private void RemoveNoAggroEffect() {
+        Timers.Cancel("NoAggroGraceOver");
+
         var wizard = GetActiveWizard();
-        var charObjId = GetActiveGameObject().m_globalID;
+        if (wizard is null) {
+            return;
+        }
+
+        wizard.IsInCombatGrace = false;
+
+        var charObj = GetActiveGameObject();
+        if (charObj is null) {
+            return;
+        }
 
         var effect = wizard.GameEffects.Find(e => e.m_effectNameID == NO_AGGRO_EFFECT_STRINGID);
         if (effect is null) {
@@ -487,10 +570,9 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
         }
 
         wizard.GameEffects.Remove(effect);
-        wizard.IsInCombatGrace = false;
 
         SendToSocket(new GAME_5_PROTOCOL.MSG_REMOVEEFFECT() {
-            GameObjectID = charObjId,
+            GameObjectID = charObj.m_globalID,
             EffectNameID = effect.m_effectNameID,
             InternalID = effect.m_internalID,
         });

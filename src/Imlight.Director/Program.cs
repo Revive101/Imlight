@@ -37,14 +37,14 @@
  *
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/10/2026
+ * Last Updated: 10/25/2026
 */
 
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Globalization;
 using System.IO;
+using System.Reflection;
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.CoreLib.Auth;
@@ -57,6 +57,7 @@ using Imlight.CoreLib.WizardData;
 using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.CoreLib.WizardData.Collections;
+using Imlight.CoreLib.Game.CrownShop;
 
 namespace Imlight.Director;
 
@@ -66,7 +67,7 @@ namespace Imlight.Director;
 /// <remarks>
 /// The Director handles the initialization sequence including configuration loading, 
 /// Akka.NET system setup, resource loading, server startup, and database preparation.
-/// The server runs indefinitely after initialization with periodic "still alive" status messages.
+/// The server runs indefinitely after initialization. A startup step that fails logs one Fatal line and exits with 1.
 /// </remarks>
 internal static class Program {
 
@@ -74,31 +75,26 @@ internal static class Program {
     // Imlight - PROTO   -- Marks the beginning of the project. Very early serialization and networking.
     // Imlight - NETHRA  -- We are in-game. The game is playable and mostly stable, but not feature complete.
     // Imlight - KALI    -- We feel very confident in the stability of previous systems, and are becoming feature complete.
+    // Imlight - KALPA   -- Beta. The release number is <Version> in Imlight.Director.csproj.
     private const string ActorSystemName = "Imlight";
-    private const string MajorVersion = "KALI";
+    private const string MajorVersion = "KALPA";
+    private const string ADMIN_ACCOUNT_PLACEHOLDER_EMAIL = "testtest@r101.com";
+    private const string SHIPPED_ADMIN_ACCOUNT_PASSWORD = "compsci";
 
     private static ActorSystem s_imlightSystem;
 
-    private static readonly string s_loginServerName = 
-        ConfigurationManager.Settings["Login Server.LoginServerName"].AsString();
-    private static readonly ushort s_loginServerPort = 
-        ConfigurationManager.Settings["Login Server.LoginServerPort"].AsUShort();
-    private static readonly string s_patchServerName = 
-        ConfigurationManager.Settings["Patch Server.PatchServerName"].AsString();
-    private static readonly ushort s_patchServerPort = 
-        ConfigurationManager.Settings["Patch Server.PatchServerPort"].AsUShort();
-    private static readonly byte s_gameServerCount = 
-        ConfigurationManager.Settings["Game Server.GameServerCount"].AsByte();
-    private static readonly string s_gameServerName = 
-        ConfigurationManager.Settings["Game Server.GameServerName"].AsString();
-    private static readonly ushort s_gameServerPort = 
-        ConfigurationManager.Settings["Game Server.GameServerPort"].AsUShort();
-    private static readonly string[] s_realmNames = 
-        ConfigurationManager.Settings["Game Server.RealmNames"].AsString().Split(',');
-    private static readonly string s_adminAccountUsername = 
-        ConfigurationManager.Settings["Database.AdminAccountUsername"].AsString();
-    private static readonly string s_adminAccountPassword = 
-        ConfigurationManager.Settings["Database.AdminAccountPassword"].AsString();
+    private static string s_loginServerName;
+    private static ushort s_loginServerPort;
+    private static string s_patchServerName;
+    private static ushort s_patchServerPort;
+    private static byte s_gameServerCount;
+    private static byte s_maxGameServersAllowed;
+    private static string s_gameServerName;
+    private static ushort s_gameServerPort;
+    private static string s_gameServerIp;
+    private static string[] s_realmNames;
+    private static string s_adminAccountUsername;
+    private static string s_adminAccountPassword;
 
     private static void Main() {
         // =============================================================
@@ -116,22 +112,33 @@ internal static class Program {
         // =============================================================
         // IMLIGHT CONFIGURATION
         // =============================================================
-        ConfigurationManager.Initialize(
-            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Config/Imlight.ini")
-        );
+        // The logger reads its settings from Imlight.ini, so a missing file can only go to the console.
+        var configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Config/Imlight.ini");
+        if (!File.Exists(configPath)) {
+            Console.Error.WriteLine($"Missing {configPath}. Restore Config/Imlight.ini from the release download.");
+            Environment.ExitCode = 1;
+
+            return;
+        }
+
+        ConfigurationManager.Initialize(configPath);
+        if (!TryRunStartupStep("read Config/Imlight.ini", "Set it, then restart.", ReadSettings)) {
+            return;
+        }
+
+        Logger.Information("Imlight {Version} starting", Logger.Args(GetFormattedVersion()));
         Logger.Information("Imlight configuration loaded.");
 
         // =============================================================
         // AKKA.NET CONFIGURATION
         // =============================================================
-        Logger.Information("Getting Akka.NET configuration..");
         if (!AkkaConfiguration.CreateActorSystem(ActorSystemName, out var system)) {
-            Logger.Fatal($"Could not find Akka.NET config file!");
-            _ = Console.ReadKey();
+            Environment.ExitCode = 1;
 
             return;
         }
-        Logger.Information("Akka.NET system created.");
+
+        Logger.Debug("Akka.NET system created.");
         s_imlightSystem = system;
 
         // =============================================================
@@ -139,18 +146,23 @@ internal static class Program {
         // =============================================================
         // The patch server must start prior to any resources. This is to ensure that any
         // missing resources may be downloaded from the patch server as needed.
-        var task = StartPatchServer();
-        task.Wait();
+        if (!TryRunStartupStep("start the patch server", "Check [Patch Server] in Config/Imlight.ini, then restart.",
+                () => StartPatchServer().Wait())) {
+            return;
+        }
 
-        // Load resources. Record the time it takes to load resources.
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        Logger.Information("Director is now explicitly loading resources..");
-        var resourceContainer = new ResourceContainer();
-        LoadResources();
-        Logger.Information("Director has called all resources to load.");
+        if (!TryRunStartupStep("load the game files", "Check the lines above, then restart.",
+                () => _ = new ResourceContainer())) {
+            return;
+        }
+
+        if (!TryRunStartupStep("load the world data", "Check the SpiralDB lines above, then restart.", LoadResources)) {
+            return;
+        }
+
         stopwatch.Stop();
-        Logger.Information($"Resource loading completed in {0} ms.",
-            Logger.Args(stopwatch.ElapsedMilliseconds));
+        Logger.Information("Resources loaded in {ElapsedMs} ms.", Logger.Args(stopwatch.ElapsedMilliseconds));
 
         // =============================================================
         // SERVERS
@@ -158,11 +170,11 @@ internal static class Program {
         var loginServer = StartLoginServer();
         StartGameServers(loginServer);
 
-        // Force load dragon database. Create a dud account if the database ends up using the embedded database.
-        _ = PlayerDatabase.Instance.Store;
-        CreateEmbeddedDatabaseAccounts();
+        if (!TryRunStartupStep("prepare the player database", "Check [Database] in Config/Imlight.ini, then restart.",
+                PreparePlayerDatabase)) {
+            return;
+        }
 
-        OnlinePlayerCollection.Clear();
         LoginWarmup.Run();
 
         // Plugins subscribe to events here, before any player can connect.
@@ -170,42 +182,43 @@ internal static class Program {
         AppDomain.CurrentDomain.ProcessExit += (_, _) => PluginManager.DisableAll();
 
         // The login and game servers accept no connection until everything above is done.
-        if (!StartListening(loginServer)) {
-            Environment.ExitCode = 1;
-
+        if (!TryRunStartupStep("open the login and game server ports",
+                "Check that no other program uses them, then restart.", () => StartListening(loginServer))) {
             return;
         }
 
-        // Keep program busy with a while loop.
-        Logger.Information("Imlight may now be connected to.");
+        var loginAddress = string.IsNullOrWhiteSpace(s_gameServerIp)
+            ? $"port {s_loginServerPort}"
+            : $"{s_gameServerIp}:{s_loginServerPort}";
+        Logger.Information("Imlight is ready. Players connect to {LoginAddress}.", Logger.Args(loginAddress));
+
         while (true) {
             // Sleep for 5 minutes.
             Thread.Sleep(300000);
 
-            Logger.Information("Still alive..");
+            Logger.Debug("Still alive..");
         }
     }
 
-    private static bool StartListening(IActorRef loginServer) {
-        try {
-            var message = new SERVER_100_PROTOCOL.MSG_STARTLISTENING();
-            _ = loginServer
-                .Ask<SERVER_100_PROTOCOL.MSG_STARTLISTENING_COMPLETE>(message, Server.StartListeningTimeout)
-                .GetAwaiter()
-                .GetResult();
-
-            return true;
-        } catch (Exception ex) {
-            Logger.Fatal("The login and game servers did not start listening. {Exception}", Logger.Args(ex));
-
-            return false;
-        }
+    private static void StartListening(IActorRef loginServer) {
+        var message = new SERVER_100_PROTOCOL.MSG_STARTLISTENING();
+        _ = loginServer
+            .Ask<SERVER_100_PROTOCOL.MSG_STARTLISTENING_COMPLETE>(message, Server.StartListeningTimeout)
+            .GetAwaiter()
+            .GetResult();
     }
 
     private static void LoadResources() {
         // Load SpiralDB — the in-memory world database from JSON files.
         SpiralDB.Load();
+
+        if (SpiralDB.ZoneData.Count == 0) {
+            throw new InvalidOperationException("SpiralDB loaded no world data.");
+        }
+
+        CrownShopHandler.Load();
     }
+
     private static IActorRef StartLoginServer() {
         var loginServerName = s_loginServerName;
         var loginServerPort = s_loginServerPort;
@@ -213,7 +226,7 @@ internal static class Program {
         var loginServerProps = LoginServer.Props(loginServerName, loginServerPort);
         var loginServerActor = s_imlightSystem.ActorOf(loginServerProps, loginServerName);
 
-        Logger.Debug("New actor created under {systemName}: {LoggerinServerName}",
+        Logger.Debug("New actor created under {SystemName}: {LoginServerName}",
             Logger.Args(s_imlightSystem.Name, loginServerName));
 
         return loginServerActor;
@@ -223,9 +236,21 @@ internal static class Program {
         var count = Math.Max(s_gameServerCount, (byte) 1);
         var basePort = s_gameServerPort;
 
+        if (count > s_maxGameServersAllowed) {
+            Logger.Warning("[Game Server] GameServerCount is {Count}, more than MaxGameServersAllowed ({Max}), so only " +
+                "that many realms start. Raise MaxGameServersAllowed to run more.",
+                Logger.Args(count, s_maxGameServersAllowed));
+            count = s_maxGameServersAllowed;
+        }
+
+        if (s_realmNames.Length < count) {
+            Logger.Warning("[Game Server] RealmNames lists {Names} names for {Count} realms, so the others are " +
+                "named Realm-{FirstUnnamed} onward.", Logger.Args(s_realmNames.Length, count, s_realmNames.Length + 1));
+        }
+
         for (byte i = 0; i < count; i++) {
             var realmName = i < s_realmNames.Length 
-                ? s_realmNames[i].Trim() 
+                ? s_realmNames[i]
                 : $"Realm-{i + 1}";
             var serverName = $"{s_gameServerName}.{realmName}";
             var port = (ushort) (basePort + i);
@@ -237,8 +262,7 @@ internal static class Program {
             };
             loginServerActorRef.Tell(msg);
 
-            Logger.Information("Director requested game server '{Name}' on port {Port} (realm: {Realm}).",
-                Logger.Args(serverName, port, realmName));
+            Logger.Information("Starting realm {Realm} on port {Port}.", Logger.Args(realmName, port));
         }
     }
 
@@ -249,7 +273,7 @@ internal static class Program {
         var patchProps = PatchServer.Props(defaultPatchServerName, defaultPatchServerPort);
         var actor = s_imlightSystem.ActorOf(patchProps, defaultPatchServerName);
 
-        Logger.Debug("New actor created under {systemName}: {patchServerName}",
+        Logger.Debug("New actor created under {SystemName}: {PatchServerName}",
             Logger.Args(s_imlightSystem.Name, defaultPatchServerName));
 
         // Await initialization of the patch server.
@@ -258,18 +282,73 @@ internal static class Program {
         );
     }
 
+    private static void PreparePlayerDatabase() {
+        _ = PlayerDatabase.Instance.Store
+            ?? throw new InvalidOperationException("The embedded database did not start, see the error above.");
+        CreateEmbeddedDatabaseAccounts();
+
+        OnlinePlayerCollection.Clear();
+        TradeEscrowCollection.RecoverAll();
+    }
+
     private static void CreateEmbeddedDatabaseAccounts() {
         // At least one account needs to exist.
-        var adminAccountUsername = s_adminAccountUsername;
-        var adminAccountPassword = s_adminAccountPassword;
         DatabaseUtilities.CreateEmbeddedDatabaseAccount(
-            adminAccountUsername,
-            "testtest@r101.com",
-            adminAccountPassword,
+            s_adminAccountUsername,
+            ADMIN_ACCOUNT_PLACEHOLDER_EMAIL,
+            s_adminAccountPassword,
             AuthLevel.Administrator);
 
-        Logger.Information("Created admin account.");
-        Logger.Information("Embedded database accounts created.");
+        Logger.Information("Admin account '{Username}' is ready.", Logger.Args(s_adminAccountUsername));
+        if (s_adminAccountPassword == SHIPPED_ADMIN_ACCOUNT_PASSWORD) {
+            Logger.Warning("[Database] AdminAccountPassword is still the shipped default, so anyone can sign in " +
+                "as '{Username}'. Set your own before the account is first created.",
+                Logger.Args(s_adminAccountUsername));
+        }
+    }
+
+    private static void ReadSettings() {
+        s_loginServerName = ReadRequiredSetting("Login Server", "LoginServerName", value => value.AsString());
+        s_loginServerPort = ReadRequiredSetting("Login Server", "LoginServerPort", value => value.AsUShort());
+        s_patchServerName = ReadRequiredSetting("Patch Server", "PatchServerName", value => value.AsString());
+        s_patchServerPort = ReadRequiredSetting("Patch Server", "PatchServerPort", value => value.AsUShort());
+        s_gameServerCount = ReadRequiredSetting("Game Server", "GameServerCount", value => value.AsByte());
+        s_maxGameServersAllowed = ReadRequiredSetting("Game Server", "MaxGameServersAllowed", value => value.AsByte());
+        s_gameServerName = ReadRequiredSetting("Game Server", "GameServerName", value => value.AsString());
+        s_gameServerPort = ReadRequiredSetting("Game Server", "GameServerPort", value => value.AsUShort());
+        s_gameServerIp = ConfigurationManager.Settings["Game Server.GameServerIP"].AsString();
+        s_realmNames = ConfigurationManager.Settings["Game Server.RealmNames"].AsList();
+        s_adminAccountUsername = ReadRequiredSetting("Database", "AdminAccountUsername", value => value.AsString());
+        s_adminAccountPassword = ReadRequiredSetting("Database", "AdminAccountPassword", value => value.AsString());
+    }
+
+    private static T ReadRequiredSetting<T>(string section, string key,
+                                            Func<ConfigurationManager.ConfigValue, T> convert) {
+        var value = ConfigurationManager.GetSetting($"{section}.{key}");
+        if (string.IsNullOrWhiteSpace(value)) {
+            throw new FormatException($"[{section}] {key} is missing.");
+        }
+
+        try {
+            return convert(new ConfigurationManager.ConfigValue(value));
+        } catch (Exception ex) when (ex is FormatException or OverflowException) {
+            throw new FormatException($"[{section}] {key} = {value} is not a valid value.");
+        }
+    }
+
+    private static bool TryRunStartupStep(string step, string fixHint, Action run) {
+        try {
+            run();
+
+            return true;
+        } catch (Exception ex) {
+            Logger.Fatal("Imlight could not {Step}: {Reason} {Fix}",
+                Logger.Args(step, ex.GetBaseException().Message, fixHint));
+            Logger.Debug("{Exception}", Logger.Args(ex));
+            Environment.ExitCode = 1;
+
+            return false;
+        }
     }
 
     private static void PrintTitle() {
@@ -289,24 +368,25 @@ internal static class Program {
         Console.Write("   :: L&G Boot ::    ");
         Console.ForegroundColor = ConsoleColor.White;
 
-        // Write the version. Our schema is NNyWWc, where NN is the two-digit year, and WW is the week of the year.
-        // c is the build configuration, which is either DEBUG or RELEASE.
+        // Version schema: (ERA release commit configuration), e.g. KALPA 1.0.0-beta 95e87fc canary.
         var buildConfiguration = GetBuildConfiguration();
         Console.Write(@"|___/");
         Console.ForegroundColor = ConsoleColor.DarkGray;
-
-        // Get the current year and week of the year.
-        var year = DateTime.Now.Year.ToString().Substring(2);
-        DateTime today = DateTime.Now;
-        int quarter = (today.Month - 1) / 3 + 1;
-        // Get the ISO week number
-        int week = CultureInfo.InvariantCulture.Calendar.GetWeekOfYear(
-                        today,
-                        CalendarWeekRule.FirstDay,
-                        DayOfWeek.Monday);
-
-        Console.Write($" ({MajorVersion} {year}Q{quarter}.{week}c {buildConfiguration})\n");
+        Console.Write($" ({MajorVersion} {GetFormattedVersion()} {buildConfiguration})\n");
         Console.WriteLine("");
+    }
+
+    private static string GetFormattedVersion() {
+        var informationalVersion = typeof(Program).Assembly
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "unknown";
+        var separatorIndex = informationalVersion.IndexOf('+');
+        if (separatorIndex < 0) {
+            return informationalVersion;
+        }
+
+        var commit = informationalVersion[(separatorIndex + 1)..];
+
+        return $"{informationalVersion[..separatorIndex]} {commit[..Math.Min(7, commit.Length)]}";
     }
 
     private static string GetBuildConfiguration() {

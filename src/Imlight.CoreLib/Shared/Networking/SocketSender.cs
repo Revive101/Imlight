@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/09/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -83,7 +83,6 @@ internal sealed class SocketSender : ReceiveActor, IDisposable {
         }
 
         _isDisposed = true;
-        _sessionActorRef.Ask("Close");
 
         _socket?.Close();
         _socket?.Dispose();
@@ -94,17 +93,27 @@ internal sealed class SocketSender : ReceiveActor, IDisposable {
         base.PostStop();
     }
 
+    private void DisposeAfterSocketEnded() {
+        if (_isDisposed) {
+            return;
+        }
+
+        _sessionActorRef.Tell("Close");
+        Dispose();
+    }
+
     private void SendToSocket(IMessage message) {
         if (_isDisposed || !_socket.Connected) {
             LogDroppedPacket(message, _isDisposed ? "disposed" : "not connected");
-            Dispose();
+            DisposeAfterSocketEnded();
 
             return;
         }
+
         if (_isSending) {
-            Logger.Error("SessionActor {SessionId} send failure: " +
-                         "Synchronous send operation already in progress.", Logger.Args(_sessionid));
-                         
+            Logger.Warning("SessionActor {SessionId} dropped {ScopedMessageName}: another send is still in progress.",
+                Logger.Args(_sessionid, GetScopedMessageName(message)));
+
             return;
         }
 
@@ -125,7 +134,7 @@ internal sealed class SocketSender : ReceiveActor, IDisposable {
         catch (InvalidOperationException ex) {
             // Includes ObjectDisposedException, thrown when the listener side closed the shared socket.
             LogDroppedPacket(message, ex.GetType().Name);
-            Dispose();
+            DisposeAfterSocketEnded();
 
             return;
         }

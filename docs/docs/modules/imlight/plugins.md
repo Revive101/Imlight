@@ -121,7 +121,7 @@ Commands.Register("trade", c => {
 
 | Method | Behaviour |
 | --- | --- |
-| `GiveItem(templateId)` | Gives a new copy of the item. Nothing is given if the backpack is full. Throws `ArgumentException` if the template does not exist or is not an item. |
+| `GiveItem(templateId)` | Gives a new copy of the item the way loot is given: into the backpack, or the bank when the backpack is full (jewels may go to the shared bank). If there is no room anywhere, the item is lost and the player is told. Throws `ArgumentException` if the template does not exist or is not an item. |
 | `RemoveItem(itemId)` | Removes that exact item from the backpack. Takes an `ItemId`, not a template ID. Does nothing if the item is not there or is equipped. |
 
 Both are applied by the player's session after they return, like `SetLevel`, so `Inventory` may still show the old items straight afterwards.

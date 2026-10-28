@@ -44,7 +44,6 @@ using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.Common;
 using Imlight.CoreLib.Game.Commands;
-using Imlight.CoreLib.WizardData;
 using Imlight.CoreLib.Game.World;
 using Imlight.CoreLib.Game.Processes;
 using Imlight.CoreLib.Shared.Cryptography;
@@ -303,6 +302,13 @@ public class GameServer : Server {
         return newId;
     }
 
+    protected override void ReceiveDeallocateSocket(SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET message) {
+        // A queued session that disconnects must not stay in the queue.
+        _playerQueue.RemoveAll(s => s.SessionID == message.Id);
+
+        base.ReceiveDeallocateSocket(message);
+    }
+
     private void ActiveSessionsChangedEvent(object obj, NotifyCollectionChangedEventArgs args) {
         // Anytime a player has left, we'll check to see if a queue is active. If so, we'll grab the next player
         // and finally allocate their slot.
@@ -351,7 +357,7 @@ public class GameServer : Server {
         public ulong UserId;
         public ulong CharId;
         public string FallbackZone;
-        public uint FallbackZoneId;
+        public ulong FallbackZoneId;
         public string FallbackLocation;
         public string GameServerIp;
         public ushort GameServerPort;

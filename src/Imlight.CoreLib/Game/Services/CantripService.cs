@@ -289,14 +289,14 @@ internal class CantripService(SessionActor sessionActor) : MessageService(sessio
         if (cantrip.m_name == "CantripsMinorInvisibility") {
             effect = new NamedEffect {
                 m_effectNameID = 1662424096, // if someone can find the string for this stringhash i will cum rapidly and forcefully, breaking the sound barrier in the process
-                m_internalID = wizard.GameEffects.Count,
+                m_internalID = wizard.NextEffectInternalId(),
                 m_endTime = (uint) DateTimeOffset.UtcNow.AddSeconds(60).ToUnixTimeSeconds()
             };
         }
         else if (cantrip.m_name == "CantripsMajorInvisibility") {
             effect = new CantripsMajorInvisibilityEffect {
                 m_effectNameID = StringHash.Compute("CantripsMajorInvisibilityEffect"),
-                m_internalID = wizard.GameEffects.Count
+                m_internalID = wizard.NextEffectInternalId()
             };
         }
         else {

@@ -17,6 +17,7 @@
  */
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
@@ -31,6 +32,28 @@ using Imlight.CoreLib.WizardData.Models.World;
 namespace Imlight.CoreLib.Game.DropTables;
 
 public static class DropTableRoller {
+
+    private static readonly ConcurrentDictionary<string, byte> s_missingTables = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// Keeps the drop table names that SpiralDB has.
+    /// </summary>
+    /// <param name="names">The drop table names.</param>
+    /// <returns>The names SpiralDB has, in order. A name it lacks is left out and logged the first time.</returns>
+    internal static string[] KeepKnownTables(IEnumerable<string> names) {
+        List<string> known = [];
+        foreach (var name in names) {
+            if (DropTableCollection.GetDropTable(name) is not null) {
+                known.Add(name);
+            } else if (s_missingTables.TryAdd(name, 0)) {
+                Logger.Warning("The loot table {Table} is not in SpiralDB, so it is skipped.", Logger.Args(name));
+            }
+        }
+
+        return [.. known];
+    }
+
+    private static readonly ConcurrentDictionary<string, byte> s_warnedTableNames = new();
 
     /// <summary>
     /// Rolls multiple drop tables with requirement validation against the provided player context
@@ -72,8 +95,9 @@ public static class DropTableRoller {
             // Load drop table from database.
             var dropTable = DropTableCollection.GetDropTable(tableName);
             if (dropTable == null) {
-                Logger.Warning("Roller encountered missing drop table {0} that was not present in the database.",
-                    Logger.Args(tableName));
+                if (s_warnedTableNames.TryAdd(tableName, 0)) {
+                    Logger.Warning("Drop table {Table} is not in the world database; its loot is skipped.", Logger.Args(tableName));
+                }
 
                 continue;
             }
@@ -86,7 +110,7 @@ public static class DropTableRoller {
             combinedResult.ExperienceAmount += tableResult.ExperienceAmount;
             combinedResult.TrainingPoints += tableResult.TrainingPoints;
             combinedResult.Items.AddRange(tableResult.Items);
-            combinedResult.GrantsPotionSlot = tableResult.GrantsPotionSlot;
+            combinedResult.GrantsPotionSlot |= tableResult.GrantsPotionSlot;
             
         }
 
@@ -116,6 +140,7 @@ public static class DropTableRoller {
         result.ExperienceAmount = dropTable.ExperienceAmount;
         result.MagicSchool = "All"; 
         result.TrainingPoints = dropTable.TrainingPoints;
+        result.GrantsPotionSlot = dropTable.GrantsPotionSlot;
         
         // Roll items with requirements validation.
         result.Items = RollTableItems(dropTable, playerRef, playerObj, wizard, random);

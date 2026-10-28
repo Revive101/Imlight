@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/09/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -55,11 +55,11 @@ internal class ClientService(SessionActor sessionActor) : MessageService(session
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT))]
     private void ReceiveClientDisconnect() {
-        Logger.Information("SessionActor {SessionId} CLIENT_DISCONNECT received.", Logger.Args(SessionActor.SessionID));
+        Logger.Debug("Session {SessionId} asked to disconnect.", Logger.Args(SessionActor.SessionID));
 
         SendToSocket(new GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT());
 
-        Logger.Information("SessionActor {SessionId} CLIENT_DISCONNECT echoed.", Logger.Args(SessionActor.SessionID));
+        Logger.Debug("Session {SessionId} disconnect confirmed.", Logger.Args(SessionActor.SessionID));
 
         // The client closes its end of the connection after the echo, so the server does not close first.
         CloseSessionAfterClient();
@@ -67,12 +67,12 @@ internal class ClientService(SessionActor sessionActor) : MessageService(session
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_QUERY_LOGOUT))]
     private void ReceiveQueryLogout(GAME_5_PROTOCOL.MSG_QUERY_LOGOUT message) {
-        Logger.Information("SessionActor {SessionId} QUERY_LOGOUT received.", Logger.Args(SessionActor.SessionID));
+        Logger.Debug("Session {SessionId} asked to log out.", Logger.Args(SessionActor.SessionID));
 
         var isInstance = QueryIsInstance(SessionActor.GetZoneActor(), SessionActor.SessionID);
         SendToSocket(new GAME_5_PROTOCOL.MSG_QUERY_LOGOUT { IsInstance = isInstance });
 
-        Logger.Information("SessionActor {SessionId} QUERY_LOGOUT replied (IsInstance={IsInstance}).",
+        Logger.Debug("Session {SessionId} logout answered (in an instance: {IsInstance}).",
             Logger.Args(SessionActor.SessionID, isInstance));
     }
 
@@ -94,7 +94,7 @@ internal class ClientService(SessionActor sessionActor) : MessageService(session
             return (byte) (rsp.IsInstance ? 1 : 0);
         }
         catch (Exception ex) {
-            Logger.Error("SessionActor {SessionId} instance query failed: {Message}", Logger.Args(sessionId, ex.Message));
+            Logger.Warning("Session {SessionId} could not ask its zone whether it is an instance, so the logout treats it as open world. {Exception}", Logger.Args(sessionId, ex));
 
             return 0;
         }

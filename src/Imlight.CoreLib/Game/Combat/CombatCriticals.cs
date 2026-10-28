@@ -42,7 +42,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/26/2026
+ * Last Updated: 10/23/2026
  */
 
 using System;
@@ -84,6 +84,7 @@ internal static class CombatCriticals {
         // Vengeance and Conviction modify only their side of the roll, then are
         // consumed. A heal roll has no block side, so Conviction does not apply.
         chance += GetCritBoostPercent(caster);
+        chance += CombatSchoolCritBoosts.TakeBoostPercent(caster, school);
         if (!isHeal) {
             chance -= GetCritBlockPercent(target);
         }

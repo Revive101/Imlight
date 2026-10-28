@@ -233,7 +233,9 @@ public interface IPlayer {
     void SetPotions(float charge, float max);
 
     /// <summary>
-    /// Gives the wizard a new copy of the item. Nothing is given if their backpack is full.
+    /// Gives the wizard a new copy of the item, the same way loot is given: into the backpack, or into the bank
+    /// when the backpack is full (jewels may go to the shared bank). If there is no room anywhere, the item is lost
+    /// and the player is told.
     /// </summary>
     /// <remarks>
     /// Applied by the player's session after this returns, so <see cref="Inventory"/> may not change right away.
