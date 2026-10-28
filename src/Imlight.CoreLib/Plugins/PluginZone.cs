@@ -20,27 +20,30 @@
  * ========================================================================
  *
  * PURPOSE:
- * Exposes a zone actor to plugins as an IZone, with a snapshot of its
- * players that any actor can read.
+ * Exposes a zone actor to plugins as an IZone, with snapshots of its
+ * players and creatures that any actor can read.
  *
  * USAGE EXAMPLE:
  * var zone = PluginZone.Of(SessionActor.GetZoneActor());
  *
  * NOTE:
  * Only the owning zone actor calls Open, Close, AddPlayer and RemovePlayer.
- * Players is replaced on each change rather than mutated, so plugin
- * handlers on other actors read it without locking.
+ * Its entity actors call AddCreature and RemoveCreature, so those swap the
+ * list atomically. Players and Creatures are replaced on each change rather
+ * than mutated, so plugin handlers on other actors read them without locking.
  *
  * Created by: phazejeff
  * Version: KALI 1.0
- * Last Updated: 10/23/2026
+ * Last Updated: 10/27/2026
  */
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Threading;
 using Akka.Actor;
 using Imcodec.MessageLayer;
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.PluginApi;
@@ -55,12 +58,15 @@ internal sealed class PluginZone(string name, bool isInstance, IActorRef zoneAct
     private static readonly ConcurrentDictionary<IActorRef, PluginZone> s_zones = new();
 
     private volatile ImmutableList<IPlayer> _players = [];
+    private ImmutableList<ICreature> _creatures = [];
 
     public string Name => name;
 
     public bool IsInstance => isInstance;
 
     public IReadOnlyList<IPlayer> Players => _players;
+
+    public IReadOnlyList<ICreature> Creatures => Volatile.Read(ref _creatures);
 
     /// <summary>
     /// Every running zone. Safe to enumerate from any thread.
@@ -85,6 +91,7 @@ internal sealed class PluginZone(string name, bool isInstance, IActorRef zoneAct
     public void Close() {
         _ = s_zones.TryRemove(new KeyValuePair<IActorRef, PluginZone>(zoneActor, this));
         _players = [];
+        Volatile.Write(ref _creatures, []);
     }
 
     public void AddPlayer(Wizard wizard, IActorRef sessionActor)
@@ -92,6 +99,14 @@ internal sealed class PluginZone(string name, bool isInstance, IActorRef zoneAct
 
     public void RemovePlayer(IActorRef sessionActor)
         => _players = Without(sessionActor);
+
+    public void AddCreature(CoreObject creature, CoreTemplate template)
+        => ImmutableInterlocked.Update(ref _creatures, x => x.Add(new PluginCreature(creature, template, this)));
+
+    // CoreObject is a record, so this matches by reference rather than by its values.
+    public void RemoveCreature(CoreObject creature)
+        => ImmutableInterlocked.Update(ref _creatures,
+            x => x.RemoveAll(c => ReferenceEquals(((PluginCreature) c).Creature, creature)));
 
     /// <summary>
     /// Sends a message through the zone's broadcast, as if the zone itself sent it.

@@ -38,7 +38,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/26/2026
+ * Last Updated: 10/27/2026
  */
 
 using System;
@@ -53,6 +53,7 @@ using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.Types;
 using Imlight.Common;
 using Imlight.CoreLib.Game.Zone.Components;
+using Imlight.CoreLib.Plugins;
 using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
@@ -93,6 +94,8 @@ public class ZoneEntity(
 
     protected readonly Dictionary<ZoneEntityComponent, IActorRef> Components = [];
     private readonly List<ZoneEntityComponent> _componentOrder = [];
+    // The zone this entity is listed in as a plugin creature, kept so PostStop can unlist it.
+    private PluginZone _pluginZone;
 
     internal IActorRef CurrentSender => Sender;
 
@@ -247,6 +250,11 @@ public class ZoneEntity(
         => Imlight.CoreLib.Game.Results.ResultDispatcher.ExecuteResults(
             Context, results, playerActor, playerObject, zoneActor: ZoneRef, triggerName: triggerName);
 
+    protected override void PostStop() {
+        _pluginZone?.RemoveCreature(ActiveGameObject);
+        base.PostStop();
+    }
+
     #region Message Handlers
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN))]
@@ -267,6 +275,12 @@ public class ZoneEntity(
 
         foreach (var component in _componentOrder) {
             RunLifecycleStep(component);
+        }
+
+        // Any combat creature is a creature to plugins.
+        if (ActiveGameObject is not null && GetComponentOfType<CombatCreatureAIComponent>() is not null) {
+            _pluginZone = PluginZone.Of(ZoneRef);
+            _pluginZone?.AddCreature(ActiveGameObject, Template);
         }
 
         Sender.Tell(new ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADRESULTS());

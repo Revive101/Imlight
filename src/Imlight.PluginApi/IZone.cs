@@ -17,7 +17,7 @@
  *
  * Created by: phazejeff
  * Version: KALI 1.0
- * Last Updated: 10/23/2026
+ * Last Updated: 10/27/2026
  */
 
 using System.Collections.Generic;
@@ -48,5 +48,11 @@ public interface IZone {
     /// and does not change after it is returned.
     /// </summary>
     IReadOnlyList<IPlayer> Players { get; }
+
+    /// <summary>
+    /// The creatures spawned in the zone right now. Safe to read from any thread; the list is a snapshot
+    /// and does not change after it is returned.
+    /// </summary>
+    IReadOnlyList<ICreature> Creatures { get; }
 
 }
