@@ -23,16 +23,23 @@ public static class JwtTokenService {
     private static readonly JwtSecurityTokenHandler s_handler = new();
 
     private static byte[] InitializeKey() {
-        var configuredSecret = ConfigurationManager.Settings["API.JwtSecret"].AsString();
-        if (!string.IsNullOrWhiteSpace(configuredSecret) && configuredSecret.Length >= s_minSecretLength) {
+        // If it exists in the environment, use the configured key from Imlight.ini
+        if (EnvironmentManager.Get("API_JWT_SECRET", out var configuredSecret) && configuredSecret.Length >= s_minSecretLength) {
             return Encoding.UTF8.GetBytes(configuredSecret);
         }
 
-        // Generate a 256-bit key if none is configured in Imlight.ini
-        var randomKey = new byte[s_minSecretLength];
-        RandomNumberGenerator.Fill(randomKey);
-        //TODO: Save key
-        return randomKey;
+
+        // Generate a 256-bit key if none is configured in .env
+        var secret = Convert.ToHexString(GenerateSecret()).ToLowerInvariant();
+        EnvironmentManager.Set("API_JWT_SECRET", secret);
+
+        return Encoding.UTF8.GetBytes(secret);
+    }
+
+    private static byte[] GenerateSecret() {
+        var secret = new byte[s_minSecretLength];
+        RandomNumberGenerator.Fill(secret);
+        return secret;
     }
 
     public static string GenerateToken(Account account) {
