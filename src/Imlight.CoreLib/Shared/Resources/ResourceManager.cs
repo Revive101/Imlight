@@ -113,24 +113,25 @@ internal static class ResourceManager {
         return deserializedFile;
     }
 
-    private static Archive ResourceWad(string wadName) {
-        // Check if the file is already cached. If it is, just return that.
+    /// <summary>
+    /// Loads an archive from the local cache, or downloads and caches it when the patch server is online.
+    /// </summary>
+    /// <param name="wadName">The name of the archive, with or without the <c>.wad</c> extension.</param>
+    /// <returns>The archive, or null if it is not cached and could not be downloaded.</returns>
+    internal static Archive ResourceWad(string wadName) {
         var cachedWad = LocalWadCache.GetCachedWad(wadName);
         if (cachedWad is not null) {
             return cachedWad;
         }
 
-        // Otherwise, download it from the patch server.
-        // If Imlight is running without the patch server, we'll just return null.
         if (!PatchServerFascade.EndpointReached) {
-            Logger.Warning($"Imlight tried to load an uncached KIWAD while the patch server was not available.");
+            Logger.Warning("Game file {WadName} is not in the local cache and the patch server is offline.",
+                Logger.Args(wadName));
 
             return null;
         }
 
         if (!PatchServerFascade.DownloadWadFromPatchServer(wadName, out var stream)) {
-            Logger.Error("Failed to download wad {WadName} from patch server", Logger.Args(wadName));
-
             return null;
         }
 

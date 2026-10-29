@@ -16,12 +16,16 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Operations;
+using Raven.Client.Exceptions;
+using Raven.Client.Documents.Session;
 using Imlight.Common;
 using Imlight.CoreLib.Game.Pet;
+using Imlight.CoreLib.Game.Rentals;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models.Player;
@@ -153,8 +157,9 @@ public static class WizardItemCollection {
     public static bool RemoveItem(ulong charId, ulong itemId) {
         using var session = s_store.OpenSession();
 
-        // Get the item from the items collection.
+        // Get the item from the items collection, waiting for the index so a just-stored item is found too.
         var associatedItem = session.Query<WizClientObjectItem>(collectionName: CollectionName)
+            .Customize(query => query.WaitForNonStaleResults())
             .FirstOrDefault(x => x.m_characterId == charId && x.m_globalID == itemId);
 
         // If the item was not found, return false.
@@ -173,6 +178,106 @@ public static class WizardItemCollection {
             $"update {{ this.{nameof(Wizard.InventoryBehavior.InventoryItemIds)}.Remove('{itemId}'); }}");
 
         session.SaveChanges();
+
+        return true;
+    }
+
+    /// <summary>
+    /// Loads the stored document of an item that is not in the character's backpack, such as one placed in a house or
+    /// put in an attic.
+    /// </summary>
+    /// <param name="charId">The ID of the player who owns the item.</param>
+    /// <param name="itemId">The global id of the item.</param>
+    /// <returns>The item, or <c>null</c> when no such document is stored.</returns>
+    internal static WizClientObjectItem Load(ulong charId, ulong itemId) {
+        using var session = s_store.OpenSession();
+
+        return session.Query<WizClientObjectItem>(collectionName: CollectionName)
+            .Customize(query => query.WaitForNonStaleResults())
+            .FirstOrDefault(x => x.m_characterId == charId && x.m_globalID == itemId);
+    }
+
+    /// <summary>
+    /// Writes a character's backpack as it is in memory through a session the caller saves, so a change to the backpack
+    /// commits together with the caller's other changes.
+    /// </summary>
+    /// <param name="session">The open session of the caller.</param>
+    /// <param name="storedOwner">The stored character the session loaded.</param>
+    /// <param name="owner">The character whose backpack is written.</param>
+    /// <param name="addedItem">An item that entered the backpack and has no document yet, or <c>null</c>.</param>
+    internal static void StoreBackpackInSession(IDocumentSession session, Wizard storedOwner, Wizard owner, WizClientObjectItem addedItem) {
+        storedOwner.InventoryBehavior = owner.InventoryBehavior;
+        if (addedItem is not null) {
+            StoreInSession(session, addedItem);
+        }
+    }
+
+    /// <summary>
+    /// Writes a container document (a house or an attic) together with its owner's backpack in one transaction, so an
+    /// item that moves between them is either in the container or in the backpack, never lost and never in both.
+    /// </summary>
+    /// <typeparam name="TContainer">The container's document type.</typeparam>
+    /// <param name="containerId">The id of the container's document.</param>
+    /// <param name="owner">The owner, whose backpack is written as it is in memory.</param>
+    /// <param name="copyChanging">Copies the container's changing parts onto the stored document.</param>
+    /// <param name="addedItem">An item that entered the backpack and has no document yet, or <c>null</c>.</param>
+    /// <param name="deletedItemId">An item that left the game in this change and whose document is deleted with it, or 0.</param>
+    /// <returns><c>true</c> when both are stored; <c>false</c> when neither changed.</returns>
+    internal static bool SaveContainerWithBackpack<TContainer>(string containerId, Wizard owner, Action<TContainer> copyChanging, WizClientObjectItem addedItem,
+                                                               ulong deletedItemId = 0)
+        where TContainer : class {
+        try {
+            return WizardCollection.UpdateCharacterWithSession(owner.CharId, (session, storedOwner) => {
+                var stored = session.Load<TContainer>(containerId);
+                if (stored is null) {
+                    return false;
+                }
+
+                copyChanging(stored);
+                StoreBackpackInSession(session, storedOwner, owner, addedItem);
+                if (deletedItemId != 0) {
+                    DeleteInSession(session, owner.CharId, deletedItemId);
+                }
+
+                return true;
+            });
+        } catch (Exception ex) {
+            Logger.Error("Failed to save {ContainerId} with the backpack of character {CharId}: {Reason}",
+                Logger.Args(containerId, owner.CharId, ex.Message));
+
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Stores a new item through a session the caller saves, so the item commits together with the caller's
+    /// other changes. Unlike <see cref="AddItem"/> it does not touch the character document.
+    /// </summary>
+    /// <param name="session">The open session of the caller.</param>
+    /// <param name="item">The item to store.</param>
+    internal static void StoreInSession(IDocumentSession session, WizClientObjectItem item) {
+        session.Store(item);
+        var metadata = session.Advanced.GetMetadataFor(item);
+        metadata[Raven.Client.Constants.Documents.Metadata.Collection] = CollectionName;
+    }
+
+    /// <summary>
+    /// Deletes a stored item through a session the caller saves, so the deletion commits together with the
+    /// caller's other changes. Unlike <see cref="RemoveItem(ulong, ulong)"/> it does not touch the character document.
+    /// </summary>
+    /// <param name="session">The open session of the caller.</param>
+    /// <param name="charId">The ID of the player.</param>
+    /// <param name="itemId">The ID of the item to delete.</param>
+    /// <returns>True if the stored item was found and marked for deletion, false otherwise.</returns>
+    internal static bool DeleteInSession(IDocumentSession session, ulong charId, ulong itemId) {
+        var storedItem = session.Query<WizClientObjectItem>(collectionName: CollectionName)
+            .Customize(query => query.WaitForNonStaleResults())
+            .FirstOrDefault(x => x.m_characterId == charId && x.m_globalID == itemId);
+        if (storedItem is null) {
+            return false;
+        }
+
+        session.Delete(storedItem);
 
         return true;
     }
@@ -263,6 +368,80 @@ public static class WizardItemCollection {
     }
 
     /// <summary>
+    /// Saves the pet item behavior of a pet onto its stored item: level, XP, happiness, stats, genes,
+    /// expressed talents and ratings.
+    /// </summary>
+    /// <param name="pet">The pet item, carrying the behavior to store.</param>
+    /// <returns>True if the pet was found and saved, false otherwise.</returns>
+    public static bool SavePetBehavior(WizClientObjectItem pet) {
+        if (!CoreObjectFactory.FindBehaviorInstance<ClientPetItemBehavior>(pet, out var behavior)) {
+            return false;
+        }
+
+        using var session = s_store.OpenSession();
+
+        // Waits for the index so a pet stored a moment ago is found too.
+        var associatedItem = session.Query<WizClientObjectItem>(collectionName: CollectionName)
+            .Customize(query => query.WaitForNonStaleResults())
+            .FirstOrDefault(x => x.m_globalID == pet.m_globalID && x.m_characterId == pet.m_characterId);
+        if (!TryReplacePetBehavior(associatedItem, behavior)) {
+            return false;
+        }
+
+        session.SaveChanges();
+
+        return true;
+    }
+
+    /// <summary>
+    /// Saves the pet item behaviors of several pets of one character in a single session.
+    /// </summary>
+    /// <param name="charId">The owner's character id.</param>
+    /// <param name="pets">The pet items, carrying the behaviors to store.</param>
+    /// <returns>The number of pets that were found and saved.</returns>
+    public static int SavePetBehaviors(ulong charId, IReadOnlyCollection<WizClientObjectItem> pets) {
+        using var session = s_store.OpenSession();
+
+        // Waits for the index so pets stored a moment ago are found too.
+        var storedItems = session.Query<WizClientObjectItem>(collectionName: CollectionName)
+            .Customize(query => query.WaitForNonStaleResults())
+            .Where(x => x.m_characterId == charId)
+            .ToList();
+        var storedByGlobalId = new Dictionary<ulong, WizClientObjectItem>();
+        foreach (var storedItem in storedItems) {
+            storedByGlobalId.TryAdd(storedItem.m_globalID.Full, storedItem);
+        }
+
+        var saved = 0;
+        foreach (var pet in pets) {
+            if (!CoreObjectFactory.FindBehaviorInstance<ClientPetItemBehavior>(pet, out var behavior)
+                || !storedByGlobalId.TryGetValue(pet.m_globalID.Full, out var associatedItem)
+                || !TryReplacePetBehavior(associatedItem, behavior)) {
+                continue;
+            }
+
+            saved++;
+        }
+
+        if (saved > 0) {
+            session.SaveChanges();
+        }
+
+        return saved;
+    }
+
+    private static bool TryReplacePetBehavior(WizClientObjectItem stored, ClientPetItemBehavior behavior) {
+        var index = stored?.m_inactiveBehaviors?.FindIndex(existing => existing is ClientPetItemBehavior) ?? -1;
+        if (index < 0) {
+            return false;
+        }
+
+        stored.m_inactiveBehaviors[index] = behavior;
+
+        return true;
+    }
+
+    /// <summary>
     /// Saves new packed name keys onto a stored pet item.
     /// </summary>
     /// <param name="item">The pet item to rename.</param>
@@ -277,6 +456,62 @@ public static class WizardItemCollection {
             return false;
         }
 
+        session.SaveChanges();
+
+        return true;
+    }
+
+    /// <summary>
+    /// Saves the expiry of a started rental onto its stored item.
+    /// </summary>
+    /// <param name="item">The rental item.</param>
+    /// <param name="expireTime">The absolute expiry, in Unix seconds.</param>
+    /// <returns>True if the item was found and saved, false otherwise.</returns>
+    public static bool SetRentalExpireTime(WizClientObjectItem item, uint expireTime) {
+        try {
+            using var session = s_store.OpenSession();
+
+            // A freshly granted item is often equipped within seconds, so wait for the index to catch up.
+            var associatedItem = session.Query<WizClientObjectItem>(collectionName: CollectionName)
+                .Customize(query => query.WaitForNonStaleResults())
+                .FirstOrDefault(x => x.m_globalID == item.m_globalID && x.m_characterId == item.m_characterId);
+            if (associatedItem is null || !RentalItems.TryGetBehavior(associatedItem, out var behavior)) {
+                Logger.Error("Failed to persist rental expiry of item {0}: the stored item or its rental behavior was not found.",
+                    Logger.Args(item.m_globalID.Full));
+
+                return false;
+            }
+
+            behavior.m_expireTime = expireTime;
+            session.SaveChanges();
+
+            return true;
+        } catch (Exception ex) when (ex is TimeoutException or RavenException) {
+            Logger.Error("Failed to persist rental expiry of item {0}: {1}", Logger.Args(item.m_globalID.Full, ex.Message));
+
+            return false;
+        }
+
+    }
+
+    /// <summary>
+    /// Saves the lot a stored deed item points at.
+    /// </summary>
+    /// <param name="item">The deed item.</param>
+    /// <param name="lotGid">The lot of the house the deed opens.</param>
+    /// <returns>True if the deed was found and saved, false otherwise.</returns>
+    public static bool ApplyDeedLot(WizClientObjectItem item, ulong lotGid) {
+        using var session = s_store.OpenSession();
+
+        var associatedItem = session.Query<WizClientObjectItem>(collectionName: CollectionName)
+            .Customize(query => query.WaitForNonStaleResults())
+            .FirstOrDefault(x => x.m_globalID == item.m_globalID && x.m_characterId == item.m_characterId);
+        if (associatedItem is null
+            || !CoreObjectFactory.FindBehaviorInstance<DeedBehavior>(associatedItem, out var deedBehavior)) {
+            return false;
+        }
+
+        deedBehavior.m_lotInstanceGID = lotGid;
         session.SaveChanges();
 
         return true;
@@ -302,7 +537,7 @@ public static class WizardItemCollection {
 
         // Search through the item behaviors to find the deck behavior.
         if (!CoreObjectFactory.FindBehaviorInstance<DeckBehavior>(associatedDeck, out var deckBehavior)) {
-            Logger.Error("Failed to find the deck behavior for item {0}.", 
+            Logger.Error("Item {DeckId} is not a deck, so its spells were not saved.",
                 Logger.Args(associatedDeck.m_globalID));
 
             return false;
@@ -350,7 +585,7 @@ public static class WizardItemCollection {
 
         // Search through the item behaviors to find the deck behavior.
         if (!CoreObjectFactory.FindBehaviorInstance<DeckBehavior>(associatedDeck, out var deckBehavior)) {
-            Logger.Error("Failed to find the deck behavior for item {0}.", Logger.Args(associatedDeck.m_globalID));
+            Logger.Error("Item {DeckId} is not a deck, so its spells were not saved.", Logger.Args(associatedDeck.m_globalID));
             return;
         }
 
@@ -370,6 +605,24 @@ public static class WizardItemCollection {
 
         // Save the changes.
         deckBehavior.m_spellList = spellList;
+        session.SaveChanges();
+    }
+
+    /// <summary>
+    /// Stores the archmastery school a player picked for a deck.
+    /// </summary>
+    /// <param name="deckId">The ID of the deck.</param>
+    /// <param name="school">The school hash.</param>
+    public static void SetDeckArchmasterySchool(ulong deckId, uint school) {
+        using var session = s_store.OpenSession();
+
+        var associatedDeck = session.Query<WizClientObjectItem>(collectionName: CollectionName)
+            .FirstOrDefault(x => x.m_globalID == deckId);
+        if (associatedDeck is null || !CoreObjectFactory.FindBehaviorInstance<DeckBehavior>(associatedDeck, out var deckBehavior)) {
+            return;
+        }
+
+        deckBehavior.m_archmasterySchool = school;
         session.SaveChanges();
     }
 

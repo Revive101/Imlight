@@ -32,10 +32,10 @@
  * 
  * Created by: Joji, Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 10/25/2026
  */
 
-using System;
+using System.Collections.Concurrent;
 using Imcodec.Cryptography;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
@@ -47,13 +47,14 @@ namespace Imlight.CoreLib.Game.Effects;
 /// </summary>
 internal static class GameEffectFactory {
 
+    private static readonly ConcurrentDictionary<System.Type, byte> s_warnedEffectTypes = new();
+
     /// <summary>
     /// Creates a game effect from the given effect info.
     /// </summary>
     /// <param name="info">The information for the effect.</param>
     /// <param name="itemSlotId">The slot of equipment this effect is from.</param>
     /// <returns>The instance of the effect.</returns>
-    /// <exception cref="NotImplementedException"></exception>
     internal static GameEffectBase CreateEffectFromInfo(GameEffectInfo info, uint itemSlotId) {
         switch (info) {
             case ProvideSpellEffectInfo provideSpellEffectInfo:
@@ -67,7 +68,11 @@ internal static class GameEffectFactory {
             case TransformationEffectInfo transformationEffectInfo:
                 return CreateTransformationEffect(transformationEffectInfo, itemSlotId);
             default:
-                Logger.Warning("Unknown effect type: {0}", Logger.Args(info.GetType().Name));
+                if (s_warnedEffectTypes.TryAdd(info.GetType(), 0)) {
+                    Logger.Warning("Item effects of kind {EffectKind} are not supported yet; those item bonuses are ignored.",
+                        Logger.Args(info.GetType().Name));
+                }
+
                 return null;
         }
     }
@@ -129,6 +134,7 @@ internal static class GameEffectFactory {
             case var _ when effectName.Contains("Block"): effect.m_blockRating = val; break;
             case var _ when effectName.Contains("PipConversion"): effect.m_pipConversionRating = val; break;
             case var _ when effectName.Contains("ShadowPipRating"): effect.m_shadowPipRating = val; break;
+            case var _ when effectName.Contains("Archmastery"): effect.m_archmastery = val; break;
             case var _ when effectName.Contains("PowerPip"): effect.m_powerPipBonusPercent = val; break;
             case var _ when effectName.Contains("ReduceDamage"): effect.m_damageReducePercent = val; break;
             case var _ when effectName.Contains("Damage"): effect.m_damageBonusPercent = val; break;

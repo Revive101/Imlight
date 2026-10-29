@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/27/2026
+ * Last Updated: 10/25/2026
  */
 
 using Akka.Actor;
@@ -175,8 +175,16 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
 
         foreach (var qInstance in wizard.QuestBehavior.CurrentQuestInstances) {
             var qTemplate = QuestTemplateCollection.GetQuestByName(qInstance.QuestName);
+            if (qTemplate is null) {
+                Logger.Warning("Quest '{Quest}' of character {CharId} is not in the world database, so it is not shown. Resync SpiralDB and restart the server.",
+                    Logger.Args(qInstance.QuestName, wizard.CharId));
 
-            SendQuestResumeMessage(qTemplate, qInstance);
+                continue;
+            }
+
+            if (IsVisibleToClient(qTemplate)) {
+                SendQuestResumeMessage(qTemplate, qInstance);
+            }
 
             // Cache the quest template so we can reference it later if needed.
             if (!_cachedQuestTemplates.Contains(qTemplate)) {
@@ -216,6 +224,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             return;
         }
 
+        _cachedQuestOffers.RemoveAll(q => q.m_questName == quest.m_questName);
         _cachedQuestOffers.Add(quest);
     }
 
@@ -226,47 +235,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
 
         // Check if this player has this quest and goal active.
         var wizard = GetActiveWizard();
-        var qInstance = wizard.QuestBehavior.CurrentQuestInstances
-            .FirstOrDefault(q => q.ID == questId);
-        if (qInstance == null) {
-            Logger.Warning("Player '{0}' attempted to complete goal ID '{1}' for quest ID '{2}' but does not have that quest active.",
-                Logger.Args(wizard.CharId, goalId, questId));
-
-            return;
-        }
-
-        var gInstance = qInstance.GoalProgress
-            .FirstOrDefault(g => g.ID == goalId);
-        if (gInstance == null || !qInstance.IsGoalActive(gInstance.GoalName)) {
-            Logger.Warning("Player '{0}' attempted to complete goal ID '{1}' for quest ID '{2}' but does not have that goal active.",
-                Logger.Args(wizard.CharId, goalId, questId));
-
-            return;
-        }
-
-        // Get the goal template for this goal.
-        var qTemplate = _cachedQuestTemplates
-            .FirstOrDefault(q => q.m_questName == qInstance.QuestName);
-        if (qTemplate == null) {
-            Logger.Error("Failed to find quest template for quest '{0}' when completing goal ID '{1}'",
-                Logger.Args(qInstance.QuestName, goalId));
-
-            return;
-        }
-
-        var gTemplate = qTemplate.m_goals
-            .FirstOrDefault(g => g.m_goalName == gInstance.GoalName);
-        if (gTemplate == null) {
-            Logger.Error("Failed to find goal template for goal '{0}' in quest '{1}' when completing goal ID '{2}'",
-                Logger.Args(gInstance.GoalName, qInstance.QuestName, goalId));
-
-            return;
-        }
-
-        if (gTemplate.m_goalType != GOAL_TYPE.GOAL_TYPE_PERSONA) {
-            Logger.Warning("Player '{0}' attempted to complete goal ID '{1}' for quest ID '{2}' but that goal is not a persona goal.",
-                Logger.Args(wizard.CharId, goalId, questId));
-
+        if (!TryResolveActiveGoal(wizard, questId, goalId, GOAL_TYPE.GOAL_TYPE_PERSONA, out var qInstance, out var gInstance, out var gTemplate)) {
             return;
         }
 
@@ -274,7 +243,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         // reports the dialog closed (MSG_COMPLETEDIALOG). Show it now and finish the goal from there.
         if (FindDialogue(gTemplate.m_dialogList, GOAL_COMPLETION_DIALOG_TAG) is not null) {
             if (_pendingGoalCompletions.Any(p => p.QuestId == questId && p.GoalId == goalId)) {
-                Logger.Debug("Player '{0}' asked again to complete goal ID '{1}' for quest ID '{2}' while its completion dialog is open; ignoring.",
+                Logger.Debug("Character {CharId} asked again to complete goal {GoalId} of quest {QuestId} while its completion dialog is open; ignoring.",
                     Logger.Args(wizard.CharId, goalId, questId));
 
                 return;
@@ -338,7 +307,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         }
 
         // A safety net only: a long voiced dialog can legitimately stay open for a minute.
-        Logger.Warning("No dialog close reported for goal ID '{0}' of quest ID '{1}' after {2}; completing the goal anyway.",
+        Logger.Warning("The client did not close the dialog of goal {GoalId} of quest {QuestId} within {Timeout}, so the goal completes anyway.",
             Logger.Args(message.GoalID, message.QuestID, PENDING_GOAL_DIALOG_TIMEOUT));
 
         FinishPendingGoalCompletion(pending);
@@ -355,7 +324,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         var gInstance = qInstance?.GoalProgress
             .FirstOrDefault(g => g.ID == pending.GoalId);
         if (gInstance == null || !qInstance.IsGoalActive(gInstance.GoalName)) {
-            Logger.Warning("Goal ID '{0}' of quest ID '{1}' is no longer active when its completion dialog closed; nothing to complete.",
+            Logger.Debug("Goal {GoalId} of quest {QuestId} was no longer active when its completion dialog closed; nothing to complete.",
                 Logger.Args(pending.GoalId, pending.QuestId));
 
             return;
@@ -365,7 +334,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             .FirstOrDefault(q => q.m_questName == qInstance.QuestName)?.m_goals
             .FirstOrDefault(g => g.m_goalName == gInstance.GoalName);
         if (gTemplate == null) {
-            Logger.Error("Failed to find goal template for goal '{0}' in quest '{1}' when its completion dialog closed.",
+            Logger.Error("Goal '{Goal}' is not in quest '{Quest}' in the world database, so it cannot complete. Resync SpiralDB and restart the server.",
                 Logger.Args(gInstance.GoalName, qInstance.QuestName));
 
             return;
@@ -380,7 +349,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         foreach (var pending in _pendingGoalCompletions) {
             Timers.Cancel(PendingGoalTimerKey(pending.QuestId, pending.GoalId));
 
-            Logger.Debug("Goal ID '{0}' of quest ID '{1}' left active: its completion dialog was interrupted by {2}.",
+            Logger.Debug("Goal {GoalId} of quest {QuestId} left active: its completion dialog was interrupted by {Reason}.",
                 Logger.Args(pending.GoalId, pending.QuestId, reason));
         }
 
@@ -406,47 +375,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
 
         // Check if this player has this quest and goal active.
         var wizard = GetActiveWizard();
-        var qInstance = wizard.QuestBehavior.CurrentQuestInstances
-            .FirstOrDefault(q => q.ID == questId);
-        if (qInstance == null) {
-            Logger.Warning("Player '{0}' attempted to complete goal ID '{1}' for quest ID '{2}' but does not have that quest active.",
-                Logger.Args(wizard.CharId, goalId, questId));
-
-            return;
-        }
-
-        var gInstance = qInstance.GoalProgress
-            .FirstOrDefault(g => g.ID == goalId);
-        if (gInstance == null || !qInstance.IsGoalActive(gInstance.GoalName)) {
-            Logger.Warning("Player '{0}' attempted to complete goal ID '{1}' for quest ID '{2}' but does not have that goal active.",
-                Logger.Args(wizard.CharId, goalId, questId));
-
-            return;
-        }
-
-        // Get the goal template for this goal.
-        var qTemplate = _cachedQuestTemplates
-            .FirstOrDefault(q => q.m_questName == qInstance.QuestName);
-        if (qTemplate == null) {
-            Logger.Error("Failed to find quest template for quest '{0}' when completing goal ID '{1}'",
-                Logger.Args(qInstance.QuestName, goalId));
-
-            return;
-        }
-
-        var gTemplate = qTemplate.m_goals
-            .FirstOrDefault(g => g.m_goalName == gInstance.GoalName);
-        if (gTemplate == null) {
-            Logger.Error("Failed to find goal template for goal '{0}' in quest '{1}' when completing goal ID '{2}'",
-                Logger.Args(gInstance.GoalName, qInstance.QuestName, goalId));
-
-            return;
-        }
-
-        if (gTemplate.m_goalType != GOAL_TYPE.GOAL_TYPE_USAGE) {
-            Logger.Warning("Player '{0}' attempted to complete goal ID '{1}' for quest ID '{2}' but that goal is not a usage goal.",
-                Logger.Args(wizard.CharId, goalId, questId));
-
+        if (!TryResolveActiveGoal(wizard, questId, goalId, GOAL_TYPE.GOAL_TYPE_USAGE, out var qInstance, out var gInstance, out var gTemplate)) {
             return;
         }
 
@@ -467,47 +396,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         // A volume component matched one of this player's active proximity goals to the
         // volume they walked into; complete the goal it named.
         var wizard = GetActiveWizard();
-        var qInstance = wizard.QuestBehavior.CurrentQuestInstances
-            .FirstOrDefault(q => q.ID == message.QuestID);
-        if (qInstance == null) {
-            Logger.Warning("Player '{0}' attempted to complete proximity goal ID '{1}' for quest ID '{2}' but does not have that quest active.",
-                Logger.Args(wizard.CharId, message.GoalID, message.QuestID));
-
-            return;
-        }
-
-        var gInstance = qInstance.GoalProgress
-            .FirstOrDefault(g => g.ID == message.GoalID);
-        if (gInstance == null || !qInstance.IsGoalActive(gInstance.GoalName)) {
-            Logger.Warning("Player '{0}' attempted to complete proximity goal ID '{1}' for quest ID '{2}' but does not have that goal active.",
-                Logger.Args(wizard.CharId, message.GoalID, message.QuestID));
-
-            return;
-        }
-
-        // Get the goal template for this goal.
-        var qTemplate = _cachedQuestTemplates
-            .FirstOrDefault(q => q.m_questName == qInstance.QuestName);
-        if (qTemplate == null) {
-            Logger.Error("Failed to find quest template for quest '{0}' when completing proximity goal ID '{1}'",
-                Logger.Args(qInstance.QuestName, message.GoalID));
-
-            return;
-        }
-
-        var gTemplate = qTemplate.m_goals
-            .FirstOrDefault(g => g.m_goalName == gInstance.GoalName);
-        if (gTemplate == null) {
-            Logger.Error("Failed to find goal template for goal '{0}' in quest '{1}' when completing proximity goal ID '{2}'",
-                Logger.Args(gInstance.GoalName, qInstance.QuestName, message.GoalID));
-
-            return;
-        }
-
-        if (gTemplate.m_goalType != GOAL_TYPE.GOAL_TYPE_WAYPOINT) {
-            Logger.Warning("Player '{0}' attempted to complete proximity goal ID '{1}' for quest ID '{2}' but that goal is not a waypoint goal.",
-                Logger.Args(wizard.CharId, message.GoalID, message.QuestID));
-
+        if (!TryResolveActiveGoal(wizard, message.QuestID, message.GoalID, GOAL_TYPE.GOAL_TYPE_WAYPOINT, out var qInstance, out var gInstance, out var gTemplate)) {
             return;
         }
 
@@ -574,14 +463,14 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
                 reason: $"Player attempted to accept quest '{questName}' which was not offered."
             );
 
-            Logger.Warning("Player '{0}' attempted to accept quest '{1}' which was not offered.",
+            Logger.Warning("Character {CharId} tried to accept quest '{Quest}', which was not offered to them.",
                 Logger.Args(wizard.CharId, questName));
 
             return;
         }
 
         if (DungeonQuestIndex.IsDungeonQuest(quest.m_questName)) {
-            Logger.Warning("Player '{0}' attempted to accept dungeon quest '{1}', which the instance grants.",
+            Logger.Warning("Character {CharId} tried to accept dungeon quest '{Quest}', which only the instance grants.",
                 Logger.Args(wizard.CharId, questName));
 
             return;
@@ -771,7 +660,9 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
                 return;
             }
 
-            SendToSocket(new QUEST_MESSAGES_52_PROTOCOL.MSG_REMOVEQUEST { QuestID = questId });
+            if (IsVisibleToClient(qInstance.QuestName)) {
+                SendToSocket(new QUEST_MESSAGES_52_PROTOCOL.MSG_REMOVEQUEST { QuestID = questId });
+            }
         }
 
         var cleared = wizard.QuestBehavior.RemoveAllQuestRegistryEntries(registryName);
@@ -848,7 +739,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         foreach (var qInstance in wizard.QuestBehavior.CurrentQuestInstances.ToList()) {
             var qTemplate = _cachedQuestTemplates.FirstOrDefault(q => q.m_questName == qInstance.QuestName);
             if (qTemplate == null) {
-                Logger.Error("Failed to find quest template for quest '{0}' when processing combat victory.",
+                Logger.Error("Quest '{Quest}' is not in the world database, so its combat goals do not count this win. Resync SpiralDB and restart the server.",
                     Logger.Args(qInstance.QuestName));
 
                 continue;
@@ -868,7 +759,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
                 }
 
                 if (goal is not BountyGoalTemplate bountyGoal) {
-                    Logger.Error("Combat goal '{0}' in quest '{1}' is not a valid bounty goal template.",
+                    Logger.Error("Combat goal '{Goal}' of quest '{Quest}' is not a bounty goal in the world database, so it does not count wins.",
                         Logger.Args(goal.m_goalName, qInstance.QuestName));
 
                     continue;
@@ -879,53 +770,24 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         }
     }
 
+    private static bool IsVisibleToClient(QuestTemplate qTemplate)
+        => !string.IsNullOrEmpty(qTemplate.m_questTitle);
+
+    private static bool IsVisibleToClient(string questName) {
+        var qTemplate = QuestTemplateCollection.GetQuestByName(questName);
+
+        return qTemplate is not null && IsVisibleToClient(qTemplate);
+    }
+
     private void SendQuestStartingMessage(QuestTemplate qTemplate, QuestInstance questInstance) {
-        var qMadLibs = QuestMadlibs.GetMadLibForQuest(qTemplate);
-        if (!_goalSerializer.Serialize(qMadLibs, 1, out var madLibData)) {
-            Logger.Error("Failed to serialize madlib data for quest '{0}'",
-                Logger.Args(qTemplate.m_questName));
-
+        if (!TryBuildSendQuestMessage(qTemplate, questInstance.ID, isNew: true, readyToTurnIn: false, out var qSendMsg)) {
             return;
         }
 
-        var rewards = GetQuestRewardsFromTemplate(qTemplate, null, SessionActor.ActorRef, GetActiveWizard());
-        if (!_goalSerializer.Serialize(rewards, 1, out var serializedRewards)) {
-            Logger.Error("Failed to serialize rewards for quest {0}.",
-                Logger.Args(qTemplate.m_questName));
-
-            return;
+        if (IsVisibleToClient(qTemplate)) {
+            SendToSocket(qSendMsg);
         }
 
-        var associatedWorlds = GetAssociatedWorlds(qTemplate);
-        if (!_goalSerializer.Serialize(associatedWorlds, 1, out var serializedWorlds)) {
-            Logger.Error("Failed to serialize associated worlds for quest {0}.",
-                Logger.Args(qTemplate.m_questName));
-
-            return;
-        }
-
-        var qSendMsg = new QUEST_MESSAGES_52_PROTOCOL.MSG_SENDQUEST {
-            QuestID = questInstance.ID,
-            QuestNameID = StringHash.Compute(qTemplate.m_questName),
-            QuestType = 0, // ?
-            QuestLevel = qTemplate.m_questLevel,
-            QuestTitle = qTemplate.m_questTitle,
-            QuestInfo = "", // ?
-            New = 1,
-            QuestMadlibs = madLibData,
-            GoalData = "", // This field is empty per packet captures.
-            Rewards = serializedRewards,
-            ClientTags = "",
-            AssociatedWorlds = serializedWorlds,
-            NoQuestHelper = qTemplate.m_noQuestHelper ? (byte) 1 : (byte) 0,
-            Mainline = qTemplate.m_mainline ? (byte) 1 : (byte) 0,
-            ReadyToTurnIn = 0,
-            SkipQHAutoSelect = 0,
-            PetOnlyQuest = qTemplate.m_playAsYourPetNPC ? (byte) 1 : (byte) 0,
-            ActivityType = 0, // ?
-        };
-
-        SendToSocket(qSendMsg);
         ShowQuestStartDialogue(qTemplate);
 
         // Send the quest starting goals now.
@@ -951,50 +813,9 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
     }
 
     private void SendQuestResumeMessage(QuestTemplate qTemplate, QuestInstance qInstance) {
-        var qMadLibs = QuestMadlibs.GetMadLibForQuest(qTemplate);
-        if (!_goalSerializer.Serialize(qMadLibs, 1, out var madLibData)) {
-            Logger.Error("Failed to serialize madlib data for quest '{0}'",
-                Logger.Args(qTemplate.m_questName));
-
+        if (!TryBuildSendQuestMessage(qTemplate, qInstance.ID, isNew: false, readyToTurnIn: qInstance.IsReadyForTurnIn(), out var qSendMsg)) {
             return;
         }
-
-        var rewards = GetQuestRewardsFromTemplate(qTemplate, null, SessionActor.ActorRef, GetActiveWizard());
-        if (!_goalSerializer.Serialize(rewards, 1, out var serializedRewards)) {
-            Logger.Error("Failed to serialize rewards for quest {0}.",
-                Logger.Args(qTemplate.m_questName));
-
-            return;
-        }
-
-        var associatedWorlds = GetAssociatedWorlds(qTemplate);
-        if (!_goalSerializer.Serialize(associatedWorlds, 1, out var serializedWorlds)) {
-            Logger.Error("Failed to serialize associated worlds for quest {0}.",
-                Logger.Args(qTemplate.m_questName));
-
-            return;
-        }
-
-        var qSendMsg = new QUEST_MESSAGES_52_PROTOCOL.MSG_SENDQUEST {
-            QuestID = qInstance.ID,
-            QuestNameID = StringHash.Compute(qTemplate.m_questName),
-            QuestType = 0, // ?
-            QuestLevel = qTemplate.m_questLevel,
-            QuestTitle = qTemplate.m_questTitle,
-            QuestInfo = "", // ?
-            New = 0,
-            QuestMadlibs = madLibData,
-            GoalData = "",
-            Rewards = serializedRewards,
-            ClientTags = "",
-            AssociatedWorlds = serializedWorlds,
-            NoQuestHelper = qTemplate.m_noQuestHelper ? (byte) 1 : (byte) 0,
-            Mainline = qTemplate.m_mainline ? (byte) 1 : (byte) 0,
-            ReadyToTurnIn = qInstance.IsReadyForTurnIn() ? (byte) 1 : (byte) 0,
-            SkipQHAutoSelect = 0,
-            PetOnlyQuest = qTemplate.m_playAsYourPetNPC ? (byte) 1 : (byte) 0,
-            ActivityType = 0, // ?
-        };
 
         SendToSocket(qSendMsg);
 
@@ -1114,7 +935,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         }
 
         if (!wizard.StartQuestGoal(questInstance.QuestName, goalTemplate.m_goalName)) {
-            Logger.Error("Failed to start goal '{0}' for quest '{1}' for player '{2}'",
+            Logger.Error("Goal '{Goal}' of quest '{Quest}' could not start for character {CharId}.",
                 Logger.Args(goalTemplate.m_goalName, questInstance.QuestName, wizard.CharId));
 
             return;
@@ -1164,19 +985,22 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         var wizard = GetActiveWizard();
 
         if (!wizard.CompleteQuestGoal(questInstance.QuestName, goalTemplate.m_goalName)) {
-            Logger.Error("Failed to complete goal '{0}' for quest '{1}' for player '{2}'",
+            Logger.Error("Goal '{Goal}' of quest '{Quest}' could not complete for character {CharId}.",
                 Logger.Args(goalTemplate.m_goalName, questInstance.QuestName, wizard.CharId));
             return;
         }
 
         var gInstance = questInstance.GoalProgress.FirstOrDefault(g => g.GoalName == goalTemplate.m_goalName);
         if (gInstance == null || !gInstance.IsGoalCompleted()) {
-            Logger.Error("Goal instance for goal '{0}' in quest '{1}' is not marked complete after completion.",
+            Logger.Error("Goal '{Goal}' of quest '{Quest}' is not marked complete after completing.",
                 Logger.Args(goalTemplate.m_goalName, questInstance.QuestName));
             return;
         }
 
-        SendCompleteGoal(questInstance.ID, gInstance.ID);
+        if (IsVisibleToClient(questInstance.QuestName)) {
+            SendCompleteGoal(questInstance.ID, gInstance.ID);
+        }
+
         if (completion != GoalCompletion.CatchUp) {
             if (showCompletionDialogue) {
                 ShowGoalCompletionDialogue(goalTemplate, questInstance.ID, gInstance.ID);
@@ -1204,7 +1028,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
 
         var qTemplate = _cachedQuestTemplates.FirstOrDefault(q => q.m_questName == questInstance.QuestName);
         if (qTemplate == null) {
-            Logger.Error("Failed to find quest template for quest '{0}' when completing goal '{1}'",
+            Logger.Error("Quest '{Quest}' is not in the world database, so goal '{Goal}' cannot complete. Resync SpiralDB and restart the server.",
                 Logger.Args(questInstance.QuestName, goalTemplate.m_goalName));
             return;
         }
@@ -1222,8 +1046,8 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         }
     }
 
-    // Zone triggers listen for this event to react to a goal (an NPC walks to a new spot, a barricade falls).
     private void PostGoalCompleteEvent(string questName, string goalName) {
+        // Zone triggers listen for this event to react to a goal (an NPC walks to a new spot, a barricade falls).
         var zoneActor = SessionActor.GetZoneActor();
         if (zoneActor is null) {
             return;
@@ -1245,7 +1069,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             : 0UL;
 
         if (!wizard.CompleteQuest(questInstance.QuestName)) {
-            Logger.Error("Failed to complete quest '{0}' for player '{1}'",
+            Logger.Error("Quest '{Quest}' could not complete for character {CharId}.",
                 Logger.Args(questInstance.QuestName, wizard.CharId));
             return;
         }
@@ -1255,11 +1079,15 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             wizard.SetQuestRegistryValue(questInstance.QuestName, QUEST_COMPLETED_ENTRY, runCount + 1);
         }
 
-        SendCompleteQuest(questInstance.ID);
+        TellOtherServices(new CHARACTER_103_PROTOCOL.MSG_BADGEEVENT { Kind = BadgeEventKind.Recheck });
+
+        if (IsVisibleToClient(questInstance.QuestName)) {
+            SendCompleteQuest(questInstance.ID);
+        }
 
         var qTemplate = _cachedQuestTemplates.FirstOrDefault(q => q.m_questName == questInstance.QuestName);
         if (qTemplate == null) {
-            Logger.Error("Failed to find quest template for quest '{0}' when completing quest",
+            Logger.Error("Quest '{Quest}' is not in the world database, so it cannot complete. Resync SpiralDB and restart the server.",
                 Logger.Args(questInstance.QuestName));
             return;
         }
@@ -1297,11 +1125,15 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
     }
 
     private void SendGoalMessage(GoalTemplate gTemplate, QuestInstance qInstance, byte sendType = 0, bool forceSendDestZone = true) {
+        if (!IsVisibleToClient(qInstance.QuestName)) {
+            return;
+        }
+
         var gInstance = qInstance.GoalProgress
             .FirstOrDefault(g => g.GoalName == gTemplate.m_goalName);
         if (gInstance == null) {
             // This should never happen, but log it just in case.
-            Logger.Error("Quest '{0}' has no goal instance for template goal '{1}'.",
+            Logger.Error("Quest '{Quest}' of the character has no progress for goal '{Goal}'.",
                 Logger.Args(qInstance.QuestName, gTemplate.m_goalName));
 
             return;
@@ -1310,7 +1142,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         // Serialize the madlib block for the goal.
         var madLibBlock = QuestMadlibs.GetAppropriateMadlibBlockForGoal(gTemplate, gInstance);
         if (!_goalSerializer.Serialize(madLibBlock, 1, out var madLibData)) {
-            Logger.Error("Failed to serialize madlib data for goal '{0}' in quest '{1}'",
+            Logger.Error("The text of goal '{Goal}' of quest '{Quest}' could not be serialized, so the goal is not shown.",
                 Logger.Args(gTemplate.m_goalName, qInstance.QuestName));
 
             return;
@@ -1320,7 +1152,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         var tagList = GetClientTagList(gTemplate.m_clientTags?.Select(t => (string)t).ToArray() ?? []);
         var newSerializer = new ObjectSerializer(false);
         if (!newSerializer.Serialize(tagList, 1, out var clientTagData)) {
-            Logger.Error("Failed to serialize client tag data for goal '{0}' in quest '{1}'",
+            Logger.Error("The client tags of goal '{Goal}' of quest '{Quest}' could not be serialized, so they are left out.",
                 Logger.Args(gTemplate.m_goalName, qInstance.QuestName));
 
             clientTagData = string.Empty;
@@ -1456,7 +1288,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
                                           out GoalTemplate[] newGoalTemplates) {
         var goalLogic = qTemplate.m_goalLogic;
         if (goalLogic == null || goalLogic.Count == 0) {
-            Logger.Error("Quest '{0}' has no goal logic defined.",
+            Logger.Error("Quest '{Quest}' has no goal logic in the world database, so it cannot advance.",
                 Logger.Args(qTemplate.m_questName));
 
             newGoalTemplates = null;
@@ -1471,7 +1303,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             // Validate logic entry has prerequisites.
             if ((gLogic.m_goalsAND == null || gLogic.m_goalsAND.Count == 0) &&
                 (gLogic.m_goalsOR == null || gLogic.m_goalsOR.Count == 0)) {
-                Logger.Error("Quest '{0}' has goal logic entry with no AND or OR prerequisites, skipping.",
+                Logger.Error("Quest '{Quest}' has a goal logic entry with no AND or OR prerequisites, so the entry is skipped.",
                     Logger.Args(qTemplate.m_questName));
 
                 continue;
@@ -1512,14 +1344,14 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             bool hasGoalsToAdd = gLogic.m_goalsToAdd != null && gLogic.m_goalsToAdd.Count > 0;
 
             if (!hasGoalsToAdd && !gLogic.m_completeQuest) {
-                Logger.Warning("Quest '{0}' has goal logic entry that neither adds goals nor completes quest.",
+                Logger.Warning("Quest '{Quest}' has a goal logic entry that neither adds goals nor completes the quest.",
                     Logger.Args(qTemplate.m_questName));
 
                 continue;
             }
 
             if (hasGoalsToAdd && gLogic.m_completeQuest) {
-                Logger.Error("Quest '{0}' has goal logic entry that both adds goals AND completes quest - invalid configuration.",
+                Logger.Error("Quest '{Quest}' has a goal logic entry that both adds goals and completes the quest, so the entry is skipped.",
                     Logger.Args(qTemplate.m_questName));
 
                 continue;
@@ -1536,7 +1368,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             foreach (var goalName in gLogic.m_goalsToAdd) {
                 var goalTemplate = qTemplate.m_goals.FirstOrDefault(g => g.m_goalName == goalName);
                 if (goalTemplate == null) {
-                    Logger.Warning("Goal '{0}' referenced in quest logic but not found in quest '{1}'",
+                    Logger.Warning("Goal '{Goal}' is named in the goal logic of quest '{Quest}', but the quest does not have it.",
                         Logger.Args(goalName, qTemplate.m_questName));
                     continue;
                 }
@@ -1705,8 +1537,8 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
 
     private void SendActorDialog(ActorDialog dialogEntry, string completionType, ulong questId = 0, ulong goalId = 0) {
         var serializer = new ObjectSerializer(Versionable: false);
-        if (!serializer.Serialize(dialogEntry, 16, out var serializedData)) {
-            Logger.Error("Failed to serialize '{0}' dialog.",
+        if (!serializer.Serialize(DialogSpeakers.ForClient(dialogEntry), 16, out var serializedData)) {
+            Logger.Error("The '{DialogType}' dialog could not be serialized, so it is not shown.",
                 Logger.Args(completionType));
 
             return;
@@ -1754,7 +1586,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
                 continue;
             }
 
-            Logger.Information("Removed dungeon quest '{0}' from {1}: left its zone (now in '{2}').",
+            Logger.Debug("Removed dungeon quest '{Quest}' from character {CharId}: they left its zone (now in '{Zone}').",
                 Logger.Args(qInstance.QuestName, wizard.CharId, wizard.Zone));
         }
     }
@@ -1836,7 +1668,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
 
             SendQuestStartingMessage(template, questInstance);
 
-            Logger.Information("Granted dungeon quest '{0}' to {1} in '{2}'.",
+            Logger.Debug("Granted dungeon quest '{Quest}' to character {CharId} in '{Zone}'.",
                 Logger.Args(template.m_questName, wizard.CharId, wizard.Zone));
 
             // A player who joins an instance midway continues where it is.
@@ -1858,18 +1690,22 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             return;
         }
 
-        Logger.Information("Replaced saved dungeon quest '{0}' of {1} with the instance's progress.",
+        Logger.Debug("Replaced saved dungeon quest '{Quest}' of character {CharId} with the instance's progress.",
             Logger.Args(saved.QuestName, wizard.CharId));
     }
 
-    // Removes the quest and tells the client about every copy of it the player holds.
     private bool RemoveQuestEverywhere(Wizard wizard, string questName) {
+        // Every copy of the quest the player holds is removed and reported to the client.
         var questIds = wizard.QuestBehavior.CurrentQuestInstances
             .Where(q => q is not null && q.QuestName == questName)
             .Select(q => q.ID)
             .ToList();
         if (!wizard.RemoveQuest(questName)) {
             return false;
+        }
+
+        if (!IsVisibleToClient(questName)) {
+            return true;
         }
 
         foreach (var questId in questIds) {
@@ -1885,8 +1721,8 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         => DungeonQuestIndex.GetQuestsForZones(GetInstanceZones(wizard))
             .Any(t => string.Equals(t.m_questName, questName, StringComparison.OrdinalIgnoreCase));
 
-    // Quest XP shrinks with the player's completions of a dungeon quest: full, half, then none.
     private float GetRunXpScale(Wizard wizard, string questName) {
+        // Quest XP shrinks with the player's completions of a dungeon quest: full, half, then none.
         if (!IsZoneDungeonQuest(wizard, questName)) {
             return 1f;
         }
@@ -1898,8 +1734,8 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         };
     }
 
-    // True when the step is the instance's first or the quest is not shared; the world effects of a step run once.
     private bool ClaimInstanceStep(InstanceQuestClaimKind kind, string questName, string goalName) {
+        // True when the step is the instance's first or the quest is not shared; the world effects of a step run once.
         var zoneActor = SessionActor.GetZoneActor();
         if (zoneActor is null || !IsZoneDungeonQuest(GetActiveWizard(), questName)) {
             return true;
@@ -1915,14 +1751,14 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
                 }, INSTANCE_QUERY_TIMEOUT).Result.First;
         }
         catch (Exception ex) {
-            Logger.Error("Instance quest claim for '{0}' failed: {1}", Logger.Args(questName, ex.Message));
+            Logger.Error("The instance could not be asked about quest '{Quest}', so this player runs the step on their own. {Exception}", Logger.Args(questName, ex));
 
             return true;
         }
     }
 
-    // The zones whose dungeon quests apply to the player: the container's zones in an instance, else the zone itself.
     private IReadOnlyCollection<string> GetInstanceZones(Wizard wizard) {
+        // The container's zones in an instance, else the zone itself.
         var progress = QueryInstanceProgress();
 
         return progress?.IsInstance == true ? progress.Zones : [wizard.Zone];
@@ -1939,10 +1775,121 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
                 new ZONE_102_PROTOCOL.MSG_QUERYINSTANCEQUESTS(), INSTANCE_QUERY_TIMEOUT).Result;
         }
         catch (Exception ex) {
-            Logger.Error("Instance quest query failed: {0}", Logger.Args(ex.Message));
+            Logger.Error("The zone could not be asked for its instance quest progress. {Exception}", Logger.Args(ex));
 
             return null;
         }
+    }
+
+    private bool TryResolveActiveGoal(Wizard wizard,
+                                      ulong questId,
+                                      ulong goalId,
+                                      GOAL_TYPE goalType,
+                                      out QuestInstance qInstance,
+                                      out GoalInstance gInstance,
+                                      out GoalTemplate gTemplate) {
+        gInstance = null;
+        gTemplate = null;
+        qInstance = wizard.QuestBehavior.CurrentQuestInstances
+            .FirstOrDefault(q => q.ID == questId);
+        if (qInstance == null) {
+            Logger.Warning("{Wizard} tried to complete goal {GoalId} of quest {QuestId}, but does not have that quest active.",
+                Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), goalId, questId));
+
+            return false;
+        }
+
+        gInstance = qInstance.GoalProgress
+            .FirstOrDefault(g => g.ID == goalId);
+        if (gInstance == null || !qInstance.IsGoalActive(gInstance.GoalName)) {
+            Logger.Warning("{Wizard} tried to complete goal {GoalId} of quest '{Quest}', but does not have that goal active.",
+                Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), goalId, qInstance.QuestName));
+
+            return false;
+        }
+
+        var questName = qInstance.QuestName;
+        var qTemplate = _cachedQuestTemplates
+            .FirstOrDefault(q => q.m_questName == questName);
+        if (qTemplate == null) {
+            Logger.Error("Quest '{Quest}' has no loaded template, so goal '{Goal}' of {Wizard} cannot complete.",
+                Logger.Args(questName, gInstance.GoalName, wizard.PlayerNameBehavior.GetWizardName()));
+
+            return false;
+        }
+
+        var goalName = gInstance.GoalName;
+        gTemplate = qTemplate.m_goals
+            .FirstOrDefault(g => g.m_goalName == goalName);
+        if (gTemplate == null) {
+            Logger.Error("Quest '{Quest}' has no goal '{Goal}' in the world database, so it cannot complete. Resync SpiralDB and restart the server.",
+                Logger.Args(questName, goalName));
+
+            return false;
+        }
+
+        if (gTemplate.m_goalType != goalType) {
+            Logger.Warning("{Wizard} tried to complete goal '{Goal}' of quest '{Quest}' as {ExpectedType}, but it is {GoalType}.",
+                Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), goalName, questName, goalType, gTemplate.m_goalType));
+
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool TryBuildSendQuestMessage(QuestTemplate qTemplate,
+                                          ulong questId,
+                                          bool isNew,
+                                          bool readyToTurnIn,
+                                          out QUEST_MESSAGES_52_PROTOCOL.MSG_SENDQUEST qSendMsg) {
+        qSendMsg = null;
+        var qMadLibs = QuestMadlibs.GetMadLibForQuest(qTemplate);
+        if (!_goalSerializer.Serialize(qMadLibs, 1, out var madLibData)) {
+            Logger.Error("The text of quest '{Quest}' could not be serialized, so the quest is not shown.",
+                Logger.Args(qTemplate.m_questName));
+
+            return false;
+        }
+
+        var rewards = GetQuestRewardsFromTemplate(qTemplate, null, SessionActor.ActorRef, GetActiveWizard());
+        if (!_goalSerializer.Serialize(rewards, 1, out var serializedRewards)) {
+            Logger.Error("The rewards of quest '{Quest}' could not be serialized, so the quest is not shown.",
+                Logger.Args(qTemplate.m_questName));
+
+            return false;
+        }
+
+        var associatedWorlds = GetAssociatedWorlds(qTemplate);
+        if (!_goalSerializer.Serialize(associatedWorlds, 1, out var serializedWorlds)) {
+            Logger.Error("The worlds of quest '{Quest}' could not be serialized, so the quest is not shown.",
+                Logger.Args(qTemplate.m_questName));
+
+            return false;
+        }
+
+        qSendMsg = new QUEST_MESSAGES_52_PROTOCOL.MSG_SENDQUEST {
+            QuestID = questId,
+            QuestNameID = StringHash.Compute(qTemplate.m_questName),
+            QuestType = 0, // ?
+            QuestLevel = qTemplate.m_questLevel,
+            QuestTitle = qTemplate.m_questTitle,
+            QuestInfo = "", // ?
+            New = isNew ? (byte) 1 : (byte) 0,
+            QuestMadlibs = madLibData,
+            GoalData = "", // This field is empty per packet captures.
+            Rewards = serializedRewards,
+            ClientTags = "",
+            AssociatedWorlds = serializedWorlds,
+            NoQuestHelper = qTemplate.m_noQuestHelper ? (byte) 1 : (byte) 0,
+            Mainline = qTemplate.m_mainline ? (byte) 1 : (byte) 0,
+            ReadyToTurnIn = readyToTurnIn ? (byte) 1 : (byte) 0,
+            SkipQHAutoSelect = 0,
+            PetOnlyQuest = qTemplate.m_playAsYourPetNPC ? (byte) 1 : (byte) 0,
+            ActivityType = 0, // ?
+        };
+
+        return true;
     }
 
 }

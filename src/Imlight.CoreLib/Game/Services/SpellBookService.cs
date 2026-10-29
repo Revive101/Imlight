@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 10/25/2026
  */
 
 using System.Linq;
@@ -86,7 +86,7 @@ internal class SpellbookService(SessionActor sessionActor) : MessageService(sess
         // Resolve the spell hash to a template ID.
         var templateId = SpellFactory.GetTemplateIdByHash((uint) message.SpellID);
         if (templateId == 0) {
-            Logger.Warning("Could not resolve treasure card spell hash {0} to a template ID.",
+            Logger.Warning("Treasure card spell {SpellHash} has no spell template, so the deck is unchanged.",
                 Logger.Args(message.SpellID));
 
             SendToSocket(new WIZARD_12_PROTOCOL.MSG_ADDTREASURESPELLTODECK() {
@@ -118,7 +118,7 @@ internal class SpellbookService(SessionActor sessionActor) : MessageService(sess
         // Resolve the spell hash to a template ID.
         var templateId = SpellFactory.GetTemplateIdByHash((uint) message.SpellID);
         if (templateId == 0) {
-            Logger.Warning("Could not resolve treasure card spell hash {0} to a template ID.",
+            Logger.Warning("Treasure card spell {SpellHash} has no spell template, so the deck is unchanged.",
                 Logger.Args(message.SpellID));
 
             SendToSocket(new WIZARD_12_PROTOCOL.MSG_REMOVETREASURESPELLFROMDECK() {
@@ -151,7 +151,7 @@ internal class SpellbookService(SessionActor sessionActor) : MessageService(sess
         // Resolve the spell hash to a template ID.
         var templateId = SpellFactory.GetTemplateIdByHash((uint) message.SpellID);
         if (templateId == 0) {
-            Logger.Warning("Could not resolve treasure card spell hash {0} to a template ID.",
+            Logger.Warning("Treasure card spell {SpellHash} has no spell template, so the deck is unchanged.",
                 Logger.Args(message.SpellID));
 
             SendToSocket(new WIZARD_12_PROTOCOL.MSG_REMOVETREASURESPELLFROMBOOK() {
@@ -181,7 +181,7 @@ internal class SpellbookService(SessionActor sessionActor) : MessageService(sess
         // Resolve the spell hash (SpellID) to a template ID.
         var spellTemplateId = SpellFactory.GetTemplateIdByHash((uint) message.SpellID);
         if (spellTemplateId == 0) {
-            Logger.Warning("Could not resolve item spell exclusion hash {0} to a template ID.",
+            Logger.Warning("Spell {SpellHash} has no spell template, so the item spell exclusions are unchanged.",
                 Logger.Args(message.SpellID));
 
             SendToSocket(new WIZARD2_53_PROTOCOL.MSG_UPDATEITEMSPELLEXCLUSIONLIST {

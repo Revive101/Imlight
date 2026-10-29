@@ -25,6 +25,7 @@
  *
  * USAGE EXAMPLE:
  * var dyeCost = PriceModifiersConfig.GetDyeCost(template, message.texture, message.decal);
+ * var shopCost = PriceModifiersConfig.GetShopBuyCost(template, message.texture, message.decal);
  * var renameCost = PriceModifiersConfig.GetPetRenameCost();
  *
  * NOTE:
@@ -32,14 +33,18 @@
  * Without the file, the client's own defaults apply: no floor, x1 multipliers, a free rename.
  *
  * TODO:
+ * - The shop window counts a single-color template as having that color of its own, the dye shop window does not. Every shipped list multiplier is 1, so no price differs.
  * - The client also scales a dye by a per-swatch modifier (m_shoppingColors, by button and gender).
  *   Every shipped value is 1, and how a swatch button maps to a dye value is unknown, so it is left out.
  *
  * Created by: Jay
  * Version: KALI 1.0
- * Last Updated: 09/26/2026
+ * Last Updated: 10/14/2026
  */
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
@@ -51,6 +56,8 @@ internal class PriceModifiersConfig : RootSingleResourceSingleton<PriceModifiers
 
     // The client rounds a fraction of 0.498 or more up, not 0.5.
     private const float RoundUpFraction = 0.498f;
+
+    private static readonly HashSet<string> s_dyedShopCategories = new(StringComparer.Ordinal) { "Hat", "Robe", "Shoes" };
 
     protected override string ResourceName => "PriceModifiers.xml";
 
@@ -76,6 +83,14 @@ internal class PriceModifiersConfig : RootSingleResourceSingleton<PriceModifiers
     }
 
     internal static int GetPetRenameCost() => s_dyeShopModifiers?.m_petRenameCost ?? 0;
+
+    internal static int GetShopBuyCost(WizItemTemplate template, int primaryDye, int secondaryDye) {
+        // The shop window adds the dye cost under the Hat, Robe and Shoes tabs only, and an item sits under the tabs its adjectives name.
+        var dyed = template.m_adjectiveList?.Any(adjective => s_dyedShopCategories.Contains((string) adjective)) == true;
+        var baseCost = (int) template.m_baseCost;
+
+        return dyed ? baseCost + GetDyeCost(template, primaryDye, secondaryDye) : baseCost;
+    }
 
     internal static int GetDyeCost(WizItemTemplate template, int primaryDye, int secondaryDye) {
         // The pattern never changes the price.

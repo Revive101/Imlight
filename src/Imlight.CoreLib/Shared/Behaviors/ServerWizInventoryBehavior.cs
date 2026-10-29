@@ -47,6 +47,13 @@ public class ServerWizInventoryBehavior : IClientBehaviorProvider<ClientWizInven
     }
 
     /// <summary>
+    /// The number of items that still fit in the inventory. Equipped items are not counted, as in
+    /// <see cref="AddItem"/>.
+    /// </summary>
+    [JsonIgnore] public int FreeSlots
+        => Math.Max(0, (s_maxItemsAllowed <= 0 ? s_maxItemsAllowedFallback : s_maxItemsAllowed) - Items.Count);
+
+    /// <summary>
     /// Adds an item to the player's inventory.
     /// </summary>
     /// <param name="item">The item to be added.</param>

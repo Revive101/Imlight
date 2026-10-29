@@ -22,6 +22,8 @@ using System.Text.Json.Serialization;
 using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Game.Combat;
+using Imlight.CoreLib.Game.Effects;
+using Imlight.CoreLib.Game.Housing;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.IO;
 using Imlight.Common;
@@ -174,13 +176,33 @@ public class ServerWizGameStats : IClientTypeProvider<WizGameStats> {
         m_baseEventCurrency1Pouch = ConfigurationManager.Settings["Character.BaseLunariPouch"].AsInt();
     }
 
+    /// <summary>
+    /// Copies the stats of the wizard with full health and mana. A duel that must not change the wizard fights with
+    /// the copy.
+    /// </summary>
+    internal ServerWizGameStats CopyForDuel() {
+        var copy = (ServerWizGameStats) MemberwiseClone();
+        copy.m_currentHitpoints = m_baseHitpoints;
+        copy.m_currentMana = m_baseMana;
+
+        return copy;
+    }
+
     internal void SetBaseStats() {
         var baseStats = MagicLevelsConfig.GetPlayerLevelInfo(MagicSchool, Level);
 
         this.m_baseHitpoints = baseStats.m_hitpoints;
         this.m_baseMana = baseStats.m_mana;
         this.m_powerPipBase = baseStats.m_pipChance;
+        this.m_archmasteryBase = baseStats.m_archmastery;
         this.m_energyMax = baseStats.m_petEnergy;
+        this.m_shadowPipRating = baseStats.m_shadowPipRating;
+        this.m_shadowPipMax = m_shadowMagicUnlocked ? WizStatisticEffectConfigLoader.GetShadowPipMax() : 0;
+    }
+
+    internal void UnlockShadowMagic() {
+        m_shadowMagicUnlocked = true;
+        m_shadowPipMax = WizStatisticEffectConfigLoader.GetShadowPipMax();
     }
 
     /// <summary>
@@ -225,6 +247,16 @@ public class ServerWizGameStats : IClientTypeProvider<WizGameStats> {
             m_blockRatingAll = m_blockRatingAll,
             m_criticalHitPercentAll = CombatCriticals.RatingToChance(m_criticalHitRatingAll, Level),
             m_blockPercentAll = CombatCriticals.RatingToChance(m_blockRatingAll, Level),
+            // The client shows the combat shadow gauge only when this cap is above zero.
+            m_shadowMagicUnlocked = m_shadowMagicUnlocked,
+            m_shadowPipMax = m_shadowPipMax,
+            m_shadowPipRating = m_shadowPipRating,
+            m_bonusShadowPipRating = m_bonusShadowPipRating,
+            m_shadowPipRateAccumulated = m_shadowPipRateAccumulated,
+            m_shadowPipRateThreshold = m_shadowPipRateThreshold,
+            m_shadowPipRatePercentage = m_shadowPipRatePercentage,
+            m_archmasteryBase = m_archmasteryBase,
+            m_archmasteryBonusFlat = m_archmasteryBonus,
         };
     }
 
@@ -257,6 +289,7 @@ public class ServerWizGameStats : IClientTypeProvider<WizGameStats> {
             m_baseMana = baseStats.m_mana,
             m_energyMax = baseStats.m_petEnergy,
             m_powerPipBase = baseStats.m_pipChance,
+            m_archmasteryBase = baseStats.m_archmastery,
 
             m_baseGoldPouch = m_baseGoldPouch,
             m_currentHitpoints = m_currentHitpoints,
@@ -282,6 +315,7 @@ public class ServerWizGameStats : IClientTypeProvider<WizGameStats> {
             m_showItemLock = m_showItemLock,
             m_questFinderEnabled = m_questFinderEnabled,
             m_buddyListLimit = m_buddyListLimit,
+            m_maximumNumberOfIslands = HousingSettings.IslandLimit,
             m_dontAllowFriendFinderCodes = m_dontAllowFriendFinderCodes,
             m_shadowMagicUnlocked = m_shadowMagicUnlocked,
             m_fishingLevel = m_fishingLevel,

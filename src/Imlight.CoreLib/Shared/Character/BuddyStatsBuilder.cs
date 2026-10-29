@@ -50,6 +50,7 @@ using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
+using Imlight.CoreLib.Game.Pet.Progression;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Models.Player;
 
@@ -61,13 +62,12 @@ internal static class BuddyStatsBuilder {
     internal const uint BlockSerializerFlags = 0x0F;
 
     private const uint BlockAttached = 1;
-    private const uint EquipmentBehaviorTemplateNameId = 0x4867764C;
+    internal const uint EquipmentBehaviorTemplateNameId = 0x4867764C;
     private const uint DefaultShowPvpOption = 1;
     private const PropertyFlags TransmitMask = PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit;
 
     // Live names these two blocks after the server-side behaviors.
     private static readonly uint s_equipmentWireHash = StringHash.Compute("class WizEquipmentBehavior");
-    private static readonly uint s_petWireHash = StringHash.Compute("class PetItemBehavior");
 
     internal static GAME_5_PROTOCOL.MSG_BUDDYSTATS Build(Wizard buddy,
                                                          GAME_5_PROTOCOL.MSG_BUDDYSTATS request,
@@ -128,14 +128,21 @@ internal static class BuddyStatsBuilder {
     }
 
     internal static byte[] WrapBlock(byte[] objectBytes, uint serializerFlags, byte compressionFlagByte = 0) {
+        var body = WrapCompressed(objectBytes, compressionFlagByte);
+        var block = new byte[sizeof(uint) + body.Length];
+        BinaryPrimitives.WriteUInt32LittleEndian(block, serializerFlags);
+        body.CopyTo(block, sizeof(uint));
+
+        return block;
+    }
+
+    internal static byte[] WrapCompressed(byte[] objectBytes, byte compressionFlagByte = 0) {
         // The client only sets bit 0 of the flag byte; the rest keeps whatever was in its buffer.
         var compressed = Deflate(objectBytes);
         var isCompressed = compressed.Length > 0 && compressed.Length < objectBytes.Length;
 
         using var block = new MemoryStream();
         Span<byte> word = stackalloc byte[sizeof(uint)];
-        BinaryPrimitives.WriteUInt32LittleEndian(word, serializerFlags);
-        block.Write(word);
         block.WriteByte((byte) ((compressionFlagByte & ~1) | (isCompressed ? 1 : 0)));
 
         if (isCompressed) {
@@ -213,7 +220,7 @@ internal static class BuddyStatsBuilder {
             return;
         }
 
-        if (TrySerializeBlock(source.Pet, TransmitMask, s_petWireHash, out var petBlock)) {
+        if (TrySerializeBlock(source.Pet, TransmitMask, PetBehaviorUpdate.WireClassHash, out var petBlock)) {
             reply.PetStatBlock = petBlock;
             reply.PetStatBlockCRC = source.PetTemplateId;
         }

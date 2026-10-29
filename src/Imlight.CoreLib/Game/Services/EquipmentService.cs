@@ -31,6 +31,7 @@
  * - Supports item equip and unequip operations
  * - Manages equipment-related effects and broadcasts
  * - Implements security checks for suspicious equipment actions
+ * - A house is equipped in the Islands and Structure slots, which only house items fit (HouseEquipment)
  * 
  * TODO:
  * - Enhance error handling for equipment transfers
@@ -39,7 +40,7 @@
  * 
  * Created by: Joji
  * Version: KALI 1.0
- * Last Updated: 09/26/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -53,6 +54,7 @@ using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.Types;
 using Imlight.Common;
+using Imlight.CoreLib.Game.Housing.Houses;
 using Imlight.CoreLib.Game.Effects;
 using Imlight.CoreLib.Game.Elixirs;
 using Imlight.CoreLib.Game.Pet;
@@ -65,6 +67,8 @@ using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Misc;
+using Imlight.CoreLib.Game.Pet.Progression;
+using Imlight.CoreLib.Game.Rentals;
 using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Services;
@@ -84,6 +88,9 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
     );
     private static readonly bool s_hidePetWhileMounted
         = ConfigurationManager.Settings["Character.HidePetWhileMounted"].AsBool();
+    private const long EXPIRED_RENTAL_GRACE_SECONDS = 60;
+
+    private readonly Dictionary<ulong, long> _expiredRentals = [];
     private ulong _summonedPetId;
     private int _secondsSinceLastElixirSave;
     private bool _isElixirTickerStarted;
@@ -104,7 +111,7 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
             }
         }
         catch (Exception ex) {
-            Logger.Error("Error while equipping item: {0} {1}", Logger.Args(ex.Message, ex.StackTrace));
+            Logger.Error("Item {ItemId} could not be equipped or unequipped. {Exception}", Logger.Args(message.ItemID, ex));
         }
     }
 
@@ -126,8 +133,8 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
             StartElixirPlaytimeTicker();
         }
         catch (Exception ex) {
-            Logger.Error("Error while attaching effects: {0} {1}",
-                Logger.Args(ex.Message, ex.StackTrace));
+            Logger.Error("The equipment effects could not be sent after the character entered the zone. {Exception}",
+                Logger.Args(ex));
 
             throw new ServiceRetryException("Error while attaching effects.", ex);
         }
@@ -140,12 +147,36 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
 
         var item = wizard.InventoryBehavior.GetItem(itemId);
         if (item is null) {
+            // The client may have clicked in the moment its rental ran out.
+            if (WasRentalJustExpired(itemId)) {
+                return;
+            }
+
             var infractionText = $"Player tried to equip item {itemId} that they do not have in their inventory!";
             account.AddInfraction(InfractionType.SuspiciousBehavior, infractionText);
 
-            Logger.Warning("Player tried to equip item {0} that they do not have in their inventory."
+            Logger.Warning("Character {Wizard} tried to equip item {ItemId}, which is not in their inventory."
+                        + " This is recorded as suspicious behavior.",
+                Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), itemId));
+
+            return;
+        }
+
+        if (RentalItems.TryGetBehavior(item, out var rental) && RentalItems.IsDue(rental, DateTimeOffset.UtcNow.ToUnixTimeSeconds())) {
+            Logger.Debug("Player tried to equip rental {0}, which has run out.", Logger.Args(itemId));
+            TellOtherServices(new CHARACTER_103_PROTOCOL.MSG_CHECKRENTALS());
+
+            return;
+        }
+
+        // A house goes in a house slot and nothing else does.
+        if (!HouseEquipment.Allows(item, message.SlotName)) {
+            var infractionText = $"Player tried to equip item {itemId} in slot {message.SlotName}, which does not take it!";
+            account.AddInfraction(InfractionType.SuspiciousBehavior, infractionText);
+
+            Logger.Warning("Player tried to equip item {0} in slot {1}, which does not take it."
                         + " This has been logged as suspicious behavior.",
-                Logger.Args(itemId));
+                Logger.Args(itemId, message.SlotName));
 
             return;
         }
@@ -175,7 +206,7 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
         // We don't have to remove it here because the InventoryToEquipmentTransfer method will do that for us.
         if (wizard.EquipmentBehavior.SlotInUse(message.SlotName, out var index)) {
             // Debug log.
-            Logger.Debug("{0} tried to equip item {1} in slot {2} that is already in use. Unequipping from index {3}",
+            Logger.Debug("{Wizard} equips item {ItemId} in slot {Slot}, which is in use, so slot index {Index} is unequipped first.",
                 Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), itemId, message.SlotName, index));
 
             // Get the item that is currently equipped in this slot.
@@ -184,14 +215,18 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
         }
 
         if (!wizard.InventoryToEquipmentTransfer(itemId, out var effects, out var removedEffects)) {
-            Logger.Warning("Equip failed on item {0}",
-                Logger.Args(itemId));
+            Logger.Warning("Character {Wizard} could not equip item {ItemId}.",
+                Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), itemId));
 
             return;
         }
 
         SendEquipItem(item, message.SlotName);
         SendAddEffects(effects);
+
+        if (RentalItems.TryGetBehavior(item, out _)) {
+            TellOtherServices(new CHARACTER_103_PROTOCOL.MSG_STARTRENTAL { ItemId = itemId });
+        }
 
         // A mount equipped indoors is dismounted right away; the reconcile no-ops in the open world.
         if (Enum.TryParse<EquipmentSlotType>(message.SlotName, true, out var equippedSlot)) {
@@ -228,22 +263,52 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
     }
 
     private void UnEquipItem(GAME_5_PROTOCOL.MSG_EQUIPITEM message) {
-        var wizard = GetActiveWizard();
-        var wizEquipmentBehavior = wizard.EquipmentBehavior;
+        var wizEquipmentBehavior = GetActiveWizard().EquipmentBehavior;
         var account = GetActiveAccount();
         var itemId = message.ItemID;
 
         // Check to see if the player has this item equipped. If they don't, log an infraction.
         if (!wizEquipmentBehavior.HasItemEquipped(itemId)) {
+            if (WasRentalJustExpired(itemId)) {
+                return;
+            }
+
             var infractionText = $"Player tried to unequip item {itemId} that they do not have in their inventory!";
             account.AddInfraction(InfractionType.SuspiciousBehavior, infractionText);
 
-            Logger.Warning("Player tried to unequip item {0} that they do not have in their inventory."
-                        + " This has been logged as a suspicious behavior infraction.",
+            Logger.Warning("A character tried to unequip item {ItemId}, which they do not have equipped."
+                        + " This is recorded as suspicious behavior.",
                 Logger.Args(itemId));
 
             return;
         }
+
+        UnequipById(itemId, message.SlotName);
+    }
+
+    [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_UNEQUIPITEM))]
+    private void ReceiveUnequipItem(CHARACTER_103_PROTOCOL.MSG_UNEQUIPITEM message) {
+        var wizEquipmentBehavior = GetActiveWizard().EquipmentBehavior;
+
+        try {
+            var slot = wizEquipmentBehavior.GetSlotOfItem(message.ItemId);
+            if (slot < wizEquipmentBehavior.SlotList.Count) {
+                UnequipById(message.ItemId, wizEquipmentBehavior.SlotList[slot].SlotType.ToString());
+            }
+        }
+        catch (Exception ex) {
+            Logger.Error("Item {ItemId} could not be unequipped. {Exception}",
+                Logger.Args(message.ItemId, ex));
+        }
+
+        Sender.Tell(new CHARACTER_103_PROTOCOL.MSG_UNEQUIPITEMRSP {
+            Success = !wizEquipmentBehavior.HasItemEquipped(message.ItemId)
+        });
+    }
+
+    private void UnequipById(ulong itemId, ByteString slotName) {
+        var wizard = GetActiveWizard();
+        var wizEquipmentBehavior = wizard.EquipmentBehavior;
 
         // This needs to be done before we unequip the item, because we need to know what slot it was in.
         var slot = wizEquipmentBehavior.GetSlotOfItem(itemId);
@@ -262,19 +327,19 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
         if (!wizard.EquipmentToInventoryTransfer(itemId, out var removedEffects)) {
             // If this fails, there is perhaps desync between the server and the client.
             // Send a message to the client to assure them that the server does not have the item equipped.
-            SendUnequipItem(message.SlotName, slot, itemId);
+            SendUnequipItem(slotName, slot, itemId);
 
-            Logger.Warning("Unequip failed on item {0}",
-                Logger.Args(itemId));
+            Logger.Warning("Character {Wizard} could not unequip item {ItemId}.",
+                Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), itemId));
 
             return;
         }
 
-        SendUnequipItem(message.SlotName, slot, itemId);
+        SendUnequipItem(slotName, slot, itemId);
         SendRemoveEffects(removedEffects);
 
         // A manual unequip abandons any pending auto-remount.
-        if (Enum.TryParse<EquipmentSlotType>(message.SlotName, true, out var unequippedSlot)
+        if (Enum.TryParse<EquipmentSlotType>(slotName, true, out var unequippedSlot)
             && unequippedSlot == EquipmentSlotType.Mount
             && wizard.InteriorStowedMountId != 0) {
             wizard.InteriorStowedMountId = 0;
@@ -305,6 +370,65 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
             }, false);
         }
     }
+
+    [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_EXPIRERENTAL))]
+    private void ReceiveExpireRental(CHARACTER_103_PROTOCOL.MSG_EXPIRERENTAL message) {
+        try {
+            var wizard = GetActiveWizard();
+            var item = wizard.EquipmentBehavior.GetItem(message.ItemId) ?? wizard.InventoryBehavior.GetItem(message.ItemId);
+
+            // A message that outlived its item, or one sent before the timer ran out, changes nothing.
+            if (item is null || !RentalItems.TryGetBehavior(item, out var behavior)) {
+                return;
+            }
+
+            var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            if (!RentalItems.IsDue(behavior, now)) {
+                return;
+            }
+
+            if (!wizard.RemoveRentalItem(message.ItemId, out var removal)) {
+                return;
+            }
+
+            RememberExpiredRental(message.ItemId);
+
+            // The client moves a worn item to its backpack with the unequip, and the remove only touches the backpack.
+            if (removal.WasEquipped) {
+                SendUnequipItem(removal.SlotName, removal.SlotIndex, message.ItemId);
+                SendRemoveEffects(removal.RemovedEffects);
+
+                if (s_hidePetWhileMounted && removal.SlotType == EquipmentSlotType.Mount) {
+                    SpawnPetEntity();
+                }
+                if (removal.SlotType == EquipmentSlotType.Pet) {
+                    DismissPetEntity();
+                }
+            }
+
+            ItemSync.SendRemoved(SessionActor.ActorRef, wizard, message.ItemId);
+            SendToSocket(new WIZARD_12_PROTOCOL.MSG_RENTALUPDATE { TemplateID = removal.TemplateId, Reason = 0 });
+        } catch (Exception ex) {
+            Logger.Error("Error while expiring rental {0}: {1} {2}", Logger.Args(message.ItemId, ex.Message, ex.StackTrace));
+        }
+    }
+
+    private void RememberExpiredRental(ulong itemId) {
+        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var staleIds = _expiredRentals
+            .Where(expired => now - expired.Value > EXPIRED_RENTAL_GRACE_SECONDS)
+            .Select(expired => expired.Key)
+            .ToList();
+        foreach (var staleId in staleIds) {
+            _expiredRentals.Remove(staleId);
+        }
+
+        _expiredRentals[itemId] = now;
+    }
+
+    private bool WasRentalJustExpired(ulong itemId)
+        => _expiredRentals.TryGetValue(itemId, out var expiredAt)
+            && DateTimeOffset.UtcNow.ToUnixTimeSeconds() - expiredAt <= EXPIRED_RENTAL_GRACE_SECONDS;
 
     private void SpawnPetEntity(WizClientObjectItem petItem = null) {
         var zoneActor = SessionActor.GetZoneActor();
@@ -341,6 +465,11 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
         var playerObj = GetActiveGameObject();
         if (playerObj is null) {
             return;
+        }
+
+        // The client reads the pet's level, XP and talents from this behavior, so every summon sends it.
+        if (PetBehaviorUpdate.TryCreate(petItem, out var behaviorUpdate)) {
+            SendToSocket(behaviorUpdate);
         }
 
         // The generic "PetObject" template (ID 2) is used for all pet zone entities.
@@ -417,7 +546,7 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
 
                 var slot = equip.GetSlotOfItem(mount.m_globalID);
                 if (!wizard.EquipmentToInventoryTransfer(mount.m_globalID, out var removedEffects)) {
-                    Logger.Warning("Interior dismount transfer failed for mount {0}", Logger.Args(mount.m_globalID));
+                    Logger.Warning("Character {Wizard} entered a zone without mounts, but mount {ItemId} could not be unequipped.", Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), mount.m_globalID));
 
                     return;
                 }
@@ -436,7 +565,7 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
                 WizardCollection.UpdateCharacterInteriorStowedMount(wizard);
 
                 if (!wizard.InventoryToEquipmentTransfer(gid, out var addedEffects, out _)) {
-                    Logger.Warning("Outdoor remount transfer failed for mount {0}", Logger.Args(gid));
+                    Logger.Warning("Character {Wizard} left a zone without mounts, but mount {ItemId} could not be equipped again.", Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), gid));
 
                     return;
                 }
@@ -452,8 +581,8 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
             }
         }
         catch (Exception ex) {
-            Logger.Error("Error while reconciling the mount for the zone: {0} {1}",
-                Logger.Args(ex.Message, ex.StackTrace));
+            Logger.Error("The mount could not be put away or brought back for this zone. {Exception}",
+                Logger.Args(ex));
         }
     }
 
@@ -481,7 +610,7 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
         var pubItem = ItemHelper.GetPublicItem(item);
 
         if (!_itemSerializer.Serialize(pubItem, 1, out var data)) {
-            Logger.Error("Failed to serialize item {0} for equip broadcast.",
+            Logger.Error("Item {ItemId} could not be serialized, so other players do not see it equipped.",
                 Logger.Args(item.m_globalID));
 
             return;
@@ -529,7 +658,7 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
         foreach (var effect in effects) {
             var flags = PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit;
             if (!_effectSerializer.Serialize(effect, flags, out var effectSerializedData)) {
-                Logger.Error("Failed to serialize effect {0} for add effects broadcast.",
+                Logger.Error("Effect {Effect} could not be serialized, so the client does not get it.",
                     Logger.Args(effect.m_effectNameID));
 
                 continue;
@@ -587,7 +716,7 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
                 levelUpElixir,
                 SendToSocket,
                 (msg, selfless, target) => ZoneBroadcast(msg, selfless, target),
-                Teleport,
+                (zone, doEffects, makePrivate, ownerCharId, location) => Teleport(zone, doEffects, makePrivate, ownerCharId, location),
                 PlaySound
             );
             return;

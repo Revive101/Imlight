@@ -32,6 +32,11 @@ public class ServerPetSnackBehavior : IClientBehaviorProvider<ClientPetSnackBeha
 
     private static readonly int s_maxSnackStackAllowed = 999;
 
+    /// <summary>
+    /// The most units one pet snack stack holds.
+    /// </summary>
+    internal static int MaxStack => s_maxSnackStackAllowed;
+
     public List<ulong> SnackItemIds { get; set; }
 
     [JsonIgnore] public List<ClientPetSnackItem> Snacks { get; set; }
@@ -70,7 +75,17 @@ public class ServerPetSnackBehavior : IClientBehaviorProvider<ClientPetSnackBeha
     /// </summary>
     /// <param name="snackId">The unique identifier of the snack to be removed.</param>
     /// <returns><c>true</c> if the snack was successfully removed; otherwise, <c>false</c>.</returns>
-    public bool RemoveSnack(ulong snackId, out ClientPetSnackItem updatedSnack) {
+    public bool RemoveSnack(ulong snackId, out ClientPetSnackItem updatedSnack)
+        => RemoveSnack(snackId, 1, out updatedSnack);
+
+    /// <summary>
+    /// Takes several snacks out of a stack of the player's snack bag, and removes the stack once it is empty.
+    /// </summary>
+    /// <param name="snackId">The unique identifier of the snack stack.</param>
+    /// <param name="count">How many snacks to take, at least 1 and at most the stack's quantity.</param>
+    /// <param name="updatedSnack">The stack after the snacks were taken.</param>
+    /// <returns><c>true</c> if the snacks were taken; otherwise, <c>false</c>.</returns>
+    public bool RemoveSnack(ulong snackId, int count, out ClientPetSnackItem updatedSnack) {
         Snacks ??= [];
         SnackItemIds ??= [];
         updatedSnack = null;
@@ -84,7 +99,14 @@ public class ServerPetSnackBehavior : IClientBehaviorProvider<ClientPetSnackBeha
             return false;
         }
 
-        snack.m_quantity--;
+        if (count < 1 || count > snack.m_quantity) {
+            Logger.Debug("Tried to remove {0} snacks with global id {1} from a stack of {2}.",
+                Logger.Args(count, snackId, snack.m_quantity));
+
+            return false;
+        }
+
+        snack.m_quantity -= count;
         updatedSnack = snack;
 
         if (snack.m_quantity <= 0) {

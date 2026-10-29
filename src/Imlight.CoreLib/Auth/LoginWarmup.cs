@@ -158,6 +158,7 @@ public static class LoginWarmup {
             MagicSchoolBehavior = new ServerMagicSchoolBehavior { MagicSchool = MagicSchool.Fire, Level = 1 },
             EquipmentBehavior = new ServerWizEquipmentBehavior { SlotList = [], EquippedItemIds = [], EquippedItems = [] },
             InventoryBehavior = new ServerWizInventoryBehavior { Items = [], InventoryItemIds = [] },
+            StorageBehavior = new ServerWizStorageBehavior(),
             AlchemyBehavior = new ServerAlchemyBehavior { Reagents = [], Recipes = [], CraftingSlots = [], ReagentItemIds = [] },
             QuestBehavior = new ServerQuestBehavior(),
             FriendsBehavior = new ServerFriendBehavior(),

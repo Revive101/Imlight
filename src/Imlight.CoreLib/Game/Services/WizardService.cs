@@ -38,7 +38,7 @@
  * 
  * Created by: Jooty, Joji
  * Version: KALI 1.0
- * Last Updated: 09/26/2026
+ * Last Updated: 10/25/2026
  */
 
 using Akka.Actor;
@@ -70,7 +70,7 @@ internal class WizardService(SessionActor sessionActor) : MessageService(session
             _activeWizard?.SaveLocation();
         }
         catch (Exception ex) {
-            Logger.Error("Failed to save wizard location during disconnect: {0}",
+            Logger.Error("The character location could not be saved on disconnect. {Exception}",
                 Logger.Args(ex));
         }
         finally {
@@ -100,10 +100,18 @@ internal class WizardService(SessionActor sessionActor) : MessageService(session
     [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_LEVELUP))]
     private void ReceiveSetLevel(CHARACTER_103_PROTOCOL.MSG_LEVELUP message) {
         // This is the internal level up message. It most likely happened due to a developer command.
+        var xpBeforeSet = _activeWizard.MagicSchoolBehavior.ExperiencePoints;
         var levelUpSuccess = _activeWizard.SetLevel(message.NewLevel);
         if (!levelUpSuccess) {
             return;
         }
+
+        _activeWizard.ResetExperiencePointsToLevel();
+        SendToSocket(new WIZARD_12_PROTOCOL.MSG_UPDATEXP {
+            GlobalID = _activeWizard.GameObjectID,
+            XP = _activeWizard.MagicSchoolBehavior.ExperiencePoints - xpBeforeSet,
+            OldXP = xpBeforeSet,
+        });
 
         var levelUpMessage = new WIZARD_12_PROTOCOL.MSG_LEVELUP {
             GlobalID = _activeWizard.GameObjectID,
@@ -139,6 +147,7 @@ internal class WizardService(SessionActor sessionActor) : MessageService(session
         // Update power pips
         var powerPipsMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEPOWERPIP() { PowerPip = baseStats.m_pipChance };
         SendToSocket(powerPipsMessage);
+        SendToSocket(new WIZARD3_56_PROTOCOL.MSG_UPDATEARCHMASTERY { Stat = baseStats.m_archmastery });
 
         // Update energy.
         _activeWizard.UpdateEnergy(baseStats.m_petEnergy);
@@ -195,6 +204,7 @@ internal class WizardService(SessionActor sessionActor) : MessageService(session
                 PowerPip = baseStats.m_pipChance
             };
             SendToSocket(powerPipsMessage);
+            SendToSocket(new WIZARD3_56_PROTOCOL.MSG_UPDATEARCHMASTERY { Stat = baseStats.m_archmastery });
 
             _activeWizard.UpdateEnergy(baseStats.m_petEnergy);
             var petEnergyMessage = new PET_9_PROTOCOL.MSG_PETENERGYMAX() {

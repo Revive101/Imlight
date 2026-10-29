@@ -38,7 +38,7 @@
  * 
  * Created by: Jay
  * Version: KALI 1.0
- * Last Updated: 08/14/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -241,7 +241,7 @@ internal sealed class TutorialDuelDirector {
             if (spell is not null) {
                 _duel.CombatResolver.AddCombatMove(CombatMoveType.Attack, enemy, player, spell);
                 enemy.ClearHand();
-                Logger.Information("[TUTFIGHT] round {0}: enemy slot {1} scripted to cast '{2}' at the player.",
+                Logger.Debug("[TUTFIGHT] round {Round}: enemy slot {Slot} scripted to cast '{SpellId}' at the player.",
                     Logger.Args(_duel.Duel.m_roundNum, enemy.SlotIndex, spell.m_templateID));
             }
             else if (queued is null) {

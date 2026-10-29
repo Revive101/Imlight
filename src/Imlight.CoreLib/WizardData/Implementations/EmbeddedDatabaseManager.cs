@@ -47,7 +47,7 @@ public static class EmbeddedDatabaseManager {
             }
 
             Logger.Information("Initializing embedded RavenDB database for the first time..");
-            Logger.Information("Database data directory: {0}", Logger.Args(s_embeddedDatabasePath));
+            Logger.Information("Database data directory: {Path}", Logger.Args(s_embeddedDatabasePath));
 
             // Configure the embedded server.
             var serverOptions = new ServerOptions {
@@ -62,7 +62,7 @@ public static class EmbeddedDatabaseManager {
             if (s_embeddedDatabaseUseFull) {
                 serverOptions.ServerDirectory = s_embeddedDatabaseFullPath;
 
-                Logger.Information("Using full RavenDB server at {0}", 
+                Logger.Information("Using full RavenDB server at {Path}",
                     Logger.Args(s_embeddedDatabaseFullPath));
             }
 
@@ -76,7 +76,9 @@ public static class EmbeddedDatabaseManager {
                     EmbeddedServer.Instance.RestartServerAsync().Wait();
                 }
                 catch (Exception ex) {
-                    Logger.Error("Failed to restart embedded database: {0}", Logger.Args(ex.Message));
+                    Logger.Error("The embedded database could not be restarted, so player data cannot be saved. Restart the server. {Exception}", Logger.Args(ex));
+
+                    return;
                 }
 
                 Logger.Information("Embedded database restarted.");
@@ -85,7 +87,7 @@ public static class EmbeddedDatabaseManager {
             Logger.Information("Embedded database initialized.");
         }
         catch (Exception ex) {
-            Logger.Error("Failed to initialize embedded database: {0}", Logger.Args(ex.Message));
+            Logger.Error("The embedded database could not start, so player data cannot be loaded or saved. {Exception}", Logger.Args(ex));
         }
     }
 

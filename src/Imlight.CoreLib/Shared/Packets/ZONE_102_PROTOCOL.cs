@@ -23,6 +23,9 @@ using Imcodec.Math;
 using Imcodec.IO;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Game.Combat;
+using Imlight.CoreLib.Game.Housing.Access;
+using Imlight.CoreLib.Game.PvP;
+using Imlight.CoreLib.Game.PvP.Arena;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Models.Player;
@@ -55,7 +58,8 @@ public enum ZoneBroadcastTarget : byte {
     Triggers = 1 << 3,
     Paths   = 1 << 4,
     Sigils  = 1 << 5,
-    All         = Players | Objects | Volumes | Triggers | Paths | Sigils,
+    Statues = 1 << 6,
+    All         = Players | Objects | Volumes | Triggers | Paths | Sigils | Statues,
     AllNoPlayers = All & ~Players,
 }
 
@@ -178,6 +182,12 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
 
         public byte MessageOrder { get; } = 5;
         public byte ServiceID { get; } = 102;
+
+        /// <summary>
+        /// True when the sender tells the entity about every player in the zone once it has loaded, so the
+        /// entity introduces itself to each of them then instead of broadcasting its spawn.
+        /// </summary>
+        public bool PlayersJoinAfterLoad;
 
     }
 
@@ -414,7 +424,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         /// <summary>
         /// Which supervisors the zone should forward this message to.
         /// </summary>
-        public ZoneBroadcastTarget Targets = ZoneBroadcastTarget.All;
+        public ZoneBroadcastTarget Targets = ZoneBroadcastTarget.Players;
 
     }
 
@@ -519,6 +529,49 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     }
 
     /// <summary>
+    /// Sent by the <see cref="PvPDirector"/> to an arena zone once every player of a PvP match arrived: the
+    /// zone's PvP sigil seats the roster on its circles.
+    /// </summary>
+    public sealed class MSG_STARTPVPMATCH : IServerMessage {
+
+        public byte MessageOrder { get; } = 83;
+        public byte ServiceID { get; } = 102;
+
+        public ulong MatchId;
+        public uint TournamentNameId;
+        public uint LeagueId;
+        internal IReadOnlyList<PvPRosterEntry> Roster;
+
+    }
+
+    /// <summary>
+    /// Sent by the <see cref="PvPDirector"/> to an arena zone when a player leaves a PvP match that is in progress:
+    /// the duel of the match forfeits that player only.
+    /// </summary>
+    public sealed class MSG_FORFEITPVPPARTICIPANT : IServerMessage {
+
+        public byte MessageOrder { get; } = 88;
+        public byte ServiceID { get; } = 102;
+
+        public ulong MatchId;
+        public ulong CharId;
+
+    }
+
+    /// <summary>
+    /// Sent by an <see cref="World.InstanceContainer"/> of a PvP match to its <see cref="World.GameWorld"/> when its
+    /// last zone is dropped: the world removes the container.
+    /// </summary>
+    public sealed class MSG_MATCHCONTAINEREMPTY : IServerMessage {
+
+        public byte MessageOrder { get; } = 84;
+        public byte ServiceID { get; } = 102;
+
+        public ulong OwnerId;
+
+    }
+
+    /// <summary>
     /// Called by a <see cref="PathMovementComponent"/> to itself to indicate the interval to check for interactions.
     /// </summary>
     public sealed class MSG_CREATUREFISHINTERACTIONINTERVAL : IServerMessage {
@@ -556,6 +609,11 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         /// The adjectives of the monster a Monster_Killed event is about; requirements on the event read them.
         /// </summary>
         public IReadOnlyList<string> Adjectives;
+
+        /// <summary>
+        /// The posting player's wizard, filled in by <see cref="PostEventWizardQuery"/> when requirements need it.
+        /// </summary>
+        public Wizard PlayerWizard;
 
     }
 
@@ -692,6 +750,16 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         /// rejoining the old one. Never set by re-attach or recall transfers.
         /// </summary>
         public bool ResetInstance;
+
+        /// <summary>
+        /// How the client is asked to load the house zone the player is entering. Null for every ordinary zone.
+        /// </summary>
+        public HouseEntry HouseEntry;
+
+        /// <summary>
+        /// The lot of the house the player is entering. Zero for every ordinary zone.
+        /// </summary>
+        public ulong HouseLotGid => HouseEntry?.LotGid ?? 0;
 
     }
 
@@ -1081,6 +1149,32 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         /// <summary>The arrival position inside the instance, "X,Y,Z,heading".</summary>
         public string DestinationLoc;
 
+        /// <summary>
+        /// The sigil circle the player stands in, counted over the player circles of the template.
+        /// </summary>
+        public int SlotIndex;
+
+        /// <summary>
+        /// The countdown length; zero uses the default.
+        /// </summary>
+        public float CountdownSeconds;
+
+        /// <summary>
+        /// The minigame sigil that seats the player, or null for a dungeon sigil. A seated player's countdown is
+        /// shown to the whole zone and the sigil hears when the player leaves it.
+        /// </summary>
+        public IActorRef SigilRef;
+
+        /// <summary>
+        /// The character whose private instance the sigil's players share; zero is the player.
+        /// </summary>
+        public ulong RoomOwnerCharId;
+
+        /// <summary>
+        /// The other player on the sigil, or zero.
+        /// </summary>
+        public ulong PartnerCharId;
+
     }
 
     /// <summary>
@@ -1118,19 +1212,6 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte ServiceID { get; } = 102;
 
         public IActorRef Entity;
-
-    }
-
-    /// <summary>
-    /// Response to MSG_SPAWNENTITY with the created entity actor reference.
-    /// </summary>
-    public sealed class MSG_SPAWNENTITYRSP : IServerMessage {
-
-        public byte MessageOrder { get; } = 66;
-        public byte ServiceID { get; } = 102;
-
-        public IActorRef EntityActor;
-        public CoreObject SpawnedObject;
 
     }
 
@@ -1226,6 +1307,267 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public IActorRef Origin;
         public string QuestName;
         public string GoalName;
+
+    }
+
+    /// <summary>
+    /// Sent to a player's session by a house door the player walked up to: the session works out the house on the
+    /// other side and starts the zone transfer.
+    /// </summary>
+    public sealed class MSG_HOUSEDOOR : IServerMessage {
+
+        public byte MessageOrder { get; } = 80;
+        public byte ServiceID { get; } = 102;
+
+        public ulong DoorGid;
+        public string LocationName;
+
+    }
+
+    /// <summary>
+    /// Sent to a silver chest by the minigame process when its player is in the chest game.
+    /// </summary>
+    public sealed class MSG_CHEST_GAME_STARTED : IServerMessage {
+
+        public byte MessageOrder { get; } = 85;
+        public byte ServiceID { get; } = 102;
+
+        public ulong CharId;
+
+    }
+
+    /// <summary>
+    /// Sent to a silver chest by the minigame process when the chest game was played to the end. The chest is
+    /// used up, won or lost.
+    /// </summary>
+    public sealed class MSG_CHEST_GAME_RESULT : IServerMessage {
+
+        public byte MessageOrder { get; } = 86;
+        public byte ServiceID { get; } = 102;
+
+        public ulong CharId;
+        public bool Won;
+
+    }
+
+    /// <summary>
+    /// Sent to a silver chest when its chest game did not start or ended without a result, so the player's
+    /// hold on the chest ends.
+    /// </summary>
+    public sealed class MSG_CHEST_GAME_ABORTED : IServerMessage {
+
+        public byte MessageOrder { get; } = 87;
+        public byte ServiceID { get; } = 102;
+
+        public ulong CharId;
+
+    }
+
+    /// <summary>
+    /// Sent by a minigame sigil to a seated player's session when a second player sits down: the
+    /// player's countdown starts over and both go to the first player's instance.
+    /// </summary>
+    public sealed class MSG_SIGILPARTNERJOINED : IServerMessage {
+
+        public byte MessageOrder { get; } = 89;
+        public byte ServiceID { get; } = 102;
+
+        public ulong PartnerCharId;
+        public ulong RoomOwnerCharId;
+
+    }
+
+    /// <summary>
+    /// Sent by a minigame sigil to a seated player's session when the other player stepped off: the
+    /// countdown goes on and the player goes alone.
+    /// </summary>
+    public sealed class MSG_SIGILPARTNERLEFT : IServerMessage {
+
+        public byte MessageOrder { get; } = 90;
+        public byte ServiceID { get; } = 102;
+
+    }
+
+    /// <summary>
+    /// Sent by a seated player's session to its minigame sigil when the player left the sigil, either by
+    /// stepping off or by entering the sigil's zone.
+    /// </summary>
+    public sealed class MSG_SIGILOCCUPANTLEFT : IServerMessage {
+
+        public byte MessageOrder { get; } = 91;
+        public byte ServiceID { get; } = 102;
+
+        public ulong CharId;
+
+        /// <summary>
+        /// True if the player went through the sigil, so the other player is not told.
+        /// </summary>
+        public bool Entered;
+
+    }
+
+    /// <summary>
+    /// Sent by the ZoneService to the other services just before a minigame sigil sends the player to its zone.
+    /// </summary>
+    public sealed class MSG_SIGILROOMENTERING : IServerMessage {
+
+        public byte MessageOrder { get; } = 92;
+        public byte ServiceID { get; } = 102;
+
+        public string DestinationZone;
+        public ulong RoomOwnerCharId;
+        public ulong PartnerCharId;
+
+        /// <summary>
+        /// The zone the player left from, to go back to.
+        /// </summary>
+        public string ReturnZone;
+
+        /// <summary>
+        /// The sigil's position in <see cref="ReturnZone"/>, "X,Y,Z,heading".
+        /// </summary>
+        public string ReturnLocation;
+
+    }
+
+    /// <summary>
+    /// Sent by a pet game room to a player's session when the player joins the room's zone.
+    /// </summary>
+    public sealed class MSG_PETGAMEROOMJOINED : IServerMessage {
+
+        public byte MessageOrder { get; } = 93;
+        public byte ServiceID { get; } = 102;
+
+        /// <summary>
+        /// The pet game the room's game object runs.
+        /// </summary>
+        public string GameName;
+
+        /// <summary>
+        /// The players already in the room, by character id, with their sessions.
+        /// </summary>
+        public Dictionary<ulong, IActorRef> OtherPlayers;
+
+    }
+
+    /// <summary>
+    /// Sent by a pet game room to the sessions of the players in it when another player joins.
+    /// </summary>
+    public sealed class MSG_PETGAMEROOMPLAYERJOINED : IServerMessage {
+
+        public byte MessageOrder { get; } = 94;
+        public byte ServiceID { get; } = 102;
+
+        public ulong CharId;
+        public IActorRef Session;
+
+    }
+
+    /// <summary>
+    /// Sent by a pet game room to the sessions of the players in it when a player leaves.
+    /// </summary>
+    public sealed class MSG_PETGAMEROOMPLAYERLEFT : IServerMessage {
+
+        public byte MessageOrder { get; } = 95;
+        public byte ServiceID { get; } = 102;
+
+        public ulong CharId;
+
+    }
+
+    /// <summary>
+    /// Internal timer message: a minigame sigil lights itself again for everyone after a player stepped off.
+    /// </summary>
+    public sealed class MSG_SIGILRELIGHT : IServerMessage {
+
+        public byte MessageOrder { get; } = 96;
+        public byte ServiceID { get; } = 102;
+
+    }
+
+    /// <summary>
+    /// PipeTo reply carrying a player's wizard (or null on timeout or failure) back to an NPC's service component.
+    /// </summary>
+    public sealed class MSG_SERVICEOPTIONS_RESULT : IServerMessage {
+
+        public byte MessageOrder { get; } = 97;
+        public byte ServiceID { get; } = 102;
+
+        public IActorRef PlayerActor;
+        public Wizard Wizard;
+        public int Reinteract;
+
+    }
+
+    /// <summary>
+    /// Sent by an empty public <see cref="Zone"/> to <see cref="World.GameWorld"/>: it has been idle long enough to
+    /// stop. The game world holds new transfers for it and answers with <see cref="MSG_PUBLICZONESTOPCHECK"/>.
+    /// </summary>
+    public sealed class MSG_PUBLICZONEIDLE : IServerMessage {
+
+        public byte MessageOrder { get; } = 98;
+        public byte ServiceID { get; } = 102;
+
+        public string ZoneName;
+
+    }
+
+    /// <summary>
+    /// Sent by <see cref="World.GameWorld"/> to a public <see cref="Zone"/> that asked to stop: every transfer sent
+    /// before this message has arrived. The zone stops, or answers with <see cref="MSG_PUBLICZONEKEEP"/>.
+    /// </summary>
+    public sealed class MSG_PUBLICZONESTOPCHECK : IServerMessage {
+
+        public byte MessageOrder { get; } = 99;
+        public byte ServiceID { get; } = 102;
+
+    }
+
+    /// <summary>
+    /// Sent by a public <see cref="Zone"/> to <see cref="World.GameWorld"/>: it got a player or a transfer after
+    /// asking to stop, so it stays and the held transfers go to it.
+    /// </summary>
+    public sealed class MSG_PUBLICZONEKEEP : IServerMessage {
+
+        public byte MessageOrder { get; } = 100;
+        public byte ServiceID { get; } = 102;
+
+        public string ZoneName;
+
+    }
+
+    /// <summary>
+    /// Timer-fired message to an <see cref="World.InstanceContainer"/> that holds no zones: it tells
+    /// <see cref="World.GameWorld"/> with <see cref="MSG_INSTANCECONTAINEREMPTY"/>.
+    /// </summary>
+    public sealed class MSG_INSTANCECONTAINERIDLE : IServerMessage {
+
+        public byte MessageOrder { get; } = 101;
+        public byte ServiceID { get; } = 102;
+
+    }
+
+    /// <summary>
+    /// Sent by an empty <see cref="World.InstanceContainer"/> to <see cref="World.GameWorld"/>, which stops the
+    /// container unless a load or transfer for its owner is still pending.
+    /// </summary>
+    public sealed class MSG_INSTANCECONTAINEREMPTY : IServerMessage {
+
+        public byte MessageOrder { get; } = 102;
+        public byte ServiceID { get; } = 102;
+
+        public ulong OwnerCharId;
+
+    }
+
+    /// <summary>
+    /// Called by a <see cref="PathMovementComponent"/> to itself while a creature travels between nodes, to send
+    /// its interpolated position.
+    /// </summary>
+    public sealed class MSG_CREATURETRAVELUPDATEINTERVAL : IServerMessage {
+
+        public byte MessageOrder { get; } = 103;
+        public byte ServiceID { get; } = 102;
 
     }
 

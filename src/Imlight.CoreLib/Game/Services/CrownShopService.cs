@@ -531,7 +531,7 @@ internal class CrownShopService(SessionActor sessionActor) : MessageService(sess
                         levelUpOrWorldElixir,
                         SendToSocket,
                         (msg, selfless, target) => ZoneBroadcast(msg, selfless, target),
-                        Teleport,
+                        (zone, doEffects, makePrivate, ownerCharId, location) => Teleport(zone, doEffects, makePrivate, ownerCharId, location),
                         PlaySound
                     );
                     return 0;

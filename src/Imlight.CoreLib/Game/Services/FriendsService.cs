@@ -90,7 +90,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/26/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -108,6 +108,7 @@ using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.Game.Statues;
 using Imlight.CoreLib.Shared.Utilities;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
@@ -140,7 +141,7 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
             if (!wizard.FriendsBehavior.TryGetRelationship(buddy.CharId, out var relationship)
                 || relationship.IsBrokenUp) {
                 // Ignore the relationship if it is broken up.
-                Logger.Debug("{0} has a friend named {1} (ID: {2}), but the relationship is broken up.",
+                Logger.Debug("{Name} has a friend named {BuddyName} (ID {BuddyId}), but the relationship is broken up.",
                     Logger.Args(wizard.PlayerNameBehavior.GetWizardName(),
                     buddy.PlayerNameBehavior.GetWizardName(),
                     buddy.CharId)
@@ -150,7 +151,7 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
             }
             else if (relationship.Blocked) {
                 // Ignore the relationship if it is blocked.
-                Logger.Debug("{0} has a friend named {1} (ID: {2}), but the relationship is blocked.",
+                Logger.Debug("{Name} has a friend named {BuddyName} (ID {BuddyId}), but the relationship is blocked.",
                     Logger.Args(wizard.PlayerNameBehavior.GetWizardName(),
                     buddy.PlayerNameBehavior.GetWizardName(),
                     buddy.CharId)
@@ -163,7 +164,7 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
                 SendBuddyEntry(buddy, relationship, wizard);
             }
             else {
-                Logger.Warning("{0} has a friend with character ID {1}, but the relationship was not found.",
+                Logger.Warning("{Name} has a friend with character ID {BuddyId}, but the relationship was not found.",
                     Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), buddy.CharId));
             }
         }
@@ -249,7 +250,7 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
         // Check to see if the recipient is online. If not, there is naught we can do.
         if (!TryGetOnlinePlayer(buddyCharID, out var onlinePlayer)) {
             var wizardName = wizard.PlayerNameBehavior.GetWizardName();
-            Logger.Warning("{0} tried to add character ID {1} as a friend, but the character is not online.",
+            Logger.Debug("{Name} tried to add character ID {BuddyId} as a friend, but the character is not online.",
                 Logger.Args(wizardName, buddyCharID));
 
             var errorMsg = new GAME_5_PROTOCOL.MSG_BUDDYREQUESTERROR {
@@ -272,13 +273,13 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
         var fwdMsg = new CHARACTER_103_PROTOCOL.MSG_BUDDYREQUESTADDFWD {
             RequesterCharId = wizard.CharId,
             RecipientCharId = buddyCharID,
-            OwnerName = DataManipulation.SpacedHexStringToBytes(wizard.PlayerNameBehavior.GetWizardNameAsByteHexString()),
+            OwnerName = wizard.PlayerNameBehavior.GetPackedNameBytes(),
             OwnerLevel = (byte) wizard.MagicSchoolBehavior.Level,
             OwnerSchool = wizard.MagicSchoolBehavior.MagicSchool.ToString()
         };
         Context.ActorSelection(onlinePlayer.ActorPath).Tell(fwdMsg);
 
-        Logger.Debug("{0} has sent a friend request to character ID {1}.",
+        Logger.Debug("{Name} has sent a friend request to character ID {BuddyId}.",
             Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), buddyCharID));
     }
 
@@ -291,7 +292,7 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
 
         // Is the owner ID.. ourselves?
         if (message.RequesterCharId == wizard.CharId) {
-            Logger.Warning("{0} tried to add themselves as a friend.",
+            Logger.Warning("{Name} tried to add themselves as a friend.",
                 Logger.Args(wizard.PlayerNameBehavior.GetWizardName()));
 
             return;
@@ -301,7 +302,7 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
 
         // Check to see if we already have this friend request pending.
         if (wizard.FriendsBehavior.HasPendingFriendRequest(buddyCharID)) {
-            Logger.Warning("{0} tried to add character ID {1} as a friend, but the request is already pending.",
+            Logger.Debug("{Name} tried to add character ID {BuddyId} as a friend, but the request is already pending.",
                 Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), buddyCharID));
 
             return;
@@ -330,7 +331,7 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
         // Replies identify the saved requester, unlike the initial object-targeted add request.
         var buddyCharID = message.ListOwnerGID;
         if (!wizard.RemovePendingFriendRequest(buddyCharID)) {
-            Logger.Error("{0} tried to add character ID {1} as a friend, but the request was not pending.",
+            Logger.Debug("{Name} accepted a friend request from character ID {BuddyId} that is no longer pending.",
                 Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), buddyCharID));
 
             return;
@@ -338,7 +339,7 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
 
         // Add the wizard as a friend. If they are already friends, log an error and return.
         if (!wizard.AddOrRepairRelationship(buddyCharID)) {
-            Logger.Error("{0} could not add or update the relationship with character ID {1}.",
+            Logger.Warning("{Name} could not add or update the friendship with character ID {BuddyId}.",
                 Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), buddyCharID));
 
             return;
@@ -352,7 +353,7 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
 
             // Ensure that this wizard was even pending. If not, log an error and return.
             if (offlineWizard is null || !offlineWizard.RemovePendingFriendRequest(wizard.CharId)) {
-                Logger.Error("{0} tried to add character ID {1} as a friend, but the request was not pending.",
+                Logger.Debug("{Name} accepted a friend request from character ID {BuddyId} that is no longer pending.",
                     Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), buddyCharID));
 
                 return;
@@ -362,7 +363,7 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
         }
         else {
             if (!wizard.FriendsBehavior.TryGetRelationship(buddyCharID, out var relationship)) {
-                Logger.Error("{0} tried to add character ID {1} as a friend, but the relationship was not found.",
+                Logger.Warning("{Name} accepted character ID {BuddyId} as a friend, but the friendship was not saved.",
                     Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), buddyCharID));
 
                 return;
@@ -399,7 +400,7 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
         var buddyCharID = message.ListOwnerGID;
         // Ensure that this wizard was even pending. If not, log an error and return.
         if (!wizard.RemovePendingFriendRequest(buddyCharID)) {
-            Logger.Error("{0} tried to deny a friend request from character ID {1}, but the request was not pending.",
+            Logger.Debug("{Name} denied a friend request from character ID {BuddyId} that is no longer pending.",
                 Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), buddyCharID));
 
             return;
@@ -413,7 +414,7 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
 
             // Ensure that this wizard was even pending. If not, log an error and return.
             if (offlineWizard is null || !offlineWizard.RemovePendingFriendRequest(wizard.CharId)) {
-                Logger.Error("{0} tried to deny a friend request from character ID {1}, but the request was not pending.",
+                Logger.Debug("{Name} denied a friend request from character ID {BuddyId} that is no longer pending.",
                     Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), buddyCharID));
 
                 return;
@@ -452,21 +453,19 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
             // Log
             var myName = myWizard.PlayerNameBehavior.GetWizardName();
             var entryName = entryWizard.PlayerNameBehavior.GetWizardName();
-            Logger.Debug("{0} (ID {1}) has received a friend request reply from {2} (ID {3}). They have accepted.",
+            Logger.Debug("{Name} (ID {CharId}) has received a friend request reply from {BuddyName} (ID {BuddyId}). They have accepted.",
                 Logger.Args(myName, myWizard.CharId, entryName, entryWizard.CharId));
 
             // Add the wizard as a friend. If they are already friends, log an error and return.
             if (!myWizard.AddOrRepairRelationship(message.NewRelationship)) {
-                Logger.Error("{0} could not add or update the relationship with character ID {1}.",
+                Logger.Warning("{Name} could not add or update the friendship with character ID {BuddyId}.",
                     Logger.Args(myWizard.PlayerNameBehavior.GetWizardName(), buddyCharID));
 
                 return;
             }
 
-            var myWizardNameHex = myWizard.PlayerNameBehavior.GetWizardNameAsByteHexString();
-            var myWizardNameBytes = DataManipulation.SpacedHexStringToBytes(myWizardNameHex);
-            var entryWizardNameHex = entryWizard.PlayerNameBehavior.GetWizardNameAsByteHexString();
-            var entryWizardNameBytes = DataManipulation.SpacedHexStringToBytes(entryWizardNameHex);
+            var myWizardNameBytes = myWizard.PlayerNameBehavior.GetPackedNameBytes();
+            var entryWizardNameBytes = entryWizard.PlayerNameBehavior.GetPackedNameBytes();
 
             // Inform the game client that the friend request has been accepted.
             clientMsg = new GAME_5_PROTOCOL.MSG_BUDDYREQUESTACCEPT {
@@ -493,7 +492,7 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
         else {
             // Log
             var myName = myWizard.PlayerNameBehavior.GetWizardName();
-            Logger.Debug("{0} (ID {1}) has received a friend request reply from character ID {2}. They have denied.",
+            Logger.Debug("{Name} (ID {CharId}) has received a friend request reply from character ID {BuddyId}. They have denied.",
                 Logger.Args(myName, myWizard.CharId, buddyCharID));
 
             // Inform the game client that the friend request has been denied.
@@ -514,7 +513,7 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
         var buddyCharID = message.EntryGID;
 
         if (!wizard.RemoveFriend(buddyCharID)) {
-            Logger.Error("{0} tried to remove character ID {1} as a friend, but they are not friends.",
+            Logger.Debug("{Name} tried to remove character ID {BuddyId} as a friend, but they are not friends.",
                 Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), buddyCharID));
 
             return;
@@ -543,7 +542,7 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
         var buddyCharID = message.RequesterCharId;
 
         if (!wizard.RemoveFriend(buddyCharID)) {
-            Logger.Error("{0} tried to remove character ID {1} as a friend, but they are not friends.",
+            Logger.Debug("{Name} tried to remove character ID {BuddyId} as a friend, but they are not friends.",
                 Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), buddyCharID));
 
             return;
@@ -582,10 +581,24 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_GOTOPLAYER))]
     private void ReceiveGoToPlayer(GAME_5_PROTOCOL.MSG_GOTOPLAYER message) {
         var targetID = message.TargetCharacterID;
+        var wizard = GetActiveWizard();
+
+        // The friends list only offers Go To for friends.
+        if (!BuddyRelationshipCollection.AreFriends(wizard.CharId, targetID)) {
+            Logger.Warning("Player {0} tried to teleport to character ID {1}, who is not a friend.",
+                Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), targetID));
+
+            SendToSocket(new GAME_5_PROTOCOL.MSG_GOTOPLAYERRESP {
+                TargetCharacterID = targetID,
+                Error = 1
+            });
+
+            return;
+        }
 
         // Check if the target is online.
         if (!TryGetOnlinePlayer(targetID, out var onlinePlayer)) {
-            Logger.Debug("Player {0} tried to teleport to character ID {1}, but the character is not online.",
+            Logger.Debug("{Name} tried to teleport to character ID {BuddyId}, but the character is not online.",
                 Logger.Args(GetActiveWizard().PlayerNameBehavior.GetWizardName(), targetID));
 
             SendToSocket(new GAME_5_PROTOCOL.MSG_GOTOPLAYERRESP {
@@ -603,18 +616,11 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
             )
             .Result;
 
-        if (queryResult is not null) {
-            var coordinates = Util.GetCompactStringFromVector((Vector4) queryResult.Wizard.Location);
-
-            Teleport(
-                destinationZone: onlinePlayer.CurrentZone,
-                destinationLocation: coordinates,
-                doTeleportEffects: true,
-                ownerCharId: targetID
-            );
-        }
-        else {
-            Logger.Error("Failed to query the target wizard for teleportation.");
+        if (queryResult?.Wizard is not null) {
+            TeleportToPlayer(queryResult.Wizard, targetID, onlinePlayer.CurrentZone);
+        } else {
+            Logger.Warning("Character {CharId} could not teleport to character {TargetId}: the target's character could not be read.",
+                Logger.Args(GetActiveWizard().CharId, targetID));
         }
     }
 
@@ -624,12 +630,12 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
         var wizard = GetActiveWizard();
         var targetCharID = message.CharacterGID;
 
-        if (targetCharID == 0 || targetCharID == wizard.CharId) {
+        if (targetCharID == 0 || targetCharID == wizard.CharId || StatueIdentity.IsStatueId(targetCharID)) {
             return;
         }
 
         if (!wizard.IgnorePlayer(targetCharID)) {
-            Logger.Error("{0} tried to ignore character ID {1}, but they are already ignored.",
+            Logger.Debug("{Name} tried to ignore character ID {BuddyId}, but they are already ignored.",
                 Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), targetCharID));
 
             return;
@@ -647,7 +653,7 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
         var targetCharID = message.CharacterGID;
 
         if (!wizard.UnignorePlayer(targetCharID)) {
-            Logger.Error("{0} tried to unignore character ID {1}, but they are not ignored.",
+            Logger.Debug("{Name} tried to unignore character ID {BuddyId}, but they are not ignored.",
                 Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), targetCharID));
 
             return;
@@ -664,10 +670,8 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
         SendIgnoreListConfirmation(wizard, add: false);
     }
 
-    /// Send the serialized ignore list to the client.
-    /// <param name="add">When true, sends as a single-entry confirmation (Add=1);
-    /// when false, sends the full list (Add=0).</param>
     private void SendIgnoreListConfirmation(Wizard wizard, bool add) {
+        // add sends a single-entry confirmation (Add=1); otherwise the full list goes out (Add=0).
         var ignoredList = wizard.FriendsBehavior.GetIgnoredPlayers(wizard.CharId);
 
         var serializer = new ObjectSerializer(
@@ -676,7 +680,7 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
         );
 
         if (!serializer.Serialize(ignoredList, 1, out var listBytes)) {
-            Logger.Error("Player {0} requested their ignore list, but the serialization failed.",
+            Logger.Error("The ignore list of {Name} could not be serialized, so it is not sent.",
                 Logger.Args(wizard.PlayerNameBehavior.GetWizardName()));
 
             return;
@@ -701,15 +705,14 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
     private void SendBuddyEntry(Wizard buddy, Relationship relationship, Wizard owner) {
         // Check if this buddy is online.
         var isOnline = TryGetOnlinePlayer(buddy.CharId, out var onlinePlayer);
-        var buddyHexName = buddy.PlayerNameBehavior.GetWizardNameAsByteHexString();
-        var buddyByteName = DataManipulation.SpacedHexStringToBytes(buddyHexName);
+        var buddyByteName = buddy.PlayerNameBehavior.GetPackedNameBytes();
 
         // Log
         var ownerName = GetActiveWizard().PlayerNameBehavior.GetWizardName();
-        var statusMessage = isOnline ? "online" : "offline";
         var buddyWizardName = buddy.PlayerNameBehavior.GetWizardName();
-        Logger.Debug("{0} has a friend named {1} (Hex: {2}) (ID: {3}) who is {4}.",
-            Logger.Args(ownerName, buddyWizardName, buddyHexName, buddy.CharId, statusMessage));
+        var statusMessage = isOnline ? "online" : "offline";
+        Logger.Debug("{Name} has a friend named {BuddyName} (ID {BuddyId}) who is {Status}.",
+            Logger.Args(ownerName, buddyWizardName, buddy.CharId, statusMessage));
 
         var buddyMsg = new GAME_5_PROTOCOL.MSG_BUDDYENTRY {
             ListOwnerGID = owner.GameObjectID,

@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty, Joji
  * Version: KALI 1.0
- * Last Updated: 09/27/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -200,7 +200,7 @@ internal class InventoryService(SessionActor sessionActor) : MessageService(sess
 
         if (!serializer.Deserialize<QuickSellItemList>(message.Data, 4, out var quickSellItemList)
             || quickSellItemList.m_quickSellItemList is null) {
-            Logger.Log.Error("Failed to deserialize quicksell item list.");
+            Logger.Warning("A quick-sell list from the client could not be read, so nothing was sold.");
 
             return;
         }
@@ -255,7 +255,7 @@ internal class InventoryService(SessionActor sessionActor) : MessageService(sess
                 continue;
             }
 
-            Logger.Log.Warning("Could not resolve quicksell item {0}; nothing was sold for it.",
+            Logger.Warning("Quick-sell item {ItemId} is neither in the inventory nor a treasure card, so nothing was sold for it.",
                 Logger.Args(quickSellItem.m_sellItemGID));
         }
 
@@ -274,7 +274,6 @@ internal class InventoryService(SessionActor sessionActor) : MessageService(sess
 
     #region Jewels
 
-    // JEWELS
     [MessageHandler(typeof(WIZARD2_53_PROTOCOL.MSG_EQUIPJEWELREQUEST))]
     private void ReceiveEquipJewelRequest(WIZARD2_53_PROTOCOL.MSG_EQUIPJEWELREQUEST message) {
         SendToSocket(new WIZARD2_53_PROTOCOL.MSG_EQUIPJEWELREQUEST() {
@@ -301,7 +300,7 @@ internal class InventoryService(SessionActor sessionActor) : MessageService(sess
 
         var hasSnack = wizard.PetSnackBehavior.HasSnackID(message.GlobalID);
         if (!hasSnack) {
-            Logger.Log.Debug("Tried to remove snack with global id {0} that does not exist in player snack bag.",
+            Logger.Debug("A player tried to remove snack {ItemId}, which is not in their snack bag.",
                 Logger.Args(message.GlobalID));
 
             return;
@@ -335,7 +334,7 @@ internal class InventoryService(SessionActor sessionActor) : MessageService(sess
 
         var hasReagent = wizard.AlchemyBehavior.HasReageant(message.GlobalID);
         if (!hasReagent) {
-            Logger.Log.Debug("Tried to remove reagent with global id {0} that does not exist in player reagent bag.",
+            Logger.Debug("A player tried to remove reagent {ItemId}, which is not in their reagent bag.",
                 Logger.Args(message.GlobalID));
 
             return;

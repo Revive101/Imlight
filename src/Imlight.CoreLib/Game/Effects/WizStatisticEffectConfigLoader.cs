@@ -37,9 +37,10 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 08/14/2026
+ * Last Updated: 10/25/2026
  */
 
+using System.IO;
 using System.Linq;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
@@ -57,14 +58,12 @@ internal class WizStatisticEffectConfigLoader : RootSingleResourceSingleton<WizS
     protected override void AfterLoad() {
         var serializer = new BindSerializer();
         if (!serializer.Deserialize<WizStatisticEffectConfig>(base.Stream.ToArray(), 1, out var config)) {
-            Logger.Error("Failed to load WizStatisticEffectConfig.xml");
-
-            return;
+            throw new InvalidDataException($"The combat stat config {ResourceName} could not be read. Re-download the game resources.");
         }
 
         s_config = config;
 
-        Logger.Information("Loaded {0} crit and block level ranges",
+        Logger.Information("Loaded {Count} crit and block level ranges.",
             Logger.Args(config.m_critAndBlockLevelData?.Count ?? 0));
 
         DisposeStream();
@@ -83,6 +82,17 @@ internal class WizStatisticEffectConfigLoader : RootSingleResourceSingleton<WizS
     /// </summary>
     internal static int GetCriticalHitLevelThreshold() 
         => s_config?.m_criticalHitLevelThreshold ?? 0;
+
+    /// <summary>
+    /// The shadow pip cap of a wizard who has unlocked shadow magic.
+    /// </summary>
+    internal static int GetShadowPipMax()
+        => s_config?.m_shadowPipMax ?? 0;
+
+    /// <summary>
+    /// The loaded config, or null when it failed to load.
+    /// </summary>
+    internal static WizStatisticEffectConfig Config => s_config;
 
     public void DisposeStream()
         => base.Stream.Dispose();

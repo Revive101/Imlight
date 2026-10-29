@@ -90,8 +90,9 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
     private bool _determinedSelfishThisTurn;
 
     private Hand _roundHand;
+    private string _passReason = "nothing castable";
     private CombatDuelSubCircle[] _friendlySubcircles
-        => [.. _currentDuelComponent.ActiveSubCircles.Where(x => x.OccupiedTeam == _currentSubCircle.OccupiedTeam)];
+        => [.. _currentDuelComponent.ActiveSubCircles.Where(x => x.CurrentTeam == _currentSubCircle.CurrentTeam)];
     private bool _isHealingViable
         => _friendlySubcircles.Any(x => x.ParticipantGameStats.m_currentHitpoints / x.ParticipantGameStats.m_baseHitpoints < _healingThreshold);
     private bool _sentFinalKill;
@@ -173,6 +174,7 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
         }
 
         _roundHand = _currentSubCircle.DrawHand();
+        DiscardDeadCards();
 
         DetermineAttitude();
         var action = DetermineTurnAction();
@@ -194,7 +196,7 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
                                                     or kSpellEffects.kHealPercent;
 
         // Ignore if the caster is on my team.
-        var isOnMyTeam = message.Caster.OccupiedTeam == _currentSubCircle.OccupiedTeam;
+        var isOnMyTeam = message.Caster.CurrentTeam == _currentSubCircle.CurrentTeam;
         if (isOnMyTeam) {
             return;
         }
@@ -204,7 +206,10 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
             var isProvoke = message.Effect.m_effectType is kSpellEffects.kTaunt;
 
             int hateValue;
-            if (isPacify) {
+            if (message.Effect.m_effectType == kSpellEffects.kModifyHate) {
+                hateValue = message.Effect.m_effectParam;
+            }
+            else if (isPacify) {
                 hateValue = -_pacifyAggroDecrease;
             }
             else if (isProvoke) {
@@ -231,7 +236,7 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
 
         // A minion has no world to return to: remove and delete now, no death-animation timer.
         if (_currentSubCircle?.IsSummonedMinion == true) {
-            _currentDuelComponent.DuelBroadcast(new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATREMOVE {
+            _currentDuelComponent.ZoneBroadcast(new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATREMOVE {
                 DuelID = _currentDuelComponent.SigilId,
                 ParticipantID = _currentSubCircle.ParticipantObject.m_globalID
             });
@@ -245,7 +250,7 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
         }
 
         // I have died. Remove myself from the current duel.
-        _currentDuelComponent.DuelBroadcast(new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATREMOVE {
+        _currentDuelComponent.ZoneBroadcast(new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATREMOVE {
             DuelID = _currentDuelComponent.SigilId,
             ParticipantID = _currentSubCircle.ParticipantObject.m_globalID
         });
@@ -256,6 +261,23 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
         var delay = TimeSpan.FromMilliseconds(COMBAT_DEATH_ANIMATION_IN_MS);
         Timers.StartSingleTimer("FinalKill", new COMBAT_106_PROTOCOL.MSG_COMBATDEATH(), delay);
     }
+
+    private void DiscardDeadCards() {
+        var deadCards = _roundHand.m_spellList.Where(IsDeadCard).ToList();
+        if (deadCards.Count == 0) {
+            return;
+        }
+
+        foreach (var card in deadCards) {
+            _currentSubCircle.DiscardCard(card);
+        }
+
+        // Refill once only, so a deck of nothing but dead cards cannot loop.
+        _roundHand = _currentSubCircle.DrawHand();
+    }
+
+    private bool IsDeadCard(Spell spell)
+        => !SpellEffectFilter.HasAiRole(spell) || !_currentSubCircle.CanEverAffordSpell(spell);
 
     private void DetermineAttitude() {
         _determinedSmartThisTurn = _random.NextDouble() < _intelligenceFactor;
@@ -271,10 +293,8 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
     }
 
     private COMBAT_106_PROTOCOL.MSG_ACTORCOMBATMOVE DetermineTurnAction() {
-        // If I'm stunned, pass.
+        // If I'm stunned, pass. The resolver ticks the stun down when the action resolves.
         if (_currentSubCircle.CombatParticipant.m_stunned > 0) {
-            _currentSubCircle.CombatParticipant.m_stunned--;
-
             Logger.Debug("Duel {0} | Slot {1} | Stunned. Passing.",
                 Logger.Args(_currentDuelComponent.SigilId, _currentSubCircle.SlotIndex));
 
@@ -286,14 +306,60 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
             };
         }
 
+        // todo: a lone controlled creature has no enemy to pick and passes (guess, unconfirmed).
+        if (_currentSubCircle.IsMindControlled && !GetControlledEnemies().Any()) {
+            Logger.Debug("Duel {0} | Slot {1} | Mind controlled with no enemy. Passing.",
+                Logger.Args(_currentDuelComponent.SigilId, _currentSubCircle.SlotIndex));
+
+            return new COMBAT_106_PROTOCOL.MSG_ACTORCOMBATMOVE {
+                Actor = Entity.SelfRef,
+                MoveType = (byte) CombatMoveType.Pass,
+                SpellSelection = 0,
+                SpellTarget = 0,
+            };
+        }
+
+        _passReason = "nothing castable";
+        var action = ChooseCastAction();
+        if (action.MoveType == (byte) CombatMoveType.Pass) {
+            LogPass();
+        }
+
+        return action;
+    }
+
+    private COMBAT_106_PROTOCOL.MSG_ACTORCOMBATMOVE ChooseCastAction() {
         // If we want to be aggressive and we have something to cast, do it.
         var hasDamageSpells = GetCastableDamageSpells(_roundHand.m_spellList).Count > 0;
         if (_determinedAggressiveThisTurn && hasDamageSpells) {
             return DetermineAggressiveBehavior();
         }
-        else {
-            return DetermineDefensiveBehavior();
-        }
+
+        return DetermineDefensiveBehavior();
+    }
+
+    private void LogPass() {
+        var hand = _roundHand.m_spellList;
+        var dead = hand.Count(IsDeadCard);
+        var notAffordable = hand.Count(x => !IsDeadCard(x) && !_currentSubCircle.HasPipsForSpell(x));
+
+        Logger.Debug(
+            "Duel {0} | Slot {1} | Passing ({2}) | Smart: {3} | Aggressive: {4} | Selfish: {5} | Generic pips: {6} | Power pips: {7} | Hand: {8} | Castable damage: {9}, heal: {10}, buff: {11}, debuff: {12} | Dead: {13} | Not affordable: {14}",
+            Logger.Args(_currentDuelComponent.SigilId,
+                _currentSubCircle.SlotIndex,
+                _passReason,
+                _determinedSmartThisTurn,
+                _determinedAggressiveThisTurn,
+                _determinedSelfishThisTurn,
+                _currentSubCircle.CombatParticipant.m_pipCount.m_genericPips,
+                _currentSubCircle.CombatParticipant.m_pipCount.m_powerPips,
+                hand.Count,
+                GetCastableDamageSpells(hand).Count,
+                GetCastableHealingSpells(hand).Count,
+                GetCastableBuffSpells(hand).Count,
+                GetCastableDebuffSpells(hand).Count,
+                dead,
+                notAffordable));
     }
 
     private COMBAT_106_PROTOCOL.MSG_ACTORCOMBATMOVE DetermineAggressiveBehavior() {
@@ -312,6 +378,7 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
             Logger.Debug("Duel {0} | Slot {1} | No castable damage spells.",
                 Logger.Args(_currentDuelComponent.SigilId, _currentSubCircle.SlotIndex));
 
+            _passReason = "no castable damage";
             msg.MoveType = (byte) CombatMoveType.Pass;
             return msg;
         }
@@ -351,6 +418,7 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
             Logger.Debug("Duel {0} | Slot {1} | Preparing, but passing.",
                 Logger.Args(_currentDuelComponent.SigilId, _currentSubCircle.SlotIndex));
 
+            _passReason = "defensive pass roll";
             msg.MoveType = (byte) CombatMoveType.Pass;
             
             return msg;
@@ -379,6 +447,7 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
             Logger.Debug("Duel {0} | Slot {1} | Preparing, but passing.",
                 Logger.Args(_currentDuelComponent.SigilId, _currentSubCircle.SlotIndex));
 
+            _passReason = "defensive pass roll";
             msg.MoveType = (byte) CombatMoveType.Pass;
             return msg;
         }
@@ -508,7 +577,18 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
         UpdateHateTable(targetIdx, 1);
     }
 
+    private IEnumerable<CombatDuelSubCircle> GetControlledEnemies()
+        => _currentDuelComponent.ActiveSubCircles
+            .Where(x => x.IsAlive && x.CurrentTeam != _currentSubCircle.CurrentTeam && CombatParticipantStates.CanBeTargeted(x));
+
     private int GetMostHatedTarget() {
+        // A controlled creature picks a random enemy of its current team instead of using its hate table.
+        if (_currentSubCircle.IsMindControlled) {
+            var enemies = GetControlledEnemies().ToArray();
+
+            return enemies.Length == 0 ? 0 : enemies[_random.Next(enemies.Length)].SlotIndex;
+        }
+
         var orderedHateTable = _hateTable.OrderByDescending(x => x.Value);
 
         // Pick the highest hated target that is still alive.
@@ -518,7 +598,7 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
                 continue;
             }
 
-            if (target.IsAlive) {
+            if (target.IsAlive && CombatParticipantStates.CanBeTargeted(target)) {
                 return targetIdx;
             }
         }

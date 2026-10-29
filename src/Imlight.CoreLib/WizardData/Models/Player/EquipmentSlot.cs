@@ -38,7 +38,11 @@ public enum EquipmentSlotType {
     Deck,
     Elixir,
     PIITeleportEffect,
-    PIIVictoryDance
+    PIIVictoryDance,
+
+    // The client names a house's equipment slots like this (FurniturePageWindow::UpdateStructureForEquippedIsland 0x140fa60a0).
+    Islands,
+    Structure
 
 }
 

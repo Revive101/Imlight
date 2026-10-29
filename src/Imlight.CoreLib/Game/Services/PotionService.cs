@@ -32,7 +32,7 @@
  * 
  * Created by: valiantmeraki
  * Version: KALI 1.0
- * Last Updated: 05/04/2025
+ * Last Updated: 10/25/2026
  */
 
 using Akka.Actor;
@@ -147,7 +147,7 @@ internal class PotionService(SessionActor sessionActor) : MessageService(session
 
         // Can't afford. AddGold only clamps at the pouch max, so a negative delta would dip below zero.
         if (stats.m_currentGold < cost) {
-            Logger.Information("Wizard {0} can't afford {1} potion(s): {2} gold needed, {3} held (level {4}).",
+            Logger.Debug("Character {CharId} cannot afford {Count} potion(s): {Cost} gold needed, {Gold} held (level {Level}).",
                 Logger.Args(wizard.CharId, potionsToFill, cost, stats.m_currentGold, level));
             SendToSocket(new WIZARD_12_PROTOCOL.MSG_POTIONBUYCONFIRM { Failure = 1 });
 
@@ -170,7 +170,7 @@ internal class PotionService(SessionActor sessionActor) : MessageService(session
         });
 
         SendToSocket(new WIZARD_12_PROTOCOL.MSG_POTIONBUYCONFIRM { Failure = 0 });
-        Logger.Information("Wizard {0} filled {1} potion(s) for {2} gold (level {3}, {4} each); charge {5} to {6} of {7}.",
+        Logger.Debug("Character {CharId} filled {Count} potion(s) for {Cost} gold (level {Level}, {PerPotion} each); charge {OldCharge} to {NewCharge} of {MaxCharge}.",
             Logger.Args(wizard.CharId, potionsToFill, cost, level, perPotion, charge, newCharge, max));
     }
 

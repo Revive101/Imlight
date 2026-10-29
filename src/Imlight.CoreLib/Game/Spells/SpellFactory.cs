@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -57,23 +57,11 @@ internal class SpellFactory : RootDirectoryResourceSingleton<SpellFactory>, IMem
     private static readonly Dictionary<uint, string> s_spellTemplatePaths = [];
 
     protected override void AfterLoad() {
-        var serializer = new BindSerializer();
         var counter = 0;
 
-        foreach (var file in base.Files) {
-            var fileRecord = file.Key;
-            var fileStream = file.Value;
-
-            if (!serializer.Deserialize<SpellTemplate>(fileStream?.ToArray(), 1, out var spellTemplate)) {
-                Logger.Error("Could not deserialize {0} as {1}", 
-                    Logger.Args(fileRecord.FileName, nameof(SpellTemplate)));
-
-                continue;
-            }
-
+        foreach (var (fileRecord, spellTemplate) in ReadTemplates<SpellTemplate>(PropertyFlags.Prop_Save)) {
             if (spellTemplate.m_name.IsEmpty) {
-                Logger.Error("Spell template {0} has an empty name.", 
-                    Logger.Args(fileRecord.FileName));
+                Logger.Error("Spell template {File} has an empty name and is skipped.", Logger.Args(fileRecord.FileName));
 
                 continue;
             }
@@ -87,8 +75,7 @@ internal class SpellFactory : RootDirectoryResourceSingleton<SpellFactory>, IMem
             s_spellTemplatePaths.Add(stringHash, fileRecord.FileName);
         }
 
-        Logger.Information("Loaded {0} spell templates.", 
-            Logger.Args(counter));
+        Logger.Information("Loaded {Count} spell templates.", Logger.Args(counter));
     }
 
     /// <summary>

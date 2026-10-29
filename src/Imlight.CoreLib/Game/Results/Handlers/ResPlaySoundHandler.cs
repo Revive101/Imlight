@@ -34,7 +34,7 @@ internal sealed class ResPlaySoundHandler : BaseResultHandler<ResPlaySound> {
         if (_soundName == null) {
             _soundName = Result.m_soundName;
             if (!CoreObjectFactory.TryGetCoreTemplateID(x => x.m_filename.ToString().Contains(_soundName), out _templateId)) {
-                Logger.Error("Sound {0} tried to gather data, but a template ID was not found.",
+                Logger.Warning("Sound {Sound} has no template in the game files, so it is not played.",
                     Logger.Args(_soundName));
                     
                 return false;

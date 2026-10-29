@@ -103,6 +103,21 @@ Commands are organized into logical groups based on functionality:
 - `remove` - remove a quest (active or completed) and clear its registry entries so it can be offered again
 - The commands only send a `MSG_QUESTCOMMAND` to the session; `QuestService` runs the action through its normal goal, quest and removal paths. The server does not know which quest the client tracks, so commands without a name use the only active quest.
 
+**Badge Commands (`badge`)**
+- `grant <id or name>` - award a badge through the normal award path (the client gets the new badge and the completion results run)
+- `progress <counter key> <amount>` - add to a kill counter, for example `badge progress Badges_00002780 49`, so the next win completes the tier
+- `list` - print the held badges and their progress
+- `reset` - clear the badge state, the selected title and the nameplate title
+- The commands only send a `MSG_BADGECOMMAND` to the session; `BadgeService` runs the action through its normal award, counter and title paths. `mod badge <locale id>` sets the nameplate title the same way and needs no relog.
+
+**PvP Rating Commands (`pvp`)**
+- `rating show [league]` - print the league, season, rating, rank name and index, wins, losses and draws of the record
+- `rating set <rating> [league]` - set the rating (never below the floor of the table); the rank is recomputed, the client gets the records again and the badges of the ranks now reached are awarded
+- `rank set <index or name> [league]` - set the rating to the lowest rating of that rank (rank 0 gets the start rating)
+- `season reset [league]` - end the active record and start a new one at the carry-over rating of the rank it ended on, with wins and losses at 0
+- `rating clear [league]` - delete every record of the league, so the next record starts at the start rating
+- The league is the league type name and defaults to the first rated league with a running season that the sender may use. The commands act on the sender and work whether or not `RankedEnabled` is on. They only send a `MSG_RATINGCOMMAND` to the session; `PvPRatingService` does the work.
+
 **DynaMod Commands (`dynamod`)**
 - Listing, setting, toggling and removing the character's dynamic mods
 

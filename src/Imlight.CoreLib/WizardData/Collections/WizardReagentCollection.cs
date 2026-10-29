@@ -42,7 +42,9 @@ internal sealed class WizardReagentCollection {
         using var session = s_store.OpenSession();
 
         // Check if the player already has this reagent. If so, increase the quantity.
+        // Waits for the index, so a reagent stored a moment ago is found too.
         var existingReagent = session.Query<ClientReagentItem>(collectionName: CollectionName)
+            .Customize(query => query.WaitForNonStaleResults())
             .FirstOrDefault(x => x.m_characterId == reagentItem.m_characterId
                               && x.m_templateID == reagentItem.m_templateID);
         if (existingReagent != null) {

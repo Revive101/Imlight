@@ -65,6 +65,7 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
         Versionable: false,
         Behaviors: SerializerFlags.None
     );
+    private bool _controlQuestsRemoved;
     private readonly TutorialInfo _tutorialInfo = new() {
         m_tutorialNameID = TUTORIAL_NAME_STRING_ID,
         m_tutorialStage = 0,
@@ -82,7 +83,7 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
         if (!_serializer.Serialize(_tutorialInfo,
                                    PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit,
                                    out var tutorialInfoBuffer)) {
-            Logger.Error("Failed to serialize tutorial info");
+            Logger.Error("The tutorial state could not be serialized, so the tutorial is not sent to the client.");
 
             return;
         }
@@ -123,7 +124,8 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
         if (!_serializer.Serialize(_tutorialInfo,
                                    PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit,
                                    out var tutorialInfoBuffer)) {
-            Logger.Error("Failed to serialize tutorial info (AttachComplete)");
+            Logger.Error("The tutorial state of {Wizard} could not be serialized, so the tutorial is not sent to the client.",
+                Logger.Args(wizard.PlayerNameBehavior.GetWizardName()));
 
             return;
         }
@@ -144,7 +146,7 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
 
         var wizard = GetActiveWizard();
         if (wizard is null) {
-            Logger.Warning("Dropping tutorial command: wizard is not loaded yet.");
+            Logger.Warning("A tutorial command arrived before the character was loaded, so it is ignored.");
 
             return;
         }
@@ -189,12 +191,12 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
         }
 
         if (!commandSuccess) {
-            Logger.Error("Failed to process tutorial command:"
-                + "QuestToAdd='{0}' "
-                + "QuestToRemove='{1}' "
-                + "GoalToComplete='{2}' "
-                + "EventToPost='{3}' "
-                + "ActionToPerform='{4}' ",
+            Logger.Warning("A tutorial command did not fully run: "
+                + "quest to add '{QuestToAdd}', "
+                + "quest to remove '{QuestToRemove}', "
+                + "goal to complete '{GoalToComplete}', "
+                + "event to post '{EventToPost}', "
+                + "action '{Action}'.",
                 Logger.Args(
                     msg.QuestToAdd,
                     msg.QuestToRemove,
@@ -204,12 +206,12 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
                 ));
         }
         else {
-            Logger.Debug("Processed tutorial command successfully:"
-                + "QuestToAdd='{0}', "
-                + "QuestToRemove='{1}' "
-                + "GoalToComplete='{2}' "
-                + "EventToPost='{3}' "
-                + "ActionToPerform='{4}' ",
+            Logger.Debug("Ran a tutorial command: "
+                + "quest to add '{QuestToAdd}', "
+                + "quest to remove '{QuestToRemove}', "
+                + "goal to complete '{GoalToComplete}', "
+                + "event to post '{EventToPost}', "
+                + "action '{Action}'.",
                 Logger.Args(
                     msg.QuestToAdd,
                     msg.QuestToRemove,
@@ -227,17 +229,23 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
         // echoes it back, otherwise the client restarts the tutorial from stage 0 after a zone reload.
         if (action == "Stage") {
             _tutorialInfo.m_tutorialStage = value;
-            Logger.Information("Tutorial stage advanced to {0}", Logger.Args(value));
+            Logger.Debug("Tutorial stage advanced to {Stage}.", Logger.Args(value));
 
             return true;
         }
 
-        Logger.Debug("Unknown tutorial action '{0}' (value {1}), ignoring.", Logger.Args(action, value));
+        Logger.Debug("Unknown tutorial action '{Action}' (value {Value}), ignoring.", Logger.Args(action, value));
 
         return true;
     }
 
-    private static bool HandleCommandAddQuest(Wizard wizard, string questName) {
+    private bool HandleCommandAddQuest(Wizard wizard, string questName) {
+        if (_controlQuestsRemoved && Array.IndexOf(s_controlQuests, questName) >= 0) {
+            Logger.Debug("Refused re-add of control quest '{Quest}' after the tutorial ended.", Logger.Args(questName));
+
+            return true;
+        }
+
         // The client re-adds quests it already holds (add/remove flickers); re-adds are idempotent.
         if (wizard.QuestBehavior.CurrentQuestInstances.Any(q => q.QuestName == questName)) {
             return true;
@@ -245,7 +253,7 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
 
         var questTemplate = QuestTemplateCollection.GetQuestByName(questName);
         if (questTemplate == null) {
-            Logger.Error("Tutorial quest template not found for '{0}'", Logger.Args(questName));
+            Logger.Error("Tutorial quest '{Quest}' is not in the world database. Resync SpiralDB and restart the server.", Logger.Args(questName));
 
             return false;
         }
@@ -267,7 +275,8 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
         var questId = instance?.ID ?? 0;
         wizard.RemoveQuest(questName);
 
-        if (questId != 0) {
+        var template = QuestTemplateCollection.GetQuestByName(questName);
+        if (questId != 0 && !string.IsNullOrEmpty(template?.m_questTitle)) {
             SendToSocket(new QUEST_MESSAGES_52_PROTOCOL.MSG_REMOVEQUEST {
                 QuestID = questId,
             });
@@ -350,7 +359,8 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
             // We need the actual goal instance template to get the completion results.
             var questTemplate = QuestTemplateCollection.GetQuestByName(goalInstance.quest.QuestName);
             if (questTemplate == null) {
-                Logger.Error("Tutorial quest template not found");
+                Logger.Error("Tutorial quest '{Quest}' is not in the world database. Resync SpiralDB and restart the server.",
+                    Logger.Args(goalInstance.quest.QuestName));
 
                 return false;
             }
@@ -359,7 +369,8 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
             var goalTemplate = questTemplate.m_goals
                 .FirstOrDefault(g => g.m_goalName == goalName);
             if (goalTemplate == null) {
-                Logger.Error("Tutorial goal template not found");
+                Logger.Error("Tutorial goal '{Goal}' is not in quest '{Quest}' in the world database. Resync SpiralDB and restart the server.",
+                    Logger.Args(goalName, goalInstance.quest.QuestName));
 
                 return false;
             }
@@ -394,7 +405,7 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
         }
 
         // Client-only cinematic beats (e.g. "StopRain") have no template goal; acknowledge them as no-op successes.
-        Logger.Debug("Tutorial goal '{0}' not found on any active quest (client-only beat, ignoring).",
+        Logger.Debug("Tutorial goal '{Goal}' is not on any active quest (client-only beat, ignoring).",
             Logger.Args(goalName));
 
         return true;
@@ -431,6 +442,7 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
     }
 
     private void RemoveControlQuests(Wizard wizard) {
+        _controlQuestsRemoved = true;
         foreach (var questName in s_controlQuests) {
             RemoveQuestAndClearFromJournal(wizard, questName);
         }
@@ -442,7 +454,7 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
         if (!wizard.QuestBehavior.CurrentQuestInstances.Any(q => q.QuestName == TUTORIAL_INTRO_QUEST_NAME)) {
             var introTemplate = QuestTemplateCollection.GetQuestByName(TUTORIAL_INTRO_QUEST_NAME);
             if (introTemplate is null) {
-                Logger.Error("Tutorial intro quest template not found for '{0}'", Logger.Args(TUTORIAL_INTRO_QUEST_NAME));
+                Logger.Error("Tutorial quest '{Quest}' is not in the world database. Resync SpiralDB and restart the server.", Logger.Args(TUTORIAL_INTRO_QUEST_NAME));
 
                 return false;
             }
@@ -501,7 +513,7 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
         // Move the item into its slot; this also informs the spellbook for decks and
         // persists the change.
         if (!wizard.InventoryToEquipmentTransfer(item.m_globalID, out var equipEffects, out _)) {
-            Logger.Warning("Starter equip failed for item {0} on {1}.",
+            Logger.Warning("Starter item {ItemId} could not be equipped on {Wizard}.",
                 Logger.Args(item.m_globalID.Full, wizard.PlayerNameBehavior.GetWizardName()));
 
             return;
@@ -521,7 +533,7 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
 
         var pubItem = ItemHelper.GetPublicItem(item);
         if (!s_configureItemSerializer.Serialize(pubItem, 1, out var serializedPubItem)) {
-            Logger.Error("Failed to serialize starter item {0} for equip broadcast.",
+            Logger.Error("Starter item {ItemId} could not be serialized, so other players do not see it equipped.",
                 Logger.Args(item.m_globalID.Full));
 
             return;
@@ -545,7 +557,7 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
         var flags = PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit;
         foreach (var effect in effects) {
             if (!s_configureItemSerializer.Serialize(effect, flags, out var serializedEffect)) {
-                Logger.Error("Failed to serialize starter item effect {0}.",
+                Logger.Error("Starter item effect {Effect} could not be serialized, so the client does not get it.",
                     Logger.Args(effect.m_effectNameID));
 
                 continue;
@@ -576,7 +588,7 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
     private void DespawnTutorialObject(ulong templateId, double delaySeconds) {
         var zoneActor = SessionActor.GetZoneActor();
         if (zoneActor is null) {
-            Logger.Warning("Cannot despawn tutorial object {0}: no zone actor.", Logger.Args(templateId));
+            Logger.Warning("Tutorial object {TemplateId} could not be removed: the character is not in a zone.", Logger.Args(templateId));
 
             return;
         }
@@ -611,7 +623,7 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
         }
 
         var grantedItems = wizard.GrantStarterItems(templateIds);
-        Logger.Information("Granted starter kit ({0} items) to {1}.",
+        Logger.Information("Granted the starter kit ({Count} items) to {Wizard}.",
             Logger.Args(grantedItems.Count, wizard.PlayerNameBehavior.GetWizardName()));
 
         // The attach payload (which carries the inventory) was already sent by the time this
@@ -623,7 +635,7 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
 
     private void SendInventoryAdd(Wizard wizard, WizClientObjectItem item) {
         if (!s_configureItemSerializer.Serialize(item, INVENTORY_ADD_SERIALIZATION_FLAGS, out var serializedItem)) {
-            Logger.Error("Failed to serialize starter kit item {0} for inventory-add.",
+            Logger.Error("Starter kit item {ItemId} could not be serialized, so it shows up after the next login.",
                 Logger.Args(item.m_globalID.Full));
 
             return;
@@ -638,14 +650,15 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
     private void SendConfigurePlayerInventoryAdd(Wizard wizard) {
         var kitItem = wizard.InventoryBehavior.Items.FirstOrDefault();
         if (kitItem is null) {
-            Logger.Warning("ConfigurePlayer: no inventory item to re-add; the client may stay blocked.");
+            Logger.Warning("{Wizard} has an empty inventory, so the client may stay on the loading screen. Ask the player to log in again.",
+                Logger.Args(wizard.PlayerNameBehavior.GetWizardName()));
 
             return;
         }
 
         if (!s_configureItemSerializer.Serialize(kitItem, INVENTORY_ADD_SERIALIZATION_FLAGS, out var serializedItem)) {
-            Logger.Error("ConfigurePlayer: failed to serialize item {0} for inventory-add.",
-                Logger.Args(kitItem.m_globalID.Full));
+            Logger.Error("Item {ItemId} of {Wizard} could not be serialized, so the client may stay on the loading screen. Ask the player to log in again.",
+                Logger.Args(kitItem.m_globalID.Full, wizard.PlayerNameBehavior.GetWizardName()));
 
             return;
         }
