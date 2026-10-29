@@ -1,3 +1,7 @@
 [submodule "submodule/Imcodec"]
 	path = submodule/Imcodec
 	url = https://github.com/Jooty/Imcodec
+
+[submodule "submodule/WebUI"]
+	path = submodule/WebUI
+	url = https://github.com/Phill030/WebUI
