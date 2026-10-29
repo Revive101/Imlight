@@ -4,4 +4,4 @@
 
 [submodule "submodule/WebUI"]
 	path = submodule/WebUI
-	url = https://github.com/Phill030/WebUI
+	url = https://github.com/phill030/imlight-webui
