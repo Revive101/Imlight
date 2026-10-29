@@ -45,7 +45,7 @@ public sealed class AuthHandler(
     public const string SchemeName = "ImlightAuth";
 
     private static readonly string s_masterToken =
-        ConfigurationManager.Settings["API.MasterApiToken"].AsString();
+        EnvironmentManager.Settings["API_MASTER_KEY"].AsString();
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync() {
         // Check X-Api-Key header first
@@ -91,7 +91,7 @@ public sealed class AuthHandler(
 
         // Check Master-Token from Imlight.ini
         if (!string.IsNullOrWhiteSpace(s_masterToken) && s_masterToken.Length < JwtTokenService.s_minSecretLength) {
-            Common.Logger.Warning($"API.MasterApiToken is configured but shorter than {JwtTokenService.s_minSecretLength} characters, so it is ignored.");
+            Common.Logger.Warning($"API_MASTER_KEY is configured but shorter than {JwtTokenService.s_minSecretLength} characters.");
         }
 
         else if (!string.IsNullOrWhiteSpace(s_masterToken) &&
