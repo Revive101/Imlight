@@ -74,7 +74,8 @@ public class ApiServer
             }
         });
 
-        builder.Services.AddControllers();
+        builder.Services.AddControllers()
+            .AddApplicationPart(typeof(ApiServer).Assembly);
         builder.Services.AddSignalR();
 
         // Allow vite dev server for development
