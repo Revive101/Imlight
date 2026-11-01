@@ -263,6 +263,23 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
         Timers.StartSingleTimer("FinalKill", new COMBAT_106_PROTOCOL.MSG_COMBATDEATH(), delay);
     }
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_DESPAWNCREATURE))]
+    private void ReceiveDespawn() {
+        if (_sentFinalKill) {
+            return;
+        }
+
+        // Deleting a creature mid-duel would leave its circle on a stopped actor. At 0 health the round
+        // resolution removes it like any other defeated creature.
+        if (_isInDuel) {
+            _stats.Stats.m_currentHitpoints = 0;
+
+            return;
+        }
+
+        Entity.DeleteObject();
+    }
+
     private void DetermineAttitude() {
         _determinedSmartThisTurn = _random.NextDouble() < _intelligenceFactor;
         _determinedAggressiveThisTurn = _random.NextDouble() < _aggressivenessFactor;

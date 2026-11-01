@@ -184,6 +184,24 @@ internal sealed class NpcComponent : ZoneEntityComponent, IComponentFactory, ICl
         // to locate the closest sigil to the player and the creature.
     }
 
+    // In a duel the duel reads these same stats, so it sends the new health with the next round and kills
+    // the creature at the end of a round if its health is 0.
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_SETCREATUREHEALTH))]
+    private void ReceiveSetHealth(ZONE_102_PROTOCOL.MSG_SETCREATUREHEALTH message) {
+        // A creature at 0 health has been defeated in its duel and is waiting to be removed.
+        var stats = _statsComponent.Stats;
+        if (stats.m_currentHitpoints <= 0) {
+            return;
+        }
+
+        if (message.MaxHealth is int maxHealth) {
+            stats.m_baseHitpoints = maxHealth;
+        }
+
+        var health = message.Health ?? stats.m_currentHitpoints;
+        stats.m_currentHitpoints = Math.Clamp(health, 1, stats.m_baseHitpoints);
+    }
+
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_QUERYCREATURESTATS))]
     private void ReceiveQueryGameStats(COMBAT_106_PROTOCOL.MSG_QUERYCREATURESTATS message) {
         var rsp = new COMBAT_106_PROTOCOL.MSG_CREATURESTATS {

@@ -61,6 +61,8 @@ internal sealed class PathMovementComponent(ZoneEntity entity) : ZoneEntityCompo
     private const uint PATH_DETAILS_FAILURE_COUNT_MAXIMUM = 5;
 
     public bool Stopped { get; set; }
+    // Set by plugins. Unlike Stopped, the creature finishes the walk it is on, so its location keeps updating until it arrives.
+    public bool Paused { get; private set; }
     public ITimerScheduler Timers { get; set; }
 
     private PathType _pathType;
@@ -140,6 +142,10 @@ internal sealed class PathMovementComponent(ZoneEntity entity) : ZoneEntityCompo
 
     public void Stop() => Stopped = true;
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_SETCREATUREPAUSED))]
+    private void ReceiveSetPaused(ZONE_102_PROTOCOL.MSG_SETCREATUREPAUSED message)
+        => Paused = message.Paused;
+
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PATHDETAILS))]
     private void ReceivePathDetails(ZONE_102_PROTOCOL.MSG_PATHDETAILS message) {
         _receivedPathDetails = true;
@@ -169,7 +175,7 @@ internal sealed class PathMovementComponent(ZoneEntity entity) : ZoneEntityCompo
             return;
         }
 
-        if (Stopped) {
+        if (Stopped || Paused) {
             RestartMoveInterval(INITIAL_MOVEMENT_DELAY_MAXIMUM_IN_MS);
 
             return;

@@ -1239,4 +1239,39 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
 
     }
 
+    /// <summary>
+    /// Sent by plugins to a creature: its <see cref="NpcComponent"/> sets the health or max health that is not null.
+    /// </summary>
+    public sealed class MSG_SETCREATUREHEALTH : IServerMessage {
+
+        public byte MessageOrder { get; } = 80;
+        public byte ServiceID { get; } = 102;
+
+        public int? Health;
+        public int? MaxHealth;
+
+    }
+
+    /// <summary>
+    /// Sent by plugins to a creature: its <see cref="PathMovementComponent"/> stops or resumes walking its path.
+    /// </summary>
+    public sealed class MSG_SETCREATUREPAUSED : IServerMessage {
+
+        public byte MessageOrder { get; } = 81;
+        public byte ServiceID { get; } = 102;
+
+        public bool Paused;
+
+    }
+
+    /// <summary>
+    /// Sent by plugins to a creature: its <see cref="CombatCreatureAIComponent"/> deletes it, or kills it if it is in a duel.
+    /// </summary>
+    public sealed class MSG_DESPAWNCREATURE : IServerMessage {
+
+        public byte MessageOrder { get; } = 82;
+        public byte ServiceID { get; } = 102;
+
+    }
+
 }

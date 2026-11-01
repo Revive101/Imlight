@@ -20,9 +20,11 @@
  * Last Updated: 10/27/2026
  */
 
+using System;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Game.Zone.Components;
 using Imlight.CoreLib.Game.Zone.Core;
+using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.PluginApi;
 
@@ -71,6 +73,29 @@ internal sealed class PluginCreature(ZoneEntity entity, IZone zone) : ICreature 
     public bool IsMinion => entity.IsCombatOnlyMinion;
 
     public bool InCombat => _ai.InDuel;
+
+    // A stopped actor drops these, which is what makes calls on a dead creature do nothing.
+
+    public void SetHealth(int health)
+        => Send(new ZONE_102_PROTOCOL.MSG_SETCREATUREHEALTH { Health = health });
+
+    public void SetMaxHealth(int maxHealth) {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxHealth);
+
+        Send(new ZONE_102_PROTOCOL.MSG_SETCREATUREHEALTH { MaxHealth = maxHealth });
+    }
+
+    public void StopMoving()
+        => Send(new ZONE_102_PROTOCOL.MSG_SETCREATUREPAUSED { Paused = true });
+
+    public void ResumeMoving()
+        => Send(new ZONE_102_PROTOCOL.MSG_SETCREATUREPAUSED { Paused = false });
+
+    public void Despawn()
+        => Send(new ZONE_102_PROTOCOL.MSG_DESPAWNCREATURE());
+
+    private void Send(object message)
+        => entity.SelfRef.Tell(message, null);
 
     private static string ResolveName(CoreTemplate template) {
         if (template is GameObjectTemplate gameObjectTemplate) {

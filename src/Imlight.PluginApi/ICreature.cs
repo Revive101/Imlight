@@ -99,4 +99,45 @@ public interface ICreature {
     /// </summary>
     bool InCombat { get; }
 
+    // Every write below is applied by the creature's own actor after it returns, so the matching
+    // property may not change right away. Calls on a creature that has died or despawned do nothing.
+
+    /// <summary>
+    /// Sets the creature's health, clamped between 1 and <see cref="MaxHealth"/>. Use <see cref="Despawn"/> to kill it.
+    /// </summary>
+    /// <remarks>
+    /// In a duel, players see the new health at the start of the next round.
+    /// </remarks>
+    void SetHealth(int health);
+
+    /// <summary>
+    /// Sets the creature's maximum health. Its health is lowered to the new max if it was above it.
+    /// </summary>
+    /// <remarks>
+    /// In a duel, players see the new health at the start of the next round.
+    /// </remarks>
+    /// <exception cref="System.ArgumentOutOfRangeException">The max is not positive.</exception>
+    void SetMaxHealth(int maxHealth);
+
+    /// <summary>
+    /// Stops the creature walking its path once it reaches the point it is walking to. Creatures that do not
+    /// walk a path, such as minions, ignore it.
+    /// </summary>
+    void StopMoving();
+
+    /// <summary>
+    /// Lets a creature stopped by <see cref="StopMoving"/> walk its path again. A creature in a duel stays put
+    /// regardless.
+    /// </summary>
+    void ResumeMoving();
+
+    /// <summary>
+    /// Removes the creature from the zone. Its spawn point can spawn a new one later, except in an instance.
+    /// </summary>
+    /// <remarks>
+    /// A creature in a duel is defeated instead, at the end of the current round, the same as if a player had
+    /// killed it, so players who win still get their rewards.
+    /// </remarks>
+    void Despawn();
+
 }
