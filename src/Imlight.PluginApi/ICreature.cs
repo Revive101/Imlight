@@ -56,6 +56,11 @@ public interface ICreature {
     IZone Zone { get; }
 
     /// <summary>
+    /// The duel the creature is fighting in, or null if it is not in one.
+    /// </summary>
+    IDuel? Duel { get; }
+
+    /// <summary>
     /// The creature's position in its zone.
     /// </summary>
     Vector3 Location { get; }

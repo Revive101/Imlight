@@ -52,6 +52,8 @@ internal sealed class PluginPlayer(Wizard wizard, IActorRef sessionActor, IZone 
 
     public IZone Zone => zone;
 
+    public IDuel Duel => zone?.Duels.FirstOrDefault(x => x.Players.Any(player => player.CharacterId == CharacterId));
+
     public System.Numerics.Vector3 Location
         => new(wizard.Location.X, wizard.Location.Y, wizard.Location.Z);
 

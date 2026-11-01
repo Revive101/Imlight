@@ -55,4 +55,10 @@ public interface IZone {
     /// </summary>
     IReadOnlyList<ICreature> Creatures { get; }
 
+    /// <summary>
+    /// The duels running in the zone right now. Safe to read from any thread; the list is a snapshot
+    /// and does not change after it is returned.
+    /// </summary>
+    IReadOnlyList<IDuel> Duels { get; }
+
 }

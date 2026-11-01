@@ -50,6 +50,11 @@ public interface IPlayer {
     IZone? Zone { get; }
 
     /// <summary>
+    /// The duel the wizard is in, or null if they are not in one.
+    /// </summary>
+    IDuel? Duel { get; }
+
+    /// <summary>
     /// The wizard's position in their zone.
     /// </summary>
     Vector3 Location { get; }

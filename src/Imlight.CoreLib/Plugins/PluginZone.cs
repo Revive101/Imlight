@@ -21,16 +21,17 @@
  *
  * PURPOSE:
  * Exposes a zone actor to plugins as an IZone, with snapshots of its
- * players and creatures that any actor can read.
+ * players, creatures and duels that any actor can read.
  *
  * USAGE EXAMPLE:
  * var zone = PluginZone.Of(SessionActor.GetZoneActor());
  *
  * NOTE:
  * Only the owning zone actor calls Open, Close, AddPlayer and RemovePlayer.
- * Its entity actors call AddCreature and RemoveCreature, so those swap the
- * list atomically. Players and Creatures are replaced on each change rather
- * than mutated, so plugin handlers on other actors read them without locking.
+ * Its entity actors call AddCreature, RemoveCreature, AddDuel and RemoveDuel,
+ * so those swap the list atomically. Players, Creatures and Duels are replaced
+ * on each change rather than mutated, so plugin handlers on other actors read
+ * them without locking.
  *
  * Created by: phazejeff
  * Version: KALI 1.0
@@ -60,6 +61,7 @@ internal sealed class PluginZone(string name, bool isInstance, IActorRef zoneAct
 
     private volatile ImmutableList<IPlayer> _players = [];
     private ImmutableList<ICreature> _creatures = [];
+    private ImmutableList<IDuel> _duels = [];
 
     public string Name => name;
 
@@ -68,6 +70,8 @@ internal sealed class PluginZone(string name, bool isInstance, IActorRef zoneAct
     public IReadOnlyList<IPlayer> Players => _players;
 
     public IReadOnlyList<ICreature> Creatures => Volatile.Read(ref _creatures);
+
+    public IReadOnlyList<IDuel> Duels => Volatile.Read(ref _duels);
 
     /// <summary>
     /// Every running zone. Safe to enumerate from any thread.
@@ -93,6 +97,11 @@ internal sealed class PluginZone(string name, bool isInstance, IActorRef zoneAct
         _ = s_zones.TryRemove(new KeyValuePair<IActorRef, PluginZone>(zoneActor, this));
         _players = [];
         Volatile.Write(ref _creatures, []);
+
+        // A sigil has no stop hook, so a duel cut off by the zone unloading is ended here.
+        foreach (var duel in Interlocked.Exchange(ref _duels, [])) {
+            ((PluginDuel) duel).End();
+        }
     }
 
     public void AddPlayer(Wizard wizard, IActorRef sessionActor)
@@ -118,6 +127,12 @@ internal sealed class PluginZone(string name, bool isInstance, IActorRef zoneAct
         creature.MarkStopped();
         _ = ImmutableInterlocked.Update(ref _creatures, x => x.Remove(creature));
     }
+
+    public void AddDuel(PluginDuel duel)
+        => ImmutableInterlocked.Update(ref _duels, x => x.Add(duel));
+
+    public void RemoveDuel(PluginDuel duel)
+        => ImmutableInterlocked.Update(ref _duels, x => x.Remove(duel));
 
     /// <summary>
     /// Sends a message through the zone's broadcast, as if the zone itself sent it.

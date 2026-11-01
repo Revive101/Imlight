@@ -145,6 +145,22 @@ Events.Subscribe<OnPlayerZoneEnter>(e => {
 
 `Players` is a snapshot, safe to read from any handler; it does not change after you read it, so read it again for fresh data. By the time `OnPlayerZoneEnter` fires, the entering player is already in it. The `IPlayer`s in it are the same objects events hand you, so `Players.Contains(e.Player)` works. Each dungeon instance is its own `IZone`. An `IZone` lasts only while its zone is loaded, and instances unload once they sit empty, so store `Name` rather than the `IZone`.
 
+## Duels
+
+`IZone.Duels` lists the duels running in a zone, and `IPlayer.Duel` and `ICreature.Duel` give the duel a participant is in, or null. A duel has its `Id`, `Zone`, whether it `IsPvP`, the current `Round`, whether it `HasEnded`, and the `Players` and `Creatures` in it:
+
+```csharp
+Commands.Register("duelinfo", c => {
+    if (c.Player.Duel is not { } duel) {
+        c.Reply("You are not in a duel.");
+        return;
+    }
+    c.Reply($"Round {duel.Round}: {duel.Players.Count} wizards against {duel.Creatures.Count} creatures.");
+});
+```
+
+`Players` and `Creatures` are snapshots, like `IZone.Players`. `Players` keeps knocked-out wizards, who can still be revived, and drops those who flee or forfeit. `Creatures` holds summoned minions too, so in a PvE duel it is not only the enemies, and it drops a creature once it is dead. Both are empty once `HasEnded` is true. An `IDuel` covers one fight: the next fight on the same sigil is a new `IDuel` with the same `Id`.
+
 ## Server
 
 `Server` gives you the whole server: the `Players` online, the `Zones` loaded, `GetPlayer` to look a player up by character ID or name, and `Broadcast` to message everyone:

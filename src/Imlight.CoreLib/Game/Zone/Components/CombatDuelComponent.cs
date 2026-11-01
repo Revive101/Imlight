@@ -41,7 +41,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/25/2026
+ * Last Updated: 11/01/2026
  */
 
 using System;
@@ -107,6 +107,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     public bool NoTransfer { get; set; } = false;
     public ITimerScheduler Timers { get; set; }
     public Duel Duel { get; private set; }
+    // The plugin view of the running duel; null between fights and until the starting participants are seated.
+    internal PluginDuel PluginDuel { get; private set; }
     public Combat.CombatResolver CombatResolver { get; private set; }
     public CombatDuelSubCircle[] SubCircles { get; private set; }
     public CombatDuelSubCircle[] ActiveSubCircles => [.. SubCircles.Where(x => x.Occupied)];
@@ -644,6 +646,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         Entity.DespawnObject();
         _entitiesInRange.Clear();
         _groupReservations.Clear();
+        ClosePluginDuel();
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT))]
@@ -998,6 +1001,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         }
 
         _isActive = true;
+        OpenPluginDuel();
         ReserveCirclesForGroupOf(startingPlayerObject);
 
         Logger.Debug("Duel {0} | Created. Grace period over in {1}",
@@ -1079,9 +1083,33 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         }
 
         _isActive = true;
+        OpenPluginDuel();
 
         Logger.Debug("Duel {0} | PvP match {1} created with {2} players. Grace period over in {3}",
             Logger.Args(Duel.m_duelID.Full, message.MatchId, message.Roster.Count, DUEL_GRACE_PERIOD_IN_SECONDS));
+    }
+
+    private void OpenPluginDuel() {
+        var zone = PluginZone.Of(ZoneRef);
+        if (zone is null) {
+            return;
+        }
+
+        // Filled before it is listed, so a plugin never sees the duel without its starting participants.
+        var duel = new PluginDuel(Duel, zone);
+        EnactActionOnSubCircles(duel.AddParticipant);
+        zone.AddDuel(duel);
+        PluginDuel = duel;
+    }
+
+    private void ClosePluginDuel() {
+        if (PluginDuel is null) {
+            return;
+        }
+
+        PluginZone.Of(ZoneRef)?.RemoveDuel(PluginDuel);
+        PluginDuel.End();
+        PluginDuel = null;
     }
 
     private void CancelPvPMatch(ulong matchId, PvPCancelReason reason)

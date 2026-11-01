@@ -64,6 +64,8 @@ internal sealed class PluginCreature(ZoneEntity entity, IZone zone) : ICreature 
 
     public IZone Zone => zone;
 
+    public IDuel Duel => zone.Duels.FirstOrDefault(x => x.Creatures.Contains(this));
+
     public System.Numerics.Vector3 Location
         => new(_creature.m_location.X, _creature.m_location.Y, _creature.m_location.Z);
 
