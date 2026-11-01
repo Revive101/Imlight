@@ -343,28 +343,12 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
     }
 
     private static bool IsSpellCastCancelled(QueuedCombatAction action) {
-        // Creatures and summoned minions have no wizard.
-        var caster = action.SpellCaster;
-        if (caster._wizard is null) {
-            var creature = caster.ToPluginCreature();
-            if (creature is null) {
-                return false;
-            }
-
-            var creatureEvt = new OnCreatureSpellCast(creature,
-                action.Spell.m_templateID,
-                action.SpellTemplate.m_name,
-                action.SpellTemplate.m_sMagicSchoolName,
-                action.Spell.m_pipCost.m_spellRank);
-
-            return PluginManager.Events.Fire(creatureEvt).IsCancelled;
-        }
-
-        if (caster.IsSummonedMinion) {
+        var caster = action.SpellCaster.ToPluginCaster();
+        if (caster is null) {
             return false;
         }
 
-        var evt = new OnPlayerSpellCast(caster.ToPluginPlayer(),
+        var evt = new OnDuelistSpellCast(caster,
             action.Spell.m_templateID,
             action.SpellTemplate.m_name,
             action.SpellTemplate.m_sMagicSchoolName,

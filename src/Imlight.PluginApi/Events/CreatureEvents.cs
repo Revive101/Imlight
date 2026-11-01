@@ -51,24 +51,6 @@ public sealed class OnCreatureDespawn(ICreature creature) : ImlightEvent {
 }
 
 /// <summary>
-/// Fired when a creature loses health in a duel, as the server resolves the round and before the client plays it.
-/// Hits fully absorbed by wards or resistances don't fire it. Fires on the duel's actor, not the creature's.
-/// </summary>
-public sealed class OnCreatureDamage(ICreature creature, int damage) : ImlightEvent {
-
-    /// <summary>
-    /// The creature that was damaged. <see cref="ICreature.Health"/> is already reduced.
-    /// </summary>
-    public ICreature Creature { get; } = creature;
-
-    /// <summary>
-    /// The health the creature lost, never more than it had.
-    /// </summary>
-    public int Damage { get; } = damage;
-
-}
-
-/// <summary>
 /// Fired when a defeated creature is removed from its duel at the end of a round, or a creature in a duel is
 /// despawned. <see cref="OnCreatureDespawn"/> follows once it leaves the zone. Creatures that are removed alive
 /// don't fire it. Fires on the creature's actor.
@@ -79,43 +61,5 @@ public sealed class OnCreatureDeath(ICreature creature) : ImlightEvent {
     /// The creature that died. <see cref="ICreature.IsDead"/> is true and <see cref="ICreature.Health"/> is zero.
     /// </summary>
     public ICreature Creature { get; } = creature;
-
-}
-
-/// <summary>
-/// Fired when a creature's or minion's queued spell is about to be cast in a duel, before it is rolled for a fizzle.
-/// Passes, and turns lost to a stun or a dead target, don't fire it. Cancelling it turns the cast into a pass.
-/// Fires on the duel's actor, not the creature's.
-/// </summary>
-public sealed class OnCreatureSpellCast(ICreature creature, uint spellTemplateId, string spellName, string school,
-    int pipCost) : ImlightEvent, ICancellable {
-
-    /// <summary>
-    /// The creature that is casting.
-    /// </summary>
-    public ICreature Creature { get; } = creature;
-
-    /// <summary>
-    /// The template ID of the spell being cast.
-    /// </summary>
-    public uint SpellTemplateId { get; } = spellTemplateId;
-
-    /// <summary>
-    /// The internal name of the spell's template.
-    /// </summary>
-    public string SpellName { get; } = spellName;
-
-    /// <summary>
-    /// The spell's school, e.g. <c>Fire</c>.
-    /// </summary>
-    public string School { get; } = school;
-
-    /// <summary>
-    /// The spell's rank in pips.
-    /// </summary>
-    public int PipCost { get; } = pipCost;
-
-    /// <inheritdoc />
-    public bool IsCancelled { get; set; }
 
 }

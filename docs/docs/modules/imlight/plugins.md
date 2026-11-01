@@ -60,22 +60,19 @@ public sealed class GreeterPlugin : ImlightPlugin {
 | `OnPlayerLevelUp` | Yes | When a player is about to go up a level, from experience or `SetLevel`. `Player.Level` is still the old level. Cancelling keeps them at it; experience that caused it is granted only up to one point short of the next level. |
 | `OnPlayerChat` | Yes | When a player sends zone chat, before it is logged and broadcast. Cancelling drops the message. Not fired for muted players, chat commands, whispers, group chat or quick chat. |
 | `OnPlayerWhisper` | Yes | When a player whispers to an online player, before it is delivered. Cancelling drops the message. Not fired for muted players, blocked or offline targets, quick chat whispers or group chat. |
-| `OnPlayerDamage` | No | When a player loses health in a duel, as the round resolves and before the client plays it. `Damage` is the health lost and `Player.Health` is already reduced. Not fired for hits fully absorbed by wards or resistances. |
 | `OnPlayerKnockout` | No | When a player's health reaches zero in a duel, right after the damage that caused it. They can still be revived; if not, `OnPlayerDeath` fires when the duel ends. |
 | `OnPlayerDeath` | Yes | When a duel ends with a player still knocked out, before they are sent to the hub, whether their team won or lost. Cancelling leaves them standing where the duel was at zero health, so also call `Player.SetHealth`. Not fired for a knocked-out player who disconnects or logs out first. |
-| `OnPlayerSpellCast` | Yes | When a player's queued spell is about to be cast in a duel, before the fizzle roll, so it fires for spells that then fizzle. Cancelling turns the cast into a pass and spends no pips, mana or card. Not fired for passes, stuns or dead targets. |
 | `OnPlayerCantripCast` | Yes | When a player casts a cantrip, before energy is spent. For a ritual, fired when the cast starts, not when the target is chosen. Cancelling stops the cast without spending energy or starting the cooldown. |
 | `OnCreatureSpawn` | No | When a creature is added to its zone, including a minion summoned in a duel. `Zone.Creatures` already includes it. |
 | `OnCreatureDespawn` | No | When a creature has left its zone for any reason, including after it dies and when the zone unloads. Fires once for every creature that fired `OnCreatureSpawn`. Calls on the creature do nothing by this point. |
-| `OnCreatureDamage` | No | When a creature loses health in a duel, as the round resolves and before the client plays it. `Damage` is the health lost and `Creature.Health` is already reduced. Not fired for hits fully absorbed by wards or resistances. |
 | `OnCreatureDeath` | No | When a defeated creature is removed from its duel at the end of a round, or a creature in a duel is despawned. `OnCreatureDespawn` follows. Not fired for creatures removed alive, such as the winners of a duel. |
-| `OnCreatureSpellCast` | Yes | When a creature's or minion's queued spell is about to be cast in a duel, before the fizzle roll, so it fires for spells that then fizzle. Cancelling turns the cast into a pass. Not fired for passes, stuns or dead targets. |
 | `OnDuelStart` | No | When a duel has been created with its starting participants, before the first round. `Zone.Duels` already includes it. |
 | `OnDuelRoundStart` | No | When a new round begins, before its planning phase. `Duel.Round` is already the new round. Creatures may already be choosing their moves. |
 | `OnDuelEnd` | No | Once when a duel is decided, before rewards and before `OnPlayerDeath`. `Winners` holds the players on the winning side, and is empty if the creatures won or a PvP match drew. `Duel.Players` and `Duel.Creatures` still hold who was left. |
-| `OnPlayerDuelJoin` | No | When a player joins a duel already running. Not fired for starting participants, who are in `OnDuelStart`'s `Duel.Players`. |
+| `OnDuelistJoin` | No | When a player or creature joins a duel already running, including a summoned minion. Not fired for starting participants, who are in `OnDuelStart`'s `Duel.Players` and `Duel.Creatures`. |
 | `OnPlayerDuelLeave` | No | When a player leaves a duel before it ends, by fleeing, forfeiting, disconnecting or logging out. `Duel.Players` no longer includes them. |
-| `OnCreatureDuelJoin` | No | When a creature joins a duel already running, including a summoned minion. Not fired for starting participants, who are in `OnDuelStart`'s `Duel.Creatures`. |
+| `OnDuelistDamage` | No | When a player or creature loses health in a duel, as the round resolves and before the client plays it. `Damage` is the health lost and `Duelist.Health` is already reduced. Not fired for hits fully absorbed by wards or resistances. |
+| `OnDuelistSpellCast` | Yes | When a player's, creature's or minion's queued spell is about to be cast in a duel, before the fizzle roll, so it fires for spells that then fizzle. Cancelling turns the cast into a pass, and a player spends no pips, mana or card. Not fired for passes, stuns or dead targets. |
 
 Handlers are matched on the event's exact type, so subscribing to `ImlightEvent` or another base type receives nothing. Handlers for the same event run in the order they subscribed.
 
@@ -166,6 +163,16 @@ Commands.Register("duelinfo", c => {
 ```
 
 `Players` and `Creatures` are snapshots, like `IZone.Players`. `Players` keeps knocked-out wizards, who can still be revived, and drops those who flee or forfeit. `Creatures` holds summoned minions too, so in a PvE duel it is not only the enemies, and it drops a creature once it is dead. Both are empty once `HasEnded` is true. An `IDuel` covers one fight: the next fight on the same sigil is a new `IDuel` with the same `Id`.
+
+`IPlayer` and `ICreature` are both an `IDuelist`, with the `Name`, `Duel`, `Location`, `Orientation`, `Level`, `School`, `Health` and `MaxHealth` they share. The `OnDuelist` events hand you one, so pattern match to reach the rest:
+
+```csharp
+Events.Subscribe<OnDuelistSpellCast>(e => {
+    if (e.Duelist is ICreature { IsBoss: true } && e.SpellName == BannedSpell) {
+        e.IsCancelled = true;
+    }
+});
+```
 
 ## Server
 

@@ -69,18 +69,18 @@ public sealed class OnDuelEnd(IDuel duel, IReadOnlyList<IPlayer> winners) : Imli
 }
 
 /// <summary>
-/// Fired when a player joins a duel already running. Starting participants don't fire it; read them from
-/// <see cref="OnDuelStart"/>. Fires on the duel's actor.
+/// Fired when a player or creature joins a duel already running, including a minion being summoned into it. Starting
+/// participants don't fire it; read them from <see cref="OnDuelStart"/>. Fires on the duel's actor.
 /// </summary>
-public sealed class OnPlayerDuelJoin(IPlayer player, IDuel duel) : ImlightEvent {
+public sealed class OnDuelistJoin(IDuelist duelist, IDuel duel) : ImlightEvent {
 
     /// <summary>
-    /// The player who joined.
+    /// The player or creature that joined.
     /// </summary>
-    public IPlayer Player { get; } = player;
+    public IDuelist Duelist { get; } = duelist;
 
     /// <summary>
-    /// The duel they joined. <see cref="IDuel.Players"/> already includes them.
+    /// The duel they joined. <see cref="IDuel.Players"/> or <see cref="IDuel.Creatures"/> already includes them.
     /// </summary>
     public IDuel Duel { get; } = duel;
 
@@ -105,19 +105,57 @@ public sealed class OnPlayerDuelLeave(IPlayer player, IDuel duel) : ImlightEvent
 }
 
 /// <summary>
-/// Fired when a creature joins a duel already running, including a minion being summoned into it. Starting
-/// participants don't fire it; read them from <see cref="OnDuelStart"/>. Fires on the duel's actor.
+/// Fired when a player or creature loses health in a duel, as the server resolves the round and before the client
+/// plays it. Hits fully absorbed by wards or resistances don't fire it. Fires on the duel's actor.
 /// </summary>
-public sealed class OnCreatureDuelJoin(ICreature creature, IDuel duel) : ImlightEvent {
+public sealed class OnDuelistDamage(IDuelist duelist, int damage) : ImlightEvent {
 
     /// <summary>
-    /// The creature that joined.
+    /// The player or creature that was damaged. <see cref="IDuelist.Health"/> is already reduced.
     /// </summary>
-    public ICreature Creature { get; } = creature;
+    public IDuelist Duelist { get; } = duelist;
 
     /// <summary>
-    /// The duel it joined. <see cref="IDuel.Creatures"/> already includes it.
+    /// The health they lost, never more than they had.
     /// </summary>
-    public IDuel Duel { get; } = duel;
+    public int Damage { get; } = damage;
+
+}
+
+/// <summary>
+/// Fired when a player's, creature's or minion's queued spell is about to be cast in a duel, before it is rolled for a
+/// fizzle. Passes, and turns lost to a stun or a dead target, don't fire it. Cancelling it turns the cast into a pass,
+/// so a player spends no pips, mana or card. Fires on the duel's actor.
+/// </summary>
+public sealed class OnDuelistSpellCast(IDuelist duelist, uint spellTemplateId, string spellName, string school,
+    int pipCost) : ImlightEvent, ICancellable {
+
+    /// <summary>
+    /// The player or creature that is casting.
+    /// </summary>
+    public IDuelist Duelist { get; } = duelist;
+
+    /// <summary>
+    /// The template ID of the spell being cast.
+    /// </summary>
+    public uint SpellTemplateId { get; } = spellTemplateId;
+
+    /// <summary>
+    /// The internal name of the spell's template.
+    /// </summary>
+    public string SpellName { get; } = spellName;
+
+    /// <summary>
+    /// The spell's school, e.g. <c>Fire</c>.
+    /// </summary>
+    public string School { get; } = school;
+
+    /// <summary>
+    /// The spell's rank in pips.
+    /// </summary>
+    public int PipCost { get; } = pipCost;
+
+    /// <inheritdoc />
+    public bool IsCancelled { get; set; }
 
 }

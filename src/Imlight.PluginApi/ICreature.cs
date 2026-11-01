@@ -21,7 +21,6 @@
  */
 
 using System.Collections.Generic;
-using System.Numerics;
 
 namespace Imlight.PluginApi;
 
@@ -33,7 +32,7 @@ namespace Imlight.PluginApi;
 /// An ICreature lives until the creature dies or despawns; a respawn is a new creature with a new
 /// <see cref="GlobalId"/>.
 /// </remarks>
-public interface ICreature {
+public interface ICreature : IDuelist {
 
     /// <summary>
     /// The creature's global ID, unique while it is spawned.
@@ -46,49 +45,9 @@ public interface ICreature {
     ulong TemplateId { get; }
 
     /// <summary>
-    /// The creature's internal name.
-    /// </summary>
-    string Name { get; }
-
-    /// <summary>
     /// The zone the creature is in.
     /// </summary>
     IZone Zone { get; }
-
-    /// <summary>
-    /// The duel the creature is fighting in, or null if it is not in one.
-    /// </summary>
-    IDuel? Duel { get; }
-
-    /// <summary>
-    /// The creature's position in its zone.
-    /// </summary>
-    Vector3 Location { get; }
-
-    /// <summary>
-    /// The direction the creature is facing, in radians.
-    /// </summary>
-    float Orientation { get; }
-
-    /// <summary>
-    /// The creature's level.
-    /// </summary>
-    int Level { get; }
-
-    /// <summary>
-    /// The creature's school of magic, or <see cref="PluginApi.School.None"/> if it has none.
-    /// </summary>
-    School School { get; }
-
-    /// <summary>
-    /// The creature's current health. In a duel it changes as the creature takes damage and heals.
-    /// </summary>
-    int Health { get; }
-
-    /// <summary>
-    /// The creature's maximum health.
-    /// </summary>
-    int MaxHealth { get; }
 
     /// <summary>
     /// True if the creature is a boss.

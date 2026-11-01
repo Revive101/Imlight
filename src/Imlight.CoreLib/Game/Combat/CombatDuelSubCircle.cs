@@ -453,14 +453,14 @@ public class CombatDuelSubCircle {
             // Sandboxed wizards land here too, and a negative amount heals.
             var healthLost = currentHealth - ParticipantGameStats.m_currentHitpoints;
             if (_wizard is null && healthLost > 0 && ToPluginCreature() is { } creature) {
-                _ = PluginManager.Events.Fire(new OnCreatureDamage(creature, healthLost));
+                _ = PluginManager.Events.Fire(new OnDuelistDamage(creature, healthLost));
             }
         }
     }
 
     private void FireDamageEvents(int damage) {
         var player = ToPluginPlayer();
-        _ = PluginManager.Events.Fire(new OnPlayerDamage(player, damage));
+        _ = PluginManager.Events.Fire(new OnDuelistDamage(player, damage));
 
         // A damage handler may have healed them back up.
         if (!IsAlive) {
@@ -479,6 +479,18 @@ public class CombatDuelSubCircle {
     /// </summary>
     internal ICreature ToPluginCreature()
         => PluginZone.Of(_duelActor.ZoneRef)?.CreatureFor(ParticipantActor);
+
+    /// <summary>
+    /// The plugin view of this circle's casting participant, or null if it has none.
+    /// </summary>
+    internal IDuelist ToPluginCaster() {
+        // Creatures and summoned minions have no wizard, though a minion can take a circle a wizard left.
+        if (_wizard is null) {
+            return ToPluginCreature();
+        }
+
+        return IsSummonedMinion ? null : ToPluginPlayer();
+    }
 
     internal void HealParticipant(int heal) {
         // If the participant is a player, update their health.

@@ -360,25 +360,7 @@ public sealed class OnPlayerWhisper(IPlayer player, ulong targetCharacterId, str
 }
 
 /// <summary>
-/// Fired when a player loses health in a duel, as the server resolves the round and before the client plays it.
-/// Hits fully absorbed by wards or resistances don't fire it. Fires on the duel's actor, not the player's session.
-/// </summary>
-public sealed class OnPlayerDamage(IPlayer player, int damage) : ImlightEvent {
-
-    /// <summary>
-    /// The player who was damaged. <see cref="IPlayer.Health"/> is already reduced.
-    /// </summary>
-    public IPlayer Player { get; } = player;
-
-    /// <summary>
-    /// The health the player lost, never more than they had.
-    /// </summary>
-    public int Damage { get; } = damage;
-
-}
-
-/// <summary>
-/// Fired when a player's health reaches zero in a duel, right after the <see cref="OnPlayerDamage"/> that caused it.
+/// Fired when a player's health reaches zero in a duel, right after the <see cref="OnDuelistDamage"/> that caused it.
 /// The player stays in the duel and can still be revived; if they aren't by the end, <see cref="OnPlayerDeath"/>
 /// fires. Fires on the duel's actor, not the player's session.
 /// </summary>
@@ -404,44 +386,6 @@ public sealed class OnPlayerDeath(IPlayer player) : ImlightEvent, ICancellable {
     /// The player who died. <see cref="IPlayer.Health"/> is zero.
     /// </summary>
     public IPlayer Player { get; } = player;
-
-    /// <inheritdoc />
-    public bool IsCancelled { get; set; }
-
-}
-
-/// <summary>
-/// Fired when a player's queued spell is about to be cast in a duel, before it is rolled for a fizzle.
-/// Passes, and turns lost to a stun or a dead target, don't fire it. Cancelling it turns the cast into a pass,
-/// so no pips, mana or card are spent. Fires on the duel's actor, not the player's session.
-/// </summary>
-public sealed class OnPlayerSpellCast(IPlayer player, uint spellTemplateId, string spellName, string school,
-    int pipCost) : ImlightEvent, ICancellable {
-
-    /// <summary>
-    /// The player who is casting.
-    /// </summary>
-    public IPlayer Player { get; } = player;
-
-    /// <summary>
-    /// The template ID of the spell being cast.
-    /// </summary>
-    public uint SpellTemplateId { get; } = spellTemplateId;
-
-    /// <summary>
-    /// The internal name of the spell's template.
-    /// </summary>
-    public string SpellName { get; } = spellName;
-
-    /// <summary>
-    /// The spell's school, e.g. <c>Fire</c>.
-    /// </summary>
-    public string School { get; } = school;
-
-    /// <summary>
-    /// The spell's rank in pips.
-    /// </summary>
-    public int PipCost { get; } = pipCost;
 
     /// <inheritdoc />
     public bool IsCancelled { get; set; }

@@ -32,7 +32,7 @@ namespace Imlight.PluginApi;
 /// An IPlayer belongs to one game session, and a player gets a new session on every zone change.
 /// Store <see cref="CharacterId"/> rather than the IPlayer itself.
 /// </remarks>
-public interface IPlayer {
+public interface IPlayer : IDuelist {
 
     /// <summary>
     /// The wizard's character ID.
@@ -40,39 +40,9 @@ public interface IPlayer {
     ulong CharacterId { get; }
 
     /// <summary>
-    /// The wizard's display name.
-    /// </summary>
-    string Name { get; }
-
-    /// <summary>
     /// The zone the wizard is in, or null while the wizard is between zones.
     /// </summary>
     IZone? Zone { get; }
-
-    /// <summary>
-    /// The duel the wizard is in, or null if they are not in one.
-    /// </summary>
-    IDuel? Duel { get; }
-
-    /// <summary>
-    /// The wizard's position in their zone.
-    /// </summary>
-    Vector3 Location { get; }
-
-    /// <summary>
-    /// The direction the wizard is facing, in radians.
-    /// </summary>
-    float Orientation { get; }
-
-    /// <summary>
-    /// The wizard's level.
-    /// </summary>
-    int Level { get; }
-
-    /// <summary>
-    /// The wizard's school of magic.
-    /// </summary>
-    School School { get; }
 
     /// <summary>
     /// The wizard's total experience points.
@@ -88,16 +58,6 @@ public interface IPlayer {
     /// The most gold the wizard can carry.
     /// </summary>
     int MaxGold { get; }
-
-    /// <summary>
-    /// The wizard's current health.
-    /// </summary>
-    int Health { get; }
-
-    /// <summary>
-    /// The wizard's maximum health.
-    /// </summary>
-    int MaxHealth { get; }
 
     /// <summary>
     /// The wizard's current mana.
