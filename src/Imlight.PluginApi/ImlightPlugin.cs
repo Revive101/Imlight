@@ -41,6 +41,7 @@
 using System.IO;
 using Imlight.PluginApi.Commands;
 using Imlight.PluginApi.Events;
+using Imlight.PluginApi.Scheduling;
 
 namespace Imlight.PluginApi;
 
@@ -73,6 +74,11 @@ public abstract class ImlightPlugin {
     /// The server, for its online players and loaded zones.
     /// </summary>
     public IServer Server { get; internal set; } = null!;
+
+    /// <summary>
+    /// Runs this plugin's code after a delay or on a repeat.
+    /// </summary>
+    public ITaskScheduler Scheduler { get; internal set; } = null!;
 
     /// <summary>
     /// This plugin's own folder for configs and other data it keeps between runs, created on first use.

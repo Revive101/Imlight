@@ -116,7 +116,7 @@ Commands.Register("buyheal", c => {
 | `SetCantripLevel(level)` | Resets cantrip XP. Throws above the max cantrip level. |
 | `SetPotions(charge, max)` | `charge` is clamped between 0 and `max`. |
 
-Setters that don't clamp throw `ArgumentOutOfRangeException` for negative values, and `SetMaxHealth` also throws for 0. `SetLevel` and `AddExperience` are applied by the player's session after they return, so `Level` and `Experience` may still show the old value straight afterwards. Every other setter takes effect immediately. Call them from an event or command handler, as the server's own commands do.
+Setters that don't clamp throw `ArgumentOutOfRangeException` for negative values, and `SetMaxHealth` also throws for 0. `SetLevel` and `AddExperience` are applied by the player's session after they return, so `Level` and `Experience` may still show the old value straight afterwards. Every other setter takes effect immediately. Call them from an event or command handler, as the server's own commands do, or from a [scheduled task](#scheduler).
 
 ### Inventory
 
@@ -211,6 +211,36 @@ public override void OnEnable() {
 The handler receives a `CommandInvocation` with the `Player`, the `Name` they typed, and the `Args` after it (`RawArgs` joins them back into one string). Names and aliases are single words, matched case-insensitively.
 
 `Register` throws if a name is already a server command or another plugin's command, and registers nothing in that case. If `OnEnable` throws, every command the plugin had registered is removed. `CommandPermission.Developer` commands are administrator-only outside debug builds, the same as server commands. A handler that throws is logged and the player is told the command failed.
+
+## Scheduler
+
+`Scheduler` runs code later or on a repeat, so a plugin never needs its own timers or threads. `RunAfter` runs once after a delay, and `RunEvery` repeats until cancelled, with its first run one interval from now:
+
+```csharp
+public override void OnEnable() {
+    Scheduler.RunEvery(TimeSpan.FromMinutes(10), () => Server.Broadcast("Double gold is on this weekend!"));
+
+    Commands.Register("countdown", c => {
+        var characterId = c.Player.CharacterId;
+        var remaining = 3;
+        IScheduledTask countdown = null!;
+        countdown = Scheduler.RunEvery(TimeSpan.FromSeconds(1), () => {
+            Server.GetPlayer(characterId)?.SendMessage(remaining > 0 ? $"{remaining}..." : "Go!");
+            if (remaining-- == 0) {
+                countdown.Cancel();
+            }
+        });
+    });
+}
+```
+
+Both return an `IScheduledTask`, and its `Cancel` can be called from anywhere, including inside the task. A run that has already started finishes. Each `RunEvery` run starts one interval after the last one finished, so a slow task drifts later rather than piling up. `RunAfter` throws for a negative delay and `RunEvery` for an interval that isn't positive.
+
+Each plugin's tasks run one at a time on that plugin's own actor, so they never overlap each other, and a slow task delays only that plugin's other tasks. They can still run at the same time as the plugin's event and command handlers, so guard any data the two share. A task that throws is logged, and a repeating task keeps repeating.
+
+Every task is cancelled just before `OnDisable`, or if `OnEnable` throws, and anything scheduled after that never runs. Tasks do not survive a restart.
+
+A task can outlive the player or zone it was scheduled for, so store `CharacterId` or the zone's `Name` and look them up when it runs, as the countdown does. `Server.GetPlayer` returns null if the player has left or is between zones.
 
 ## Adding an Event
 

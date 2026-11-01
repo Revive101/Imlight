@@ -178,7 +178,7 @@ internal static class Program {
         LoginWarmup.Run();
 
         // Plugins subscribe to events here, before any player can connect.
-        PluginManager.LoadAll(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "plugins"));
+        PluginManager.LoadAll(s_imlightSystem, Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "plugins"));
         AppDomain.CurrentDomain.ProcessExit += (_, _) => PluginManager.DisableAll();
 
         // The login and game servers accept no connection until everything above is done.

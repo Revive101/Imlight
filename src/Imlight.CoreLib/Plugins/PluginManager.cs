@@ -24,8 +24,8 @@
  * the rest of the server fires into.
  *
  * USAGE EXAMPLE:
- * PluginManager.LoadAll("./plugins");  // at boot, before servers accept connections
- * PluginManager.DisableAll();          // on shutdown
+ * PluginManager.LoadAll(system, "./plugins");  // at boot, before servers accept connections
+ * PluginManager.DisableAll();                  // on shutdown
  *
  * NOTE:
  * Plugins are loaded into the default load context, so they share the
@@ -42,6 +42,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.Loader;
+using Akka.Actor;
 using Imlight.Common;
 using Imlight.PluginApi;
 
@@ -64,7 +65,7 @@ public static class PluginManager {
     /// Loads every plugin DLL in the directory, creating it if needed, and enables each plugin.
     /// A plugin that fails is logged and skipped.
     /// </summary>
-    public static void LoadAll(string directory) {
+    public static void LoadAll(ActorSystem system, string directory) {
         _ = Directory.CreateDirectory(directory);
 
         foreach (var path in Directory.GetFiles(directory, "*.dll")) {
@@ -73,7 +74,7 @@ public static class PluginManager {
                 var pluginTypes = assembly.GetTypes().Where(x => x.IsSubclassOf(typeof(ImlightPlugin)) && !x.IsAbstract);
 
                 foreach (var type in pluginTypes) {
-                    Enable((ImlightPlugin) Activator.CreateInstance(type)!, directory);
+                    Enable((ImlightPlugin) Activator.CreateInstance(type)!, system, directory);
                 }
             }
             catch (Exception ex) {
@@ -88,6 +89,7 @@ public static class PluginManager {
     public static void DisableAll() {
         for (var i = s_plugins.Count - 1; i >= 0; i--) {
             try {
+                ((PluginScheduler) s_plugins[i].Scheduler).CancelAll();
                 s_plugins[i].OnDisable();
             }
             catch (Exception ex) {
@@ -98,11 +100,14 @@ public static class PluginManager {
         s_plugins.Clear();
     }
 
-    private static void Enable(ImlightPlugin plugin, string directory) {
+    private static void Enable(ImlightPlugin plugin, ActorSystem system, string directory) {
+        PluginScheduler scheduler = null;
         try {
+            scheduler = new PluginScheduler(system, plugin.Name);
             plugin.Events = Events;
             plugin.Commands = Commands.For(plugin);
             plugin.Server = Server;
+            plugin.Scheduler = scheduler;
             plugin.DataFolderPath = Path.Combine(directory, ToFolderName(plugin.Name));
             plugin.OnEnable();
             s_plugins.Add(plugin);
@@ -110,8 +115,9 @@ public static class PluginManager {
             Logger.Information("Enabled plugin {Name} {Version}.", Logger.Args(plugin.Name, plugin.Version));
         }
         catch (Exception ex) {
-            // Don't leave a half-enabled plugin's commands reachable.
+            // Don't leave a half-enabled plugin's commands reachable or its tasks running.
             Commands.RemoveAll(plugin);
+            scheduler?.CancelAll();
             Logger.Error("Plugin {Type} failed to enable: {Exception}", Logger.Args(plugin.GetType().Name, ex));
         }
     }
