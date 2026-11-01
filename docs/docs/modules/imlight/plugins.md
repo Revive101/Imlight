@@ -70,6 +70,12 @@ public sealed class GreeterPlugin : ImlightPlugin {
 | `OnCreatureDamage` | No | When a creature loses health in a duel, as the round resolves and before the client plays it. `Damage` is the health lost and `Creature.Health` is already reduced. Not fired for hits fully absorbed by wards or resistances. |
 | `OnCreatureDeath` | No | When a defeated creature is removed from its duel at the end of a round, or a creature in a duel is despawned. `OnCreatureDespawn` follows. Not fired for creatures removed alive, such as the winners of a duel. |
 | `OnCreatureSpellCast` | Yes | When a creature's or minion's queued spell is about to be cast in a duel, before the fizzle roll, so it fires for spells that then fizzle. Cancelling turns the cast into a pass. Not fired for passes, stuns or dead targets. |
+| `OnDuelStart` | No | When a duel has been created with its starting participants, before the first round. `Zone.Duels` already includes it. |
+| `OnDuelRoundStart` | No | When a new round begins, before its planning phase. `Duel.Round` is already the new round. Creatures may already be choosing their moves. |
+| `OnDuelEnd` | No | Once when a duel is decided, before rewards and before `OnPlayerDeath`. `Winners` holds the players on the winning side, and is empty if the creatures won or a PvP match drew. `Duel.Players` and `Duel.Creatures` still hold who was left. |
+| `OnPlayerDuelJoin` | No | When a player joins a duel already running. Not fired for starting participants, who are in `OnDuelStart`'s `Duel.Players`. |
+| `OnPlayerDuelLeave` | No | When a player leaves a duel before it ends, by fleeing, forfeiting, disconnecting or logging out. `Duel.Players` no longer includes them. |
+| `OnCreatureDuelJoin` | No | When a creature joins a duel already running, including a summoned minion. Not fired for starting participants, who are in `OnDuelStart`'s `Duel.Creatures`. |
 
 Handlers are matched on the event's exact type, so subscribing to `ImlightEvent` or another base type receives nothing. Handlers for the same event run in the order they subscribed.
 

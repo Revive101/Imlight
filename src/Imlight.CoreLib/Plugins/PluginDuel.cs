@@ -28,6 +28,7 @@ using Akka.Actor;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Game.Combat;
 using Imlight.PluginApi;
+using Imlight.PluginApi.Events;
 
 namespace Imlight.CoreLib.Plugins;
 
@@ -58,27 +59,56 @@ internal sealed class PluginDuel(Duel duel, IZone zone) : IDuel {
 
     public IReadOnlyList<ICreature> Creatures => [.. Volatile.Read(ref _creatures).Where(x => !x.IsDead)];
 
+    /// <summary>
+    /// Lists a starting participant, before the duel is shown to plugins.
+    /// </summary>
     public void AddParticipant(CombatDuelSubCircle circle) {
         if (circle.IsHumanPlayer) {
-            var player = circle.ToPluginPlayer();
-            _ = ImmutableInterlocked.Update(ref _players, x => x.Add(player));
+            Add(circle.ToPluginPlayer());
         }
         else if (circle.ToPluginCreature() is { } creature) {
-            _ = ImmutableInterlocked.Update(ref _creatures, x => x.Add(creature));
+            Add(creature);
+        }
+    }
+
+    /// <summary>
+    /// Lists a participant joining the running duel.
+    /// </summary>
+    public void JoinParticipant(CombatDuelSubCircle circle) {
+        if (circle.IsHumanPlayer) {
+            var player = circle.ToPluginPlayer();
+            Add(player);
+            _ = PluginManager.Events.Fire(new OnPlayerDuelJoin(player, this));
+        }
+        else if (circle.ToPluginCreature() is { } creature) {
+            Add(creature);
+            _ = PluginManager.Events.Fire(new OnCreatureDuelJoin(creature, this));
         }
     }
 
     /// <summary>
     /// Drops the player of a session. Creatures need no such call: they stop being listed once they are dead.
     /// </summary>
-    public void RemovePlayer(IActorRef sessionActor)
-        => ImmutableInterlocked.Update(
-            ref _players, x => x.RemoveAll(player => ((PluginPlayer) player).SessionActor.Equals(sessionActor)));
+    public void RemovePlayer(IActorRef sessionActor) {
+        var player = Volatile.Read(ref _players).Find(x => ((PluginPlayer) x).SessionActor.Equals(sessionActor));
+        if (player is null) {
+            return;
+        }
+
+        _ = ImmutableInterlocked.Update(ref _players, x => x.Remove(player));
+        _ = PluginManager.Events.Fire(new OnPlayerDuelLeave(player, this));
+    }
 
     public void End() {
         _hasEnded = true;
         Volatile.Write(ref _players, []);
         Volatile.Write(ref _creatures, []);
     }
+
+    private void Add(IPlayer player)
+        => ImmutableInterlocked.Update(ref _players, x => x.Add(player));
+
+    private void Add(ICreature creature)
+        => ImmutableInterlocked.Update(ref _creatures, x => x.Add(creature));
 
 }

@@ -418,6 +418,10 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
         _tutorialDirector.OnNewRound(Duel.m_roundNum);
 
+        if (PluginDuel is not null) {
+            _ = PluginManager.Events.Fire(new OnDuelRoundStart(PluginDuel));
+        }
+
         var delay = TimeSpan.FromSeconds(DUEL_NEW_ROUND_DELAY);
         Timers.StartSingleTimer(PREPLANNING_TIME_KEY, new COMBAT_106_PROTOCOL.MSG_PLANNINGPHASEBEGIN(), delay);
     }
@@ -1100,6 +1104,20 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         EnactActionOnSubCircles(duel.AddParticipant);
         zone.AddDuel(duel);
         PluginDuel = duel;
+
+        _ = PluginManager.Events.Fire(new OnDuelStart(duel));
+    }
+
+    private void FirePluginDuelEnd(CombatTeam? winningTeam) {
+        if (PluginDuel is null) {
+            return;
+        }
+
+        var winners = ActiveSubCircles.Where(x => x.IsHumanPlayer && x.OccupiedTeam == winningTeam)
+            .Select(x => x.ToPluginPlayer())
+            .ToList();
+
+        _ = PluginManager.Events.Fire(new OnDuelEnd(PluginDuel, winners));
     }
 
     private void ClosePluginDuel() {
@@ -1763,6 +1781,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         // A queued tutorial card grant must not leak into the next duel on this sigil.
         _tutorialDirector.OnDuelEnded();
 
+        FirePluginDuelEnd(playersWin ? CombatTeam.Player : null);
+
         RemovePlayersFromDuel();
 
         if (playersWin) {
@@ -1849,6 +1869,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         }
 
         Logger.Debug("Duel {0} | PvP match ended. Winning team {1}.", Logger.Args(Duel.m_duelID.Full, winningTeam));
+
+        FirePluginDuelEnd(winningTeam < 0 ? null : (CombatTeam) winningTeam);
 
         Timers.CancelAll();
 

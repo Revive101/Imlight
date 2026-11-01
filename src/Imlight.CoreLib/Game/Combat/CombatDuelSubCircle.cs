@@ -196,7 +196,7 @@ public class CombatDuelSubCircle {
         };
         ParticipantActor.Tell(msg);
 
-        _duelActor.PluginDuel?.AddParticipant(this);
+        _duelActor.PluginDuel?.JoinParticipant(this);
 
         // We don't need to await this.
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
@@ -207,12 +207,15 @@ public class CombatDuelSubCircle {
     }
 
     internal void RemoveParticipant() {
-        _duelActor.PluginDuel?.RemovePlayer(ParticipantActor);
+        var actor = ParticipantActor;
 
         ParticipantActor = null;
         ParticipantObject = null;
         CombatParticipant = null;
         AddedToDuel = false;
+
+        // Last, so a leave handler sees the circle free.
+        _duelActor.PluginDuel?.RemovePlayer(actor);
     }
 
     internal Hand DrawHand() {
