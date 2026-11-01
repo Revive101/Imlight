@@ -1616,4 +1616,19 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
 
     }
 
+    /// <summary>
+    /// Sent by plugins to a creature: its <see cref="NpcComponent"/> sets each value that is not null.
+    /// </summary>
+    public sealed class MSG_SETCREATUREBEHAVIOR : IServerMessage {
+
+        public byte MessageOrder { get; } = 105;
+        public byte ServiceID { get; } = 102;
+
+        public float? Intelligence;
+        public float? Aggressiveness;
+        public float? Selfishness;
+        public float? Proximity;
+
+    }
+
 }

@@ -24,6 +24,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Game.Zone.Components;
 using Imlight.CoreLib.Game.Zone.Core;
@@ -110,6 +111,22 @@ internal sealed class PluginCreature(ZoneEntity entity, IZone zone) : ICreature 
         Send(new ZONE_102_PROTOCOL.MSG_SETCREATUREHEALTH { MaxHealth = maxHealth });
     }
 
+    public void SetIntelligence(float intelligence)
+        => Send(new ZONE_102_PROTOCOL.MSG_SETCREATUREBEHAVIOR { Intelligence = RequireChance(intelligence) });
+
+    public void SetAggressiveness(float aggressiveness)
+        => Send(new ZONE_102_PROTOCOL.MSG_SETCREATUREBEHAVIOR { Aggressiveness = RequireChance(aggressiveness) });
+
+    public void SetSelfishness(float selfishness)
+        => Send(new ZONE_102_PROTOCOL.MSG_SETCREATUREBEHAVIOR { Selfishness = RequireChance(selfishness) });
+
+    public void SetProximity(float proximity) {
+        // The radius check squares this, so a negative radius would act like a positive one.
+        ArgumentOutOfRangeException.ThrowIfNegative(proximity);
+
+        Send(new ZONE_102_PROTOCOL.MSG_SETCREATUREBEHAVIOR { Proximity = proximity });
+    }
+
     public void StopMoving()
         => Send(new ZONE_102_PROTOCOL.MSG_SETCREATUREPAUSED { Paused = true });
 
@@ -121,6 +138,11 @@ internal sealed class PluginCreature(ZoneEntity entity, IZone zone) : ICreature 
 
     private void Send(object message)
         => entity.SelfRef.Tell(message, null);
+
+    private static float RequireChance(float chance, [CallerArgumentExpression(nameof(chance))] string paramName = null)
+        => chance is >= 0 and <= 1
+            ? chance
+            : throw new ArgumentOutOfRangeException(paramName, chance, "Must be between 0 and 1.");
 
     private static string ResolveName(CoreTemplate template) {
         if (template is GameObjectTemplate gameObjectTemplate) {

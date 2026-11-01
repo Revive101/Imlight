@@ -233,4 +233,13 @@ internal sealed class NpcComponent : ZoneEntityComponent, IComponentFactory, ICl
         stats.m_currentHitpoints = Math.Clamp(health, 1, stats.m_baseHitpoints);
     }
 
+    // The creature's AI rolls against these factors each round, and OnPlayerMove reads the proximity live.
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_SETCREATUREBEHAVIOR))]
+    private void ReceiveSetBehavior(ZONE_102_PROTOCOL.MSG_SETCREATUREBEHAVIOR message) {
+        this.IntelligenceFactor = message.Intelligence ?? IntelligenceFactor;
+        this.AggressiveFactor = message.Aggressiveness ?? AggressiveFactor;
+        this.SelfishnessFactor = message.Selfishness ?? SelfishnessFactor;
+        this.Proximity = message.Proximity ?? Proximity;
+    }
+
 }

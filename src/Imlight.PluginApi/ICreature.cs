@@ -155,6 +155,31 @@ public interface ICreature {
     void SetMaxHealth(int maxHealth);
 
     /// <summary>
+    /// Sets the creature's <see cref="Intelligence"/>. In a duel it applies from the creature's next round.
+    /// </summary>
+    /// <exception cref="System.ArgumentOutOfRangeException">The chance is not between 0 and 1.</exception>
+    void SetIntelligence(float intelligence);
+
+    /// <summary>
+    /// Sets the creature's <see cref="Aggressiveness"/>. In a duel it applies from the creature's next round.
+    /// </summary>
+    /// <exception cref="System.ArgumentOutOfRangeException">The chance is not between 0 and 1.</exception>
+    void SetAggressiveness(float aggressiveness);
+
+    /// <summary>
+    /// Sets the creature's <see cref="Selfishness"/>. In a duel it applies from the creature's next round.
+    /// </summary>
+    /// <exception cref="System.ArgumentOutOfRangeException">The chance is not between 0 and 1.</exception>
+    void SetSelfishness(float selfishness);
+
+    /// <summary>
+    /// Sets the creature's <see cref="Proximity"/>. A player already inside the new range is noticed the next
+    /// time they move.
+    /// </summary>
+    /// <exception cref="System.ArgumentOutOfRangeException">The proximity is negative.</exception>
+    void SetProximity(float proximity);
+
+    /// <summary>
     /// Stops the creature walking its path once it reaches the point it is walking to. Creatures that do not
     /// walk a path, such as minions, ignore it.
     /// </summary>

@@ -80,15 +80,12 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
     private CombatDuelSubCircle _currentSubCircle;
 
     // The chance that the creature will use a spell that is the most damaging spell in its hand.
-    private float _intelligenceFactor;
     private bool _determinedSmartThisTurn;
 
     // The chance that the creature will attack the enemy team. If not, it will "prepare." (blade/heal/shield/trap/etc.)
-    private float _aggressivenessFactor;
     private bool _determinedAggressiveThisTurn;
 
     // The chance that when a creature is preparing, it will buff itself rather than a teammate.
-    private float _selfishnessFactor;
     private bool _determinedSelfishThisTurn;
 
     private Hand _roundHand;
@@ -143,10 +140,6 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
 
             return;
         }
-
-        _intelligenceFactor = _npcComponent.IntelligenceFactor;
-        _aggressivenessFactor = _npcComponent.AggressiveFactor;
-        _selfishnessFactor = _npcComponent.SelfishnessFactor;
 
         _stats = Entity.GetComponentOfType<StatsComponent>();
         if (_stats is null) {
@@ -319,9 +312,9 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
         => !SpellEffectFilter.HasAiRole(spell) || !_currentSubCircle.CanEverAffordSpell(spell);
 
     private void DetermineAttitude() {
-        _determinedSmartThisTurn = _random.NextDouble() < _intelligenceFactor;
-        _determinedAggressiveThisTurn = _random.NextDouble() < _aggressivenessFactor;
-        _determinedSelfishThisTurn = _random.NextDouble() < _selfishnessFactor;
+        _determinedSmartThisTurn = _random.NextDouble() < _npcComponent.IntelligenceFactor;
+        _determinedAggressiveThisTurn = _random.NextDouble() < _npcComponent.AggressiveFactor;
+        _determinedSelfishThisTurn = _random.NextDouble() < _npcComponent.SelfishnessFactor;
 
         Logger.Debug("Duel {0} | Slot {1} | Smart: {2} | Aggressive: {3} | Selfish: {4}",
             Logger.Args(_currentDuelComponent.SigilId,
