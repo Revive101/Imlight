@@ -23,6 +23,7 @@ using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
 using Imlight.CoreLib.Shared.Utilities;
 using System.Text.Json.Serialization;
+using AdvancedPetsConfig = Imlight.CoreLib.Game.Pet.Config.AdvancedPetsConfig;
 
 namespace Imlight.CoreLib.Shared.Behaviors;
 
@@ -38,8 +39,7 @@ public class ServerPetOwnerBehavior : IClientBehaviorProvider<ClientPetOwnerBeha
 
     [JsonIgnore] public bool NoTransfer { get; set; } = false;
 
-    public readonly int EnergyTickIntervalInSeconds = ConfigurationManager
-        .Settings["Character.PetEnergyTickInSeconds"].AsInt();
+    [JsonIgnore] public int EnergyTickIntervalInSeconds => AdvancedPetsConfig.EnergyTickInSeconds;
 
     public byte MaxSlots { get; set; }
     public uint LastEnergyTickEpoch { get; private set; }
@@ -58,6 +58,16 @@ public class ServerPetOwnerBehavior : IClientBehaviorProvider<ClientPetOwnerBeha
     /// the client learns about eggs via MSG_PETEGGMORPHED/MSG_PETMORPHINGSLOT messages.
     /// </summary>
     [JsonIgnore] public List<CraftingSlot> MorphingSlots { get; private set; }
+
+    /// <summary>
+    /// The day, counted from the epoch in UTC, of the wizard's latest pet lend.
+    /// </summary>
+    public int LendDay { get; set; }
+
+    /// <summary>
+    /// The pets the wizard lent on <see cref="LendDay"/>.
+    /// </summary>
+    public int LendsOnLendDay { get; set; }
 
     /// <summary>
     /// The template ID of the currently equipped pet (0 if none).
@@ -193,6 +203,40 @@ public class ServerPetOwnerBehavior : IClientBehaviorProvider<ClientPetOwnerBeha
 
         return [.. MorphingSlots.Where(e => e.m_timeFinished > now)];
     }
+
+    /// <summary>
+    /// Checks that the wizard has a morphing slot free for a new egg.
+    /// </summary>
+    /// <returns>True if fewer eggs are incubating than the wizard has slots.</returns>
+    public bool HasFreeMorphingSlot()
+        => (MorphingSlots?.Count ?? 0) < Math.Max((byte) 1, MaxSlots);
+
+    /// <summary>
+    /// Gets the pets the wizard can still lend today.
+    /// </summary>
+    /// <param name="lendsPerDay">The pets a wizard can lend each day.</param>
+    /// <returns>The lends left, zero when none are.</returns>
+    public byte GetLendsLeft(byte lendsPerDay) {
+        var lentToday = LendDay == GetToday() ? LendsOnLendDay : 0;
+
+        return (byte) Math.Max(0, lendsPerDay - lentToday);
+    }
+
+    /// <summary>
+    /// Counts a pet lend for today.
+    /// </summary>
+    public void CountLend() {
+        var today = GetToday();
+        if (LendDay != today) {
+            LendDay = today;
+            LendsOnLendDay = 0;
+        }
+
+        LendsOnLendDay++;
+    }
+
+    private static int GetToday()
+        => (int) (DateTimeOffset.UtcNow.ToUnixTimeSeconds() / TimeSpan.SecondsPerDay);
 
     /// <summary>
     /// Marks a pet as equipped, storing its template and item IDs.

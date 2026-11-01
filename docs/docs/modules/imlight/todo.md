@@ -160,14 +160,26 @@
 ::: tip
 Imlight should have social elements before starting this branch.
 :::
-- [ ] Need a system to know what house belongs to which player
-- [ ] Need to add a new collection to dragon database to save a house persistently. A `Wizard` should only keep track of their housing instance ID which points to their house
+- [x] A `Wizard` keeps the lot of every house item it was issued, and each house is its own `Houses/{lot}` document
+- [x] Houses, their zones and their starting layouts come from the game data
+- [x] House decorations: placing, moving, rotating, scaling and picking up objects
+- [x] House decorations being saved persistently
+- [x] Pick Up All Items and the attic
+- [x] Teleporting home (to the starter house)
+- [x] Teleporting to your own house through its doors, deeds and scripted teleports
+- [x] Teleporting to a friend's or group mate's house
+- [x] Sending visitors away and hiding from friends
+- [x] Equipping a house in the `Islands` and `Structure` slots
+- [x] Deleting a character deletes its houses and attic
+- [x] `.housegrant` gives a character any house for testing
+- [ ] Home goes to the equipped house (needs a packet capture of equipping a castle)
+- [ ] Island limit and switching castles (needs a packet capture)
+- [ ] Buying a house (needs a packet capture of a house purchase)
+- [ ] Selling a house (needs a packet capture)
 - [ ] Housing previews
-- [ ] Buying/selling a house
-- [ ] Teleporting home
-- [ ] Being able to teleport to your house
-- [ ] House decorations
-- [ ] House decorations being saved persistently
+- [ ] Objects that need their own state: music, teleporters, castle blocks, pet guests and the other families
+- [ ] Castle Tours
+- [ ] Refusing placements outside the extent of a house zone (optional)
 - [ ] PvP sigils
 
 ## Gardening

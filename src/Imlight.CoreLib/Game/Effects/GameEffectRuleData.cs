@@ -34,14 +34,12 @@
  * 
  * Created by: Joji, Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 10/25/2026
  */
 
-using System;
 using System.Collections.Generic;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
-using Imcodec.Wad;
 using Imlight.Common;
 using Imlight.CoreLib.Shared.Resources;
 
@@ -50,70 +48,26 @@ namespace Imlight.CoreLib.Game.Effects;
 internal class GameEffectRuleData : RootDirectoryResourceSingleton<GameEffectRuleData>, IMemoryStreamDisposable {
 
     protected override string DirectoryName => "GameEffectRuleData";
-    private static Dictionary<string, WizardStatTable> s_statTables;
+    private static readonly Dictionary<string, WizardStatTable> s_statTables = [];
 
-    protected override void AfterLoad()
-        => ProcessStatTables(base.Files);
+    protected override void AfterLoad() {
+        foreach (var (file, table) in ReadTemplates<WizardStatTable>()) {
+            s_statTables.Add(SanitizeTableName(file.FileName), table);
+        }
+
+        Logger.Information("Loaded {Count} stat tables.", Logger.Args(s_statTables.Count));
+    }
 
     /// <summary>
     /// Retrieves the WizardStatTable with the specified table name.
     /// </summary>
     /// <param name="tableName">The name of the table to retrieve.</param>
     /// <returns>The WizardStatTable with the specified table name, or null if the table is not found.</returns>
-    internal static WizardStatTable GetWizardStatTable(string tableName) {
-        if (s_statTables is null) {
-            Logger.Error("Stat tables were null. Cannot gather stat table.");
+    internal static WizardStatTable GetWizardStatTable(string tableName)
+        => s_statTables.GetValueOrDefault(tableName);
 
-            return null;
-        }
-
-        if (!s_statTables.ContainsKey(tableName)) {
-            return null;
-        }
-
-        return s_statTables[tableName];
-    }
-
-    private static void ProcessStatTables(Dictionary<FileEntry, Memory<byte>?> files) {
-        s_statTables = [];
-        foreach (var file in files) {
-            var tableName = file.Key.FileName;
-            var stream = file.Value;
-            if (stream is null) {
-                Logger.Error("Stream was null for stat table {0}",
-                    Logger.Args(tableName));
-
-                continue;
-            }
-
-            var table = ProcessStatTable(stream!.Value);
-
-            var sanitizedTableName = SanitizeTableName(tableName);
-
-            if (table is null) {
-                Logger.Error("Could not process stat table {0}",
-                    Logger.Args(tableName));
-
-                continue;
-            }
-
-            s_statTables.Add(sanitizedTableName, table);
-        }
-
-        Logger.Information("Loaded {0} stat tables", 
-            Logger.Args(s_statTables.Count));
-    }
-
-    private static WizardStatTable ProcessStatTable(Memory<byte> stream) {
-        var serializer = new BindSerializer();
-        if (!serializer.Deserialize<WizardStatTable>(stream.ToArray(), out var tableClass)) {
-            Logger.Error("Failed to deserialize stat table");
-
-            return null;
-        }
-
-        return tableClass;
-    }
+    public void DisposeStream()
+        => s_statTables.Clear();
 
     private static string SanitizeTableName(string tableName) {
         var pathSplits = tableName.Split('/')[^1];
@@ -121,8 +75,5 @@ internal class GameEffectRuleData : RootDirectoryResourceSingleton<GameEffectRul
 
         return sanitized;
     }
-
-    public void DisposeStream()
-        => s_statTables = null;
 
 }

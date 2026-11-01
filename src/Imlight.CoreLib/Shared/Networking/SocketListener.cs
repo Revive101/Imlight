@@ -36,7 +36,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/10/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -57,7 +57,6 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
     private const int MaxFramesPerRead = 1024;
     private const int HexPreviewBytes = 8;
 
-    // Live clients send up to ~220 messages in 10 s on zone entry.
     private const int DefaultTokenBucketMax = 1000;
     private const int DefaultTokenBucketPerSecond = 200;
     private const byte DefaultTokenBucketFailedAcquisitionLimit = 5;
@@ -115,7 +114,6 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
         }
 
         _isDisposed = true;
-        _sessionActorRef.Ask("Close");
 
         _socket?.Close();
         _socket?.Dispose();
@@ -126,6 +124,15 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
         base.PostStop();
     }
 
+    private void DisposeAfterSocketEnded() {
+        if (_isDisposed) {
+            return;
+        }
+
+        _sessionActorRef.Tell("Close");
+        Dispose();
+    }
+
     private void StartReceive() {
         if (_isDisposed) {
             return;
@@ -133,7 +140,7 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
 
         // The sender shares this socket and may have closed it already.
         if (_socket.SafeHandle.IsClosed) {
-            Dispose();
+            DisposeAfterSocketEnded();
 
             return;
         }
@@ -155,7 +162,7 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
                 .PipeTo(Self);
         }
         catch (ObjectDisposedException) {
-            Dispose();
+            DisposeAfterSocketEnded();
         }
     }
 
@@ -169,9 +176,9 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
         }
 
         if (_closeOnSocketException) {
-            Logger.Error("SessionActor {Id} receive operation failed: {Message}",
-                Logger.Args(_sessionid, result.Error.Message));
-            Dispose();
+            LogReceiveFailure(result.Error);
+            DisposeAfterSocketEnded();
+
             return;
         }
 
@@ -182,7 +189,7 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
         try {
             if (bytesReceived <= 0) {
                 // If the bytes transferred is 0, the socket has disconnected.
-                this.Dispose();
+                DisposeAfterSocketEnded();
                 
                 return;
             }
@@ -191,7 +198,7 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
             if (packets.Count > MaxFramesPerRead || _decoder.PendingBytes > MaxPendingBytes) {
                 Logger.Warning("SessionActor {SessionId} exceeded the receive limits: {FrameCount} frames, {PendingBytes} pending bytes.",
                     Logger.Args(_sessionid, packets.Count, _decoder.PendingBytes));
-                this.Dispose();
+                DisposeAfterSocketEnded();
 
                 return;
             }
@@ -200,17 +207,15 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
                 if (IsCriticalPacket(packet)) {
                     _tokenBucket.Spend();
                 } else if (!_tokenBucket.TryAcquire()) {
-                    Logger.Warning("SessionActor {SessionId} failed to acquire token.", Logger.Args(_sessionid));
+                    Logger.Debug("SessionActor {SessionId} is over its message rate limit; dropped {MessageName}.",
+                        Logger.Args(_sessionid, GetScopedMessageName(packet)));
 
-                    // The rate limit was reached.
                     var failedAcquisitionCount = _tokenBucket.GetFailedAcquisitionCount();
                     if (failedAcquisitionCount >= _tokenBucketFailedAcquisitionLimit) {
-                        // Log warning.
-                        Logger.Warning("SessionActor {SessionId} failed to acquire token {FailedAcquisitionCount} times.",
+                        Logger.Warning("SessionActor {SessionId} sent too many messages too fast ({FailedAcquisitionCount} " +
+                                       "over the rate limit) and was disconnected.",
                             Logger.Args(_sessionid, failedAcquisitionCount));
-
-                        // The session has exceeded the failed acquisition limit. We'll dispose of the session.
-                        this.Dispose();
+                        DisposeAfterSocketEnded();
 
                         return;
                     }
@@ -226,8 +231,10 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
             }
 
         }
-        catch {
-            this.Dispose();
+        catch (Exception ex) {
+            Logger.Error("SessionActor {SessionId} closed after an unexpected error while reading. {Exception}",
+                Logger.Args(_sessionid, ex));
+            DisposeAfterSocketEnded();
         }
         finally {
             StartReceive();
@@ -261,7 +268,7 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
 
         if ((packets.Count > 1 || pendingBefore > 0) && packets.Any(IsCriticalPacket)) {
             var names = string.Join(", ", packets.Select(GetScopedMessageName));
-            Logger.Information("SessionActor {SessionId} coalesced critical read: {Names}", Logger.Args(_sessionid, names));
+            Logger.Debug("SessionActor {SessionId} coalesced critical read: {Names}", Logger.Args(_sessionid, names));
         }
     }
 
@@ -273,6 +280,9 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
             or GAME_5_PROTOCOL.MSG_ZONETRANSFERACK
             or GAME_5_PROTOCOL.MSG_ZONETRANSFERNACK
             or GAME_5_PROTOCOL.MSG_RETRYTELEPORT
+            or WIZARDHOUSING_50_PROTOCOL.MSG_REQUESTDEEDZONE
+            or WIZARDHOUSING_50_PROTOCOL.MSG_REQUESTHOUSINGZONETELEPORT
+            or WIZARDHOUSING_50_PROTOCOL.MSG_REQUESTHOUSINGZONE
             or LOGIN_7_PROTOCOL.MSG_USER_VALIDATE
             or LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_V3;
 
@@ -288,6 +298,17 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
             Logger.Verbose("SessionActor {SessionId} received KiNP packet {ScopedMessageName}",
                 Logger.Args(_sessionid, GetScopedMessageName(packet)));
         }
+    }
+
+    private void LogReceiveFailure(Exception error) {
+        if (error is SocketException { SocketErrorCode: SocketError.ConnectionReset or SocketError.Shutdown }) {
+            Logger.Debug("SessionActor {SessionId} connection closed by the client: {Message}",
+                Logger.Args(_sessionid, error.Message));
+
+            return;
+        }
+
+        Logger.Error("SessionActor {SessionId} receive failed: {Message}", Logger.Args(_sessionid, error.Message));
     }
 
 }

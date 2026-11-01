@@ -57,6 +57,9 @@ public static class ResultDispatcher {
     /// <param name="triggerName">The trigger name (if applicable)</param>
     /// <param name="skipWorldEffects">Drops the results that change the zone itself (another player's step already ran them)</param>
     /// <param name="xpScale">Multiplies the experience of drop tables among the results</param>
+    /// <param name="sourceRef">The zone entity whose interact option runs the results (if applicable)</param>
+    /// <param name="sourceTemplateId">The template id of that entity</param>
+    /// <param name="sourceIsInstance">Whether that entity lives in an instance</param>
     public static void ExecuteResults(IActorContext actorContext,
                                      ResultList results,
                                      IActorRef playerRef,
@@ -69,9 +72,17 @@ public static class ResultDispatcher {
                                      Zone.Core.ZoneScriptState scriptState = null,
                                      bool skipWorldEffects = false,
                                      float xpScale = 1f,
-                                     bool playerSpawned = false) {
+                                     bool playerSpawned = false,
+                                     IActorRef sourceRef = null,
+                                     ulong sourceTemplateId = 0,
+                                     bool sourceIsInstance = false) {
         if (skipWorldEffects && results?.m_results is not null) {
             results = new ResultList { m_results = results.m_results.Where(r => !ChangesZone(r)).ToList() };
+        }
+
+        // A loop outlives its player; with nobody to act on, only the results that change the zone itself still run.
+        if (playerRef is null && results?.m_results is not null) {
+            results = new ResultList { m_results = results.m_results.Where(RunsWithoutPlayer).ToList() };
         }
 
         // Results carry their own requirements in the data; evaluate them here, before the executor
@@ -81,6 +92,9 @@ public static class ResultDispatcher {
         var context = new GenericResultContext(filteredResults, playerRef, playerObj, replyTo, zoneActor, questName, goalName, triggerName) {
             XpScale = xpScale,
             PlayerSpawned = playerSpawned,
+            SourceRef = sourceRef,
+            SourceTemplateId = sourceTemplateId,
+            SourceIsInstance = sourceIsInstance,
         };
         var executor = CreateExecutorInstance(actorContext, context);
 
@@ -108,6 +122,11 @@ public static class ResultDispatcher {
     private static bool ChangesZone(Result result)
         => result is not null && s_zoneEffectTypes.Contains(result.GetType());
 
+    private static bool RunsWithoutPlayer(Result result) {
+        // The dynamod results are saved on the player they are told to, so they have no zone-wide form.
+        return result is ResWait || (ChangesZone(result) && result is not (ResAddDynaMod or ResRemoveDynaMod));
+    }
+
     private static ResultList FilterResultsByRequirements(ResultList results,
                                                            IActorRef playerRef,
                                                            CoreObject playerObj,
@@ -131,7 +150,7 @@ public static class ResultDispatcher {
                         TimeSpan.FromSeconds(QUERY_WIZARD_TIMEOUT_SECONDS)).Result?.Wizard;
             }
             catch (Exception ex) {
-                Logger.Error("Failed to query wizard for result requirements: {0}", Logger.Args(ex.Message));
+                Logger.Error("The character could not be read to check result requirements, so results that have requirements may not run. {Exception}", Logger.Args(ex));
             }
         }
 
@@ -246,12 +265,12 @@ public static class ResultDispatcher {
                 s_resultHandlers.Add(type, shouldAttachMethod);
             }
             else {
-                Logger.Warning("Could not find ShouldAttachToContext method on: {0}",
-                    Logger.Args(type.FullName));
+                Logger.Error("Result handler {Handler} has no ShouldAttachToContext method, so it never runs.",
+                    Logger.Args(type.Name));
             }
         }
 
-        Logger.Information("Registered {0} result handlers", Logger.Args(s_resultHandlers.Count));
+        Logger.Debug("Registered {Count} result handlers.", Logger.Args(s_resultHandlers.Count));
     }
 
 }

@@ -48,8 +48,7 @@ namespace Imlight.CoreLib.Game.Zone.Components;
 
 internal sealed class InteractDyeShopComponent(ZoneEntity entity) : ZoneEntityComponent(entity), IServiceComponent, IComponentFactory {
 
-    // Dye shop NPCs always have "dye" in their object name. It's what we can use to deduce if the entity is a dye shop NPC.
-    private const string DYE_SHOP_NPC_CONTAINS = "Dye";
+    private const string DYE_SHOP_NPC_OBJECT_NAME_CONTAINS = "Dye";
     private const string DYE_SHOP_TITLE = "WC-NPCs_00000718";
 
     public string ServiceName     => "DyeShopService";
@@ -63,7 +62,7 @@ internal sealed class InteractDyeShopComponent(ZoneEntity entity) : ZoneEntityCo
 
     public static bool ShouldAttachToEntity(CoreTemplate template)
         => template is GameObjectTemplate gameObjectTemplate
-        && gameObjectTemplate.m_objectName.ToString().Contains(DYE_SHOP_NPC_CONTAINS);
+        && gameObjectTemplate.m_objectName.ToString().Contains(DYE_SHOP_NPC_OBJECT_NAME_CONTAINS);
 
     public IEnumerable<ServiceOptionBase> GetServiceOptions(Wizard _)
         => [
@@ -76,8 +75,7 @@ internal sealed class InteractDyeShopComponent(ZoneEntity entity) : ZoneEntityCo
 
     public void OnServiceInteraction(IActorRef playerActor, Wizard playerCharacter, CoreObject playerObject, uint serviceOptionIndex) {
         SendPlayerDyeShopOpen(playerActor, Entity.ActiveGameObject.m_globalID);
-        SendPlayerIntoWizbang(playerObject.m_globalID);
-        SendPlayerIntoState(playerObject.m_globalID);
+        BroadcastPlayerEnteringService(playerObject.m_globalID, (uint) WizBang, StateName);
     }
 
     private void SendPlayerDyeShopOpen(IActorRef playerActor, ulong objId) {
@@ -87,34 +85,6 @@ internal sealed class InteractDyeShopComponent(ZoneEntity entity) : ZoneEntityCo
         };
 
         playerActor.Tell(dyeShopOpen);
-    }
-
-    private void SendPlayerIntoWizbang(ulong playerObjID) {
-        // Create the wiz bang message, and wrap it in a broadcast message.
-        var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG {
-            WizBangID = (uint) WizBang,
-            GameObjectID = playerObjID
-        };
-        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
-            Message = wizBangMsg,
-            Selfless = false,
-        };
-
-        Entity.ZoneRef.Tell(broadcastMsg);
-    }
-
-    private void SendPlayerIntoState(ulong playerObjID) {
-        // Create the change state message, and wrap it in a broadcast message.
-        var changeStateMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
-            State = StringHash.Compute(StateName),
-            GameObjectID = playerObjID
-        };
-        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
-            Message = changeStateMsg,
-            Selfless = false,
-        };
-
-        Entity.ZoneRef.Tell(broadcastMsg);
     }
 
 }

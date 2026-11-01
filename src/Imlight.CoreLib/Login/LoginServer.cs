@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/10/2026
+ * Last Updated: 10/25/2026
  */
 
 using System.Threading.Tasks;
@@ -53,7 +53,7 @@ public class LoginServer : Server {
         : base(serverName, serverPort, LoginServiceFactory.Props(), deferListening: true) {
         this._gamePoolServer = CreateGameServerPool();
 
-        Logger.Information("Login server created with name {Name} under port {Port}.",
+        Logger.Debug("Login server created with name {Name} under port {Port}.",
             Logger.Args(serverName, serverPort));
     }
 
@@ -117,7 +117,7 @@ public class LoginServer : Server {
         // to all the SessionActor services to inform them to halt their operations.
         message.SessionActor.ActorRef.Tell(new SERVICE_101_PROTOCOL.MSG_OPCODE_HALT());
 
-        Logger.Information("{Name} new connection {RemoteEndPoint}", Logger.Args(Name, message.SessionActor.RemoteIp));
+        Logger.Debug("{Name} new connection {RemoteEndPoint}", Logger.Args(Name, message.SessionActor.RemoteIp));
     }
 
     [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_CREATEGAMESERVER))]

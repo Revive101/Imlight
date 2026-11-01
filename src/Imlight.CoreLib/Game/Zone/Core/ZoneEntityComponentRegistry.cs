@@ -37,7 +37,7 @@
  *
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/26/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -91,7 +91,7 @@ internal static class ZoneEntityComponentRegistry {
             }
         }
 
-        Logger.Information("Registered {0} component factories", Logger.Args(s_componentFactories.Count));
+        Logger.Debug("Registered {Count} component factories.", Logger.Args(s_componentFactories.Count));
     }
 
     public static IReadOnlyDictionary<System.Type, Func<CoreTemplate, bool>> GetRegisteredComponents() 

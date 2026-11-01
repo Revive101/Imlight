@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 10/25/2026
  */
 
 using System.Collections.Generic;
@@ -49,35 +49,24 @@ namespace Imlight.CoreLib.Game.Spells;
 /// <summary>
 /// Manages the loading, caching, and retrieval of magic school templates.
 /// </summary>
-internal class MagicSchools : RootDirectoryResourceSingleton<SpellFactory>, IMemoryStreamDisposable {
+internal class MagicSchools : RootDirectoryResourceSingleton<MagicSchools>, IMemoryStreamDisposable {
 
     protected override string DirectoryName => "MagicSchools/";
 
     private static readonly Dictionary<int, MagicSchoolTemplate> s_magicSchools = [];
 
     protected override void AfterLoad() {
-        var serializer = new BindSerializer();
         var counter = 0;
 
-        foreach (var file in base.Files) {
-            var fileRecord = file.Key;
-            var fileStream = file.Value;
-
-            if (!serializer.Deserialize<MagicSchoolTemplate>(fileStream?.ToArray(), 1, out var magicSchoolTemplate)) {
-                Logger.Error("Could not deserialize {0} as {1}", 
-                    Logger.Args(fileRecord.FileName, nameof(MagicSchoolTemplate)));
-
-                continue;
-            }
-
+        foreach (var (fileRecord, magicSchoolTemplate) in ReadTemplates<MagicSchoolTemplate>(PropertyFlags.Prop_Save)) {
             // The game client uses a 1-based index for magic schools for templates. However,
             // when we send canonical data, it expects it as 0-based.
             magicSchoolTemplate.m_schoolIndex--;
 
             if (s_magicSchools.ContainsKey(magicSchoolTemplate.m_schoolIndex)) {
-                Logger.Error("Duplicate magic school {0} found in {1}.", 
+                Logger.Error("Magic school {School} in {File} is defined twice.",
                     Logger.Args(magicSchoolTemplate.m_schoolName, fileRecord.FileName));
-                    
+
                 continue;
             }
 
@@ -86,8 +75,7 @@ internal class MagicSchools : RootDirectoryResourceSingleton<SpellFactory>, IMem
             counter++;
         }
 
-        Logger.Information("Loaded {0} magic school configurations.", 
-            Logger.Args(counter));
+        Logger.Information("Loaded {Count} magic schools.", Logger.Args(counter));
     }
 
     /// <summary>

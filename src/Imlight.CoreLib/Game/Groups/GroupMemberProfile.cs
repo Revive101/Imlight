@@ -55,12 +55,10 @@ internal sealed record GroupMemberProfile(
     IActorRef ZoneActor) {
 
     public static GroupMemberProfile FromWizard(Wizard wizard, IActorRef zoneActor) {
-        var nameHex = wizard.PlayerNameBehavior.GetWizardNameAsByteHexString();
-
         return new GroupMemberProfile(
             CharId: wizard.CharId,
             GameObjectId: wizard.GameObjectID,
-            NameBlob: DataManipulation.SpacedHexStringToBytes(nameHex),
+            NameBlob: wizard.PlayerNameBehavior.GetPackedNameBytes(),
             SchoolId: MagicSchoolIndex.ToSocialIndex(wizard.MagicSchoolBehavior.MagicSchool),
             Level: (uint) wizard.MagicSchoolBehavior.Level,
             ZoneDisplayName: wizard.ZoneDisplayName ?? string.Empty,

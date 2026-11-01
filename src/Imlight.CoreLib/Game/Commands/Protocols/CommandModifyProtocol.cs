@@ -17,13 +17,18 @@
  */
 
 using System;
+using System.Globalization;
 using System.Linq;
+using Akka.Actor;
 using Imcodec.CoreObject;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
+using Imlight.CoreLib.Game.Bank;
 using Imlight.CoreLib.Game.Cantrips;
 using Imlight.CoreLib.Game.Pet;
+using Imlight.CoreLib.Game.Pet.Config;
+using Imlight.CoreLib.Game.Pet.Progression;
 using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Items;
 using Imlight.CoreLib.Shared.Packets;
@@ -34,7 +39,7 @@ namespace Imlight.CoreLib.Game.Commands.Protocols;
 
 internal class CommandModifyProtocol : CommandProtocol {
 
-    private const uint SPEED_EFFECT_NAME = 6543894;
+    private const uint SPEED_BUFF_EFFECT_NAME_HASH = 6543894;
 
     internal override string Group { get; set; } = "mod";
 
@@ -77,9 +82,9 @@ internal class CommandModifyProtocol : CommandProtocol {
 
     [Command("speed")]
     [AuthRequired(AuthLevel.QualityAssurance)]
-    private void SetSpeedCommand(string speedMultiplier) {
+    private void SetSpeedCommand(string speedBonus) {
         // Try to parse the speed multiplier.
-        if (!int.TryParse(speedMultiplier, out var speedMultiplierInt)) {
+        if (!int.TryParse(speedBonus, out var speedBonusInt)) {
             InformSenderClient("Invalid speed multiplier.");
 
             return;
@@ -87,16 +92,18 @@ internal class CommandModifyProtocol : CommandProtocol {
 
         // Create the speed effect.
         var effect = new SpeedEffect() {
-            m_speedMultiplier = speedMultiplierInt,
-            m_effectNameID = SPEED_EFFECT_NAME,
-            m_itemSlotID = 100
+            m_speedMultiplier = speedBonusInt, // Speed is not a multiplier, but a percentage bonus! (+50%, etc.)
+            m_effectNameID = SPEED_BUFF_EFFECT_NAME_HASH,
+            m_itemSlotID = 0 //  Should be 0 when effects are not bound to an equipped gear slot!
         };
+
         var coreObjectSerializer = new CoreObjectSerializer(
             behaviors: Imcodec.ObjectProperty.SerializerFlags.None
         );
-        if (!coreObjectSerializer.Serialize(effect, 1, out var serializedEffect)) {
-            InformSenderClient("Failed to serialize speed effect.");
 
+        var flags = PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit;
+        if (!coreObjectSerializer.Serialize(effect, flags, out var serializedEffect)) {
+            InformSenderClient("Failed to serialize speed effect.");
             return;
         }
 
@@ -107,7 +114,12 @@ internal class CommandModifyProtocol : CommandProtocol {
         };
         Context.SessionActor.Tell(networkMessage, null);
 
-        InformSenderClient($"Increased speed multiplier by {speedMultiplierInt}.");
+        if (speedBonusInt > 0) {
+            InformSenderClient($"Increased speed by {speedBonusInt}%.");
+        }
+        else {
+            InformSenderClient($"Decreased speed by {speedBonusInt}%.");
+        }
     }
 
     [Command("additem")]
@@ -127,16 +139,22 @@ internal class CommandModifyProtocol : CommandProtocol {
             return;
         }
 
-        var networkMessage = ItemHelper.GiveItem(Context.Character, templateIdLong, out var coreObject);
-        if (networkMessage is null) {
-            InformSenderClient("Could not add item to inventory.");
+        if (!Context.Character.TryCreateItem(templateIdLong, out var coreObject)) {
+            InformSenderClient("Could not create the item.");
 
             return;
         }
 
-        Context.SessionActor.Tell(networkMessage, null);
+        // Like a reward: the backpack first, then the bank.
+        var placement = ItemPlacement.Place(Context.Character, coreObject);
+        ItemPlacement.Announce(Context.SessionActor, Context.Character, coreObject, placement);
 
-        InformSenderClient($"Added item {coreObject.m_debugName} to inventory.");
+        InformSenderClient(placement switch {
+            Placement.Backpack => $"Added item {coreObject.m_debugName} to inventory.",
+            Placement.Bank => $"Added item {coreObject.m_debugName} to the bank, the inventory is full.",
+            Placement.SharedBank => $"Added item {coreObject.m_debugName} to the shared bank, the inventory is full.",
+            _ => "Could not add the item, the inventory and the bank are full.",
+        });
     }
 
     [Command("addsnack")]
@@ -201,6 +219,116 @@ internal class CommandModifyProtocol : CommandProtocol {
         Context.SessionActor.Tell(updateMessage, null);
 
         InformSenderClient($"Added snack {snackObj.m_debugName} to snack bag.");
+    }
+
+    [Command("petlevel")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void SetPetLevelCommand(string level) {
+        if (!int.TryParse(level, NumberStyles.Integer, CultureInfo.InvariantCulture, out var petLevel)) {
+            InformSenderClient("Invalid pet level.");
+
+            return;
+        }
+
+        if (!TryGetEquippedPet(out var pet)) {
+            return;
+        }
+
+        if (!PetProgression.SetLevel(pet, petLevel)) {
+            InformSenderClient($"Cannot set the pet to level {petLevel}.");
+
+            return;
+        }
+
+        SendPetBehavior(pet);
+        InformSenderClient($"Set the pet to level {petLevel}.");
+    }
+
+    [Command("petxp")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void AddPetXpCommand(string xp) {
+        if (!uint.TryParse(xp, NumberStyles.Integer, CultureInfo.InvariantCulture, out var amount) || amount == 0) {
+            InformSenderClient("Invalid XP amount.");
+
+            return;
+        }
+
+        if (!TryGetEquippedPet(out var pet)) {
+            return;
+        }
+
+        var result = PetXpAward.Give(Context.SessionActor, Context.CharacterObject, Context.Character, pet, amount, PetXpSource.Command);
+        if (!result.Applied) {
+            InformSenderClient("This pet cannot gain XP.");
+
+            return;
+        }
+
+        InformSenderClient($"Gave the pet {result.Granted} XP and {result.LevelsGained} levels.");
+    }
+
+    [Command("pethappiness")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void SetPetHappinessCommand(string happiness) {
+        if (!uint.TryParse(happiness, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value)) {
+            InformSenderClient("Invalid happiness.");
+
+            return;
+        }
+
+        if (!TryGetEquippedPet(out var pet)) {
+            return;
+        }
+
+        if (!PetProgression.SetHappiness(pet, value)) {
+            InformSenderClient("This pet cannot have its happiness set.");
+
+            return;
+        }
+
+        SendPetBehavior(pet);
+        InformSenderClient($"Set the pet's happiness to {value}, up to its maximum.");
+    }
+
+    [Command("pettalent")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void GivePetTalentCommand(string talentName) {
+        if (!PetTalentRegistry.TryGetByName(talentName, out var talent)) {
+            InformSenderClient($"No pet talent is named {talentName}.");
+
+            return;
+        }
+
+        if (!TryGetEquippedPet(out var pet)) {
+            return;
+        }
+
+        if (!PetProgression.GiveTalent(pet, talent)) {
+            InformSenderClient("This pet cannot be given a talent.");
+
+            return;
+        }
+
+        SendPetBehavior(pet);
+        InformSenderClient($"Gave the pet the talent {talent.Name}.");
+    }
+
+    private bool TryGetEquippedPet(out WizClientObjectItem pet) {
+        pet = Context.Character.GetEquippedPetItem();
+        if (pet is null) {
+            InformSenderClient("Equip a pet first.");
+
+            return false;
+        }
+        return true;
+    }
+
+    private void SendPetBehavior(WizClientObjectItem pet) {
+        Context.Character.SavePet(pet);
+
+        if (PetBehaviorUpdate.TryCreate(pet, out var update)) {
+            Context.SessionActor.Tell(update, null);
+        }
     }
 
     [Command("addreagent")]
@@ -279,10 +407,11 @@ internal class CommandModifyProtocol : CommandProtocol {
     [Command("badge")]
     [AuthRequired(AuthLevel.QualityAssurance)]
     private void SetBadgeCommand([Remainder] string badge) {
-        // Set the badge of the character.
-        Context.Character.SetBadgeOverride(badge);
-
-        InformSenderClient($"Set badge to {badge}. Relog to see changes.");
+        // The badge service sets the title and tells the zone, so nobody has to relog.
+        Context.SessionActor.Tell(new CHARACTER_103_PROTOCOL.MSG_BADGECOMMAND {
+            Action = "title",
+            Argument = badge,
+        }, null);
     }
 
     [Command("maxgold")]
@@ -305,6 +434,48 @@ internal class CommandModifyProtocol : CommandProtocol {
         Context.SessionActor.Tell(networkMessage, null);
 
         InformSenderClient($"Set max gold to {goldInt}.");
+    }
+
+    [Command("maxbank")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void SetMaxBankCommand(string limit) {
+        if (!int.TryParse(limit, NumberStyles.Integer, CultureInfo.InvariantCulture, out var limitInt) || limitInt < 1) {
+            InformSenderClient("Invalid bank limit.");
+
+            return;
+        }
+
+        if (!Context.Character.SetBankLimit(limitInt)) {
+            InformSenderClient("Could not save the bank limit.");
+
+            return;
+        }
+
+        Context.SessionActor.Tell(BankSync.UpdateBankLimit(Context.Character), null);
+
+        InformSenderClient($"Set the bank limit to {limitInt}.");
+    }
+
+    [Command("expandbank")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void ExpandBankCommand() {
+        var amount = BankConfig.ExpandElixirAmount;
+        if (amount <= 0) {
+            InformSenderClient("[Bank] ExpandElixirAmount is not set, so the bank cannot be expanded.");
+
+            return;
+        }
+
+        var before = Context.Character.StorageBehavior.Limit;
+        if (!Context.Character.ExpandBank(amount)) {
+            InformSenderClient("Could not save the bank limit.");
+
+            return;
+        }
+
+        Context.SessionActor.Tell(BankSync.UpdateBankLimit(Context.Character), null);
+
+        InformSenderClient($"Expanded the bank from {before} to {Context.Character.StorageBehavior.Limit}.");
     }
 
     [Command("addgold")]
@@ -691,6 +862,35 @@ internal class CommandModifyProtocol : CommandProtocol {
         Context.SessionActor.Tell(msg, null);
 
         InformSenderClient($"Added {xpInt} XP.");
+    }
+
+    [Command("setcrowns")]
+    [Alias("crowns")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void SetCrownsCommand(string crowns) {
+        if (!int.TryParse(crowns, NumberStyles.Integer, CultureInfo.InvariantCulture, out var crownsAmount) || crownsAmount < 0) {
+            InformSenderClient("Invalid Crowns amount.");
+
+            return;
+        }
+
+        if (!Context.Account.SetCrowns(crownsAmount)) {
+            InformSenderClient("The Crowns could not be saved.");
+
+            return;
+        }
+
+        // CacheBalanceForCSSegmentation Updates the internal Crown Shop cache so the client uses this balance
+        // for Crown Shop segment checks and affordability calculation
+        var msg = new WIZARD_12_PROTOCOL.MSG_CROWNBALANCE {
+            Failure = 0,
+            TotalCrowns = crownsAmount,
+            CharacterID = Context.CharacterObject.m_globalID,
+            CacheBalanceForCSSegmentation = 1
+        };
+
+        Context.SessionActor.Tell(msg);
+        InformSenderClient($"Set Crowns to {crownsAmount}.");
     }
 
 }

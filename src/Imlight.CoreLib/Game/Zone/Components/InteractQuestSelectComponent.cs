@@ -36,7 +36,7 @@
  *
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/27/2026
+ * Last Updated: 10/25/2026
  */
 
 using System.Collections.Generic;
@@ -171,6 +171,41 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
         }
     }
 
+    /// <summary>
+    /// The tags a usage goal can name an interact option by: the option's goal tags, and the
+    /// global registry entries its results remove (a staff whose option removes the entry its goal's client tag names).
+    /// </summary>
+    internal static IEnumerable<string> OptionTags(InteractOptionTemplate option) {
+        if (option is null) {
+            yield break;
+        }
+
+        foreach (var tag in option.m_goalTags ?? []) {
+            yield return tag;
+        }
+
+        if (option is not InteractStateOptionTemplate { m_results.m_results: { } results }) {
+            yield break;
+        }
+
+        foreach (var removal in results.OfType<ResRemoveEntry>().Where(r => !r.m_isQuestRegistry && !string.IsNullOrEmpty(r.m_entryName))) {
+            yield return removal.m_entryName;
+        }
+    }
+
+    /// <summary>
+    /// True when some usage goal names this option by one of its tags, so using the option is using that goal.
+    /// </summary>
+    internal static bool IsNamedByUsageGoal(InteractOptionTemplate option) {
+        var tags = OptionTags(option).ToList();
+        var quests = QuestTemplateCollection.GetAllQuests().Where(q => q?.m_goals is not null).ToList();
+
+        return (tags.Count > 0
+                && quests.SelectMany(q => q.m_goals)
+                    .Any(g => g is not null && g.m_goalType == GOAL_TYPE.GOAL_TYPE_USAGE && g.m_clientTags?.Any(tag => tags.Contains(tag)) == true))
+            || quests.Any(q => q.m_goals.Any(g => g is not null && g.m_goalType == GOAL_TYPE.GOAL_TYPE_USAGE && RequiresGoal(option, q.m_questName, g.m_goalName)));
+    }
+
     private bool HasActiveMatchingUsageGoal(Wizard playerCharacter)
         => FindActiveMatchingGoals(playerCharacter).Count > 0;
 
@@ -244,41 +279,6 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
             && scavengeGoal.m_itemAdjectives?.Any(gameObjectTemplate.m_adjectiveList.Contains) == true;
     }
 
-    /// <summary>
-    /// The tags a usage goal can name an interact option by: the option's goal tags, and the
-    /// global registry entries its results remove (a staff whose option removes the entry its goal's client tag names).
-    /// </summary>
-    internal static IEnumerable<string> OptionTags(InteractOptionTemplate option) {
-        if (option is null) {
-            yield break;
-        }
-
-        foreach (var tag in option.m_goalTags ?? []) {
-            yield return tag;
-        }
-
-        if (option is not InteractStateOptionTemplate { m_results.m_results: { } results }) {
-            yield break;
-        }
-
-        foreach (var removal in results.OfType<ResRemoveEntry>().Where(r => !r.m_isQuestRegistry && !string.IsNullOrEmpty(r.m_entryName))) {
-            yield return removal.m_entryName;
-        }
-    }
-
-    /// <summary>
-    /// True when some usage goal names this option by one of its tags, so using the option is using that goal.
-    /// </summary>
-    internal static bool IsNamedByUsageGoal(InteractOptionTemplate option) {
-        var tags = OptionTags(option).ToList();
-        var quests = QuestTemplateCollection.GetAllQuests().Where(q => q?.m_goals is not null).ToList();
-
-        return (tags.Count > 0
-                && quests.SelectMany(q => q.m_goals)
-                    .Any(g => g is not null && g.m_goalType == GOAL_TYPE.GOAL_TYPE_USAGE && g.m_clientTags?.Any(tag => tags.Contains(tag)) == true))
-            || quests.Any(q => q.m_goals.Any(g => g is not null && g.m_goalType == GOAL_TYPE.GOAL_TYPE_USAGE && RequiresGoal(option, q.m_questName, g.m_goalName)));
-    }
-
     private static IEnumerable<string> InteractOptionGoalTags(GameObjectTemplate gameObjectTemplate)
         => InteractOptions(gameObjectTemplate).SelectMany(OptionTags);
 
@@ -287,11 +287,12 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
             .OfType<InteractableBehaviorTemplate>()
             .SelectMany(behavior => behavior.m_interactOptions ?? []);
 
-    // An option that needs the goal already complete follows the goal's use; it is not the use itself.
-    private static bool RequiresGoal(InteractOptionTemplate option, string questName, string goalName)
-        => option is InteractStateOptionTemplate { m_requirements.m_requirements: { } requirements }
+    private static bool RequiresGoal(InteractOptionTemplate option, string questName, string goalName) {
+        // An option that needs the goal already complete follows the goal's use; it is not the use itself.
+        return option is InteractStateOptionTemplate { m_requirements.m_requirements: { } requirements }
             && requirements.OfType<ReqHasGoal>().Any(r => r.m_questName == questName
                                                           && r.m_goalName == goalName
                                                           && r.m_requiredStatus != GoalStatusRequirement.Complete);
+    }
 
 }

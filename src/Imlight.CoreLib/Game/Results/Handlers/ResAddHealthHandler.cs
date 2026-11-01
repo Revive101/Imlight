@@ -41,8 +41,8 @@ internal sealed class ResAddHealthHandler : BaseResultHandler<ResAddHealth> {
             .GetPlayerRef()
             .Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(queryWizardMsg, queryTimeout).Result;
         if (queryResponse?.Wizard is not Wizard wizard) {
-            Logger.Error("Handler failed to retrieve character data within {0} seconds.",
-                Logger.Args(QUERY_WIZARD_TIMEOUT_SECONDS));
+            Logger.Warning("Result {Result} was skipped: the character could not be read, most likely because the player logged out.",
+                Logger.Args(nameof(ResAddHealth)));
 
             return false;
         }

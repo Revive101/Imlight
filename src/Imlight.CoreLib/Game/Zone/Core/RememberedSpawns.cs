@@ -14,8 +14,6 @@ public static class RememberedSpawns {
 
     private const string PREFIX = "ResSpawn:";
 
-    private static string Key(string zone, ulong spawnId) => $"{PREFIX}{zone}:{spawnId}";
-
     public static void Remember(Wizard wizard, string zone, ulong spawnId) {
         if (wizard is null || string.IsNullOrEmpty(zone)) {
             return;
@@ -52,5 +50,7 @@ public static class RememberedSpawns {
 
         return result;
     }
+
+    private static string Key(string zone, ulong spawnId) => $"{PREFIX}{zone}:{spawnId}";
 
 }

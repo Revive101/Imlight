@@ -16,21 +16,25 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+using Imcodec.CoreObject;
+using Imcodec.ObjectProperty.TypeCache;
+using Imcodec.Types;
+using Imlight.Common;
+using Imlight.CoreLib.Shared.Character;
+using Imlight.CoreLib.Shared.Items;
+using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Models.Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json.Serialization;
-using Imlight.Common;
-using Imlight.CoreLib.Shared.Character;
-using Imlight.CoreLib.Shared.Items;
-using Imlight.CoreLib.WizardData.Models.Player;
-using Imcodec.ObjectProperty.TypeCache;
-using Imcodec.Types;
 
 namespace Imlight.CoreLib.Shared.Behaviors;
 
 [Serializable]
 public class ServerWizEquipmentBehavior : IClientBehaviorProvider<ClientWizEquipmentBehavior> {
+    private static readonly int s_maxActiveElixirs
+        = ConfigurationManager.Settings["Character.MaxActiveElixirs"].AsInt();
 
     [JsonIgnore] public bool NoTransfer { get; set; } = false;
 
@@ -76,15 +80,23 @@ public class ServerWizEquipmentBehavior : IClientBehaviorProvider<ClientWizEquip
         var item = EquippedItems.FirstOrDefault(item => item.m_globalID == itemId);
         var slot = SlotList.Find(eSlot => eSlot.ItemId == itemId);
 
-        // Finally, update the slot.
-        ClearEquipmentSlot(slot.SlotType);
+        if (slot is not null) {
+            SlotList.Remove(slot);
+        }
+         
+        if (item is not null) {
+            EquippedItems.Remove(item);
+        }
+
         EquippedItemIds.Remove(itemId);
-        EquippedItems.Remove(item);
 
         return true;
     }
 
-    public bool HasItemEquipped(ulong itemId) => EquippedItems.Any(item => item.m_globalID == itemId);
+    public bool HasItemEquipped(ulong itemId) => 
+        (EquippedItems is not null && EquippedItems.Any(item => item.m_globalID == itemId))
+        || (SlotList is not null && SlotList.Any(item => item.ItemId.Value == itemId))
+        || (EquippedItemIds is not null && EquippedItemIds.Contains(itemId));
 
     public bool SlotInUse(string slotName, out byte index) {
         index = 255;
@@ -113,7 +125,7 @@ public class ServerWizEquipmentBehavior : IClientBehaviorProvider<ClientWizEquip
     }
 
     public WizClientObjectItem GetItem(ulong globalId) 
-        => EquippedItems.FirstOrDefault(item => item.m_globalID == globalId);
+        => EquippedItems?.FirstOrDefault(item => item.m_globalID == globalId);
 
     public WizClientObjectItem GetItemInSlot(string slotName) {
         // Cast the slot name to an enum value.
@@ -189,6 +201,79 @@ public class ServerWizEquipmentBehavior : IClientBehaviorProvider<ClientWizEquip
     public ulong GetEquippedPetId() {
         var petSlot = SlotList?.FirstOrDefault(s => s.SlotType == EquipmentSlotType.Pet);
         return petSlot?.ItemId ?? 0;
+    }
+
+    /// <summary>
+    /// Enumerates all active elixir slots and their associated item instances.
+    /// </summary>
+    public IEnumerable<(EquipmentSlot Slot, WizClientObjectItem Item)> GetActiveElixirs() {
+        if (SlotList is null) {
+            yield break;
+        }
+
+        foreach (var slot in SlotList.Where(s => s.SlotType == EquipmentSlotType.Elixir)) {
+            var item = GetItem(slot.ItemId.Value);
+            if (item is not null) {
+                yield return (slot, item);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Synchronizes the runtime ClientElixirBehavior expire time with each elixir's persisted remaining seconds.
+    /// </summary>
+    public void SyncActiveElixirTimes() {
+        foreach (var (slot, item) in GetActiveElixirs()) {
+            if (CoreObjectFactory.FindBehaviorInstance<ClientElixirBehavior>(item, out var clientElixir)) {
+                clientElixir.m_expireTime = slot.RemainingSeconds;
+            }
+        }
+    }
+
+    public bool CanEquipElixir(ElixirBehaviorTemplate template) {
+        var activeCount = SlotList?.Count(s => s.SlotType == EquipmentSlotType.Elixir) ?? 0;
+        if (activeCount >= s_maxActiveElixirs) {
+            return false;
+        }
+
+        if (template?.m_typeList is { Count: > 0 }) {
+            foreach (var (_, activeItem) in GetActiveElixirs()) {
+                var activeTemplate = ItemHelper.GetItemTemplate(activeItem);
+                var activeElixirTemplate = activeTemplate?.m_behaviors?.OfType<ElixirBehaviorTemplate>().FirstOrDefault();
+                if (activeElixirTemplate?.m_typeList is not null
+                    && activeElixirTemplate.m_typeList.Any(template.m_typeList.Contains)) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    public bool EquipElixir(WizClientObjectItem item, uint durationSeconds) {
+        var itemId = item.m_globalID;
+
+        if (HasItemEquipped(itemId)) {
+            return false;
+        }
+
+        var newSlot = new EquipmentSlot {
+            SlotType = EquipmentSlotType.Elixir,
+            ItemName = item.m_debugName,
+            ItemId = (GID) itemId,
+            EquippedSince = DateTime.UtcNow,
+            RemainingSeconds = durationSeconds
+        };
+
+        SlotList ??= [];
+        EquippedItemIds ??= [];
+        EquippedItems ??= [];
+
+        SlotList.Add(newSlot);
+        EquippedItemIds.Add(itemId);
+        EquippedItems.Add(item);
+
+        return true;
     }
 
     public ClientWizEquipmentBehavior GetClientBehaviorInstance() => new() {

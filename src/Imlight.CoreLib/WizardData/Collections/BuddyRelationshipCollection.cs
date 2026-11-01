@@ -48,9 +48,10 @@
  * 
  * Created by: JOOTY
  * Version: KALI 1.0
- * Last Updated: 09/26/2026
+ * Last Updated: 10/15/2026
  */
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Raven.Client.Documents;
@@ -66,6 +67,7 @@ public static class BuddyRelationshipCollection {
     public const string CollectionName = "BuddyRelationships";
     private const uint KeyExpireTimeInHours = 4383; // 6 months
     private static readonly IDocumentStore s_store;
+    private static readonly TimeSpan s_friendQueryTimeout = TimeSpan.FromSeconds(2);
 
     static BuddyRelationshipCollection() {
         s_store = PlayerDatabase.Instance.Store;
@@ -200,6 +202,29 @@ public static class BuddyRelationshipCollection {
         }
 
         return [.. buddies];
+    }
+
+    /// <summary>
+    /// Checks whether two players are friends: they have a relationship that is neither broken up nor blocked.
+    /// Reads the stored relationship, so it holds for players who are offline.
+    /// </summary>
+    /// <param name="firstId">The character ID of the first player.</param>
+    /// <param name="secondId">The character ID of the second player.</param>
+    /// <returns>True if the players are friends.</returns>
+    public static bool AreFriends(ulong firstId, ulong secondId) {
+        if (firstId == secondId) {
+            return false;
+        }
+
+        using var session = s_store.OpenSession();
+
+        // A friendship made a moment ago must count, so the index is allowed to catch up.
+        return session.Query<Relationship>(collectionName: CollectionName)
+            .Customize(query => query.WaitForNonStaleResults(s_friendQueryTimeout))
+            .Any(r => ((r.FirstPlayerId == firstId && r.SecondPlayerId == secondId)
+                    || (r.FirstPlayerId == secondId && r.SecondPlayerId == firstId))
+                   && !r.IsBrokenUp
+                   && !r.Blocked);
     }
 
     /// <summary>

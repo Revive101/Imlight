@@ -88,6 +88,31 @@ public class ServerSpellbookBehavior : IClientBehaviorProvider<ClientSpellbookBe
         return TreasureCardTemplateIds.Remove(templateId);
     }
 
+    /// <summary>
+    /// Removes every card in <paramref name="templateIds"/> (one copy per entry), or none of them when
+    /// any copy is missing.
+    /// </summary>
+    public bool HasTreasureCards(IEnumerable<uint> templateIds)
+        => templateIds.GroupBy(x => x).All(x => TreasureCardCount(x.Key) >= x.Count());
+
+    public bool TryRemoveTreasureCards(IReadOnlyCollection<uint> templateIds) {
+        if (!HasTreasureCards(templateIds)) {
+            return false;
+        }
+
+        foreach (var templateId in templateIds) {
+            RemoveTreasureCard(templateId);
+        }
+
+        return true;
+    }
+
+    public void AddTreasureCards(IEnumerable<uint> templateIds) {
+        foreach (var templateId in templateIds) {
+            AddTreasureCard(templateId);
+        }
+    }
+
     public int TreasureCardCount(uint templateId) {
         if (TreasureCardTemplateIds is null) {
             return 0;

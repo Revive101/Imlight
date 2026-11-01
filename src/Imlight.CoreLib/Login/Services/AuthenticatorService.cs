@@ -30,7 +30,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/09/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -53,7 +53,6 @@ internal class AuthenticatorService(SessionActor parentActor) : MessageService(p
     private Account? _validatedAccount;
     private LOGIN_7_PROTOCOL.MSG_USER_ADMIT_IND _admission;
 
-    // Received when a user is trying to authenticate.
     [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_V3))]
     private void ReceiveUserAuth(LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_V3 message) {
         try {
@@ -69,7 +68,6 @@ internal class AuthenticatorService(SessionActor parentActor) : MessageService(p
         }
     }
 
-    // Received when a user is trying to validate its session.
     [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_USER_VALIDATE))]
     private void ReceiveUserValidate(LOGIN_7_PROTOCOL.MSG_USER_VALIDATE message) {
         try {
@@ -83,6 +81,19 @@ internal class AuthenticatorService(SessionActor parentActor) : MessageService(p
 
             throw new SessionFatalException("User validation failed.", ex);
         }
+    }
+
+    [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_REQUESTCHARACTERLIST))]
+    private void ReceiveRequestCharacterList(LOGIN_7_PROTOCOL.MSG_REQUESTCHARACTERLIST message) {
+        if (_validatedAccount is null) {
+            throw new SessionFatalException("Character list requested before successful validation.");
+        }
+
+        if (!AdmitClientToLogin(_validatedAccount)) {
+            return;
+        }
+
+        TellOtherServices(new LOGIN_108_PROTOCOL.MSG_REQUESTCHARACTERLIST());
     }
 
     private void AuthenticateUser(LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_V3 message) {
@@ -137,18 +148,6 @@ internal class AuthenticatorService(SessionActor parentActor) : MessageService(p
             PayingUser = 1,
             //Flags = (int) validationReply._account.GetAccountFlags(),
         });
-    }
-
-    [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_REQUESTCHARACTERLIST))]
-    private void ReceiveRequestCharacterList(LOGIN_7_PROTOCOL.MSG_REQUESTCHARACTERLIST message) {
-        if (_validatedAccount is null)
-            throw new SessionFatalException(
-                "Character list requested before successful validation.");
-
-        if (!AdmitClientToLogin(_validatedAccount))
-            return;
-
-        TellOtherServices(new LOGIN_108_PROTOCOL.MSG_REQUESTCHARACTERLIST());
     }
 
     private bool AdmitClientToLogin(Account account) {

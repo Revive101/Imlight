@@ -87,6 +87,11 @@ public class ZoneEntity(
     public virtual bool IsCombatOnlyMinion => false;
     public IActorRef ZoneRef { get; protected set; } = zoneRef;
     public bool NoTransfer { get; set; } = false;
+
+    /// <summary>
+    /// Gets whether every player in the zone is sent to this entity as a join once it has loaded.
+    /// </summary>
+    public bool PlayersJoinAfterLoad { get; private set; }
     public ushort MobileID { 
         get => ActiveGameObject.m_nMobileID; 
         private set => ActiveGameObject.m_nMobileID = value; 
@@ -130,7 +135,8 @@ public class ZoneEntity(
             Behaviors: SerializerFlags.None
         );
         if (!serializer.Serialize(despawnEffects, 1, out var serializedData)) {
-            Logger.Error("Failed to serialize despawn");
+            Logger.Error("Could not build the despawn message for {Entity}; it is removed without effects.",
+                Logger.Args(DescribeForLog()));
             Context.Stop(Self);
 
             return;
@@ -144,6 +150,7 @@ public class ZoneEntity(
         var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
             Message = despawnMsg,
             Sender = SelfRef,
+            Targets = ZoneBroadcastTarget.Players | ZoneBroadcastTarget.Paths,
         };
         ZoneRef.Tell(broadcastMsg);
 
@@ -155,6 +162,8 @@ public class ZoneEntity(
     /// Despawns this entity from the zone, without destroying it.
     /// </summary>
     public void DespawnObject() {
+        GetComponentOfType<PathMovementComponent>()?.Stop();
+
         var removeMsg = new GAME_5_PROTOCOL.MSG_REMOVEOBJECT {
             GameObjectID = ActiveGameObject.m_globalID
         };
@@ -190,7 +199,7 @@ public class ZoneEntity(
 
         ByteString emoteData = new ByteString();
         if (emoteStateOverrideInfo is not null && !serializer.Serialize(emoteStateOverrideInfo, 1, out emoteData)) {
-            Logger.Error("Failed to serialize emote state override info");
+            Logger.Error("Could not build the emote state for {Entity}.", Logger.Args(DescribeForLog()));
 
             return;
         }
@@ -227,7 +236,7 @@ public class ZoneEntity(
         
         ByteString emoteData = new ByteString();
         if (emoteStateOverrideInfo is not null && !serializer.Serialize(emoteStateOverrideInfo, 1, out emoteData)) {
-            Logger.Error("Failed to serialize emote state override info");
+            Logger.Error("Could not build the emote state for {Entity}.", Logger.Args(DescribeForLog()));
 
             return;
         }
@@ -248,7 +257,8 @@ public class ZoneEntity(
     /// </summary>
     internal void ExecuteResults(ResultList results, IActorRef playerActor, CoreObject playerObject, string triggerName = null)
         => Imlight.CoreLib.Game.Results.ResultDispatcher.ExecuteResults(
-            Context, results, playerActor, playerObject, zoneActor: ZoneRef, triggerName: triggerName);
+            Context, results, playerActor, playerObject, zoneActor: ZoneRef, triggerName: triggerName,
+            sourceRef: Self, sourceTemplateId: (Template as GameObjectTemplate)?.m_templateID ?? 0, sourceIsInstance: Zone.IsInstance);
 
     protected override void PostStop() {
         _pluginZone?.RemoveCreature(this);
@@ -258,8 +268,9 @@ public class ZoneEntity(
     #region Message Handlers
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN))]
-    protected virtual void ReceiveObjectLoadBegin() {
+    protected virtual void ReceiveObjectLoadBegin(ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN message) {
         this.SelfRef = Self;
+        PlayersJoinAfterLoad = message.PlayersJoinAfterLoad;
 
         if (ActiveGameObject is not null) {
             MobileID = ReserveMobileId();
@@ -382,6 +393,36 @@ public class ZoneEntity(
         _componentOrder.Add(component);
     }
 
+    public WizClientObject GetClientBehaviorInstance() {
+        var gameObj = ActiveGameObject is WizClientPet pet
+            ? BuildClientPet(pet)
+            : BuildClientObject<WizClientObject>();
+
+        // This one must be done manually.
+        var statsComponent = GetComponentOfType<StatsComponent>();
+        if (statsComponent is not null) {
+            gameObj.m_gameStats = statsComponent.Stats.GetCombatGameStats();
+        }
+
+        return gameObj;
+    }
+
+    /// <summary>
+    /// Gets the object sent to clients in MSG_NEWOBJECT. Its class follows the entity's own object, because
+    /// the client builds the object from the template and reads that class's properties from the payload.
+    /// </summary>
+    public virtual ClientObject GetClientObject() => ActiveGameObject switch {
+        ClientReagentItem => BuildClientObject<ClientReagentItem>(),
+        ClientPetSnackItem => BuildClientObject<ClientPetSnackItem>(),
+        WizClientObjectItem => BuildClientObject<WizClientObjectItem>(),
+        _ => GetClientBehaviorInstance(),
+    };
+
+    /// <summary>
+    /// Gets the name the interaction prompt shows for this entity.
+    /// </summary>
+    public virtual string GetMadlibName() => (Template as GameObjectTemplate)?.m_displayName;
+
     private void RunLifecycleStep(ZoneEntityComponent component) {
         try {
             component.RunLifecycleStep();
@@ -430,31 +471,6 @@ public class ZoneEntity(
         }
     }
 
-    public WizClientObject GetClientBehaviorInstance() {
-        var gameObj = ActiveGameObject is WizClientPet pet
-            ? BuildClientPet(pet)
-            : BuildClientObject<WizClientObject>();
-
-        // This one must be done manually.
-        var statsComponent = GetComponentOfType<StatsComponent>();
-        if (statsComponent is not null) {
-            gameObj.m_gameStats = statsComponent.Stats.GetCombatGameStats();
-        }
-
-        return gameObj;
-    }
-
-    /// <summary>
-    /// Gets the object sent to clients in MSG_NEWOBJECT. Its class follows the entity's own object, because
-    /// the client builds the object from the template and reads that class's properties from the payload.
-    /// </summary>
-    public ClientObject GetClientObject() => ActiveGameObject switch {
-        ClientReagentItem => BuildClientObject<ClientReagentItem>(),
-        ClientPetSnackItem => BuildClientObject<ClientPetSnackItem>(),
-        WizClientObjectItem => BuildClientObject<WizClientObjectItem>(),
-        _ => GetClientBehaviorInstance(),
-    };
-
     private WizClientPet BuildClientPet(WizClientPet pet) {
         var petCopy = BuildClientObject<WizClientPet>();
 
@@ -465,7 +481,6 @@ public class ZoneEntity(
 
         return petCopy;
     }
-
     private T BuildClientObject<T>() where T : ClientObject, new() {
         var gameObj = new T() {
             m_debugName = ActiveGameObject.m_debugName,

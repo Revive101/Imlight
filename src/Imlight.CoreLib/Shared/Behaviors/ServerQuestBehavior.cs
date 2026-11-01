@@ -273,6 +273,24 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
         return true;
     }
 
+    public bool IncrementRegistryValue(string entryName) {
+        if (string.IsNullOrWhiteSpace(entryName)) {
+            return false;
+        }
+
+        Registry[entryName] = GetRegistryValue(entryName) + 1;
+
+        return true;
+    }
+
+    public bool IncrementQuestRegistryValue(string questName, string entryName) {
+        if (string.IsNullOrWhiteSpace(questName) || string.IsNullOrWhiteSpace(entryName)) {
+            return false;
+        }
+
+        return IncrementRegistryValue($"{questName}_{entryName}");
+    }
+
     public bool RemoveRegistryValue(string entryName) {
         if (string.IsNullOrWhiteSpace(entryName)) {
             return false;

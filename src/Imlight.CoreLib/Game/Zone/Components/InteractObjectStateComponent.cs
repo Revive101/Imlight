@@ -35,11 +35,14 @@
  * hold and the object is in the option's visible state. The client gets one press-X entry per object; each
  * use applies the option that fits the current state (see ChooseOption), so two- and four-state objects step
  * through their states. Options whose results show dialog make a readable object (a book) attach too.
+ * A chest whose option runs a minigame result attaches too: ResMinigameHandler starts the game.
+ * A wooden treasure chest never attaches: WoodenChestComponent owns it, and a second press-X entry would
+ * make the client show the service menu instead of opening the chest.
  *
  * TODO:
  *
  * Version: KALI 1.0
- * Last Updated: 09/30/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -73,7 +76,9 @@ internal sealed class InteractObjectStateComponent(ZoneEntity entity)
         : (Entity.Template as GameObjectTemplate)?.m_objectName.ToString();
 
     public static bool ShouldAttachToEntity(CoreTemplate template)
-        => template is GameObjectTemplate go && GetStateOptions(go).Any(ChangesWorld);
+        => template is GameObjectTemplate go
+            && !WoodenChestComponent.IsTreasureChest(go)
+            && GetStateOptions(go).Any(ChangesWorld);
 
     public IEnumerable<ServiceOptionBase> GetServiceOptions(Wizard playerCharacter)
         => GetOfferedOptions(playerCharacter).Any()
@@ -86,7 +91,7 @@ internal sealed class InteractObjectStateComponent(ZoneEntity entity)
             return;
         }
 
-        var chosen = ChooseOption(GetOfferedOptions(playerCharacter).ToList(), CurrentState());
+        var chosen = ChooseOption(GetOfferedOptions(playerCharacter).ToList(), CurrentOrPlacementStartState());
         if (chosen is not null) {
             Apply(chosen, playerActor, playerObject);
         }
@@ -117,10 +122,6 @@ internal sealed class InteractObjectStateComponent(ZoneEntity entity)
 
         return pool[(at + 1) % pool.Count];
     }
-
-    // The state the object is in now, else the state its placement starts it in.
-    private string CurrentState()
-        => Zone.ScriptState.GetObjectState(ObjectName) is { Length: > 0 } known ? known : Entity.Info?.m_startState;
 
     /// <summary>
     /// Applies the object's options for a quest goal use: every goal-tagged option, plus the plain state
@@ -154,6 +155,29 @@ internal sealed class InteractObjectStateComponent(ZoneEntity entity)
         }
     }
 
+    /// <summary>
+    /// True when a use already put the object into the state one of its quest-goal options puts it in.
+    /// </summary>
+    internal bool IsInGoalOptionState() {
+        var current = Zone.ScriptState.GetObjectStateIfChanged(ObjectName);
+
+        return !string.IsNullOrEmpty(current)
+            && GetStateOptions(Entity.Template as GameObjectTemplate)
+                .Any(option => IsGoalOption(option) && string.Equals(EnterState(option), current, StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// True when a quest-goal option of the template puts the object into a state, so the object stays in the world after its use.
+    /// </summary>
+    internal static bool KeepsStateAfterGoalUse(GameObjectTemplate template)
+        => GetStateOptions(template).Any(option => IsGoalOption(option) && !string.IsNullOrEmpty(EnterState(option)));
+
+    internal static IEnumerable<Result> GetResults(GameObjectTemplate template)
+        => GetStateOptions(template).SelectMany(option => Results(option)?.m_results ?? []);
+
+    private string CurrentOrPlacementStartState()
+        => Zone.ScriptState.GetObjectState(ObjectName) is { Length: > 0 } known ? known : Entity.Info?.m_startState;
+
     private void Apply(InteractOptionTemplate option, IActorRef playerActor, CoreObject playerObject) {
         var objectName = ObjectName;
         var newState = EnterState(option);
@@ -182,7 +206,7 @@ internal sealed class InteractObjectStateComponent(ZoneEntity entity)
     }
 
     private IEnumerable<InteractOptionTemplate> GetOfferedOptions(Wizard wizard) {
-        var current = CurrentState();
+        var current = CurrentOrPlacementStartState();
 
         foreach (var option in GetStateOptions(Entity.Template as GameObjectTemplate)) {
             if (IsGoalOption(option) || !ChangesWorld(option)) {
@@ -210,30 +234,13 @@ internal sealed class InteractObjectStateComponent(ZoneEntity entity)
         }
     }
 
-    /// <summary>
-    /// True when a use already put the object into the state one of its quest-goal options puts it in.
-    /// </summary>
-    internal bool IsInGoalOptionState() {
-        var current = Zone.ScriptState.GetObjectStateIfChanged(ObjectName);
-
-        return !string.IsNullOrEmpty(current)
-            && GetStateOptions(Entity.Template as GameObjectTemplate)
-                .Any(option => IsGoalOption(option) && string.Equals(EnterState(option), current, StringComparison.OrdinalIgnoreCase));
-    }
-
-    /// <summary>
-    /// True when a quest-goal option of the template puts the object into a state, so the object stays in the world after its use.
-    /// </summary>
-    internal static bool KeepsStateAfterGoalUse(GameObjectTemplate template)
-        => GetStateOptions(template).Any(option => IsGoalOption(option) && !string.IsNullOrEmpty(EnterState(option)));
-
     private static bool IsGoalOption(InteractOptionTemplate option)
         => option.m_goalTags is { Count: > 0 } || InteractQuestSelectComponent.IsNamedByUsageGoal(option);
 
     private static bool ChangesWorld(InteractOptionTemplate option)
         => !string.IsNullOrEmpty(EnterState(option))
         || !string.IsNullOrEmpty(option.m_questEvent)
-        || Results(option)?.m_results?.Any(r => r is ResPostEvent or ResModifyTriggerObject or ResActorDialog) == true;
+        || Results(option)?.m_results?.Any(r => r is ResPostEvent or ResModifyTriggerObject or ResActorDialog or ResMinigame) == true;
 
     private static string EnterState(InteractOptionTemplate option)
         => (option as InteractStateOptionTemplate)?.m_enterState.ToString();

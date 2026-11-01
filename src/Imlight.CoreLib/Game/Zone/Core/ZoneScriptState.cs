@@ -142,29 +142,6 @@ public sealed class ZoneScriptState {
     public bool GetVariable(string questName, string varName)
         => _variables.TryGetValue(VariableKey(questName, varName), out var value) && value;
 
-    private void ApplyCounter(ResZoneCounter counter) {
-        var name = counter.m_counterName;
-        if (string.IsNullOrEmpty(name)) {
-            return;
-        }
-
-        var current = GetCounter(name);
-
-        // The client data has two actions: ZCA_Set and ZCA_Add (the value may be negative).
-        _counters[name] = string.Equals(counter.m_action, COUNTER_SET, StringComparison.OrdinalIgnoreCase)
-            ? counter.m_value
-            : current + counter.m_value;
-    }
-
-    private Token GetToken(string name, bool zoneWide, ulong player)
-        => _tokens.GetOrAdd(TokenKey(name, zoneWide || player == 0, player), _ => new Token());
-
-    private static string TokenKey(string name, bool zoneWide, ulong player)
-        => zoneWide ? $"Z|{name}" : $"P|{player}|{name}";
-
-    private static string VariableKey(string questName, string varName)
-        => $"{questName}|{varName}";
-
     /// <summary>
     /// Records a dungeon quest step of this instance and returns whether it is the first time the instance saw it.
     /// </summary>
@@ -221,5 +198,28 @@ public sealed class ZoneScriptState {
     /// </summary>
     public KeyValuePair<string, string>[] SnapshotChangedObjects()
         => [.. _objectStates.Where(kv => _changedObjects.ContainsKey(kv.Key))];
+
+    private void ApplyCounter(ResZoneCounter counter) {
+        var name = counter.m_counterName;
+        if (string.IsNullOrEmpty(name)) {
+            return;
+        }
+
+        var current = GetCounter(name);
+
+        // The client data has two actions: ZCA_Set and ZCA_Add (the value may be negative).
+        _counters[name] = string.Equals(counter.m_action, COUNTER_SET, StringComparison.OrdinalIgnoreCase)
+            ? counter.m_value
+            : current + counter.m_value;
+    }
+
+    private Token GetToken(string name, bool zoneWide, ulong player)
+        => _tokens.GetOrAdd(TokenKey(name, zoneWide || player == 0, player), _ => new Token());
+
+    private static string TokenKey(string name, bool zoneWide, ulong player)
+        => zoneWide ? $"Z|{name}" : $"P|{player}|{name}";
+
+    private static string VariableKey(string questName, string varName)
+        => $"{questName}|{varName}";
 
 }

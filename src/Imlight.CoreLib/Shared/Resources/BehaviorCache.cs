@@ -19,6 +19,7 @@
 
 using Imcodec.ObjectProperty.Attributes;
 using Imcodec.ObjectProperty.TypeCache;
+using Imlight.CoreLib.Game.Rentals;
 
 namespace Imlight.CoreLib.Shared.Resources;
 
@@ -73,6 +74,7 @@ public static class BehaviorCache {
         0x29474BCF => new TutorialLogBehavior(),
         0x174F46F4 => new WishlistBehavior(),
         0x673324BA => new ClientPetOwnerBehavior(),
+        0x06DC1B56 => new BadgeBehavior(),               // The badges the client has been told about.
         // Client also has PathMovementBehaviorTemplate, but doesn't appear to use the actual behavior.
         //case 0x22B1AD8D: return new PathMovementBehavior();
         // ======================================================================
@@ -108,7 +110,7 @@ public static class BehaviorCache {
         0x75588889 => new ClientPetItemBehavior(),
         0x640B088B => new ClientPetNameBehavior(),
         0x2933F2E5 => new ClientQuantityBehavior(),
-        0x3614A5EE => new ClientRentalBehavior(),
+        0x3614A5EE => new ClientRentalBehavior { m_expireTime = RentalItems.UNSET },
         0x346B28D0 => new ClientSpellCardAttachmentBehavior(),
         0x22FD694B => new ClientTextureRemapBehavior(),
         0x6323D8C1 => new ClientTimedItemBehavior(),
@@ -155,6 +157,7 @@ public static class BehaviorCache {
         0x074A42D2 => new PhysicsBehaviorClient(),
         0x2D701D90 => new PositionalSoundBehavior(),
         0x2B542F69 => new PositionalStateSoundBehavior(),
+        0x1381ED06 => new PvP5thAgeKioskBehavior(),
         0x660CC909 => new RidableBehavior(),
         0x070A552D => new ScriptBehavior(),
         0x5FC99777 => new SeedBehavior(),

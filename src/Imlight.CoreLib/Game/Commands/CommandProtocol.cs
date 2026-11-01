@@ -86,6 +86,12 @@ internal abstract class CommandProtocol {
         var methodParameters = method.GetParameters();
         var expectedParameterCount = methodParameters.Length;
         if (expectedParameterCount > 0) {
+            if (parameters.Length == 0 && methodParameters.All(parameter => parameter.HasDefaultValue)) {
+                method.Invoke(this, [.. methodParameters.Select(parameter => parameter.DefaultValue)]);
+
+                return true;
+            }
+
             // If we expected parameters, but none were provided, return.
             if (parameters.Length == 0) {
                 InformClientOfProperParameterCount(commandName, methodParameters);

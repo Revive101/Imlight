@@ -53,7 +53,7 @@ internal class TreasureShopService(SessionActor sessionActor) : MessageService(s
         // Ensure that the player has interacted with an object in the zone.
         var interactedObject = GetZoneObject(message.npcGlobalID);
         if (interactedObject is null) {
-            Logger.Warning("Failed to find NPC {0} in zone for treasure card purchase",
+            Logger.Warning("A treasure card purchase named NPC {NpcId}, which is not in the zone, so it is refused.",
                 Logger.Args(message.npcGlobalID));
             var denyMsg = new WIZARD_12_PROTOCOL.MSG_TREASUREBUYCONFIRM { Failure = 1 };
             SendToSocket(denyMsg);
@@ -64,7 +64,7 @@ internal class TreasureShopService(SessionActor sessionActor) : MessageService(s
         // Ensure that the interacted object is a treasure card vendor.
         var vendorComponent = interactedObject.GetComponentOfType<InteractTreasureVendorComponent>();
         if (vendorComponent is null) {
-            Logger.Warning("Failed to find TreasureVendorComponent for NPC {0}",
+            Logger.Warning("A treasure card purchase named NPC {NpcId}, which does not sell treasure cards, so it is refused.",
                 Logger.Args(message.npcGlobalID));
             var denyMsg = new WIZARD_12_PROTOCOL.MSG_TREASUREBUYCONFIRM { Failure = 1 };
             SendToSocket(denyMsg);
@@ -74,7 +74,7 @@ internal class TreasureShopService(SessionActor sessionActor) : MessageService(s
 
         // Ensure that the vendor has the spell the player is trying to purchase.
         if (!vendorComponent.HasSpell(message.TreasureCardID)) {
-            Logger.Warning("Player tried to purchase treasure card {0} from NPC {1} that is not in its inventory.",
+            Logger.Warning("A player tried to buy treasure card {SpellId} from NPC {NpcId}, which does not sell it.",
                 Logger.Args(message.TreasureCardID, message.npcGlobalID));
 
             var denyMsg = new WIZARD_12_PROTOCOL.MSG_TREASUREBUYCONFIRM { Failure = 1 };
@@ -92,7 +92,7 @@ internal class TreasureShopService(SessionActor sessionActor) : MessageService(s
 
         // Check if the user can afford the purchase.
         if (playerWizard.GameStats.m_currentGold < totalCost) {
-            Logger.Warning("Player could not afford treasure card {0} (cost: {1}, gold: {2})",
+            Logger.Debug("A player could not afford treasure card {SpellId} (cost {Cost}, gold {Gold}).",
                 Logger.Args(message.TreasureCardID, totalCost, playerWizard.GameStats.m_currentGold));
 
             var denyMsg = new WIZARD_12_PROTOCOL.MSG_TREASUREBUYCONFIRM { Failure = 1 };
@@ -115,7 +115,7 @@ internal class TreasureShopService(SessionActor sessionActor) : MessageService(s
         var spellName = vendorComponent.GetSpellName(message.TreasureCardID);
         var spell = SpellFactory.GetSpell(spellName);
         if (spell == null) {
-            Logger.Warning("Failed to resolve spell from hash {0} (name: {1})",
+            Logger.Warning("Treasure card {SpellId} ({Spell}) has no spell template, so it is not sold.",
                 Logger.Args(message.TreasureCardID, spellName));
 
             var denyMsg = new WIZARD_12_PROTOCOL.MSG_TREASUREBUYCONFIRM { Failure = 1 };

@@ -26,4 +26,6 @@ public class NPCInventory {
     public ulong TemplateID { get; set; }
     public List<GID> Inventory { get; set; } = [];
 
+    public string ShopTitle { get; set; }
+
 }

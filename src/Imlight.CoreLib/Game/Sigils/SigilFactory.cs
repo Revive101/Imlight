@@ -36,6 +36,7 @@
  */
 
 using System.Collections.Generic;
+using System.Linq;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
@@ -44,6 +45,8 @@ using Imlight.CoreLib.Shared.Resources;
 namespace Imlight.CoreLib.Game.Sigils;
 
 internal class SigilFactory : RootDirectoryResourceSingleton<SigilFactory>, IMemoryStreamDisposable {
+
+    internal const string MONSTER_CIRCLE_LOCATION_TYPE = "MonsterCircle";
 
     protected override string DirectoryName => "Sigils/";
 
@@ -84,6 +87,14 @@ internal class SigilFactory : RootDirectoryResourceSingleton<SigilFactory>, IMem
 
         return null;
     }
+
+    /// <summary>
+    /// Gets the circles of a sigil template that a player can stand in.
+    /// </summary>
+    /// <param name="sigilType">The name of the sigil.</param>
+    /// <returns>The player circles, empty if the template is unknown.</returns>
+    internal static List<SigilSubCircle> GetPlayerCircles(string sigilType)
+        => [.. GetSigilTemplate(sigilType)?.m_subCircles?.Where(circle => circle is not null && circle.m_locationType != MONSTER_CIRCLE_LOCATION_TYPE) ?? []];
 
     public void DisposeStream() 
         => s_combatSigils = null;

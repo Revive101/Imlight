@@ -53,10 +53,12 @@
  * 
  * Created by: Joji, Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 10/25/2026
  */
 
 using System;
+using System.Collections.Concurrent;
+using System.IO;
 using System.Linq;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
@@ -84,17 +86,16 @@ internal class CanonicalStatEffects : RootSingleResourceSingleton<CanonicalStatE
     ];
 
     private static GameEffectTemplateList s_effectTable;
+    private static readonly ConcurrentDictionary<string, byte> s_warnedEffects = new();
 
     protected override void AfterLoad() {
         var serializer = new BindSerializer();
         var streamAsBytes = Stream.ToArray();
         if (!serializer.Deserialize(streamAsBytes, out s_effectTable)) {
-            Logger.Error("Failed to deserialize canonical stat effects");
-
-            return;
+            throw new InvalidDataException($"The item stat effects {ResourceName} could not be read. Re-download the game resources.");
         }
 
-        Logger.Information("Loaded {0} canonical stat effects",
+        Logger.Information("Loaded {Count} canonical stat effects.",
             Logger.Args(s_effectTable.m_effectTemplates.Count));
     }
 
@@ -104,16 +105,9 @@ internal class CanonicalStatEffects : RootSingleResourceSingleton<CanonicalStatE
     /// <param name="info">The <see cref="StatisticEffectInfo"/> containing the effect information.</param>
     /// <returns>The calculated canonical stat value.</returns>
     internal static float GetCanonicalStatValue(StatisticEffectInfo info) {
-        if (s_effectTable is null) {
-            Logger.Error("Effect table was null. Cannot gather stat value.");
-
-            return 0;
-        }
-
         var effectTemplate = GetEffectTemplate(info.m_effectName);
         if (effectTemplate is null) {
-            Logger.Error("Could not find effect template {0}", 
-                Logger.Args(info.m_effectName));
+            WarnOnce(info.m_effectName, "Stat effect {Effect} is not in the game data; the item bonus counts as zero.");
 
             return 0;
         }
@@ -122,8 +116,7 @@ internal class CanonicalStatEffects : RootSingleResourceSingleton<CanonicalStatE
         var castedTemplate = (WizStatisticEffectTemplate) effectTemplate;
         var statTable = GameEffectRuleData.GetWizardStatTable(castedTemplate.m_statTableName);
         if (statTable is null) {
-            Logger.Error("Could not find stat table for template {0}", 
-                Logger.Args(effectTemplate.m_effectName));
+            WarnOnce(effectTemplate.m_effectName, "Stat effect {Effect} has no stat table in the game data; the item bonus counts as zero.");
 
             return 0;
         }
@@ -143,9 +136,13 @@ internal class CanonicalStatEffects : RootSingleResourceSingleton<CanonicalStatE
     internal static GameEffectTemplate GetEffectTemplate(string effectName)
         => s_effectTable.m_effectTemplates.FirstOrDefault(x => x.m_effectName == effectName);
 
+    public void DisposeStream()
+        => Stream.Dispose();
+
     private static float GetStatValue(WizardStatTable statTable, int lookupIndex) {
         if (lookupIndex >= statTable.m_statVector.Count) {
-            Logger.Error("Invalid lookup index {0} for stat table {1}", Logger.Args(lookupIndex, statTable.m_tableName));
+            WarnOnce($"{statTable.m_tableName}#{lookupIndex}", "Stat table entry {Entry} is past the end of its table; the item bonus counts as zero.");
+
             return 0;
         }
 
@@ -164,7 +161,10 @@ internal class CanonicalStatEffects : RootSingleResourceSingleton<CanonicalStatE
         }
     }
 
-    public void DisposeStream()
-        => Stream.Dispose();
+    private static void WarnOnce(string effect, string message) {
+        if (s_warnedEffects.TryAdd(effect, 0)) {
+            Logger.Warning(message, Logger.Args(effect));
+        }
+    }
 
 }

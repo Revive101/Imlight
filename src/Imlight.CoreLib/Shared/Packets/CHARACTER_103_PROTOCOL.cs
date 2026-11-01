@@ -16,6 +16,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System.Collections.Generic;
 using Akka.Actor;
 using Imcodec.IO;
 using Imcodec.MessageLayer.Generated;
@@ -25,6 +26,14 @@ using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Shared.Packets;
+
+/// <summary>
+/// What a <see cref="CHARACTER_103_PROTOCOL.MSG_BADGEEVENT"/> asks the badge service to do.
+/// </summary>
+public enum BadgeEventKind : byte {
+    Award,
+    Recheck,
+}
 
 public class CHARACTER_103_PROTOCOL : IServerProtocol {
 
@@ -364,7 +373,6 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
 
         public string ObjectName;
         public string StateName;
-
     }
 
     /// <summary>
@@ -385,16 +393,283 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
         /// The quest name, or empty for the only active quest.
         /// </summary>
         public string QuestName;
+    }
+  
+    /// <summary>
+    /// Fired every second to tick down active elixir playtime.
+    /// </summary>
+    public sealed class MSG_DOELIXIRTICK : IServerMessage {
+
+        public byte MessageOrder { get; } = 33;
+        public byte ServiceID { get; } = 103;
 
     }
 
     /// <summary>
-    /// Sent by plugins: the inventory service gives the wizard a new copy of an item and shows it to their client.
-    /// The template must already pass <see cref="Items.ItemHelper.CheckGiveable"/>.
+    /// Sent by a service to the EquipmentService: takes the equipped item off the player the way an unequip
+    /// request from the client does. The EquipmentService answers with <see cref="MSG_UNEQUIPITEMRSP"/>.
+    /// </summary>
+    public sealed class MSG_UNEQUIPITEM : IServerMessage {
+
+        public byte MessageOrder { get; } = 31;
+        public byte ServiceID { get; } = 103;
+
+        public ulong ItemId;
+
+    }
+
+    /// <summary>
+    /// The EquipmentService's answer to <see cref="MSG_UNEQUIPITEM"/>.
+    /// </summary>
+    public sealed class MSG_UNEQUIPITEMRSP : IServerMessage {
+
+        public byte MessageOrder { get; } = 32;
+        public byte ServiceID { get; } = 103;
+
+        /// <summary>
+        /// True when the item is no longer equipped.
+        /// </summary>
+        public bool Success;
+
+    }
+
+    /// <summary>
+    /// Sent to the BadgeService: award one badge, or recheck the auto-add badges against the character's state.
+    /// </summary>
+    public sealed class MSG_BADGEEVENT : IServerMessage {
+
+        public byte MessageOrder { get; } = 40;
+        public byte ServiceID { get; } = 103;
+
+        public BadgeEventKind Kind;
+
+        /// <summary>
+        /// The badge to award; only used by <see cref="BadgeEventKind.Award"/>.
+        /// </summary>
+        public uint BadgeId;
+
+    }
+
+    /// <summary>
+    /// Sent by the badge commands: the badge service runs the action through its normal award, counter and title paths and replies to the player with a server message.
+    /// </summary>
+    public sealed class MSG_BADGECOMMAND : IServerMessage {
+
+        public byte MessageOrder { get; } = 41;
+        public byte ServiceID { get; } = 103;
+
+        /// <summary>
+        /// One of: grant, progress, list, reset, title.
+        /// </summary>
+        public string Action;
+
+        /// <summary>
+        /// The badge id or name for grant, the counter key for progress, the title key for title.
+        /// </summary>
+        public string Argument;
+
+        /// <summary>
+        /// The amount added to the counter; only used by progress.
+        /// </summary>
+        public ulong Amount;
+
+    }
+
+    /// <summary>
+    /// Sent by the EquipmentService to the RentalService after a rental item was equipped: the timer of the rental
+    /// starts if it has not started yet.
+    /// </summary>
+    public sealed class MSG_STARTRENTAL : IServerMessage {
+
+        public byte MessageOrder { get; } = 60;
+        public byte ServiceID { get; } = 103;
+
+        public ulong ItemId;
+
+    }
+
+    /// <summary>
+    /// Sent by a bank NPC to the BankService of the player who picked its bank option: the bank counts as open
+    /// until the window is closed, the zone changes or the session attaches again.
+    /// </summary>
+    public sealed class MSG_BEGINBANKSESSION : IServerMessage {
+
+        public byte MessageOrder { get; } = 63;
+        public byte ServiceID { get; } = 103;
+
+        /// <summary>
+        /// The global id of the bank NPC.
+        /// </summary>
+        public ulong EntityId;
+
+    }
+
+    /// <summary>
+    /// Internal timer message and request to the RentalService: expires every rental of the player that has run out,
+    /// then arms the timer for the next one.
+    /// </summary>
+    public sealed class MSG_CHECKRENTALS : IServerMessage {
+
+        public byte MessageOrder { get; } = 61;
+        public byte ServiceID { get; } = 103;
+
+    }
+
+    /// <summary>
+    /// Sent by the RentalService to the EquipmentService: the rental has run out, so it is taken off the player and removed.
+    /// </summary>
+    public sealed class MSG_EXPIRERENTAL : IServerMessage {
+
+        public byte MessageOrder { get; } = 62;
+        public byte ServiceID { get; } = 103;
+
+        public ulong ItemId;
+
+    }
+
+    /// <summary>
+    /// Sent by the owner's session to a friend who was made a decorator of a house, or taken off its decorators.
+    /// </summary>
+    public sealed class MSG_DECORATORBUDDYFWD : IServerMessage {
+
+        public byte MessageOrder { get; } = 64;
+        public byte ServiceID { get; } = 103;
+
+        public ulong TargetCharId;
+        public ulong LotGid;
+        public bool Added;
+        public ByteString OwnerName;
+
+    }
+
+    /// <summary>
+    /// Synchronizes an updated Crown Shop wishlist to an online character's session.
+    /// </summary>
+    public sealed class MSG_UPDATE_WISHLIST : IServerMessage {
+
+        public byte MessageOrder { get; } = 34;
+        public byte ServiceID { get; } = 103;
+
+        public ulong CharId;
+        public ByteString WishlistData;
+        public uint RemovedTemplateId;
+
+    }
+
+    /// <summary>
+    /// Sent to the PetService after an egg was laid into a free morphing slot, so it shows the slot and starts the hatch timer.
+    /// </summary>
+    public sealed class MSG_PETEGGLAID : IServerMessage {
+
+        public byte MessageOrder { get; } = 65;
+        public byte ServiceID { get; } = 103;
+
+        public ulong EggGlobalId;
+
+    }
+
+    /// <summary>
+    /// Sent by a player's HatchingService to the partner's session in the hatching room: the pets the
+    /// player can hatch with.
+    /// </summary>
+    public sealed class MSG_HATCHPARTNERPETS : IServerMessage {
+
+        public byte MessageOrder { get; } = 66;
+        public byte ServiceID { get; } = 103;
+
+        public ulong CharId;
+        public List<WizClientObjectItem> Pets;
+
+    }
+
+    /// <summary>
+    /// Sent by a player's HatchingService to the partner's session: the pet the player picked.
+    /// </summary>
+    public sealed class MSG_HATCHPARTNERPICK : IServerMessage {
+
+        public byte MessageOrder { get; } = 67;
+        public byte ServiceID { get; } = 103;
+
+        public ulong CharId;
+        public ulong PetId;
+
+    }
+
+    /// <summary>
+    /// Sent by a player's HatchingService to the partner's session: the player picked Hatch or Lend.
+    /// </summary>
+    public sealed class MSG_HATCHPARTNERCHOICE : IServerMessage {
+
+        public byte MessageOrder { get; } = 68;
+        public byte ServiceID { get; } = 103;
+
+        public ulong CharId;
+        public bool Lends;
+
+    }
+
+    /// <summary>
+    /// Sent by a player's HatchingService to the partner's session: the player ticked or cleared the ready box.
+    /// </summary>
+    public sealed class MSG_HATCHPARTNERREADY : IServerMessage {
+
+        public byte MessageOrder { get; } = 69;
+        public byte ServiceID { get; } = 103;
+
+        public ulong CharId;
+        public bool Ready;
+
+    }
+
+    /// <summary>
+    /// Internal timer message: the player's time in the hatching room is up.
+    /// </summary>
+    public sealed class MSG_HATCHROOMEXPIRED : IServerMessage {
+
+        public byte MessageOrder { get; } = 70;
+        public byte ServiceID { get; } = 103;
+
+    }
+
+    /// <summary>
+    /// Internal timer message: the player goes back from the hatching room to the sigil.
+    /// </summary>
+    public sealed class MSG_HATCHRETURN : IServerMessage {
+
+        public byte MessageOrder { get; } = 71;
+        public byte ServiceID { get; } = 103;
+
+    }
+
+    /// <summary>
+    /// Internal timer message: the partner did not reach the hatching room in time, so the player hatches alone.
+    /// </summary>
+    public sealed class MSG_HATCHPARTNERWAITOVER : IServerMessage {
+
+        public byte MessageOrder { get; } = 72;
+        public byte ServiceID { get; } = 103;
+
+    }
+
+    /// <summary>
+    /// Sent by a player's HatchingService to the partner's session: the player's egg was made, so a lent pet counts.
+    /// </summary>
+    public sealed class MSG_HATCHPARTNERHATCHED : IServerMessage {
+
+        public byte MessageOrder { get; } = 73;
+        public byte ServiceID { get; } = 103;
+
+        public ulong CharId;
+
+    }
+
+    /// <summary>
+    /// Sent by plugins: the inventory service gives the wizard a new copy of an item through
+    /// <see cref="Game.Bank.ItemPlacement"/>, so a full backpack overflows to the bank. The template must already pass <see cref="Items.ItemHelper.CheckGiveable"/>.
     /// </summary>
     public sealed class MSG_GIVEITEM : IServerMessage {
 
-        public byte MessageOrder { get; } = 31;
+        public byte MessageOrder { get; } = 74;
         public byte ServiceID { get; } = 103;
 
         public ulong TemplateId;
@@ -406,7 +681,7 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
     /// </summary>
     public sealed class MSG_REMOVEITEM : IServerMessage {
 
-        public byte MessageOrder { get; } = 32;
+        public byte MessageOrder { get; } = 75;
         public byte ServiceID { get; } = 103;
 
         public ulong ItemId;

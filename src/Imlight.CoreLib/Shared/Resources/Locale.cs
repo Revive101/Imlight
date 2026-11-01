@@ -65,7 +65,7 @@ internal class Locale : RootDirectoryResourceSingleton<Locale>, IMemoryStreamDis
         // At this point, they are all loaded into memory. This function should process the locales
         // and give us data we actually need.
 
-        Logger.Information("Loaded {0} English locale files.",
+        Logger.Information("Loaded {Count} English locale files.",
             Logger.Args(Files.Count));
 
         s_data = [];
@@ -260,7 +260,7 @@ internal class Locale : RootDirectoryResourceSingleton<Locale>, IMemoryStreamDis
             }
         }
 
-        Logger.Information("Processed {0} NPC name part mappings.",
+        Logger.Information("Processed {Count} NPC name part mappings.",
             Logger.Args(s_namePartsMapping.Count));
     }
 

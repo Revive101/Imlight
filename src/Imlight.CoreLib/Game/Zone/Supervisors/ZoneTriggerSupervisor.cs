@@ -46,8 +46,7 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
     private static readonly bool s_randomizeGateways 
         = ConfigurationManager.Settings["April Fools.RandomizeGateways"].AsBool();
 
-    // A trigger's own object is hidden with this state when the trigger is deactivated.
-    private const string DEACTIVATED_OBJECT_STATE = "Off";
+    private const string DEACTIVATED_TRIGGER_OBJECT_STATE = "Off";
 
     private readonly List<(Trigger Trigger, IActorRef Actor)> _orderedTriggers = [];
     private readonly HashSet<string> _undecodableLogged = [];
@@ -58,7 +57,6 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
     // The objects that enabled triggers own (walls, gates, collision), by trigger name.
     private readonly Dictionary<string, (IActorRef Actor, CoreObject Object, string Tag)> _triggerObjects = new(StringComparer.OrdinalIgnoreCase);
 
-    // The activate event a trigger lists to start the zone with it enabled.
     private const string START_ZONE_EVENT = "StartZone";
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS))]
@@ -108,6 +106,11 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_POSTEVENT))]
     private void ReceivePostEvent(ZONE_102_PROTOCOL.MSG_POSTEVENT message) {
+        // Ask for the wizard without blocking; the event comes back with it attached.
+        if (NeedsWizard(message) && !PostEventWizardQuery.TryResolve(Self, Sender, message)) {
+            return;
+        }
+
         // Client wads pair multiple triggers on the same event; every passing trigger fires
         // (their results are independent), but paired teleporter triggers must not both win:
         // only one ResTeleport trigger may execute (see PickTeleportTrigger).
@@ -158,12 +161,73 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
                 SuppressTeleportResults = hasTeleportResult && !ReferenceEquals(trigger, teleportWinner),
                 PlayerSpawned = message.PlayerSpawned,
                 Adjectives = message.Adjectives,
+                PlayerWizard = message.PlayerWizard,
                 RequirementsChecked = true,
             });
         }
 
         // Triggers that fired saw the state from before this event; now the event's own enables and disables land.
         ApplyTriggerStateEvents(message.EventName, message.PlayerActor, message.PlayerGameObject);
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVETRIGGEROBJECT))]
+    private void ReceiveRemoveTriggerObject(ZONE_102_PROTOCOL.MSG_REMOVETRIGGEROBJECT message) {
+        var match = _triggerObjects.FirstOrDefault(x => string.Equals(x.Value.Tag, message.ObjectName, StringComparison.OrdinalIgnoreCase));
+        if (match.Key is null || !_triggerObjects.Remove(match.Key, out var owned)) {
+            Logger.Debug("Zone {0}: no trigger object {1} to remove.", Logger.Args(Zone.ZonePath, message.ObjectName));
+
+            return;
+        }
+
+        StopTriggerObject(owned.Actor, owned.Object);
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_STARTSTAGEDCINEMATIC))]
+    private void ReceiveStartStagedCinematic(ZONE_102_PROTOCOL.MSG_STARTSTAGEDCINEMATIC message) {
+        // The end event is the waiting trigger's fire event that nothing in the zone posts; posted once per instance, as if the cutscene had played.
+        var posted = _orderedTriggers
+            .Where(x => x.Trigger?.m_results?.m_results is not null)
+            .SelectMany(x => x.Trigger.m_results.m_results)
+            .OfType<ResPostEvent>()
+            .Select(x => x.m_eventName.ToString())
+            .ToHashSet();
+
+        var endEvents = _orderedTriggers
+            .Where(x => x.Trigger?.m_fireEvents is not null)
+            .SelectMany(x => x.Trigger.m_fireEvents)
+            .Select(x => x.ToString())
+            .Where(x => x.Contains("Cinematic", StringComparison.OrdinalIgnoreCase)
+                && x.Contains("End", StringComparison.OrdinalIgnoreCase)
+                && !x.EndsWith(".EnterState", StringComparison.Ordinal)
+                && !x.StartsWith("Enter_", StringComparison.Ordinal)
+                && !x.StartsWith("Exit_", StringComparison.Ordinal)
+                && !posted.Contains(x))
+            .Distinct()
+            .Where(_cinematicEndsPosted.Add)
+            .ToList();
+
+        foreach (var endEvent in endEvents) {
+            Self.Tell(new ZONE_102_PROTOCOL.MSG_POSTEVENT {
+                EventName = endEvent,
+                PlayerActor = message.PlayerActor,
+                PlayerGameObject = message.PlayerGameObject,
+            });
+        }
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_MODIFYTRIGGEROBJECT))]
+    private void ReceiveModifyTriggerObject(ZONE_102_PROTOCOL.MSG_MODIFYTRIGGEROBJECT message) {
+        var holdsObject = HoldsObject(message.ObjectName);
+        if (message.Relayed && !holdsObject) {
+            return;
+        }
+
+        ApplyObjectState(message.ObjectName, message.StateName, message.PlayerActor, message.PlayerGameObject, message.PlayerSpawned);
+
+        // A goal result runs in the zone the player stands in; an object this zone does not hold may be in another zone of the instance.
+        if (!holdsObject && !message.Relayed && Zone.IsInstance) {
+            Context.ActorSelection(Context.Parent.Path.Parent).Tell(message, ZoneRef);
+        }
     }
 
     private void SeedTriggerStates(List<Trigger> triggers) {
@@ -207,7 +271,7 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
                 // deactivate events is posted.
                 var objectTag = trigger.m_triggerObjInfo?.m_zoneTag;
                 if (!string.IsNullOrEmpty(objectTag)) {
-                    ApplyObjectState(objectTag, DEACTIVATED_OBJECT_STATE, playerActor, playerObject);
+                    ApplyObjectState(objectTag, DEACTIVATED_TRIGGER_OBJECT_STATE, playerActor, playerObject);
                 }
 
                 DespawnTriggerObject(trigger);
@@ -267,7 +331,7 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
 
         // The trigger's own object comes back in its start state, not the "Off" it was hidden with.
         var objectTag = info.m_zoneTag;
-        if (Zone.ScriptState.IsObjectIn(objectTag, DEACTIVATED_OBJECT_STATE) && !string.IsNullOrEmpty(info.m_startState)) {
+        if (Zone.ScriptState.IsObjectIn(objectTag, DEACTIVATED_TRIGGER_OBJECT_STATE) && !string.IsNullOrEmpty(info.m_startState)) {
             Zone.ScriptState.SetObjectState(objectTag, info.m_startState);
         }
 
@@ -282,18 +346,6 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
         // The object comes back when the trigger is enabled again.
         string name = trigger.m_triggerName;
         if (string.IsNullOrEmpty(name) || !_triggerObjects.Remove(name, out var owned)) {
-            return;
-        }
-
-        StopTriggerObject(owned.Actor, owned.Object);
-    }
-
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVETRIGGEROBJECT))]
-    private void ReceiveRemoveTriggerObject(ZONE_102_PROTOCOL.MSG_REMOVETRIGGEROBJECT message) {
-        var match = _triggerObjects.FirstOrDefault(x => string.Equals(x.Value.Tag, message.ObjectName, StringComparison.OrdinalIgnoreCase));
-        if (match.Key is null || !_triggerObjects.Remove(match.Key, out var owned)) {
-            Logger.Debug("Zone {0}: no trigger object {1} to remove.", Logger.Args(Zone.ZonePath, message.ObjectName));
-
             return;
         }
 
@@ -322,10 +374,8 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
         }
 
         HashSet<string> activeQuests = [];
-        if (message.PlayerActor is not null) {
-            var wizardResponse = message.PlayerActor
-                .Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD()).Result;
-            activeQuests = wizardResponse.Wizard.QuestBehavior.CurrentQuestInstances
+        if (message.PlayerWizard is not null) {
+            activeQuests = message.PlayerWizard.QuestBehavior.CurrentQuestInstances
                 .Select(q => q.QuestName).ToHashSet();
         }
 
@@ -353,59 +403,12 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
         }
     }
 
-    // Events raised before object and kill events existed: zone entry, volumes and chained events.
-    private bool IsLongRaisedEvent(string eventName)
-        => eventName == "EnterZone"
-        || eventName.StartsWith("Enter_", StringComparison.Ordinal)
-        || eventName.StartsWith("Exit_", StringComparison.Ordinal)
-        || _chainedEvents.Contains(eventName);
-
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_STARTSTAGEDCINEMATIC))]
-    private void ReceiveStartStagedCinematic(ZONE_102_PROTOCOL.MSG_STARTSTAGEDCINEMATIC message) {
-        // The end event is the waiting trigger's fire event that nothing in the zone posts; posted once per instance, as if the cutscene had played.
-        var posted = _orderedTriggers
-            .Where(x => x.Trigger?.m_results?.m_results is not null)
-            .SelectMany(x => x.Trigger.m_results.m_results)
-            .OfType<ResPostEvent>()
-            .Select(x => x.m_eventName.ToString())
-            .ToHashSet();
-
-        var endEvents = _orderedTriggers
-            .Where(x => x.Trigger?.m_fireEvents is not null)
-            .SelectMany(x => x.Trigger.m_fireEvents)
-            .Select(x => x.ToString())
-            .Where(x => x.Contains("Cinematic", StringComparison.OrdinalIgnoreCase)
-                && x.Contains("End", StringComparison.OrdinalIgnoreCase)
-                && !x.EndsWith(".EnterState", StringComparison.Ordinal)
-                && !x.StartsWith("Enter_", StringComparison.Ordinal)
-                && !x.StartsWith("Exit_", StringComparison.Ordinal)
-                && !posted.Contains(x))
-            .Distinct()
-            .Where(_cinematicEndsPosted.Add)
-            .ToList();
-
-        foreach (var endEvent in endEvents) {
-            Self.Tell(new ZONE_102_PROTOCOL.MSG_POSTEVENT {
-                EventName = endEvent,
-                PlayerActor = message.PlayerActor,
-                PlayerGameObject = message.PlayerGameObject,
-            });
-        }
-    }
-
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_MODIFYTRIGGEROBJECT))]
-    private void ReceiveModifyTriggerObject(ZONE_102_PROTOCOL.MSG_MODIFYTRIGGEROBJECT message) {
-        var holdsObject = HoldsObject(message.ObjectName);
-        if (message.Relayed && !holdsObject) {
-            return;
-        }
-
-        ApplyObjectState(message.ObjectName, message.StateName, message.PlayerActor, message.PlayerGameObject, message.PlayerSpawned);
-
-        // A goal result runs in the zone the player stands in; an object this zone does not hold may be in another zone of the instance.
-        if (!holdsObject && !message.Relayed && Zone.IsInstance) {
-            Context.ActorSelection(Context.Parent.Path.Parent).Tell(message, ZoneRef);
-        }
+    private bool IsLongRaisedEvent(string eventName) {
+        // Events raised before object and kill events existed: zone entry, volumes and chained events.
+        return eventName == "EnterZone"
+            || eventName.StartsWith("Enter_", StringComparison.Ordinal)
+            || eventName.StartsWith("Exit_", StringComparison.Ordinal)
+            || _chainedEvents.Contains(eventName);
     }
 
     private bool HoldsObject(string objectName)
@@ -417,7 +420,13 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
             return;
         }
 
-        Zone.ScriptState.SetObjectState(objectName, stateName);
+        // Setting an object to the state it already has must not rebroadcast or re-post its EnterState, or a trigger cycle loops forever.
+        if (!Zone.ScriptState.SetObjectState(objectName, stateName)) {
+            Logger.Debug("Zone {0}: object {1} is already in state {2}, nothing to broadcast.",
+                Logger.Args(Zone.ZonePath, objectName, stateName));
+
+            return;
+        }
 
         ZoneRef.Tell(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
             Messages = [new ZONE_102_PROTOCOL.MSG_ENTERSTATE {
@@ -445,13 +454,15 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
         });
     }
 
+    private bool NeedsWizard(ZONE_102_PROTOCOL.MSG_POSTEVENT message)
+        => message.PlayerActor is not null
+        && _orderedTriggers.Any(x => x.Trigger.m_fireEvents?.Any(e => e == message.EventName) == true
+                                     && x.Trigger.m_requirements?.m_requirements is { Count: > 0 });
+
     private bool EvaluateRequirements(Trigger trigger, ZONE_102_PROTOCOL.MSG_POSTEVENT message) {
         if (trigger.m_requirements?.m_requirements is null || trigger.m_requirements.m_requirements.Count == 0) {
             return true;
         }
-
-        var queryWizardMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
-        var wizardResponse = message.PlayerActor.Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(queryWizardMsg).Result;
 
         return RequirementDispatcher.EvaluateRequirements(
             requirements: trigger.m_requirements,
@@ -459,7 +470,7 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
                 trigger.m_requirements,
                 message.PlayerActor,
                 message.PlayerGameObject,
-                wizardResponse.Wizard,
+                message.PlayerWizard,
                 ZoneRef,
                 trigger.m_triggerName) {
                 ScriptState = Zone.ScriptState,

@@ -39,7 +39,7 @@ internal sealed class ResInitiateCombatHandler : BaseResultHandler<ResInitiateCo
     public override bool Execute(IResultContext context) {
         var zoneActor = context.GetZoneActor();
         if (zoneActor is null) {
-            Logger.Information("ResInitiateCombat executed outside a zone context; skipping.");
+            Logger.Debug("A combat result ran outside a zone, so no combat was started.");
             return true;
         }
 
@@ -49,8 +49,8 @@ internal sealed class ResInitiateCombatHandler : BaseResultHandler<ResInitiateCo
         var queryResponse = AskOrDefault(context.GetPlayerRef()
             .Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(queryWizardMsg, queryWizardTimeout));
         if (queryResponse?.Wizard is not Wizard wizard) {
-            Logger.Error("Handler failed to retrieve character data within {0} seconds.",
-                Logger.Args(QUERY_WIZARD_TIMEOUT_SECONDS));
+            Logger.Warning("Result {Result} was skipped: the character could not be read, most likely because the player logged out.",
+                Logger.Args(nameof(ResInitiateCombat)));
 
             return false;
         }

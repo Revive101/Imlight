@@ -81,4 +81,24 @@ internal class CommandDebugProtocol : CommandProtocol {
         Context.ZoneActor.Tell(message, Context.SessionActor);
     }
 
+    [Command("setobj")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void SetObjectCommand(string state, [Remainder] string objectName) {
+        if (string.IsNullOrWhiteSpace(objectName)) {
+            InformSenderClient("Name the object: .debug setobj <state> <object name>");
+
+            return;
+        }
+
+        // Unlike enableobj, this goes through the zone's script state, so state-gated triggers see the change.
+        Context.ZoneActor.Tell(new ZONE_102_PROTOCOL.MSG_MODIFYTRIGGEROBJECT {
+            ObjectName = objectName,
+            StateName = state,
+            PlayerActor = Context.SessionActor,
+            PlayerGameObject = Context.CharacterObject,
+        }, Context.SessionActor);
+
+        InformSenderClient($"Asked the zone to put '{objectName}' in state '{state}'.");
+    }
+
 }

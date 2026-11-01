@@ -35,7 +35,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/10/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -47,6 +47,8 @@ using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Game;
 using Imlight.CoreLib.Game.Groups;
+using Imlight.CoreLib.Game.PvP;
+using Imlight.CoreLib.Game.Trading;
 using Imlight.Common;
 
 namespace Imlight.CoreLib.Login;
@@ -69,7 +71,11 @@ internal class GameServerPool : ReceiveProtocolDispatcher {
         // Groups span every realm, so the pool owns the one directory all game servers share.
         Context.ActorOf(GroupDirectory.Props(), nameof(GroupDirectory));
 
-        Logger.Information("GameServerPool created.");
+        // Queued players sit in any zone and realm, so the pool owns the one PvP director.
+        Context.ActorOf(PvPDirector.Props(), nameof(PvPDirector));
+        Context.ActorOf(TradeDirectory.Props(), nameof(TradeDirectory));
+
+        Logger.Debug("GameServerPool created.");
     }
 
     public static Props Props() 
@@ -78,15 +84,14 @@ internal class GameServerPool : ReceiveProtocolDispatcher {
     [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_CREATEGAMESERVER))]
     private void ReceiveCreateGameServer(SERVER_100_PROTOCOL.MSG_CREATEGAMESERVER message) {
         if (_gameServers.Count >= _maxGameServersAllowed) {
-            Logger.Error("{Type} attempted to create a new game server, but the " +
-                      $"internal limit has already been reached. Server has not been created.",
-                Logger.Args(GetType()));
+            Logger.Error("Game server {Name} on port {Port} was not started: [Game Server] MaxGameServersAllowed " +
+                "({Max}) is already reached.", Logger.Args(message.Name, message.Port, _maxGameServersAllowed));
 
             return;
         }
         if (_gameServers.Keys.Any(x => x == message.Port)) {
-            Logger.Error("{Type} attempted to create a new game server, but the port" +
-                      " {Port} was already in use", Logger.Args(GetType(), message.Port));
+            Logger.Error("Game server {Name} was not started: another game server already uses port {Port}.",
+                Logger.Args(message.Name, message.Port));
 
             return;
         }
@@ -133,7 +138,8 @@ internal class GameServerPool : ReceiveProtocolDispatcher {
             }
             catch {
                 // The server did not respond in time, so we'll just ignore it.
-                Logger.Error("Failed to query game server {Name}.", Logger.Args(gameServer.Path.Name));
+                Logger.Warning("Game server {Name} did not answer within {Seconds} s, so no player is sent there.",
+                    Logger.Args(gameServer.Path.Name, _gameServerQueryTimeout));
                 return null;
             }
         });
@@ -152,7 +158,7 @@ internal class GameServerPool : ReceiveProtocolDispatcher {
         var gameServerInfos = result.ServerInfos;
 
         if (gameServerInfos.Length <= 0) {
-            Logger.Error("No game servers were available to query.");
+            Logger.Error("No game server answered, so the player cannot enter a realm.");
             result.OriginalSender.Tell(new SERVER_100_PROTOCOL.MSG_SERVERINFO());
 
             return;

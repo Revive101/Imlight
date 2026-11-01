@@ -18,6 +18,7 @@
 
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.CoreLib.Patch;
@@ -41,20 +42,25 @@ internal static class PatchServerFascade {
     /// <returns>The latest file list.</returns>
     internal static LatestFileList GetLatestFileList() {
         if (!EndpointReached) {
-            Logger.Error("Could not get latest file list because the patch server is not available.");
-            
+            Logger.Warning("Could not get the game file list: the patch server is offline.");
+
             return default;
         }
 
-        // Ask the patch server for the latest file list.
-        var msg = new PATCH_105_PROTOCOL.MSG_LATESTFILELIST();
-        var timeout = new TimeSpan(0, 0, s_pathServerWait);
-        var patchServerAskTask = PatchServer.Instance.Ask<PATCH_105_PROTOCOL.MSG_LATESTFILELIST>(msg, timeout);
+        try {
+            var msg = new PATCH_105_PROTOCOL.MSG_LATESTFILELIST();
+            var timeout = new TimeSpan(0, 0, s_pathServerWait);
 
-        var response = patchServerAskTask.Result;
-        var latestFileList = response.LatestFileList;
+            return PatchServer.Instance.Ask<PATCH_105_PROTOCOL.MSG_LATESTFILELIST>(msg, timeout)
+                .Result
+                .LatestFileList;
+        }
+        catch (Exception ex) {
+            Logger.Warning("Could not get the game file list from the patch server: {Reason}",
+                Logger.Args(ex.GetBaseException().Message));
 
-        return latestFileList;
+            return default;
+        }
     }
 
     /// <summary>
@@ -66,7 +72,8 @@ internal static class PatchServerFascade {
     internal static bool DownloadWadFromPatchServer(string wadName, out MemoryStream fileStream) {
         fileStream = default;
         if (!EndpointReached) {
-            Logger.Error("Could not get latest file list because the patch server is not available.");
+            Logger.Warning("Could not download game file {WadName}: the patch server is offline.",
+                Logger.Args(wadName));
 
             return false;
         }
@@ -80,19 +87,19 @@ internal static class PatchServerFascade {
                 .Result
                 .FileStream;
 
-            return true;
+            return fileStream is not null;
         }
         catch (Exception ex) {
-            if (ex.Message.ToLower().Contains("task was cancelled")) {
-                Logger.Warning("Download of wad {WadName} failed because the timeout of {Timer} was reached.",
+            if (ex.GetBaseException() is AskTimeoutException or TaskCanceledException) {
+                Logger.Warning("Download of game file {WadName} gave up after {Seconds} s. Raise " +
+                    "PatchServerDownloadTimeout in [Patch Server] if the patch server is slow.",
                     Logger.Args(wadName, s_pathServerDownloadTimeout));
 
                 return false;
             }
 
-            // Unknown error occurred
-            Logger.Error("Could not download wad {WadName}. Exception: {Ex}",
-                Logger.Args(wadName, ex.Message));
+            Logger.Error("Could not download game file {WadName}: {Reason}",
+                Logger.Args(wadName, ex.GetBaseException().Message));
 
             return false;
         }

@@ -80,6 +80,7 @@ public static class WizardPetSnackCollection {
         // Get the snack from the snacks collection.
         var associatedSnack = session
             .Query<ClientPetSnackItem>(collectionName: CollectionName)
+            .Customize(query => query.WaitForNonStaleResults())
             .FirstOrDefault(x => x.m_characterId == snack.m_characterId && x.m_globalID == snack.m_globalID);
 
         // If the snack was not found, return false.
@@ -106,6 +107,7 @@ public static class WizardPetSnackCollection {
         // Get the snack from the snacks collection.
         var associatedSnack = session
             .Query<ClientPetSnackItem>(collectionName: CollectionName)
+            .Customize(query => query.WaitForNonStaleResults())
             .FirstOrDefault(x => x.m_characterId == snack.m_characterId && x.m_globalID == snack.m_globalID);
 
         // If the snack was not found, return false.

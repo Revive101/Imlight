@@ -24,11 +24,13 @@ internal enum NPCStates {
     Sigil = 82154771,
     Moving = 1966747187,
     Stationary = 447774376,
-    Unknown_3 = 1488535195,
-    Unknown_4 = 1622346350,
-    Unknown_5 = 625722041,
+    Jumping = 1488535195,
+    NotJumping = 1622346350,
+    Unremarkable = 625722041,
     Unknown_6 = 1896147676,
-    Unknown_7 = 1288150110,
-    Unknown_8 = 1048309586,
+    SpellbookWizbang = 1288150110,
+    NoWizbang = 1048309586,
+    CombatVictory = 523160964,
+    Dance = 1674067506,
 
 }

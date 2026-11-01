@@ -98,6 +98,9 @@ internal sealed class CombatCreatureEquipmentComponent(ZoneEntity entity)
         ApplyStats();
     }
 
+    public ClientWizEquipmentBehavior GetClientBehaviorInstance() 
+        => _serverWizEquipmentBehavior?.GetClientBehaviorInstance() ?? null;
+
     private void InitializeEquipment(EquipmentBehaviorTemplate equipmentBehaviorTemplate) {
         foreach (var itemTemplateId in equipmentBehaviorTemplate.m_itemList) {
             var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(itemTemplateId);
@@ -127,7 +130,4 @@ internal sealed class CombatCreatureEquipmentComponent(ZoneEntity entity)
         }
     }
 
-    public ClientWizEquipmentBehavior GetClientBehaviorInstance() 
-        => _serverWizEquipmentBehavior?.GetClientBehaviorInstance() ?? null;
-        
 }

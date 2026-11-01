@@ -18,7 +18,7 @@ internal static class UntrackedRequirement {
 
     public static bool Answer(string className, bool result) {
         if (s_logged.TryAdd(className, 0)) {
-            Logger.Information("Requirement {0} is not tracked by the server; it always answers {1}.", Logger.Args(className, result));
+            Logger.Information("Requirement {Requirement} is not tracked by the server, so it always answers {Answer}.", Logger.Args(className, result));
         }
 
         return result;

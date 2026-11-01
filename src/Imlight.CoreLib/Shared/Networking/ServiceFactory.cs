@@ -57,17 +57,10 @@ public abstract class ServiceFactory : ReceiveActor {
 
     public ServiceFactory() => ConfigureReceivers();
 
-    /// <summary>
-    /// Configures the available actor receivers.
-    /// </summary>
     private void ConfigureReceivers() 
         => Receive<SERVICE_101_PROTOCOL.MSG_QUERYUNLOADEDSERVICES>(x
             => GetUnloadedActorMessageServices());
 
-    /// <summary>
-    /// Returns a HashSet of ActorMessageServices to give to a SessionActor before the session is loaded.
-    /// </summary>
-    /// <returns></returns>
     private void GetUnloadedActorMessageServices() {
         var rsp = new SERVICE_101_PROTOCOL.MSG_SERVICESLIST() {
             Services = [.. ServiceTypes]

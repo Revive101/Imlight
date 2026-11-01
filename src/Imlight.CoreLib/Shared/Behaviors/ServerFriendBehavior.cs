@@ -283,8 +283,7 @@ public class ServerFriendBehavior : IClientBehaviorProvider<BehaviorInstance> {
                 : ignoredRelationship.FirstPlayerId;
 
             var otherPlayerWizardData = WizardCollection.GetCharacterUnloaded(otherPlayerID);
-            var otherPlayerWizardHexName = otherPlayerWizardData.PlayerNameBehavior.GetWizardNameAsByteHexString();
-            var otherPlayerByteName = DataManipulation.SpacedHexStringToBytes(otherPlayerWizardHexName);
+            var otherPlayerByteName = otherPlayerWizardData.PlayerNameBehavior.GetPackedNameBytes();
 
             var ignoreEntry = new IgnoreEntryData {
                 m_ignoreName = new ByteString(otherPlayerByteName),

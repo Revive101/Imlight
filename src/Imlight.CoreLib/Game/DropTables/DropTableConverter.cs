@@ -88,6 +88,15 @@ public static class DropTableConverter {
             });
         }
 
+        // Convert treasure cards that were added to the treasure book.
+        foreach (var card in dropResult.TreasureCards) {
+            lootItems.Add(new TreasureCardLootInfo {
+                m_lootType = LOOT_TYPE.LOOT_TYPE_TREASURE_CARD,
+                m_spellID = card.SpellId,
+                m_numItems = card.Quantity
+            });
+        }
+
         lootList.m_loot = lootItems;
         
         return lootList;
@@ -112,7 +121,7 @@ public static class DropTableConverter {
     public static bool HasRewards(DropTableResult dropResult) 
         => dropResult?.HasRewards ?? false;
 
-    private static bool TryParseItemId(string itemId, out GID gid) {
+    internal static bool TryParseItemId(string itemId, out GID gid) {
         gid = 0;
         
         if (string.IsNullOrWhiteSpace(itemId)) {

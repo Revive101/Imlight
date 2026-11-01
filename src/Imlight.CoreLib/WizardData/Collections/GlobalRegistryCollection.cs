@@ -16,6 +16,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
+using System.Collections.Concurrent;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
 using Imlight.CoreLib.WizardData.Models.World;
@@ -23,6 +24,8 @@ using Imlight.CoreLib.WizardData.Models.World;
 namespace Imlight.CoreLib.WizardData.Collections;
 
 public static class GlobalRegistryCollection {
+
+    private static readonly ConcurrentDictionary<string, byte> s_reportedMissingEntries = new();
 
     /// <summary>
     /// Gets the global registry from SpiralDB.
@@ -41,8 +44,10 @@ public static class GlobalRegistryCollection {
         }
 
         if (!model.GlobalRegistryValues.ContainsKey(entry)) {
-            Logger.Warning("Global registry entry {0} does not exist.",
-                Logger.Args(entry));
+            if (s_reportedMissingEntries.TryAdd(entry, 0)) {
+                Logger.Warning("Global registry entry {Entry} is not in SpiralDB, so it reads as 0. This is logged once.",
+                    Logger.Args(entry));
+            }
 
             return 0;
         }
@@ -72,9 +77,8 @@ public static class GlobalRegistryCollection {
             case OPERATOR_TYPE.OPERATOR_GREATER_THAN_EQ:
                 return value.m_numericValue >= globalValue;
             default: {
-                    Logger.Error("Zone contains a spawn requirement that " +
-                                      "references a global registry value that does not exist. " +
-                                      "Entry name: {EntryName}", Logger.Args(value.m_entryName));
+                    Logger.Error("A global registry requirement on {EntryName} uses operator {Operator}, which the server does not support, so it is not met.",
+                        Logger.Args(value.m_entryName, value.m_operatorType));
 
                     return false;
                 }

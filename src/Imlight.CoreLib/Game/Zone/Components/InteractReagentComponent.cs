@@ -59,13 +59,22 @@ internal sealed class InteractReagentComponent(ZoneEntity entity)
     private const float INITIAL_ADDITIONAL_REAGENT_CHANCE = 0.1f;
     private const float ADDITIONAL_REAGENT_CHANCE_REDUCTION = 0.5f;
     private const int MAX_ADDITIONAL_REAGENT_ROLLS = 5;
+    private const string REAGENT_ICON_DIRECTORY = "GUI/Reagents/";
     private const uint PICKUP_SOUND_TEMPLATE_ID = 1309960781;
     private const uint RARE_PICKUP_SOUND_TEMPLATE_ID = 1051090169;
 
     public string ServiceName => "Interact";
     public string NpcIcon {
         get {
-            string icon = (Entity.Template as GameObjectTemplate)?.m_sIcon;
+            if (Entity.Template is not GameObjectTemplate goTemplate) {
+                return "";
+            }
+
+            string icon = goTemplate.m_sIcon;
+            if (string.IsNullOrEmpty(icon)) {
+                icon = GetReagentTemplateIcon(goTemplate.m_objectName);
+            }
+
             if (string.IsNullOrEmpty(icon)) {
                 return "";
             }
@@ -73,6 +82,7 @@ internal sealed class InteractReagentComponent(ZoneEntity entity)
             return icon.Contains('|') ? icon : $"|_Shared|WorldData|{icon}";
         }
     }
+
     public string NpcNameKey {
         get {
             if (Entity.Template is not GameObjectTemplate goTemplate) {
@@ -162,6 +172,21 @@ internal sealed class InteractReagentComponent(ZoneEntity entity)
 
         // Finally, destroy this entity.
         Entity.DeleteObject();
+    }
+
+    private static string GetReagentTemplateIcon(string nodeName) {
+        var reagentTemplate = ReagentFactory.GetReagentTemplate(nodeName);
+        if (reagentTemplate is null) {
+            return "";
+        }
+
+        string icon = reagentTemplate.m_sIcon;
+        if (!string.IsNullOrEmpty(icon)) {
+            return icon;
+        }
+
+        string imageName = reagentTemplate.m_imageName;
+        return string.IsNullOrEmpty(imageName) ? "" : REAGENT_ICON_DIRECTORY + imageName;
     }
 
     private ClientReagentItem GetReagent(ulong charId, int quantity) {

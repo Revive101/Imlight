@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Imlight
  * Copyright (C) 2025 Revive101
  *
@@ -36,7 +36,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/10/2026
+ * Last Updated: 10/15/2026
  */
 
 using System;
@@ -51,6 +51,10 @@ using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.Types;
 using Imlight.Common;
+using Imlight.CoreLib.Game.Housing.Access;
+using Imlight.CoreLib.Game.Housing.Attics;
+using Imlight.CoreLib.Game.Housing.Houses;
+using Imlight.CoreLib.Game.World;
 using Imlight.CoreLib.Plugins;
 using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Networking;
@@ -78,6 +82,100 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
     private bool _attachReceived;
     private readonly Stopwatch _sessionAge = Stopwatch.StartNew();
 
+
+    [Flags]
+    public enum AccountPermissions : uint {
+        None = 0,
+
+        /// <summary>
+        /// Allows the player to type in chat using strict whitelist dictionary.
+        /// Numbers, unwhitelisted words, and personal information are blocked.
+        /// </summary>
+        FilteredChat = 1 << 0,
+
+        /// <summary>
+        /// Unlocks adult text chat. Allows players to freely type numbers (e.g., stats, spell counts)
+        /// and words outside the strict whitelist, using only a basic profanity blacklist.
+        /// </summary>
+        OpenChat = 1 << 2,
+
+        /// <summary>
+        /// Enables the "btnSecureChatSetup" button on the Friends List to generate
+        /// and redeem one-time True Friend Codes for direct cross-tier communication.
+        /// </summary>
+        TrueFriendCodes = 1 << 4,
+
+        /// <summary>
+        /// Allows the player to purchase items as gifts for friends in the Crowns Shop.
+        /// If missing, the client disables the gift button with "Gifting is turned off for this account."
+        /// </summary>
+        Gifting = 1 << 5,
+
+        /// <summary>
+        /// Controls access to the Crowns Shop button on the player HUD.
+        /// If missing, the shop icon is disabled under parental spending locks.
+        /// (The client automatically bypasses this check when TestServer == 1).
+        /// </summary>
+        CrownShopPurchasing = 1 << 6,
+
+        /// <summary>
+        /// Controls access to Player vs. Player (PvP) matches, tournaments,
+        /// and ranked arena queues.
+        /// </summary>
+        PvPAllowed = 1 << 7,
+
+        /// <summary>
+        /// Allows participating in group/team, raid, and guild chat channels.
+        /// </summary>
+        GroupChatAllowed = 1 << 8,
+
+        /// <summary>
+        /// Enables the "Whisper" / private messaging button on friend cards.
+        /// When disabled, the player can only speak in public proximity chat.
+        /// </summary>
+        WhisperChat = 1 << 9,
+
+        /// <summary>
+        /// Set dynamically when entering the Master Password, or granted by the server.
+        /// Enables the Parental Controls button on the Character Selection screen and
+        /// the "Mute" button in the Player Report window.
+        /// </summary>
+        ParentalControlsUnlocked = 1 << 10,
+
+        /// <summary>
+        /// Authorizes the client to play sponsored video ads and open offerwalls.
+        /// If disabled while EarnCrownsVisible is on, clicking the kiosk pops up
+        /// the "Earn Crowns is disabled by Parental Controls" notification.
+        /// </summary>
+        EarnCrownsAllowed = 1 << 11,
+
+        /// <summary>
+        /// Toggles the visibility of the "Earn Crowns" icon on the main HUD
+        /// and the corresponding toggle in the Gameplay Options menu.
+        /// </summary>
+        EarnCrownsVisible = 1 << 12,
+
+        /// <summary>
+        /// Allows the in-game web browser to open external URLs (help articles,
+        /// account management, community event web pages).
+        /// </summary>
+        ExternalWebLinks = 1 << 13,
+
+        /// <summary>
+        /// Permits sending MSG_ADCLICKTHROUGH to credit the player account
+        /// for completing third-party sponsor promotions.
+        /// </summary>
+        AdClickThrough = 1 << 14,
+
+        /// <summary>
+        /// Master toggle for friend networking (teleporting, sending friend invites,
+        /// visiting castles, and private messaging).
+        /// </summary>
+        FriendSocialActions = 1 << 16,
+
+        All = uint.MaxValue
+    }
+
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new AttachService(parentActor));
 
@@ -87,7 +185,7 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
         _attachReceived = true;
         Timers.Cancel("attach-timeout");
 
-        Logger.Information("Session {SessionId} MSG_ATTACH received: zone {Zone}, Reattach={Reattach}, Retry={Retry}, {Elapsed}ms",
+        Logger.Debug("Session {SessionId} MSG_ATTACH received: zone {Zone}, Reattach={Reattach}, Retry={Retry}, {Elapsed}ms",
             Logger.Args(SessionActor.SessionID, (string) message.ZoneName, message.Reattach, message.Retry,
                         _sessionAge.ElapsedMilliseconds));
 
@@ -110,11 +208,23 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
             CloseStaleSession();
         }
 
+        // The client chooses the zone and the lot, so a house zone has to be one the character may enter before it is loaded.
+        if (!HouseAttach.TryAuthorize(_wizard, zoneName, message.ZoneID, out var house, out _)) {
+            Logger.Warning("Session {SessionId} MSG_ATTACH refused: house zone {Zone} is not available to character {CharId}",
+                Logger.Args(SessionActor.SessionID, zoneName, _wizard.CharId));
+
+            SendToSocket(new GAME_5_PROTOCOL.MSG_ATTACHFAILED {
+                Error = 1
+            });
+
+            return;
+        }
+
         // Tell the game server that the user has attached, and now we need to find a zone process for their
         // zone, or create a new one. This is an internal zone transfer that does not involve the client.
-        var zoneDetails = InternalZoneTransfer(zoneName, location);
+        var zoneDetails = InternalZoneTransfer(zoneName, location, house?.OwnerCharId ?? 0);
         if (zoneDetails is null || zoneDetails.ErrorCode != 0) {
-            Logger.Information("Session {SessionId} MSG_ATTACH failed: zone {Zone} transfer error {ErrorCode}",
+            Logger.Warning("Session {SessionId} could not enter zone {Zone}: the zone transfer failed with error {ErrorCode}.",
                 Logger.Args(SessionActor.SessionID, zoneName, zoneDetails?.ErrorCode ?? 1));
 
             SendToSocket(new GAME_5_PROTOCOL.MSG_ATTACHFAILED {
@@ -128,6 +238,11 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
         _wizard.SetZone(zoneName, zoneDetails.ZoneDisplayName);
         _wizard.SetPersistentLocation(zoneDetails.Location);
         _wizard.SetPersistentOrientation(zoneDetails.Orientation);
+
+        // The services that answer MSG_PRELOGIN read the lot, and the client's owner check reads it from the deed.
+        _wizard.AttachedLotGid = house?.LotGid ?? 0;
+        HouseDeeds.ApplyLots(_wizard);
+        AtticRegistry.Describe(_wizard);
 
         // Tiny anti-cheat measure. When the character object is created, we recalculate the game stats.
         CharacterHelper.RecalculateGameStats(_wizard);
@@ -153,7 +268,7 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
         );
         var flags = PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit;
         if (!coSerializer.Serialize(charGameObject, flags, out var localGameObjectData)) {
-            Logger.Error($"User {message.UserID} failed to serialize their player object.");
+            Logger.Error("The character of user {UserId} could not be serialized, so the session is closed.", Logger.Args(message.UserID));
 
             throw new SessionFatalException($"User {message.UserID} failed to serialize their player object.");
         }
@@ -164,7 +279,7 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
         );
         var criticalObjects = GetCriticalObjects(zoneDetails.CriticalObjects);
         if (!serializer.Serialize(criticalObjects, flags, out var criticalObjectData)) {
-            Logger.Error($"User {message.UserID} failed to serialize their critical object list.");
+            Logger.Error("The zone objects for user {UserId} could not be serialized, so the session is closed.", Logger.Args(message.UserID));
 
             throw new SessionFatalException($"User {message.UserID} failed to serialize their critical object list.");
         }
@@ -184,14 +299,18 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
 
             // Set zone data.
             ZoneName = zoneName,
-            ZoneID = message.ZoneID,
+            ZoneID = house is null ? message.ZoneID : house.LotGid,
             DynamicZoneID = zoneDetails.DynamicZoneId,
             DynamicServerProcID = zoneDetails.DynamicZoneId,
             CriticalObjects = criticalObjectData,
+            SubscriberCrownsPricePercent = 100,
 
             // Misc
             ShowSubscriberIcon = 0,
-            TestServer = 1
+            TestServer = 0,
+
+            // Every captured login sends 1, in every zone; the client hides its Pick Up All button while it is 0.
+            PickUpAllEnabled = 1
         };
 
         // Send MSG_PRELOGIN so other services may do their work before we send the final login complete message.
@@ -208,8 +327,10 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
             preLoginDelay
         );
 
-        Logger.Information("Session {SessionId} MSG_ATTACH accepted: zone {Zone}, character {CharId}, PRELOGIN in {Delay}ms",
-            Logger.Args(SessionActor.SessionID, zoneName, _wizard.CharId, (int) preLoginDelay.TotalMilliseconds));
+        Logger.Information("{Wizard} (ID {CharId}) is entering zone {Zone} on session {SessionId}.",
+            Logger.Args(_wizard.PlayerNameBehavior.GetWizardName(), _wizard.CharId, zoneName, SessionActor.SessionID));
+        Logger.Debug("Session {SessionId} sends PRELOGIN in {Delay}ms.",
+            Logger.Args(SessionActor.SessionID, (int) preLoginDelay.TotalMilliseconds));
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PRELOGIN))]
@@ -223,7 +344,7 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
         // Wait for the zone to confirm the player was added
         var addPlayerResponse = AddPlayerToZone(charGameObject, _wizard);
         if (addPlayerResponse.WizardGameObject == null) {
-            Logger.Error($"Failed to add player {_wizard.CharId} to zone.");
+            Logger.Error("Character {CharId} could not be added to their zone, so the attach failed.", Logger.Args(_wizard.CharId));
             SendToSocket(new GAME_5_PROTOCOL.MSG_ATTACHFAILED {
                 Error = 1
             });
@@ -280,20 +401,20 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
         SERVICE_101_PROTOCOL.MSG_QUERY_FALLBACK_RSP pendingTransfer) {
         // A pending transfer saves the source zone until its attach succeeds, so the message names the truth.
         if (pendingTransfer is not null && pendingTransfer.Found) {
-            Logger.Information("Session {SessionId} Reattach=1: transfer from {SourceZone} is pending, keeping destination {Zone}",
+            Logger.Debug("Session {SessionId} Reattach=1: transfer from {SourceZone} is pending, keeping destination {Zone}",
                 Logger.Args(SessionActor.SessionID, pendingTransfer.FallbackZone, zoneName));
 
             return (zoneName, location);
         }
 
         if (string.IsNullOrEmpty(_wizard.Zone)) {
-            Logger.Information("Session {SessionId} Reattach=1: no saved zone for {CharId}, keeping {Zone}",
+            Logger.Debug("Session {SessionId} Reattach=1: no saved zone for {CharId}, keeping {Zone}",
                 Logger.Args(SessionActor.SessionID, _wizard.CharId, zoneName));
 
             return (zoneName, location);
         }
 
-        Logger.Information("Session {SessionId} Reattach=1: using saved zone {SavedZone} instead of {Zone}",
+        Logger.Debug("Session {SessionId} Reattach=1: using saved zone {SavedZone} instead of {Zone}",
             Logger.Args(SessionActor.SessionID, _wizard.Zone, zoneName));
 
         return (_wizard.Zone, Util.GetCompactStringFromVector(_wizard.Location, _wizard.Orientation));
@@ -305,7 +426,7 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
             return;
         }
 
-        Logger.Information("Session {SessionId} Reattach=1: closing session {StaleSessionId} of {CharId}",
+        Logger.Debug("Session {SessionId} Reattach=1: closing session {StaleSessionId} of {CharId}",
             Logger.Args(SessionActor.SessionID, onlinePlayer.SessionId, _wizard.CharId));
 
         SessionActor.ServerRef.Tell(new SERVER_100_PROTOCOL.MSG_KICKSESSION {
@@ -378,12 +499,14 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
         this._wizard = character;
     }
 
-    private ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP InternalZoneTransfer(string zoneName, string location) {
+    private ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP InternalZoneTransfer(string zoneName, string location, ulong houseOwnerCharId = 0) {
+        var (ownerCharId, isPrivate) = ZoneInstanceOwners.Resolve(_wizard.CharId, zoneName, houseOwnerCharId);
         var zoneMsg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
             DestinationZone = zoneName,
             DestinationLocation = location,
             SendToClient = false,
-            OwnerCharId = _wizard.CharId,
+            OwnerCharId = ownerCharId,
+            IsPrivate = isPrivate,
         };
 
         return AskOtherService<ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP>(zoneMsg);
@@ -450,7 +573,7 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
         var priorTimeouts = rsp?.PriorTimeouts ?? 0;
 
         var action = AttachTimeoutPolicy.Decide(SessionActor.SessionValid, priorTimeouts, hasFallback);
-        Logger.Information("Session {SessionId} attach timeout decision: {Action}, priorTimeouts={PriorTimeouts}, hasFallback={HasFallback}",
+        Logger.Debug("Session {SessionId} attach timeout decision: {Action}, priorTimeouts={PriorTimeouts}, hasFallback={HasFallback}",
             Logger.Args(SessionActor.SessionID, action, priorTimeouts, hasFallback));
 
         if (action == AttachTimeoutAction.Redirect) {

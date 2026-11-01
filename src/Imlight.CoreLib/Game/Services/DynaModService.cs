@@ -34,7 +34,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 10/25/2026
  */
 
 using System.Collections.Generic;
@@ -81,7 +81,7 @@ internal class DynaModService(SessionActor sessionActor) : MessageService(sessio
 
         var objState = activeWizard.EnterState(message.StateName);
         if (objState is null) {
-            Logger.Error("Failed to enter state {0} for wizard {1}", Logger.Args(message.StateName, activeWizard.CharId));
+            Logger.Error("Character {CharId} could not enter state {State}.", Logger.Args(activeWizard.CharId, message.StateName));
 
             return;
         }
@@ -106,7 +106,7 @@ internal class DynaModService(SessionActor sessionActor) : MessageService(sessio
         var wizard = GetActiveWizard();
 
         if (message.DynaMod is null) {
-            Logger.Error("Received MSG_ADDDYNAMOD with null DynaMod data for wizard {0}",
+            Logger.Error("A zone modifier for character {CharId} arrived without its data, so it is not applied.",
                 Logger.Args(wizard.CharId));
                 
             return;

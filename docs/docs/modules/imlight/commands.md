@@ -14,6 +14,7 @@ If Imlight was built in _release_ mode, any command with a developer security le
 | Command | Security | Syntax | Description |
 | ------- | -------- | ------ | ----------- |
 | teleport | Quality Assurance | `.teleport $zonename` | Teleports you to a specific zone. If a zone is not found, it will guess. |
+| hatch | Quality Assurance | `.hatch` or `.hatch $pet $pet` | Lists your pets that are old enough to hatch, or lays the egg of two of them, named by list number, id or name without spaces. No gold is taken. |
 
 ## Account Commands
 
@@ -62,23 +63,30 @@ Your command context will not drop. If you select a player, that player will sti
 | levelup | Quality Assurance | `.mod levelup` | Levels up your character. |
 | level | Quality Assurance | `.mod level $level` | Levels up your character to a certain level. |
 | speed | Quality Assurance | `.mod speed $speed`| Changes your speed. The number matches the ingame, so `40` would give you mount speed. |
-| additem | Quality Assurance | `.mod additem $id` | Adds an item to your inventory by ID. |
+| additem | Quality Assurance | `.mod additem $id` | Adds an item to your inventory by ID. When the inventory is full it goes to the bank, a jewel to the shared bank first. |
 | addsnack | Quality Assurance | `.mod addsnack $id` | Adds a snack to your pet snack bag. |
+| petlevel | Quality Assurance | `.mod petlevel $level` | Sets the level of your equipped pet and expresses the talents that level earns. |
+| petxp | Quality Assurance | `.mod petxp $xp` | Adds XP to your equipped pet, carrying any overflow into the next levels. Each level reached shows the pet level-up window. |
+| pethappiness | Quality Assurance | `.mod pethappiness $happiness` | Sets the happiness of your equipped pet, up to its maximum. |
+| pettalent | Quality Assurance | `.mod pettalent $talentName` | Gives your equipped pet a talent by its exact name and expresses it. |
 | name | Quality Assurance | `.mod name $newName` | Adds a new name override to your character. |
 | maxgold | Quality Assurance | `.mod maxgold $newMaxGold` | Changes the amount of max gold you can carry. |
 | addgold | Quality Assurance | `.mod addgold $gold` | Adds gold to your wizard. |
+| maxbank | Quality Assurance | `.mod maxbank $limit` | Sets how many items your bank holds. |
+| expandbank | Quality Assurance | `.mod expandbank` | Raises your bank capacity by the configured elixir amount, up to the configured maximum. |
 | maxhealth | Quality Assurance | `.mod maxhealth $newHealth` | Changes your base health value. |
 | maxmana | Quality Assurance | `.mod maxmana $newMana` | Changes your base mana value. |
-| maxenergy | Quality Assurance | `mod maxenergy $newValue` | Changes the maximum energy of your character. |
+| maxenergy | Quality Assurance | `.mod maxenergy $newValue` | Changes the maximum energy of your character. |
 | currenthealth | Quality Assurance | `.mod currenthealth $newHealth` | Changes your current health value. |
 | currentmana | Quality Assurance | `.mod currentmana $newMana` | Changes your current mana value. |
-| currentenergy | Quality Assurance | `mod currentenergy $newValue` | Changes the current energy of your character. |
+| currentenergy | Quality Assurance | `.mod currentenergy $newValue` | Changes the current energy of your character. |
 | heal | Quality Assurance | `.mod heal` | Heals your wizard to full. |
 | rejuv | Quality Assurance | `.mod rejuv` | Fills your wizard's mana to full. |
-| energize | Quality Assurance | `mod energize` | Refills the energy of your character. |
-| cantriplevelup | Quality Assurance | `mod cantriplevelup` | Levels up your cantrip level. |
-| cantriplevel | Quality Assurance | `mod cantriplevel $level` | Changes your cantrip level. |
-| badge | Quality Assurance | `mod badge $locale_id` | Changes your badge. This must be a locale id to function. |
+| energize | Quality Assurance | `.mod energize` | Refills the energy of your character. |
+| cantriplevelup | Quality Assurance | `.mod cantriplevelup` | Levels up your cantrip level. |
+| cantriplevel | Quality Assurance | `.mod cantriplevel $level` | Changes your cantrip level. |
+| badge | Quality Assurance | `.mod badge $locale_id` | Changes your badge title. This must be a locale id to function. Choosing no title in the Badges window clears it. |
+| setcrowns | Quality Assurance | `.mod setcrowns $newAmount` | Sets your account's Crowns balance. |
 
 ## DynaMod Commands
 

@@ -37,15 +37,15 @@ internal sealed class ResDropTableHandler : BaseResultHandler<ResDropTable> {
             .GetPlayerRef()
             .Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(queryWizardMsg, queryTimeout).Result;
         if (queryResponse == null) {
-            Logger.Error("Handler failed to retrieve character data within {0} seconds.",
-                Logger.Args(QUERY_WIZARD_TIMEOUT_SECONDS));
+            Logger.Warning("Result {Result} was skipped: the character could not be read, most likely because the player logged out.",
+                Logger.Args(nameof(ResDropTable)));
 
             return false;
         }
         var wizard = queryResponse.Wizard;
         if (wizard == null) {
-            Logger.Error("Handler retrieved character data reply, but wizard was null after {0} seconds.",
-                Logger.Args(QUERY_WIZARD_TIMEOUT_SECONDS));
+            Logger.Warning("Result {Result} was skipped: the character could not be read, most likely because the player logged out.",
+                Logger.Args(nameof(ResDropTable)));
 
             return false;
         }

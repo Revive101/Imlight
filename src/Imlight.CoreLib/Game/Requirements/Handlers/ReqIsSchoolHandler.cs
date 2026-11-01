@@ -16,9 +16,12 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System;
 using Imcodec.ObjectProperty.TypeCache;
+using Imlight.CoreLib.Game.Combat;
+using Imlight.CoreLib.Game.Requirements.Contexts;
+using Imlight.CoreLib.Game.Spells;
 using Imlight.CoreLib.WizardData.Models.Player;
+using System;
 
 namespace Imlight.CoreLib.Game.Requirements.Handlers;
 
@@ -28,6 +31,10 @@ namespace Imlight.CoreLib.Game.Requirements.Handlers;
 internal sealed class ReqIsSchoolHandler : BaseRequirementHandler<ReqIsSchool> {
 
     public override bool Evaluate(IRequirementContext context) {
+        if (context is CombatRequirementContext combatContext) {
+            return IsParticipantInSchool(combatContext.GetParticipant(Requirement));
+        }
+
         var wizard = context.GetWizard();
         if (wizard == null) {
             return false;
@@ -40,7 +47,16 @@ internal sealed class ReqIsSchoolHandler : BaseRequirementHandler<ReqIsSchool> {
 
         return IsInSchool(wizard, schoolName);
     }
-    
+
+    private bool IsParticipantInSchool(CombatDuelSubCircle participant) {
+        var school = MagicSchools.GetMagicSchool(Requirement.m_magicSchoolName);
+        if (school is null || participant?.CombatParticipant is null) {
+            return false;
+        }
+
+        return participant.CombatParticipant.m_primaryMagicSchoolID == school.m_schoolIndex;
+    }
+
     private static bool IsInSchool(Wizard wizard, string schoolName) {
         if (wizard?.MagicSchoolBehavior?.MagicSchool == null) {
             return false;
