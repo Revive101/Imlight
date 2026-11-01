@@ -34,7 +34,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 08/14/2026
+ * Last Updated: 11/01/2026
  */
 
 using System;
@@ -47,6 +47,7 @@ using Imlight.Common;
 using Imlight.CoreLib.Game.Combat;
 using Imlight.CoreLib.Game.Spells;
 using Imlight.CoreLib.Game.Zone.Core;
+using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 
@@ -94,7 +95,7 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
     private CombatDuelSubCircle[] _friendlySubcircles
         => [.. _currentDuelComponent.ActiveSubCircles.Where(x => x.CurrentTeam == _currentSubCircle.CurrentTeam)];
     private bool _isHealingViable
-        => _friendlySubcircles.Any(x => x.ParticipantGameStats.m_currentHitpoints / x.ParticipantGameStats.m_baseHitpoints < _healingThreshold);
+        => _friendlySubcircles.Any(x => HealthFraction(x.ParticipantGameStats) < _healingThreshold);
     private bool _sentFinalKill;
     private bool _isInDuel;
 
@@ -467,7 +468,7 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
             else {
                 // Otherwise, select a random teammate.
                 var randomTeammate = _friendlySubcircles[_random.Next(_friendlySubcircles.Length)];
-                msg.SpellTarget = (byte) (randomTeammate.SlotIndex + 1);
+                msg.SpellTarget = (uint) randomTeammate.SlotIndex;
             }
         }
         else if (debuffSpells.Count > 0) {
@@ -493,37 +494,31 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
             SpellTarget = 0,
         };
 
-        // Determine if we're smart enough to use the highest pip healing spell.
-        if (_determinedSmartThisTurn) {
-            var highestPipHealingSpell = castableHealingSpells
-                .OrderByDescending(x => x.m_pipCost.m_spellRank)
-                .FirstOrDefault();
-            if (highestPipHealingSpell is not null) {
-                msg.SpellSelection = (byte) _roundHand.m_spellList.IndexOf(highestPipHealingSpell);
-            }
-        }
-
-        // Otherwise, choose a random healing spell.
-        var randomIdx = _random.Next(castableHealingSpells.Count);
-        var selectedSpell = castableHealingSpells[randomIdx];
+        // Determine if we're smart enough to use the highest pip healing spell. Otherwise, choose a random one.
+        var selectedSpell = _determinedSmartThisTurn
+            ? castableHealingSpells.OrderByDescending(x => x.m_pipCost.m_spellRank).First()
+            : castableHealingSpells[_random.Next(castableHealingSpells.Count)];
         msg.SpellSelection = (byte) _roundHand.m_spellList.IndexOf(selectedSpell);
 
         // If we're below the healing threshold, and selfish enough, heal ourselves.
-        var selfThresholdMatched = _stats.Stats.m_currentHitpoints / _stats.Stats.m_baseHitpoints < _healingThreshold;
+        var selfThresholdMatched = HealthFraction(_stats.Stats) < _healingThreshold;
         if (selfThresholdMatched && _determinedSelfishThisTurn) {
             msg.SpellTarget = (uint) _currentSubCircle.SlotIndex;
         }
         else {
             // Otherwise, heal the teammate with the lowest health percentage.
             var lowestHealthTeammate = _friendlySubcircles
-                .OrderBy(x => x.ParticipantGameStats.m_currentHitpoints / x.ParticipantGameStats.m_baseHitpoints)
+                .OrderBy(x => HealthFraction(x.ParticipantGameStats))
                 .First();
 
-            msg.SpellTarget = (byte) (lowestHealthTeammate.SlotIndex + 1);
+            msg.SpellTarget = (uint) lowestHealthTeammate.SlotIndex;
         }
 
         return msg;
     }
+
+    private static float HealthFraction(ServerWizGameStats stats)
+        => (float) stats.m_currentHitpoints / stats.m_baseHitpoints;
 
     private List<Spell> GetCastableSpells(List<Spell> spells) {
         var castableSpells = new List<Spell>();
