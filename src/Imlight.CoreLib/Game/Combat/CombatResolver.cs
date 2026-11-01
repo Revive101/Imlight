@@ -288,7 +288,7 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
             Logger.Debug("Duel {0} | Slot {1} | Caster is stunned. Passing.",
                 Logger.Args(_duel.m_duelID.Full, action.SpellCaster.SlotIndex));
 
-            return cinematicTime + HandlePassAction(action, combatActionList);
+            return cinematicTime + HandlePassAction(action, combatActionList, DuelPassReason.Stunned);
         }
 
         // A null spell indicates the caster is passing their turn.
@@ -296,7 +296,7 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
             Logger.Debug("Duel {0} | Slot {1} | Caster is passing their turn.",
                 Logger.Args(_duel.m_duelID.Full, action.SpellCaster.SlotIndex));
 
-            return cinematicTime + HandlePassAction(action, combatActionList);
+            return cinematicTime + HandlePassAction(action, combatActionList, DuelPassReason.Passed);
         }
 
         // If our target is gone, pass the turn.
@@ -304,22 +304,22 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
             Logger.Debug("Duel {0} | Slot {1} | Spell cannot occur because target is dead.",
                 Logger.Args(_duel.m_duelID.Full, action.SpellCaster.SlotIndex));
 
-            return cinematicTime + HandlePassAction(action, combatActionList);
+            return cinematicTime + HandlePassAction(action, combatActionList, DuelPassReason.TargetGone);
         }
 
         if (IsSpellCastCancelled(action)) {
             Logger.Debug("Duel {0} | Slot {1} | Spell cast cancelled by a plugin.",
                 Logger.Args(_duel.m_duelID.Full, action.SpellCaster.SlotIndex));
 
-            return cinematicTime + HandlePassAction(action, combatActionList);
+            return cinematicTime + HandlePassAction(action, combatActionList, DuelPassReason.Cancelled);
         }
 
         // Determine if this spell hits or fizzles.
-        if (!SpellHits(action.SpellCaster, action.Spell)) {
+        if (!SpellHits(action.SpellCaster, action.Spell, out var dispelled)) {
             // Increase pips used counter by 1, even if the spell fizzled.
             action.SpellCaster._usedPipsForExperienceGain++;
 
-            return cinematicTime + HandleFizzleAction(action, combatActionList);
+            return cinematicTime + HandleFizzleAction(action, combatActionList, dispelled);
         }
 
         // Record when this caster's cinematic begins so a summoned minion appears with its cast.
@@ -357,7 +357,7 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
         return PluginManager.Events.Fire(evt).IsCancelled;
     }
 
-    private float HandleFizzleAction(QueuedCombatAction action, CombatActionListObj combatActionList) {
+    private float HandleFizzleAction(QueuedCombatAction action, CombatActionListObj combatActionList, bool dispelled) {
         var fizzleAction = InitializeCombatAction(action);
         fizzleAction.m_spellHits = (char) 0;
         fizzleAction.m_targetSubcircleList.Add(action.SelectedTarget.SlotIndex);
@@ -365,6 +365,14 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
 
         Logger.Debug("Duel {0} | Slot {1} | Spell fizzled.",
             Logger.Args(_duel.m_duelID.Full, action.SpellCaster.SlotIndex));
+
+        if (action.SpellCaster.ToPluginCaster() is { } caster) {
+            _ = PluginManager.Events.Fire(new OnDuelistSpellFizzle(caster,
+                action.Spell.m_templateID,
+                action.SpellTemplate.m_name,
+                action.SpellTemplate.m_sMagicSchoolName,
+                dispelled));
+        }
 
         return SpellCinematics.GetFizzleTime(SpellFactory.GetBaseSpellName(action.Spell.m_templateID));
     }
@@ -389,16 +397,36 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
             return SpellCinematics.GetPassTime();
         }
 
+        FireCriticalEvent(action, combatAction);
+
         return GetActionCinematicTime(action, combatAction) + cinematicTime;
     }
 
-    private float HandlePassAction(QueuedCombatAction action, CombatActionListObj combatActionList) {
+    private float HandlePassAction(QueuedCombatAction action, CombatActionListObj combatActionList, DuelPassReason reason) {
         var passCombatAction = InitializeCombatAction(action);
         passCombatAction.m_spell = null;
         passCombatAction.m_spellHits = (char) 0;
         combatActionList.m_actionList.Add(passCombatAction);
 
+        if (action.SpellCaster.ToPluginCaster() is { } caster) {
+            _ = PluginManager.Events.Fire(new OnDuelistPass(caster, reason));
+        }
+
         return SpellCinematics.GetPassTime();
+    }
+
+    private static void FireCriticalEvent(QueuedCombatAction action, CombatAction combatAction) {
+        // Every target of a landed critical shares its multiplier.
+        var critical = combatAction.m_CritHitList?.FirstOrDefault(x => x.m_mult > 0f);
+        if (critical is null || action.SpellCaster.ToPluginCaster() is not { } caster) {
+            return;
+        }
+
+        _ = PluginManager.Events.Fire(new OnDuelistSpellCritical(caster,
+            action.Spell.m_templateID,
+            action.SpellTemplate.m_name,
+            action.SpellTemplate.m_sMagicSchoolName,
+            critical.m_mult));
     }
 
     private float InvokeOverTimeEffects(CombatDuelSubCircle caster) {
@@ -478,12 +506,15 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
         return castTime + SpellCinematics.GetCriticalHitTime(spellName);
     }
 
-    private static bool SpellHits(CombatDuelSubCircle caster, Spell spell) {
+    private static bool SpellHits(CombatDuelSubCircle caster, Spell spell, out bool dispelled) {
+        dispelled = false;
         if (caster is null || spell is null) {
             return false;
         }
 
         if (ConsumeDispell(caster, spell.m_magicSchoolID)) {
+            dispelled = true;
+
             return false;
         }
 

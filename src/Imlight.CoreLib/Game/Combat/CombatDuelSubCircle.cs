@@ -395,6 +395,10 @@ public class CombatDuelSubCircle {
             return false;
         }
 
+        if (ToPluginCaster() is { } duelist && PluginManager.Events.Fire(new OnDuelistStun(duelist, rounds)).IsCancelled) {
+            return false;
+        }
+
         CombatParticipant.m_stunned = rounds;
 
         return true;
@@ -402,6 +406,10 @@ public class CombatDuelSubCircle {
 
     internal bool TryMindControl(int turns, CombatTeam newTeam) {
         if (IsBoss || newTeam > CombatTeam.Monster || newTeam == CurrentTeam) {
+            return false;
+        }
+
+        if (ToPluginCaster() is { } duelist && PluginManager.Events.Fire(new OnDuelistMindControl(duelist, turns)).IsCancelled) {
             return false;
         }
 
@@ -505,14 +513,26 @@ public class CombatDuelSubCircle {
 
             // Update the health of the player.
             _wizard.UpdateHealth(newHealth);
+
+            if (newHealth > currentHealth) {
+                _ = PluginManager.Events.Fire(new OnDuelistHeal(ToPluginPlayer(), newHealth - currentHealth));
+            }
         }
         else {
+            var currentHealth = ParticipantGameStats.m_currentHitpoints;
+
             // Make sure the health doesn't go above the max health.
             if (ParticipantGameStats.m_currentHitpoints + heal > ParticipantGameStats.m_baseHitpoints) {
                 ParticipantGameStats.m_currentHitpoints = ParticipantGameStats.m_baseHitpoints;
             }
             else {
                 ParticipantGameStats.m_currentHitpoints += heal;
+            }
+
+            // Sandboxed wizards land here too.
+            var healthGained = ParticipantGameStats.m_currentHitpoints - currentHealth;
+            if (_wizard is null && healthGained > 0 && ToPluginCreature() is { } creature) {
+                _ = PluginManager.Events.Fire(new OnDuelistHeal(creature, healthGained));
             }
         }
     }
@@ -547,7 +567,13 @@ public class CombatDuelSubCircle {
         CombatPipPayment.ClearSchoolPips(ourPipCount);
     }
 
-    internal void Reshuffle() => _combatDeck.Reshuffle();
+    internal void Reshuffle() {
+        _combatDeck.Reshuffle();
+
+        if (ToPluginCaster() is { } duelist) {
+            _ = PluginManager.Events.Fire(new OnDuelistReshuffle(duelist));
+        }
+    }
 
     /// <summary>
     /// Adds copies of a battle card to this participant's deck.

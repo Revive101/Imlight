@@ -73,6 +73,13 @@ public sealed class GreeterPlugin : ImlightPlugin {
 | `OnPlayerDuelLeave` | No | When a player leaves a duel before it ends, by fleeing, forfeiting, disconnecting or logging out. `Duel.Players` no longer includes them. |
 | `OnDuelistDamage` | No | When a player or creature loses health in a duel, as the round resolves and before the client plays it. `Damage` is the health lost and `Duelist.Health` is already reduced. Not fired for hits fully absorbed by wards or resistances. |
 | `OnDuelistSpellCast` | Yes | When a player's, creature's or minion's queued spell is about to be cast in a duel, before the fizzle roll, so it fires for spells that then fizzle. Cancelling turns the cast into a pass, and a player spends no pips, mana or card. Not fired for passes, stuns or dead targets. |
+| `OnDuelistHeal` | No | When a player or creature gains health in a duel, from a spell or a heal over time, as the round resolves and before the client plays it. `Healing` is the health gained and `Duelist.Health` is already raised. Not fired for heals on someone at full health. |
+| `OnDuelistSpellFizzle` | No | When a spell that passed `OnDuelistSpellCast` fails to go off. `WasDispelled` is true if a dispel on the caster stopped it and false if it missed its accuracy roll. |
+| `OnDuelistPass` | No | When a turn goes by without a spell. `Reason` says whether they `Passed`, were `Stunned`, lost their target (`TargetGone`) or had the cast `Cancelled` by a plugin. Not fired for a spell that resolves with nothing worth casting, though the client plays that as a pass. |
+| `OnDuelistStun` | Yes | When a duelist is about to be stunned, after any stun block and stun resistance have failed to stop it. `Rounds` is how many turns it takes. Cancelling treats the target as immune, so they get no stun block either. Not fired for bosses. |
+| `OnDuelistMindControl` | Yes | When a duelist is about to be mind controlled. `Turns` is how long it lasts. Cancelling leaves them on their own team. Not fired for bosses or targets already on the caster's team. |
+| `OnDuelistSpellCritical` | No | When a spell lands a critical, once per cast, after its effects have been applied and its cost paid. `Multiplier` is the critical's multiplier. |
+| `OnDuelistReshuffle` | No | After a spell reshuffles a duelist's deck. |
 
 Handlers are matched on the event's exact type, so subscribing to `ImlightEvent` or another base type receives nothing. Handlers for the same event run in the order they subscribed.
 

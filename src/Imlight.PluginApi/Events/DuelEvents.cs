@@ -159,3 +159,165 @@ public sealed class OnDuelistSpellCast(IDuelist duelist, uint spellTemplateId, s
     public bool IsCancelled { get; set; }
 
 }
+
+/// <summary>
+/// Fired when a player or creature gains health in a duel, from a spell or a heal over time, as the server resolves the
+/// round and before the client plays it. Heals on someone already at full health don't fire it. Fires on the duel's
+/// actor.
+/// </summary>
+public sealed class OnDuelistHeal(IDuelist duelist, int healing) : ImlightEvent {
+
+    /// <summary>
+    /// The player or creature that was healed. <see cref="IDuelist.Health"/> is already raised.
+    /// </summary>
+    public IDuelist Duelist { get; } = duelist;
+
+    /// <summary>
+    /// The health they gained, never more than they were missing.
+    /// </summary>
+    public int Healing { get; } = healing;
+
+}
+
+/// <summary>
+/// Fired when a spell that passed <see cref="OnDuelistSpellCast"/> fails to go off, by missing its accuracy roll or by
+/// being stopped by a dispel on the caster. Fires on the duel's actor.
+/// </summary>
+public sealed class OnDuelistSpellFizzle(IDuelist duelist, uint spellTemplateId, string spellName, string school,
+    bool wasDispelled) : ImlightEvent {
+
+    /// <summary>
+    /// The player or creature whose spell fizzled.
+    /// </summary>
+    public IDuelist Duelist { get; } = duelist;
+
+    /// <summary>
+    /// The template ID of the spell.
+    /// </summary>
+    public uint SpellTemplateId { get; } = spellTemplateId;
+
+    /// <summary>
+    /// The internal name of the spell's template.
+    /// </summary>
+    public string SpellName { get; } = spellName;
+
+    /// <summary>
+    /// The spell's school, e.g. <c>Fire</c>.
+    /// </summary>
+    public string School { get; } = school;
+
+    /// <summary>
+    /// True if a dispel on the caster stopped the spell, false if it missed its accuracy roll.
+    /// </summary>
+    public bool WasDispelled { get; } = wasDispelled;
+
+}
+
+/// <summary>
+/// Fired when a player's, creature's or minion's turn in a duel goes by without a spell. A caster that an over-time
+/// effect kills at the start of its turn doesn't fire it, and neither does a spell that resolves with nothing worth
+/// casting, though the client plays that as a pass. Fires on the duel's actor.
+/// </summary>
+public sealed class OnDuelistPass(IDuelist duelist, DuelPassReason reason) : ImlightEvent {
+
+    /// <summary>
+    /// The player or creature that passed.
+    /// </summary>
+    public IDuelist Duelist { get; } = duelist;
+
+    /// <summary>
+    /// Why they passed.
+    /// </summary>
+    public DuelPassReason Reason { get; } = reason;
+
+}
+
+/// <summary>
+/// Fired when a player, creature or minion is about to be stunned in a duel, after any stun block and stun resistance
+/// have failed to stop it. Bosses, who can't be stunned, don't fire it. Cancelling it treats the target as immune, so
+/// they get no stun block either. Fires on the duel's actor.
+/// </summary>
+public sealed class OnDuelistStun(IDuelist duelist, int rounds) : ImlightEvent, ICancellable {
+
+    /// <summary>
+    /// The player or creature being stunned.
+    /// </summary>
+    public IDuelist Duelist { get; } = duelist;
+
+    /// <summary>
+    /// How many of their turns the stun will take.
+    /// </summary>
+    public int Rounds { get; } = rounds;
+
+    /// <inheritdoc />
+    public bool IsCancelled { get; set; }
+
+}
+
+/// <summary>
+/// Fired when a player, creature or minion is about to be mind controlled in a duel. Bosses, who can't be mind
+/// controlled, don't fire it, and neither does a target already on the caster's team. Cancelling it leaves them on their
+/// own team. Fires on the duel's actor.
+/// </summary>
+public sealed class OnDuelistMindControl(IDuelist duelist, int turns) : ImlightEvent, ICancellable {
+
+    /// <summary>
+    /// The player or creature being mind controlled.
+    /// </summary>
+    public IDuelist Duelist { get; } = duelist;
+
+    /// <summary>
+    /// How many of their turns the mind control will last.
+    /// </summary>
+    public int Turns { get; } = turns;
+
+    /// <inheritdoc />
+    public bool IsCancelled { get; set; }
+
+}
+
+/// <summary>
+/// Fired when a spell lands a critical, once per cast however many targets it hit, after its effects have been applied
+/// and its cost paid. Fires on the duel's actor.
+/// </summary>
+public sealed class OnDuelistSpellCritical(IDuelist duelist, uint spellTemplateId, string spellName, string school,
+    float multiplier) : ImlightEvent {
+
+    /// <summary>
+    /// The player or creature whose spell landed a critical.
+    /// </summary>
+    public IDuelist Duelist { get; } = duelist;
+
+    /// <summary>
+    /// The template ID of the spell.
+    /// </summary>
+    public uint SpellTemplateId { get; } = spellTemplateId;
+
+    /// <summary>
+    /// The internal name of the spell's template.
+    /// </summary>
+    public string SpellName { get; } = spellName;
+
+    /// <summary>
+    /// The spell's school, e.g. <c>Fire</c>.
+    /// </summary>
+    public string School { get; } = school;
+
+    /// <summary>
+    /// The multiplier the critical applied to the spell's damage or healing.
+    /// </summary>
+    public float Multiplier { get; } = multiplier;
+
+}
+
+/// <summary>
+/// Fired after a spell reshuffles a duelist's deck. Fires on the duel's actor.
+/// </summary>
+public sealed class OnDuelistReshuffle(IDuelist duelist) : ImlightEvent {
+
+    /// <summary>
+    /// The player or creature whose deck was reshuffled.
+    /// </summary>
+    public IDuelist Duelist { get; } = duelist;
+
+}

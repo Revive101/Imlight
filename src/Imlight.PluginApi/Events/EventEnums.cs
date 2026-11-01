@@ -17,7 +17,7 @@
  *
  * Created by: phazejeff
  * Version: KALI 1.0
- * Last Updated: 10/24/2026
+ * Last Updated: 11/01/2026
  */
 
 namespace Imlight.PluginApi.Events;
@@ -121,5 +121,32 @@ public enum ZoneEventSource {
     /// The player finishing loading into the zone.
     /// </summary>
     EnterZone,
+
+}
+
+/// <summary>
+/// Why a duelist's turn went by without a spell.
+/// </summary>
+public enum DuelPassReason {
+
+    /// <summary>
+    /// They chose to pass, or didn't choose a move in time.
+    /// </summary>
+    Passed,
+
+    /// <summary>
+    /// They were stunned.
+    /// </summary>
+    Stunned,
+
+    /// <summary>
+    /// Their target died or left the duel before the spell could be cast.
+    /// </summary>
+    TargetGone,
+
+    /// <summary>
+    /// A plugin cancelled <see cref="OnDuelistSpellCast"/>.
+    /// </summary>
+    Cancelled,
 
 }
