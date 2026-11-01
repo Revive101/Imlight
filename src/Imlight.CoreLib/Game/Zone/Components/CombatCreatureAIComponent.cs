@@ -559,8 +559,8 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
 
     private void InitiatizeHateTable() {
         // Create the hate table.
-        int start = (_currentSubCircle.SlotIndex < 3) ? 4 : 0;
-        int end = (_currentSubCircle.SlotIndex < 3) ? _currentDuelComponent.SubCircles.Length : _currentDuelComponent.SubCircles.Length / 2;
+        int start = (_currentSubCircle.SlotIndex < 4) ? 4 : 0;
+        int end = (_currentSubCircle.SlotIndex < 4) ? _currentDuelComponent.SubCircles.Length : _currentDuelComponent.SubCircles.Length / 2;
 
         for (int i = start; i < end; i++) {
             _hateTable.Add(i, 0);
