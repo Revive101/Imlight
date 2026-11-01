@@ -557,6 +557,31 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
     }
 
     /// <summary>
+    /// Sent by plugins: the inventory service gives the wizard a new copy of an item through
+    /// <see cref="Game.Bank.ItemPlacement"/>, so a full backpack overflows to the bank. The template must already pass <see cref="Items.ItemHelper.CheckGiveable"/>.
+    /// </summary>
+    public sealed class MSG_GIVEITEM : IServerMessage {
+
+        public byte MessageOrder { get; } = 74;
+        public byte ServiceID { get; } = 103;
+
+        public ulong TemplateId;
+
+    }
+
+    /// <summary>
+    /// Sent by plugins: the inventory service removes an item from the wizard's backpack, if it is there.
+    /// </summary>
+    public sealed class MSG_REMOVEITEM : IServerMessage {
+
+        public byte MessageOrder { get; } = 75;
+        public byte ServiceID { get; } = 103;
+
+        public ulong ItemId;
+
+    }
+
+    /// <summary>
     /// Sent to the PetService after an egg was laid into a free morphing slot, so it shows the slot and starts the hatch timer.
     /// </summary>
     public sealed class MSG_PETEGGLAID : IServerMessage {
@@ -662,30 +687,4 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
         public ulong CharId;
 
     }
-
-    /// <summary>
-    /// Sent by plugins: the inventory service gives the wizard a new copy of an item through
-    /// <see cref="Game.Bank.ItemPlacement"/>, so a full backpack overflows to the bank. The template must already pass <see cref="Items.ItemHelper.CheckGiveable"/>.
-    /// </summary>
-    public sealed class MSG_GIVEITEM : IServerMessage {
-
-        public byte MessageOrder { get; } = 74;
-        public byte ServiceID { get; } = 103;
-
-        public ulong TemplateId;
-
-    }
-
-    /// <summary>
-    /// Sent by plugins: the inventory service removes an item from the wizard's backpack, if it is there.
-    /// </summary>
-    public sealed class MSG_REMOVEITEM : IServerMessage {
-
-        public byte MessageOrder { get; } = 75;
-        public byte ServiceID { get; } = 103;
-
-        public ulong ItemId;
-
-    }
-
 }
