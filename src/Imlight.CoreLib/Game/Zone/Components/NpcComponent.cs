@@ -32,7 +32,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 11/01/2026
  */
 
 using System;
@@ -51,6 +51,8 @@ using Imlight.CoreLib.WizardData.Models.Player;
 namespace Imlight.CoreLib.Game.Zone.Components;
 
 internal sealed class NpcComponent : ZoneEntityComponent, IComponentFactory, IClientBehaviorProvider<NPCBehavior> {
+
+    private const float AGGRESSIVE_FACTOR_SCALE = 10f;
 
     public bool NoTransfer { get; set; } = false;
     public bool IsMonster { get; private set; }
@@ -86,9 +88,11 @@ internal sealed class NpcComponent : ZoneEntityComponent, IComponentFactory, ICl
             .FirstOrDefault();
 
         this.IsBossMonster = _npcBehaviorTemplate.m_bossMob;
-        this.IntelligenceFactor = _npcBehaviorTemplate.m_fIntelligence;
-        this.SelfishnessFactor = _npcBehaviorTemplate.m_fSelfishFactor;
-        this.AggressiveFactor = _npcBehaviorTemplate.m_nAggressiveFactor;
+        // A few templates hold typos such as 9 for 0.9, which clamp to an always-on factor as they roll anyway.
+        this.IntelligenceFactor = Math.Clamp(_npcBehaviorTemplate.m_fIntelligence, 0f, 1f);
+        this.SelfishnessFactor = Math.Clamp(_npcBehaviorTemplate.m_fSelfishFactor, 0f, 1f);
+        // Unlike the other two, templates store this as an int from 1 to 10.
+        this.AggressiveFactor = Math.Clamp(_npcBehaviorTemplate.m_nAggressiveFactor / AGGRESSIVE_FACTOR_SCALE, 0f, 1f);
         this.StartingHealth = _npcBehaviorTemplate.m_nStartingHealth;
 
         this.IsMonster = _duelistBehaviorTemplate is not null;
