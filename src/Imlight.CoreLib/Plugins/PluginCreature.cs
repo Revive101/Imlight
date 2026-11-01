@@ -17,10 +17,13 @@
  *
  * Created by: phazejeff
  * Version: KALI 1.0
- * Last Updated: 10/27/2026
+ * Last Updated: 11/01/2026
  */
 
 using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Game.Zone.Components;
 using Imlight.CoreLib.Game.Zone.Core;
@@ -44,6 +47,11 @@ internal sealed class PluginCreature(ZoneEntity entity, IZone zone) : ICreature 
     private readonly NpcComponent _npc = entity.GetComponentOfType<NpcComponent>();
     private readonly StatsComponent _stats = entity.GetComponentOfType<StatsComponent>();
     private readonly CombatCreatureAIComponent _ai = entity.GetComponentOfType<CombatCreatureAIComponent>();
+    // A creature's deck is built once, when it is created.
+    private readonly ImmutableList<uint> _spells = [
+        .. entity.GetComponentOfType<CombatCreatureDeckComponent>()?.Spells.Select(x => x.m_templateID) ?? []
+    ];
+    private volatile bool _stopped;
 
     public ZoneEntity Entity => entity;
 
@@ -73,6 +81,23 @@ internal sealed class PluginCreature(ZoneEntity entity, IZone zone) : ICreature 
     public bool IsMinion => entity.IsCombatOnlyMinion;
 
     public bool InCombat => _ai.InDuel;
+
+    public bool IsDead => _stopped || _ai.RemovedFromDuel;
+
+    public float Intelligence => _npc.IntelligenceFactor;
+
+    public float Aggressiveness => _npc.AggressiveFactor;
+
+    public float Selfishness => _npc.SelfishnessFactor;
+
+    public float Proximity => _npc.Proximity;
+
+    public IReadOnlyList<uint> Spells => _spells;
+
+    /// <summary>
+    /// Records that the creature's actor has stopped.
+    /// </summary>
+    public void MarkStopped() => _stopped = true;
 
     // A stopped actor drops these, which is what makes calls on a dead creature do nothing.
 

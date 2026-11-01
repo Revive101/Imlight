@@ -34,7 +34,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 08/14/2026
+ * Last Updated: 11/01/2026
  */
 
 using System;
@@ -47,8 +47,10 @@ using Imlight.Common;
 using Imlight.CoreLib.Game.Combat;
 using Imlight.CoreLib.Game.Spells;
 using Imlight.CoreLib.Game.Zone.Core;
+using Imlight.CoreLib.Plugins;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.PluginApi.Events;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 
@@ -103,6 +105,11 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
     /// True from when the creature joins a duel until it dies. A creature never leaves a duel alive.
     /// </summary>
     public bool InDuel => _isInDuel && !_sentFinalKill;
+
+    /// <summary>
+    /// True once the creature's duel has removed it, whether it died or the duel ended with it alive.
+    /// </summary>
+    public bool RemovedFromDuel => _sentFinalKill;
 
     public static bool ShouldAttachToEntity(CoreTemplate template)
         => template is GameObjectTemplate gameObjectTemplate
@@ -247,6 +254,7 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
                 ParticipantID = _currentSubCircle.ParticipantObject.m_globalID
             });
             _sentFinalKill = true;
+            FireDeathEvent();
             Entity.DeleteObject();
 
             // Free the sub-circle so a future summon can reuse the slot.
@@ -264,8 +272,16 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
         // Send this message to ourselves again after a delay to delete the entity. This lets the combat death animation play out,
         // and then the entity will be deleted.
         _sentFinalKill = true;
+        FireDeathEvent();
         var delay = TimeSpan.FromMilliseconds(COMBAT_DEATH_ANIMATION_IN_MS);
         Timers.StartSingleTimer("FinalKill", new COMBAT_106_PROTOCOL.MSG_COMBATDEATH(), delay);
+    }
+
+    private void FireDeathEvent() {
+        // The duel also sends MSG_COMBATDEATH to creatures it removes alive, such as the winners of a duel.
+        if (_stats.Stats.m_currentHitpoints <= 0 && Entity.PluginCreature is not null) {
+            _ = PluginManager.Events.Fire(new OnCreatureDeath(Entity.PluginCreature));
+        }
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_DESPAWNCREATURE))]

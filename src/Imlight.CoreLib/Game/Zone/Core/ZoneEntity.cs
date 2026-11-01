@@ -38,7 +38,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/27/2026
+ * Last Updated: 11/01/2026
  */
 
 using System;
@@ -58,6 +58,7 @@ using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
+using Imlight.PluginApi.Events;
 
 namespace Imlight.CoreLib.Game.Zone.Core;
 
@@ -103,6 +104,11 @@ public class ZoneEntity(
     private PluginZone _pluginZone;
 
     internal IActorRef CurrentSender => Sender;
+
+    /// <summary>
+    /// Gets the plugin view of this entity, or null if it is not a creature to plugins.
+    /// </summary>
+    internal PluginCreature PluginCreature { get; private set; }
 
     /// <summary>
     /// Gets a list of components of the specified type.
@@ -261,7 +267,11 @@ public class ZoneEntity(
             sourceRef: Self, sourceTemplateId: (Template as GameObjectTemplate)?.m_templateID ?? 0, sourceIsInstance: Zone.IsInstance);
 
     protected override void PostStop() {
-        _pluginZone?.RemoveCreature(this);
+        if (PluginCreature is not null) {
+            _pluginZone.RemoveCreature(PluginCreature);
+            _ = PluginManager.Events.Fire(new OnCreatureDespawn(PluginCreature));
+        }
+
         base.PostStop();
     }
 
@@ -291,10 +301,15 @@ public class ZoneEntity(
         // Any combat creature is a creature to plugins.
         if (ActiveGameObject is not null && GetComponentOfType<CombatCreatureAIComponent>() is not null) {
             _pluginZone = PluginZone.Of(ZoneRef);
-            _pluginZone?.AddCreature(this);
+            PluginCreature = _pluginZone?.AddCreature(this);
         }
 
         Sender.Tell(new ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADRESULTS());
+
+        // After the reply: a duel blocks on a minion's load, and a handler must not be able to stall it.
+        if (PluginCreature is not null) {
+            _ = PluginManager.Events.Fire(new OnCreatureSpawn(PluginCreature));
+        }
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEENTITY))]

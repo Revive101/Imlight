@@ -17,9 +17,10 @@
  *
  * Created by: phazejeff
  * Version: KALI 1.0
- * Last Updated: 10/27/2026
+ * Last Updated: 11/01/2026
  */
 
+using System.Collections.Generic;
 using System.Numerics;
 
 namespace Imlight.PluginApi;
@@ -98,6 +99,40 @@ public interface ICreature {
     /// True while the creature is fighting in a duel. A creature that joins a duel stays in it until it dies or despawns.
     /// </summary>
     bool InCombat { get; }
+
+    /// <summary>
+    /// True once the creature has died, despawned or been removed by its duel ending. It never turns false again.
+    /// </summary>
+    /// <remarks>
+    /// A creature at 0 health in a duel is not dead until the end of the round, when the duel removes it.
+    /// </remarks>
+    bool IsDead { get; }
+
+    /// <summary>
+    /// The chance, from 0 to 1, that the creature picks the strongest spell in its hand each round.
+    /// </summary>
+    float Intelligence { get; }
+
+    /// <summary>
+    /// The chance, from 0 to 1, that the creature attacks each round rather than preparing.
+    /// </summary>
+    float Aggressiveness { get; }
+
+    /// <summary>
+    /// The chance, from 0 to 1, that the creature prepares on itself rather than on a teammate.
+    /// </summary>
+    float Selfishness { get; }
+
+    /// <summary>
+    /// How close a player must come for the creature to start a duel with them.
+    /// </summary>
+    float Proximity { get; }
+
+    /// <summary>
+    /// The template ID of each spell in the creature's deck, listed once however many copies it has.
+    /// The list does not change.
+    /// </summary>
+    IReadOnlyList<uint> Spells { get; }
 
     // Every write below is applied by the creature's own actor after it returns, so the matching
     // property may not change right away. Calls on a creature that has died or despawned do nothing.

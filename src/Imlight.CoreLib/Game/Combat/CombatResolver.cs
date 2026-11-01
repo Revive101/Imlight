@@ -48,7 +48,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/25/2026
+ * Last Updated: 11/01/2026
  */
 
 using System;
@@ -343,9 +343,24 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
     }
 
     private static bool IsSpellCastCancelled(QueuedCombatAction action) {
-        // Only human players fire plugin events; creatures and summoned minions have no wizard.
+        // Creatures and summoned minions have no wizard.
         var caster = action.SpellCaster;
-        if (caster._wizard is null || caster.IsSummonedMinion) {
+        if (caster._wizard is null) {
+            var creature = caster.ToPluginCreature();
+            if (creature is null) {
+                return false;
+            }
+
+            var creatureEvt = new OnCreatureSpellCast(creature,
+                action.Spell.m_templateID,
+                action.SpellTemplate.m_name,
+                action.SpellTemplate.m_sMagicSchoolName,
+                action.Spell.m_pipCost.m_spellRank);
+
+            return PluginManager.Events.Fire(creatureEvt).IsCancelled;
+        }
+
+        if (caster.IsSummonedMinion) {
             return false;
         }
 

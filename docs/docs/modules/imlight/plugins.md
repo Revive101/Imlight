@@ -65,6 +65,11 @@ public sealed class GreeterPlugin : ImlightPlugin {
 | `OnPlayerDeath` | Yes | When a duel ends with a player still knocked out, before they are sent to the hub, whether their team won or lost. Cancelling leaves them standing where the duel was at zero health, so also call `Player.SetHealth`. Not fired for a knocked-out player who disconnects or logs out first. |
 | `OnPlayerSpellCast` | Yes | When a player's queued spell is about to be cast in a duel, before the fizzle roll, so it fires for spells that then fizzle. Cancelling turns the cast into a pass and spends no pips, mana or card. Not fired for passes, stuns or dead targets. |
 | `OnPlayerCantripCast` | Yes | When a player casts a cantrip, before energy is spent. For a ritual, fired when the cast starts, not when the target is chosen. Cancelling stops the cast without spending energy or starting the cooldown. |
+| `OnCreatureSpawn` | No | When a creature is added to its zone, including a minion summoned in a duel. `Zone.Creatures` already includes it. |
+| `OnCreatureDespawn` | No | When a creature has left its zone for any reason, including after it dies and when the zone unloads. Fires once for every creature that fired `OnCreatureSpawn`. Calls on the creature do nothing by this point. |
+| `OnCreatureDamage` | No | When a creature loses health in a duel, as the round resolves and before the client plays it. `Damage` is the health lost and `Creature.Health` is already reduced. Not fired for hits fully absorbed by wards or resistances. |
+| `OnCreatureDeath` | No | When a defeated creature is removed from its duel at the end of a round, or a creature in a duel is despawned. `OnCreatureDespawn` follows. Not fired for creatures removed alive, such as the winners of a duel. |
+| `OnCreatureSpellCast` | Yes | When a creature's or minion's queued spell is about to be cast in a duel, before the fizzle roll, so it fires for spells that then fizzle. Cancelling turns the cast into a pass. Not fired for passes, stuns or dead targets. |
 
 Handlers are matched on the event's exact type, so subscribing to `ImlightEvent` or another base type receives nothing. Handlers for the same event run in the order they subscribed.
 

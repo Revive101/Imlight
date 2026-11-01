@@ -38,7 +38,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/25/2026
+ * Last Updated: 11/01/2026
  */
 
 using Akka.Actor;
@@ -433,12 +433,20 @@ public class CombatDuelSubCircle {
             }
         }
         else {
+            var currentHealth = ParticipantGameStats.m_currentHitpoints;
+
             // Make sure the health doesn't go below 0.
             if (ParticipantGameStats.m_currentHitpoints - damage < 0) {
                 ParticipantGameStats.m_currentHitpoints = 0;
             }
             else {
                 ParticipantGameStats.m_currentHitpoints -= damage;
+            }
+
+            // Sandboxed wizards land here too, and a negative amount heals.
+            var healthLost = currentHealth - ParticipantGameStats.m_currentHitpoints;
+            if (_wizard is null && healthLost > 0 && ToPluginCreature() is { } creature) {
+                _ = PluginManager.Events.Fire(new OnCreatureDamage(creature, healthLost));
             }
         }
     }
@@ -458,6 +466,12 @@ public class CombatDuelSubCircle {
     /// </summary>
     internal IPlayer ToPluginPlayer()
         => PluginPlayer.For(_wizard, ParticipantActor, _duelActor.ZoneRef);
+
+    /// <summary>
+    /// The plugin view of this circle's creature or minion, or null if it has already left the zone.
+    /// </summary>
+    internal ICreature ToPluginCreature()
+        => PluginZone.Of(_duelActor.ZoneRef)?.CreatureFor(ParticipantActor);
 
     internal void HealParticipant(int heal) {
         // If the participant is a player, update their health.

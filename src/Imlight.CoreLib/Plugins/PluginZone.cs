@@ -34,7 +34,7 @@
  *
  * Created by: phazejeff
  * Version: KALI 1.0
- * Last Updated: 10/27/2026
+ * Last Updated: 11/01/2026
  */
 
 using System.Collections.Concurrent;
@@ -101,12 +101,23 @@ internal sealed class PluginZone(string name, bool isInstance, IActorRef zoneAct
     public void RemovePlayer(IActorRef sessionActor)
         => _players = Without(sessionActor);
 
-    public void AddCreature(ZoneEntity entity)
-        => ImmutableInterlocked.Update(ref _creatures, x => x.Add(new PluginCreature(entity, this)));
+    /// <summary>
+    /// The plugin view of a creature in this zone, or null if it is not listed, such as once its actor has stopped.
+    /// </summary>
+    public ICreature CreatureFor(IActorRef entityActor)
+        => Volatile.Read(ref _creatures).Find(x => ((PluginCreature) x).Entity.SelfRef.Equals(entityActor));
 
-    public void RemoveCreature(ZoneEntity entity)
-        => ImmutableInterlocked.Update(ref _creatures,
-            x => x.RemoveAll(c => ReferenceEquals(((PluginCreature) c).Entity, entity)));
+    public PluginCreature AddCreature(ZoneEntity entity) {
+        var creature = new PluginCreature(entity, this);
+        _ = ImmutableInterlocked.Update(ref _creatures, x => x.Add(creature));
+
+        return creature;
+    }
+
+    public void RemoveCreature(PluginCreature creature) {
+        creature.MarkStopped();
+        _ = ImmutableInterlocked.Update(ref _creatures, x => x.Remove(creature));
+    }
 
     /// <summary>
     /// Sends a message through the zone's broadcast, as if the zone itself sent it.
