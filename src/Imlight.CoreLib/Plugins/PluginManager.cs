@@ -108,6 +108,7 @@ public static class PluginManager {
             plugin.Commands = Commands.For(plugin);
             plugin.Server = Server;
             plugin.Scheduler = scheduler;
+            plugin.Logger = new PluginLogger(plugin.Name);
             plugin.DataFolderPath = Path.Combine(directory, ToFolderName(plugin.Name));
             plugin.OnEnable();
             s_plugins.Add(plugin);

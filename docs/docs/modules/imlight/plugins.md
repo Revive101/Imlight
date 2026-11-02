@@ -261,6 +261,29 @@ Every task is cancelled just before `OnDisable`, or if `OnEnable` throws, and an
 
 A task can outlive the player or zone it was scheduled for, so store `CharacterId` or the zone's `Name` and look them up when it runs, as the countdown does. `Server.GetPlayer` returns null if the player has left or is between zones.
 
+## Logging
+
+`Logger` writes to the server's log, with each line labelled with the plugin's name:
+
+```csharp
+public override void OnEnable() {
+    Logger.Information("Ready to greet.");
+
+    Scheduler.RunEvery(TimeSpan.FromMinutes(5), () => {
+        try {
+            SaveScores();
+        }
+        catch (IOException ex) {
+            Logger.Error("Could not save scores", ex);
+        }
+    });
+}
+```
+
+`Debug`, `Information`, `Warning` and `Error` each take a message, and `Error` can also take an exception. The server's `LogLevel` setting decides which are kept, so `Debug` lines are dropped by default. Messages are plain text, so use string interpolation rather than Serilog `{Placeholder}` templates.
+
+Like the rest of the API, `Logger` is not set yet in a plugin's constructor. Use it from `OnEnable` onwards.
+
 ## Adding an Event
 
 1. Add a class deriving from `ImlightEvent` to `Imlight.PluginApi/Events`, named `On<Subject><Action>` (e.g. `OnPlayerLevelUp`). Implement `ICancellable` if handlers should be able to stop the action.

@@ -81,6 +81,11 @@ public abstract class ImlightPlugin {
     public ITaskScheduler Scheduler { get; internal set; } = null!;
 
     /// <summary>
+    /// Writes to the server log, labelled with this plugin's name.
+    /// </summary>
+    public IPluginLogger Logger { get; internal set; } = null!;
+
+    /// <summary>
     /// This plugin's own folder for configs and other data it keeps between runs, created on first use.
     /// Store files here rather than anywhere else on disk.
     /// </summary>
