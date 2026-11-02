@@ -116,6 +116,7 @@ Commands.Register("buyheal", c => {
 | `SetTrainingPoints(points)` | Sets unspent training points. |
 | `SetCantripLevel(level)` | Resets cantrip XP. Throws above the max cantrip level. |
 | `SetPotions(charge, max)` | `charge` is clamped between 0 and `max`. |
+| `Learn(spellTemplateId)` | Teaches the spell. Returns false if the wizard already knows it. Throws `ArgumentException` if the template does not exist or is not a spell. |
 
 Setters that don't clamp throw `ArgumentOutOfRangeException` for negative values, and `SetMaxHealth` also throws for 0. `SetLevel` and `AddExperience` are applied by the player's session after they return, so `Level` and `Experience` may still show the old value straight afterwards. Every other setter takes effect immediately. Call them from an event or command handler, as the server's own commands do, or from a [scheduled task](#scheduler).
 

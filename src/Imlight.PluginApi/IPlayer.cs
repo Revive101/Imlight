@@ -203,6 +203,13 @@ public interface IPlayer : IDuelist {
     void SetPotions(float charge, float max);
 
     /// <summary>
+    /// Teaches the wizard a spell. Changes nothing and returns false if they already know it.
+    /// </summary>
+    /// <param name="spellTemplateId">The spell's template ID.</param>
+    /// <exception cref="System.ArgumentException">The template does not exist or is not a spell.</exception>
+    bool Learn(uint spellTemplateId);
+
+    /// <summary>
     /// Gives the wizard a new copy of the item, the same way loot is given: into the backpack, or into the bank
     /// when the backpack is full (jewels may go to the shared bank). If there is no room anywhere, the item is lost
     /// and the player is told.

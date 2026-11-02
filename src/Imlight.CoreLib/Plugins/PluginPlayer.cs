@@ -27,6 +27,7 @@ using Akka.Actor;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Game.Cantrips;
+using Imlight.CoreLib.Game.Spells;
 using Imlight.CoreLib.Game.World;
 using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Items;
@@ -205,6 +206,15 @@ internal sealed class PluginPlayer(Wizard wizard, IActorRef sessionActor, IZone 
             PotionCharge = PotionCharge,
             PotionMax = PotionMax
         }, null);
+    }
+
+    public bool Learn(uint spellTemplateId) {
+        var result = SpellTeacher.TryTeach(sessionActor, wizard, spellTemplateId);
+        if (result == SpellTeachResult.Failed) {
+            throw new ArgumentException($"Template {spellTemplateId} is not a spell.", nameof(spellTemplateId));
+        }
+
+        return result == SpellTeachResult.Learned;
     }
 
     public void GiveItem(ulong templateId) {
