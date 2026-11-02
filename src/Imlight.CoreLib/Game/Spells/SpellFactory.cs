@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/25/2026
+ * Last Updated: 11/01/2026
  */
 
 using System;
@@ -163,7 +163,7 @@ internal class SpellFactory : RootDirectoryResourceSingleton<SpellFactory>, IMem
             return 0;
         }
 
-        CoreObjectFactory.TryGetCoreTemplateID(x => x.m_filename == path, out uint templateId);
+        CoreObjectFactory.TryGetCoreTemplateIDByFilename(path, out var templateId);
         return templateId;
     }
 

@@ -35,15 +35,12 @@
  *
  * Created by: Jay
  * Version: KALI 1.0
- * Last Updated: 10/23/2026
+ * Last Updated: 11/01/2026
  */
 
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Threading;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Shared.Resources;
 
@@ -54,7 +51,6 @@ internal static class DialogSpeakers {
     private const string PERSONA_NAME_SUFFIX = "_Persona";
 
     private static readonly ConcurrentDictionary<string, GameObjectTemplate> s_speakerByPersona = new();
-    private static Dictionary<string, List<ulong>> s_templateIdsByObjectName;
 
     /// <summary>
     /// The dialog as the client must get it: a persona line that names no speaker gets the
@@ -117,38 +113,13 @@ internal static class DialogSpeakers {
         }
 
         var objectName = personaName[..^PERSONA_NAME_SUFFIX.Length];
-        if (!TemplateIdsByObjectName().TryGetValue(objectName, out var templateIds)) {
-            return null;
-        }
 
-        return templateIds
+        return CoreObjectFactory.GetTemplateIdsByObjectName(objectName)
             .Select(id => CoreObjectFactory.GetCoreTemplate(id) as GameObjectTemplate)
             .FirstOrDefault(template => template is not null && PersonaOf(template) == personaName);
     }
 
     private static string PersonaOf(GameObjectTemplate npc)
         => npc.m_behaviors?.OfType<WizardQuestingBehaviorTemplate>().FirstOrDefault()?.m_personaName;
-
-    private static Dictionary<string, List<ulong>> TemplateIdsByObjectName()
-        => LazyInitializer.EnsureInitialized(ref s_templateIdsByObjectName, IndexTemplateIdsByObjectName);
-
-    private static Dictionary<string, List<ulong>> IndexTemplateIdsByObjectName() {
-        var index = new Dictionary<string, List<ulong>>(StringComparer.Ordinal);
-        foreach (var location in CoreObjectFactory.TemplateManifest.m_serializedTemplates) {
-            if (location?.m_filename is null) {
-                continue;
-            }
-
-            var objectName = Path.GetFileNameWithoutExtension(location.m_filename);
-            if (!index.TryGetValue(objectName, out var templateIds)) {
-                templateIds = [];
-                index[objectName] = templateIds;
-            }
-
-            templateIds.Add(location.m_id);
-        }
-
-        return index;
-    }
 
 }

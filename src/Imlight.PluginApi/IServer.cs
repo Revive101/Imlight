@@ -17,7 +17,7 @@
  *
  * Created by: phazejeff
  * Version: KALI 1.0
- * Last Updated: 10/24/2026
+ * Last Updated: 11/01/2026
  */
 
 using System.Collections.Generic;
@@ -53,6 +53,46 @@ public interface IServer {
     /// The player with this display name, matched case-insensitively, or null if they are not in a zone.
     /// </summary>
     IPlayer? GetPlayer(string name);
+
+    /// <summary>
+    /// The shared zone with this internal name, matched case-insensitively, or null if it is not loaded.
+    /// </summary>
+    /// <remarks>
+    /// Instances are not included, as several can share a name. Find those through <see cref="Zones"/>.
+    /// </remarks>
+    IZone? GetZone(string name);
+
+    /// <summary>
+    /// The creature with this global ID, or null if it is not spawned.
+    /// </summary>
+    ICreature? GetCreature(ulong globalId);
+
+    /// <summary>
+    /// The item with this template ID, or null if the ID does not name an item.
+    /// </summary>
+    /// <remarks>
+    /// The first lookup of a template reads it from the game files, so avoid looking up many at once on a game event.
+    /// </remarks>
+    ItemInfo? GetItem(ulong templateId);
+
+    /// <summary>
+    /// Every item with this internal name, matched case-insensitively. The list is empty if there are none.
+    /// </summary>
+    /// <remarks>
+    /// English names cannot be searched, as finding one would mean reading every template in the game files.
+    /// </remarks>
+    IReadOnlyList<ItemInfo> FindItems(string internalName);
+
+    /// <summary>
+    /// The spell with this template ID, or null if the ID does not name a spell.
+    /// </summary>
+    SpellInfo? GetSpell(uint templateId);
+
+    /// <summary>
+    /// The spell with this internal name, or null if there is none. The name must match exactly,
+    /// including its case.
+    /// </summary>
+    SpellInfo? GetSpell(string name);
 
     /// <summary>
     /// Shows a server message to every player in a zone. Safe to call from any thread.

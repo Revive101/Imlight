@@ -195,6 +195,23 @@ Commands.Register("who", c => {
 
 `Players` and `Zones` are snapshots, like `IZone.Players`, so read them again for fresh data. `Players` only holds players who are in a zone, so a player mid zone change or still logging in is missing from it and `GetPlayer` returns null for them. `GetPlayer(name)` matches the display name case-insensitively.
 
+`GetZone` finds a shared zone by internal name, and `GetCreature` finds a spawned creature by `GlobalId`. Instances are not included in `GetZone`, as several can share a name.
+
+Most of the API gives items and spells by template ID. `GetItem` and `GetSpell` turn an ID into its details, such as a name, school or pip cost:
+
+```csharp
+Events.Subscribe<OnCreatureLoot>(evt => {
+    foreach (var loot in evt.Items) {
+        var item = Server.GetItem(loot.TemplateId);
+        if (item is not null) {
+            evt.Player.SendMessage($"You found {item.Name}!");
+        }
+    }
+});
+```
+
+To go the other way, `GetSpell(name)` takes a spell's internal name, matched exactly, and `FindItems` takes an item's internal name, matched case-insensitively. `FindItems` returns a list, as several items can share a name. English item names cannot be searched. All of these return null or an empty list for something that does not exist.
+
 ## Commands
 
 Plugins can add their own chat commands through `Commands`, in `OnEnable`:

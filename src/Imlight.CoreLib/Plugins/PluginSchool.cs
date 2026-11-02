@@ -20,6 +20,7 @@
  * Last Updated: 10/27/2026
  */
 
+using System;
 using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.PluginApi;
 
@@ -44,5 +45,12 @@ internal static class PluginSchool {
         MagicSchool.Shadow  => School.Shadow,
         _                   => School.None,
     };
+
+    /// <summary>
+    /// The plugin API's <see cref="School"/> for a school's name in a template, or <see cref="School.None"/>
+    /// if it names none.
+    /// </summary>
+    public static School ToPluginSchool(string schoolName)
+        => Enum.TryParse<MagicSchool>(schoolName, out var school) ? school.ToPluginSchool() : School.None;
 
 }

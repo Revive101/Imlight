@@ -37,13 +37,14 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/25/2026
+ * Last Updated: 11/01/2026
  */
 
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using Imcodec.Cryptography;
@@ -66,6 +67,8 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
 
     private static readonly ConcurrentDictionary<ulong, CoreTemplate> s_templateCache = new();
     private static Dictionary<ulong, TemplateLocation> s_templateLocations;
+    private static Dictionary<string, uint> s_templateIdsByFilename;
+    private static Dictionary<string, List<ulong>> s_templateIdsByObjectName;
 
     protected override void AfterLoad() {
         var serializer = new BindSerializer();
@@ -185,6 +188,38 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
     }
 
     /// <summary>
+    /// Gets the CoreTemplate with the specified ID, for an ID that may not exist. Unlike
+    /// <see cref="GetCoreTemplate"/>, an unknown ID is neither logged nor cached.
+    /// </summary>
+    /// <param name="id">The ID of the CoreTemplate.</param>
+    /// <returns>The CoreTemplate object if found; otherwise, null.</returns>
+    public static CoreTemplate FindCoreTemplate(ulong id)
+        => TemplateLocations().ContainsKey(id) ? GetCoreTemplate(id) : null;
+
+    /// <summary>
+    /// Gets the ID of the template stored in the specified file.
+    /// </summary>
+    /// <param name="filename">The template's file name, as the manifest gives it.</param>
+    /// <param name="templateId">The ID of the template, or 0 if not found.</param>
+    /// <returns>True if the file holds a template; otherwise, false.</returns>
+    public static bool TryGetCoreTemplateIDByFilename(string filename, out uint templateId)
+        => LazyInitializer.EnsureInitialized(ref s_templateIdsByFilename, IndexTemplateIdsByFilename)
+            .TryGetValue(filename, out templateId);
+
+    /// <summary>
+    /// Gets the IDs of the templates whose file is named <paramref name="objectName"/>, ignoring case.
+    /// The file name is normally the template's object name, but nothing guarantees it, and several
+    /// templates can share one, so check what comes back.
+    /// </summary>
+    /// <param name="objectName">The file name, without its directory or extension.</param>
+    /// <returns>The matching template IDs, which may be empty.</returns>
+    public static IReadOnlyList<ulong> GetTemplateIdsByObjectName(string objectName) {
+        var index = LazyInitializer.EnsureInitialized(ref s_templateIdsByObjectName, IndexTemplateIdsByObjectName);
+
+        return index.TryGetValue(objectName, out var templateIds) ? templateIds : [];
+    }
+
+    /// <summary>
     /// Loads a template file. Names shaped <c>|&lt;Dir&gt;|WorldData|&lt;path&gt;</c> live in
     /// the <c>&lt;Dir&gt;-WorldData</c> archive; everything else lives in Root.wad.
     /// </summary>
@@ -212,6 +247,37 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
         }
 
         return locations;
+    }
+
+    private static Dictionary<string, uint> IndexTemplateIdsByFilename() {
+        // The first entry wins for a duplicated file.
+        var ids = new Dictionary<string, uint>(TemplateManifest.m_serializedTemplates.Count);
+        foreach (var location in TemplateManifest.m_serializedTemplates) {
+            if (location is not null) {
+                ids.TryAdd(location.m_filename, location.m_id);
+            }
+        }
+
+        return ids;
+    }
+
+    private static Dictionary<string, List<ulong>> IndexTemplateIdsByObjectName() {
+        var index = new Dictionary<string, List<ulong>>(StringComparer.OrdinalIgnoreCase);
+        foreach (var location in TemplateManifest.m_serializedTemplates) {
+            if (location is null) {
+                continue;
+            }
+
+            var objectName = Path.GetFileNameWithoutExtension(location.m_filename);
+            if (!index.TryGetValue(objectName, out var templateIds)) {
+                templateIds = [];
+                index[objectName] = templateIds;
+            }
+
+            templateIds.Add(location.m_id);
+        }
+
+        return index;
     }
 
     /// <summary>

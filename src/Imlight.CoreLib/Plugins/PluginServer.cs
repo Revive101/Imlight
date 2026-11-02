@@ -29,7 +29,7 @@
  *
  * Created by: phazejeff
  * Version: KALI 1.0
- * Last Updated: 10/24/2026
+ * Last Updated: 11/01/2026
  */
 
 using System;
@@ -55,6 +55,20 @@ internal sealed class PluginServer : IServer {
     public IPlayer GetPlayer(string name)
         => PluginZone.All.SelectMany(x => x.Players)
             .FirstOrDefault(x => string.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase));
+
+    public IZone GetZone(string name)
+        => PluginZone.All.FirstOrDefault(x => !x.IsInstance && string.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase));
+
+    public ICreature GetCreature(ulong globalId)
+        => PluginZone.All.SelectMany(x => x.Creatures).FirstOrDefault(x => x.GlobalId == globalId);
+
+    public ItemInfo GetItem(ulong templateId) => PluginTemplates.GetItem(templateId);
+
+    public IReadOnlyList<ItemInfo> FindItems(string internalName) => PluginTemplates.FindItems(internalName);
+
+    public SpellInfo GetSpell(uint templateId) => PluginTemplates.GetSpell(templateId);
+
+    public SpellInfo GetSpell(string name) => PluginTemplates.GetSpell(name);
 
     public void Broadcast(string message) {
         foreach (var player in Players) {

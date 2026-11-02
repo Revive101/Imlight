@@ -29,7 +29,6 @@ using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Game.Zone.Components;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Packets;
-using Imlight.CoreLib.Shared.Resources;
 using Imlight.PluginApi;
 
 namespace Imlight.CoreLib.Plugins;
@@ -44,7 +43,7 @@ namespace Imlight.CoreLib.Plugins;
 internal sealed class PluginCreature(ZoneEntity entity, IZone zone) : ICreature {
 
     private readonly CoreObject _creature = entity.ActiveGameObject;
-    private readonly string _name = ResolveName(entity.Template);
+    private readonly string _name = PluginTemplates.ResolveName(entity.Template);
     private readonly NpcComponent _npc = entity.GetComponentOfType<NpcComponent>();
     private readonly StatsComponent _stats = entity.GetComponentOfType<StatsComponent>();
     private readonly CombatCreatureAIComponent _ai = entity.GetComponentOfType<CombatCreatureAIComponent>();
@@ -145,21 +144,5 @@ internal sealed class PluginCreature(ZoneEntity entity, IZone zone) : ICreature 
         => chance is >= 0 and <= 1
             ? chance
             : throw new ArgumentOutOfRangeException(paramName, chance, "Must be between 0 and 1.");
-
-    private static string ResolveName(CoreTemplate template) {
-        if (template is GameObjectTemplate gameObjectTemplate) {
-            var displayName = Locale.GetEnglishName(gameObjectTemplate.m_displayName.ToString());
-            if (!string.IsNullOrEmpty(displayName)) {
-                return displayName;
-            }
-
-            var objectName = gameObjectTemplate.m_objectName.ToString();
-            if (!string.IsNullOrEmpty(objectName)) {
-                return objectName;
-            }
-        }
-
-        return "";
-    }
 
 }
