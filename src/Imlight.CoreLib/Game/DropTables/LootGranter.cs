@@ -39,7 +39,7 @@
  * 
  * Created by: Jay
  * Version: KALI 1.0
- * Last Updated: 10/14/2026
+ * Last Updated: 11/01/2026
  */
 
 using System;
@@ -256,7 +256,16 @@ public static class LootGranter {
 
                     break;
                 case ItemTemplate:
-                    if (GrantItem(playerActor, wizard, item, itemGuid)) {
+                    // Each copy is its own item, and any of them can fail to place.
+                    var grantedCopies = 0;
+                    for (var i = 0; i < item.Quantity; i++) {
+                        if (GrantItem(playerActor, wizard, item, itemGuid)) {
+                            grantedCopies++;
+                        }
+                    }
+
+                    if (grantedCopies > 0) {
+                        item.Quantity = grantedCopies;
                         grantedItems.Add(item);
                     }
 

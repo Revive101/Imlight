@@ -20,6 +20,9 @@
  * Last Updated: 11/01/2026
  */
 
+using System;
+using System.Collections.Generic;
+
 namespace Imlight.PluginApi.Events;
 
 /// <summary>
@@ -61,5 +64,88 @@ public sealed class OnCreatureDeath(ICreature creature) : ImlightEvent {
     /// The creature that died. <see cref="ICreature.IsDead"/> is true and <see cref="ICreature.Health"/> is zero.
     /// </summary>
     public ICreature Creature { get; } = creature;
+
+}
+
+/// <summary>
+/// Fired when a defeated creature's loot has been rolled for a player who won a duel, before any of it is given, once
+/// per creature for each winner. It fires for every creature, with empty loot if it has no drop table or the roll
+/// dropped nothing. Handlers can change the loot, and the player is given whatever is left once they have all run.
+/// Cancelling it gives them nothing from that creature and shows no loot popup; their other loot and the experience
+/// earned for pips used in the duel are unaffected. The creature itself is gone by now, so it is identified by
+/// template. Fires on the player's session, not the duel's actor.
+/// </summary>
+public sealed class OnCreatureLoot(IPlayer player, ulong creatureTemplateId, string creatureName, int gold,
+    int experience, int trainingPoints, bool grantsPotionSlot, List<LootItem> items)
+    : ImlightEvent, ICancellable {
+
+    private int _gold = gold;
+    private int _experience = experience;
+    private int _trainingPoints = trainingPoints;
+
+    /// <summary>
+    /// The player receiving the loot.
+    /// </summary>
+    public IPlayer Player { get; } = player;
+
+    /// <summary>
+    /// The template ID of the creature that dropped the loot.
+    /// </summary>
+    public ulong CreatureTemplateId { get; } = creatureTemplateId;
+
+    /// <summary>
+    /// The internal name of the creature's template, or empty if it has none.
+    /// </summary>
+    public string CreatureName { get; } = creatureName;
+
+    /// <summary>
+    /// The gold to give. The player keeps only what fits in their gold pouch.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is negative.</exception>
+    public int Gold {
+        get => _gold;
+        set {
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
+            _gold = value;
+        }
+    }
+
+    /// <summary>
+    /// The experience to give.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is negative.</exception>
+    public int Experience {
+        get => _experience;
+        set {
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
+            _experience = value;
+        }
+    }
+
+    /// <summary>
+    /// The training points to give.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is negative.</exception>
+    public int TrainingPoints {
+        get => _trainingPoints;
+        set {
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
+            _trainingPoints = value;
+        }
+    }
+
+    /// <summary>
+    /// Whether the loot gives the player another potion slot.
+    /// </summary>
+    public bool GrantsPotionSlot { get; set; } = grantsPotionSlot;
+
+    /// <summary>
+    /// The items, reagents, spells and treasure cards to give. Add to it, remove from it or clear it to change the
+    /// loot. The player can end up with less, such as when a reagent stack is full or they already know a spell.
+    /// </summary>
+    public List<LootItem> Items { get; } = items;
+
+    /// <inheritdoc />
+    public bool IsCancelled { get; set; }
 
 }

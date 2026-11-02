@@ -37,11 +37,12 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/25/2026
+ * Last Updated: 11/01/2026
  */
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Akka.Actor;
 using Imcodec.CoreObject;
 using Imcodec.IO;
@@ -54,11 +55,16 @@ using Imlight.CoreLib.Game.Combat;
 using Imlight.CoreLib.Game.DropTables;
 using Imlight.CoreLib.Game.Spells;
 using Imlight.CoreLib.Game.Pet.Progression;
+using Imlight.CoreLib.Plugins;
 using Imlight.CoreLib.Shared.Items;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
+using Imlight.CoreLib.WizardData.Models.World;
+using Imlight.PluginApi;
+using Imlight.PluginApi.Events;
 
 namespace Imlight.CoreLib.Game.Services;
 
@@ -187,14 +193,54 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
         var playerObj = GetActiveGameObject();
 
         foreach (var templateId in defeatedMobTemplateIds) {
-            if (!NpcDropTableCollection.TryGetDropTable(templateId, out var npcDropTable)) {
+            // A mob with no drop table still fires the event with empty loot, so a plugin can give it some.
+            var loot = NpcDropTableCollection.TryGetDropTable(templateId, out var npcDropTable)
+                ? DropTableRoller.Roll(npcDropTable.DropTableNames.ToArray(), playerRef, playerObj, wizard)
+                : new DropTableResult();
+            if (!ApplyCreatureLootEvent(wizard, templateId, loot)) {
                 continue;
             }
 
-            var loot = DropTableRoller.Roll(npcDropTable.DropTableNames.ToArray(), playerRef, playerObj, wizard);
             LootGranter.GrantAndDisplay(playerRef, wizard, loot);
         }
     }
+
+    private bool ApplyCreatureLootEvent(Wizard wizard, ulong creatureTemplateId, DropTableResult loot) {
+        // Fires the event and copies what plugins changed back into the loot. False if it was cancelled.
+        // Rolled entries aren't validated until they are granted, so one may not name a template.
+        var items = new List<LootItem>();
+        foreach (var item in loot.Items) {
+            if (ulong.TryParse(item.ItemId, out var templateId)) {
+                items.Add(new LootItem(templateId, item.Quantity, TemplateName(templateId)));
+            }
+        }
+
+        var player = PluginPlayer.For(wizard, SessionActor.ActorRef, SessionActor.GetZoneActor());
+        var evt = new OnCreatureLoot(player, creatureTemplateId, TemplateName(creatureTemplateId), loot.GoldAmount,
+            loot.ExperienceAmount, loot.TrainingPoints, loot.GrantsPotionSlot, items);
+        if (PluginManager.Events.Fire(evt).IsCancelled) {
+            return false;
+        }
+
+        loot.GoldAmount = evt.Gold;
+        loot.ExperienceAmount = evt.Experience;
+        loot.TrainingPoints = evt.TrainingPoints;
+        loot.GrantsPotionSlot = evt.GrantsPotionSlot;
+        loot.Items = [.. evt.Items.Where(x => x is { Quantity: > 0 }).Select(x => new DropItemResult {
+            ItemId = x.TemplateId.ToString(),
+            ItemName = x.Name,
+            Quantity = x.Quantity
+        })];
+
+        return true;
+    }
+
+    private static string TemplateName(ulong templateId)
+        => CoreObjectFactory.GetCoreTemplate(templateId) switch {
+            GameObjectTemplate template => template.m_objectName.ToString(),
+            SpellTemplate spell => spell.m_name.ToString(),
+            _ => ""
+        };
 
     [MessageHandler(typeof(DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATDRAW))]
     private void ReceiveCombatDraw(DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATDRAW message) {
