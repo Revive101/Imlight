@@ -74,15 +74,15 @@ internal sealed class PluginDuel(Duel duel, IZone zone) : IDuel {
     /// <summary>
     /// Lists a participant joining the running duel.
     /// </summary>
-    public void JoinParticipant(CombatDuelSubCircle circle) {
+    public void JoinParticipant(CombatDuelSubCircle circle, IDuelist source) {
         if (circle.IsHumanPlayer) {
             var player = circle.ToPluginPlayer();
             Add(player);
-            _ = PluginManager.Events.Fire(new OnDuelistJoin(player, this));
+            _ = PluginManager.Events.Fire(new OnDuelistJoin(player, this, source));
         }
         else if (circle.ToPluginCreature() is { } creature) {
             Add(creature);
-            _ = PluginManager.Events.Fire(new OnDuelistJoin(creature, this));
+            _ = PluginManager.Events.Fire(new OnDuelistJoin(creature, this, source));
         }
     }
 

@@ -58,12 +58,17 @@ public sealed class OnCreatureDespawn(ICreature creature) : ImlightEvent {
 /// despawned. <see cref="OnCreatureDespawn"/> follows once it leaves the zone. Creatures that are removed alive
 /// don't fire it. Fires on the creature's actor.
 /// </summary>
-public sealed class OnCreatureDeath(ICreature creature) : ImlightEvent {
+public sealed class OnCreatureDeath(ICreature creature, IDuelist? source) : ImlightEvent {
 
     /// <summary>
     /// The creature that died. <see cref="ICreature.IsDead"/> is true and <see cref="ICreature.Health"/> is zero.
     /// </summary>
     public ICreature Creature { get; } = creature;
+
+    /// <summary>
+    /// The player or creature that landed the killing blow, or null if there was none, such as when it was despawned.
+    /// </summary>
+    public IDuelist? Source { get; } = source;
 
 }
 

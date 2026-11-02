@@ -17,7 +17,7 @@
  *
  * Created by: phazejeff
  * Version: KALI 1.0
- * Last Updated: 10/23/2026
+ * Last Updated: 11/01/2026
  */
 
 namespace Imlight.PluginApi.Events;
@@ -364,12 +364,17 @@ public sealed class OnPlayerWhisper(IPlayer player, ulong targetCharacterId, str
 /// The player stays in the duel and can still be revived; if they aren't by the end, <see cref="OnPlayerDeath"/>
 /// fires. Fires on the duel's actor, not the player's session.
 /// </summary>
-public sealed class OnPlayerKnockout(IPlayer player) : ImlightEvent {
+public sealed class OnPlayerKnockout(IPlayer player, IDuelist? source) : ImlightEvent {
 
     /// <summary>
     /// The player who was knocked out.
     /// </summary>
     public IPlayer Player { get; } = player;
+
+    /// <summary>
+    /// The player or creature that knocked them out, or null if they aren't known.
+    /// </summary>
+    public IDuelist? Source { get; } = source;
 
 }
 
@@ -380,12 +385,17 @@ public sealed class OnPlayerKnockout(IPlayer player) : ImlightEvent {
 /// should also restore their health with <see cref="IPlayer.SetHealth"/>. Fires on the duel's actor, not the
 /// player's session.
 /// </summary>
-public sealed class OnPlayerDeath(IPlayer player) : ImlightEvent, ICancellable {
+public sealed class OnPlayerDeath(IPlayer player, IDuelist? source) : ImlightEvent, ICancellable {
 
     /// <summary>
     /// The player who died. <see cref="IPlayer.Health"/> is zero.
     /// </summary>
     public IPlayer Player { get; } = player;
+
+    /// <summary>
+    /// The player or creature that last knocked them out, or null if they aren't known.
+    /// </summary>
+    public IDuelist? Source { get; } = source;
 
     /// <inheritdoc />
     public bool IsCancelled { get; set; }

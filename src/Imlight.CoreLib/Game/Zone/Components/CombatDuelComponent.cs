@@ -820,7 +820,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         Timers.CancelAll();
         EnactActionOnSubCircles(circle => {
             if (circle.OccupiedTeam == CombatTeam.Monster) {
-                circle.DamageParticipant(int.MaxValue);
+                circle.DamageParticipant(int.MaxValue, null);
             }
         });
 
@@ -2054,7 +2054,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
         // Send any dead players back to the hub, unless a plugin keeps them here.
         if (!circle.IsAlive) {
-            var keepInWorld = PluginManager.Events.Fire(new OnPlayerDeath(circle.ToPluginPlayer())).IsCancelled;
+            var keepInWorld = PluginManager.Events.Fire(new OnPlayerDeath(circle.ToPluginPlayer(), circle.KilledBy)).IsCancelled;
 
             var defeatMsg = new COMBAT_106_PROTOCOL.MSG_COMBATDEFEAT { SendToHub = !keepInWorld };
             circle.ParticipantActor.Tell(defeatMsg);

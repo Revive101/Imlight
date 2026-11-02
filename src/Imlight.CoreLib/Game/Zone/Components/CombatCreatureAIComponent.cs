@@ -274,7 +274,7 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
     private void FireDeathEvent() {
         // The duel also sends MSG_COMBATDEATH to creatures it removes alive, such as the winners of a duel.
         if (_stats.Stats.m_currentHitpoints <= 0 && Entity.PluginCreature is not null) {
-            _ = PluginManager.Events.Fire(new OnCreatureDeath(Entity.PluginCreature));
+            _ = PluginManager.Events.Fire(new OnCreatureDeath(Entity.PluginCreature, _currentSubCircle?.KilledBy));
         }
     }
 

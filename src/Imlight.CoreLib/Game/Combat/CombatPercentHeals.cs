@@ -24,7 +24,7 @@
  * set-heal-percent handlers do.
  *
  * USAGE EXAMPLE:
- * CombatPercentHeals.Apply(effect, targets);
+ * CombatPercentHeals.Apply(effect, caster, targets);
  *
  * NOTE:
  * The max health heal caps its percent at 100; the set heal percent does not. Neither
@@ -35,7 +35,7 @@
  *
  * Created by: Jay
  * Version: KALI 1.0
- * Last Updated: 10/23/2026
+ * Last Updated: 11/01/2026
  */
 
 using System;
@@ -62,11 +62,13 @@ internal static class CombatPercentHeals {
     /// Heals every living target by the effect's percent of its maximum health.
     /// </summary>
     /// <param name="effect">The heal effect; m_effectParam is the percent.</param>
+    /// <param name="caster">The caster of the spell.</param>
     /// <param name="targets">The targets of the effect.</param>
-    internal static void Apply(SpellEffect effect, CombatDuelSubCircle[] targets) {
+    internal static void Apply(SpellEffect effect, CombatDuelSubCircle caster, CombatDuelSubCircle[] targets) {
         var percent = effect.m_effectType == kSpellEffects.kMaxHealthHeal
             ? Math.Min(effect.m_effectParam, MAX_HEALTH_HEAL_PERCENT_CAP)
             : effect.m_effectParam;
+        var source = caster.ToPluginCaster();
 
         foreach (var target in targets) {
             if (!target.IsAlive) {
@@ -74,7 +76,7 @@ internal static class CombatPercentHeals {
             }
 
             var heal = (int) (percent * target.ParticipantGameStats.m_baseHitpoints / 100.0f);
-            target.HealParticipant(heal);
+            target.HealParticipant(heal, source);
         }
     }
 

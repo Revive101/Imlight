@@ -72,7 +72,7 @@ public sealed class OnDuelEnd(IDuel duel, IReadOnlyList<IPlayer> winners) : Imli
 /// Fired when a player or creature joins a duel already running, including a minion being summoned into it. Starting
 /// participants don't fire it; read them from <see cref="OnDuelStart"/>. Fires on the duel's actor.
 /// </summary>
-public sealed class OnDuelistJoin(IDuelist duelist, IDuel duel) : ImlightEvent {
+public sealed class OnDuelistJoin(IDuelist duelist, IDuel duel, IDuelist? source) : ImlightEvent {
 
     /// <summary>
     /// The player or creature that joined.
@@ -83,6 +83,11 @@ public sealed class OnDuelistJoin(IDuelist duelist, IDuel duel) : ImlightEvent {
     /// The duel they joined. <see cref="IDuel.Players"/> or <see cref="IDuel.Creatures"/> already includes them.
     /// </summary>
     public IDuel Duel { get; } = duel;
+
+    /// <summary>
+    /// The player or creature that summoned them, or null if they weren't summoned.
+    /// </summary>
+    public IDuelist? Source { get; } = source;
 
 }
 
@@ -108,12 +113,18 @@ public sealed class OnPlayerDuelLeave(IPlayer player, IDuel duel) : ImlightEvent
 /// Fired when a player or creature loses health in a duel, as the server resolves the round and before the client
 /// plays it. Hits fully absorbed by wards or resistances don't fire it. Fires on the duel's actor.
 /// </summary>
-public sealed class OnDuelistDamage(IDuelist duelist, int damage) : ImlightEvent {
+public sealed class OnDuelistDamage(IDuelist duelist, IDuelist? source, int damage) : ImlightEvent {
 
     /// <summary>
     /// The player or creature that was damaged. <see cref="IDuelist.Health"/> is already reduced.
     /// </summary>
     public IDuelist Duelist { get; } = duelist;
+
+    /// <summary>
+    /// The player or creature that dealt the damage, or null if nobody did or they aren't known.
+    /// For an over-time effect it is whoever cast it, even if the effect has since moved or they have left the duel.
+    /// </summary>
+    public IDuelist? Source { get; } = source;
 
     /// <summary>
     /// The health they lost, never more than they had.
@@ -127,13 +138,19 @@ public sealed class OnDuelistDamage(IDuelist duelist, int damage) : ImlightEvent
 /// fizzle. Passes, and turns lost to a stun or a dead target, don't fire it. Cancelling it turns the cast into a pass,
 /// so a player spends no pips, mana or card. Fires on the duel's actor.
 /// </summary>
-public sealed class OnDuelistSpellCast(IDuelist duelist, uint spellTemplateId, string spellName, string school,
-    int pipCost) : ImlightEvent, ICancellable {
+public sealed class OnDuelistSpellCast(IDuelist duelist, IDuelist? target, uint spellTemplateId, string spellName,
+    string school, int pipCost) : ImlightEvent, ICancellable {
 
     /// <summary>
     /// The player or creature that is casting.
     /// </summary>
     public IDuelist Duelist { get; } = duelist;
+
+    /// <summary>
+    /// The player or creature the spell was aimed at, or null if they have left the zone. It is the caster for a spell
+    /// with no chosen target, such as one that hits a whole team, and a spell can hit others too.
+    /// </summary>
+    public IDuelist? Target { get; } = target;
 
     /// <summary>
     /// The template ID of the spell being cast.
@@ -165,12 +182,18 @@ public sealed class OnDuelistSpellCast(IDuelist duelist, uint spellTemplateId, s
 /// round and before the client plays it. Heals on someone already at full health don't fire it. Fires on the duel's
 /// actor.
 /// </summary>
-public sealed class OnDuelistHeal(IDuelist duelist, int healing) : ImlightEvent {
+public sealed class OnDuelistHeal(IDuelist duelist, IDuelist? source, int healing) : ImlightEvent {
 
     /// <summary>
     /// The player or creature that was healed. <see cref="IDuelist.Health"/> is already raised.
     /// </summary>
     public IDuelist Duelist { get; } = duelist;
+
+    /// <summary>
+    /// The player or creature that did the healing, or null if they aren't known.
+    /// For an over-time effect it is whoever cast it, even if the effect has since moved or they have left the duel.
+    /// </summary>
+    public IDuelist? Source { get; } = source;
 
     /// <summary>
     /// The health they gained, never more than they were missing.
@@ -183,13 +206,19 @@ public sealed class OnDuelistHeal(IDuelist duelist, int healing) : ImlightEvent 
 /// Fired when a spell that passed <see cref="OnDuelistSpellCast"/> fails to go off, by missing its accuracy roll or by
 /// being stopped by a dispel on the caster. Fires on the duel's actor.
 /// </summary>
-public sealed class OnDuelistSpellFizzle(IDuelist duelist, uint spellTemplateId, string spellName, string school,
-    bool wasDispelled) : ImlightEvent {
+public sealed class OnDuelistSpellFizzle(IDuelist duelist, IDuelist? target, uint spellTemplateId, string spellName,
+    string school, bool wasDispelled) : ImlightEvent {
 
     /// <summary>
     /// The player or creature whose spell fizzled.
     /// </summary>
     public IDuelist Duelist { get; } = duelist;
+
+    /// <summary>
+    /// The player or creature the spell was aimed at, or null if they have left the zone. It is the caster for a spell
+    /// with no chosen target, such as one that hits a whole team, and a spell can hit others too.
+    /// </summary>
+    public IDuelist? Target { get; } = target;
 
     /// <summary>
     /// The template ID of the spell.
@@ -237,12 +266,17 @@ public sealed class OnDuelistPass(IDuelist duelist, DuelPassReason reason) : Iml
 /// have failed to stop it. Bosses, who can't be stunned, don't fire it. Cancelling it treats the target as immune, so
 /// they get no stun block either. Fires on the duel's actor.
 /// </summary>
-public sealed class OnDuelistStun(IDuelist duelist, int rounds) : ImlightEvent, ICancellable {
+public sealed class OnDuelistStun(IDuelist duelist, IDuelist? source, int rounds) : ImlightEvent, ICancellable {
 
     /// <summary>
     /// The player or creature being stunned.
     /// </summary>
     public IDuelist Duelist { get; } = duelist;
+
+    /// <summary>
+    /// The player or creature casting the stun, or null if they aren't known.
+    /// </summary>
+    public IDuelist? Source { get; } = source;
 
     /// <summary>
     /// How many of their turns the stun will take.
@@ -259,12 +293,17 @@ public sealed class OnDuelistStun(IDuelist duelist, int rounds) : ImlightEvent, 
 /// controlled, don't fire it, and neither does a target already on the caster's team. Cancelling it leaves them on their
 /// own team. Fires on the duel's actor.
 /// </summary>
-public sealed class OnDuelistMindControl(IDuelist duelist, int turns) : ImlightEvent, ICancellable {
+public sealed class OnDuelistMindControl(IDuelist duelist, IDuelist? source, int turns) : ImlightEvent, ICancellable {
 
     /// <summary>
     /// The player or creature being mind controlled.
     /// </summary>
     public IDuelist Duelist { get; } = duelist;
+
+    /// <summary>
+    /// The player or creature casting the mind control, or null if they aren't known.
+    /// </summary>
+    public IDuelist? Source { get; } = source;
 
     /// <summary>
     /// How many of their turns the mind control will last.
@@ -280,13 +319,19 @@ public sealed class OnDuelistMindControl(IDuelist duelist, int turns) : ImlightE
 /// Fired when a spell lands a critical, once per cast however many targets it hit, after its effects have been applied
 /// and its cost paid. Fires on the duel's actor.
 /// </summary>
-public sealed class OnDuelistSpellCritical(IDuelist duelist, uint spellTemplateId, string spellName, string school,
-    float multiplier) : ImlightEvent {
+public sealed class OnDuelistSpellCritical(IDuelist duelist, IDuelist? target, uint spellTemplateId, string spellName,
+    string school, float multiplier) : ImlightEvent {
 
     /// <summary>
     /// The player or creature whose spell landed a critical.
     /// </summary>
     public IDuelist Duelist { get; } = duelist;
+
+    /// <summary>
+    /// The player or creature the spell was aimed at, or null if they have left the zone. It is the caster for a spell
+    /// with no chosen target, such as one that hits a whole team, and a spell can hit others too.
+    /// </summary>
+    public IDuelist? Target { get; } = target;
 
     /// <summary>
     /// The template ID of the spell.
@@ -313,11 +358,16 @@ public sealed class OnDuelistSpellCritical(IDuelist duelist, uint spellTemplateI
 /// <summary>
 /// Fired after a spell reshuffles a duelist's deck. Fires on the duel's actor.
 /// </summary>
-public sealed class OnDuelistReshuffle(IDuelist duelist) : ImlightEvent {
+public sealed class OnDuelistReshuffle(IDuelist duelist, IDuelist? source) : ImlightEvent {
 
     /// <summary>
     /// The player or creature whose deck was reshuffled.
     /// </summary>
     public IDuelist Duelist { get; } = duelist;
+
+    /// <summary>
+    /// The player or creature that cast the spell, or null if they aren't known.
+    /// </summary>
+    public IDuelist? Source { get; } = source;
 
 }

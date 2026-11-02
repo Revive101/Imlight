@@ -349,6 +349,7 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
         }
 
         var evt = new OnDuelistSpellCast(caster,
+            action.SelectedTarget.ToPluginCaster(),
             action.Spell.m_templateID,
             action.SpellTemplate.m_name,
             action.SpellTemplate.m_sMagicSchoolName,
@@ -368,6 +369,7 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
 
         if (action.SpellCaster.ToPluginCaster() is { } caster) {
             _ = PluginManager.Events.Fire(new OnDuelistSpellFizzle(caster,
+                action.SelectedTarget.ToPluginCaster(),
                 action.Spell.m_templateID,
                 action.SpellTemplate.m_name,
                 action.SpellTemplate.m_sMagicSchoolName,
@@ -423,6 +425,7 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
         }
 
         _ = PluginManager.Events.Fire(new OnDuelistSpellCritical(caster,
+            action.SelectedTarget.ToPluginCaster(),
             action.Spell.m_templateID,
             action.SpellTemplate.m_name,
             action.SpellTemplate.m_sMagicSchoolName,

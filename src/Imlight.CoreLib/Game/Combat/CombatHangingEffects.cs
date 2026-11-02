@@ -36,14 +36,16 @@
  * 
  * Created by: Jay
  * Version: KALI 1.0
- * Last Updated: 10/22/2026
+ * Last Updated: 11/01/2026
  */
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
+using Imlight.PluginApi;
 
 namespace Imlight.CoreLib.Game.Combat;
 
@@ -56,6 +58,9 @@ internal static class CombatHangingEffects {
     internal const float HANGING_EFFECT_ADD_TIME = 1.0f;
 
     private static readonly HangingKind[] s_kindOrder = [HangingKind.Charm, HangingKind.Ward, HangingKind.OverTime];
+
+    // A hanging effect is client data with no room for its caster. Keyed by instance, so the caster follows a moved effect.
+    private static readonly ConditionalWeakTable<SpellEffect, IDuelist> s_overTimeSources = new();
 
     /// <summary>
     /// The classes of hanging effect a spell can take.
@@ -327,6 +332,17 @@ internal static class CombatHangingEffects {
     };
 
     /// <summary>
+    /// Remembers who cast a hanging over-time effect, for its ticks to report.
+    /// </summary>
+    /// <param name="effect">The hanging over-time effect.</param>
+    /// <param name="source">The plugin view of its caster, or null if it has none.</param>
+    internal static void SetOverTimeSource(SpellEffect effect, IDuelist source) {
+        if (source is not null) {
+            s_overTimeSources.Add(effect, source);
+        }
+    }
+
+    /// <summary>
     /// Moves an over-time effect on by one tick in the client layout: the first tick turns the total in the effect param
     /// into a per-round amount and the tick count, and every tick uses one count up.
     /// </summary>
@@ -371,9 +387,11 @@ internal static class CombatHangingEffects {
     /// <param name="amount">The amount to deliver.</param>
     /// <returns>The cinematic time the wards used.</returns>
     internal static float ApplyOverTimeTick(CombatDuelSubCircle carrier, SpellEffect effect, int amount) {
+        s_overTimeSources.TryGetValue(effect, out var source);
+
         if (effect.m_effectType == kSpellEffects.kHealOverTime) {
             // todo: are there wards that increase incoming healing? The client runs its ward pass on heal ticks too.
-            carrier.HealParticipant(amount);
+            carrier.HealParticipant(amount, source);
 
             return 0.0f;
         }
@@ -384,7 +402,7 @@ internal static class CombatHangingEffects {
         CombatDamageModifiers.PierceWards(wards, effect.m_armorPiercingParam);
         var damage = CombatWards.GetIncomingDamageFromWards(wards, amount);
         damage = CombatDamageModifiers.ApplyIncomingCaps(wards, damage);
-        carrier.DamageParticipant(damage);
+        carrier.DamageParticipant(damage, source);
         CombatWards.RemoveSpentWards(carrier, wards);
 
         return wards.Count * HANGING_EFFECT_CONSUME_TIME;

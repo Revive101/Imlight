@@ -26,7 +26,7 @@
  * USAGE EXAMPLE:
  * var subCircle = new CombatDuelSubCircle(duelActor, radius, rotation, color, index);
  * subCircle.AssignParticipant(actor, participantObject);
- * subCircle.DamageParticipant(damage);
+ * subCircle.DamageParticipant(damage, source);
  * 
  * NOTE:
  * Each subcircle handles deck management, spell casting costs, and
@@ -105,6 +105,8 @@ public class CombatDuelSubCircle {
     internal bool IsSummonedMinion { get; private set; }
     // A sandboxed wizard fights with a copy of their stats, so nothing of the duel reaches the saved wizard.
     internal bool IsSandboxed { get; private set; }
+    // Who last took this participant to zero health, for the events that fire after the blow itself.
+    internal IDuelist KilledBy { get; private set; }
     internal List<SpellEffect> _hangingEffects { get {
         if (CombatParticipant is null) {
             return null;
@@ -173,6 +175,7 @@ public class CombatDuelSubCircle {
         ParticipantActor = actor;
         ParticipantObject = participantObject;
         IsSummonedMinion = isSummonedMinion;
+        KilledBy = null;
 
         // Set the CombatParticipant based on what team they are. A participant that does not answer is dropped.
         var initialized = IsHumanPlayer
@@ -196,7 +199,8 @@ public class CombatDuelSubCircle {
         };
         ParticipantActor.Tell(msg);
 
-        _duelActor.PluginDuel?.JoinParticipant(this);
+        var summoner = isSummonedMinion ? _duelActor.SubCircles[minionOwnerSubCircle].ToPluginCaster() : null;
+        _duelActor.PluginDuel?.JoinParticipant(this, summoner);
 
         // We don't need to await this.
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
@@ -390,12 +394,12 @@ public class CombatDuelSubCircle {
         return maxPips >= spell.m_pipCost.m_spellRank;
     }
 
-    internal bool TryStun(int rounds) {
+    internal bool TryStun(int rounds, IDuelist source) {
         if (IsBoss) {
             return false;
         }
 
-        if (ToPluginCaster() is { } duelist && PluginManager.Events.Fire(new OnDuelistStun(duelist, rounds)).IsCancelled) {
+        if (ToPluginCaster() is { } duelist && PluginManager.Events.Fire(new OnDuelistStun(duelist, source, rounds)).IsCancelled) {
             return false;
         }
 
@@ -404,12 +408,12 @@ public class CombatDuelSubCircle {
         return true;
     }
 
-    internal bool TryMindControl(int turns, CombatTeam newTeam) {
+    internal bool TryMindControl(int turns, CombatTeam newTeam, IDuelist source) {
         if (IsBoss || newTeam > CombatTeam.Monster || newTeam == CurrentTeam) {
             return false;
         }
 
-        if (ToPluginCaster() is { } duelist && PluginManager.Events.Fire(new OnDuelistMindControl(duelist, turns)).IsCancelled) {
+        if (ToPluginCaster() is { } duelist && PluginManager.Events.Fire(new OnDuelistMindControl(duelist, source, turns)).IsCancelled) {
             return false;
         }
 
@@ -429,7 +433,7 @@ public class CombatDuelSubCircle {
         CombatParticipant.m_teamID = CombatParticipant.m_originalTeam;
     }
 
-    internal void DamageParticipant(int damage) {
+    internal void DamageParticipant(int damage, IDuelist source) {
         // If the participant is a player, update their health.
         if (_wizard is not null && !IsSandboxed) {
             var currentHealth = ParticipantGameStats.m_currentHitpoints;
@@ -444,7 +448,7 @@ public class CombatDuelSubCircle {
             _wizard.UpdateHealth(newHealth);
 
             if (newHealth < currentHealth) {
-                FireDamageEvents(currentHealth - newHealth);
+                FireDamageEvents(currentHealth - newHealth, source);
             }
         }
         else {
@@ -460,19 +464,27 @@ public class CombatDuelSubCircle {
 
             // Sandboxed wizards land here too, and a negative amount heals.
             var healthLost = currentHealth - ParticipantGameStats.m_currentHitpoints;
+            if (healthLost > 0 && !IsAlive) {
+                KilledBy = source;
+            }
+
             if (_wizard is null && healthLost > 0 && ToPluginCreature() is { } creature) {
-                _ = PluginManager.Events.Fire(new OnDuelistDamage(creature, healthLost));
+                _ = PluginManager.Events.Fire(new OnDuelistDamage(creature, source, healthLost));
             }
         }
     }
 
-    private void FireDamageEvents(int damage) {
+    private void FireDamageEvents(int damage, IDuelist source) {
+        if (!IsAlive) {
+            KilledBy = source;
+        }
+
         var player = ToPluginPlayer();
-        _ = PluginManager.Events.Fire(new OnDuelistDamage(player, damage));
+        _ = PluginManager.Events.Fire(new OnDuelistDamage(player, source, damage));
 
         // A damage handler may have healed them back up.
         if (!IsAlive) {
-            _ = PluginManager.Events.Fire(new OnPlayerKnockout(player));
+            _ = PluginManager.Events.Fire(new OnPlayerKnockout(player, source));
         }
     }
 
@@ -500,7 +512,7 @@ public class CombatDuelSubCircle {
         return IsSummonedMinion ? null : ToPluginPlayer();
     }
 
-    internal void HealParticipant(int heal) {
+    internal void HealParticipant(int heal, IDuelist source) {
         // If the participant is a player, update their health.
         if (_wizard is not null && !IsSandboxed) {
             var currentHealth = ParticipantGameStats.m_currentHitpoints;
@@ -515,7 +527,7 @@ public class CombatDuelSubCircle {
             _wizard.UpdateHealth(newHealth);
 
             if (newHealth > currentHealth) {
-                _ = PluginManager.Events.Fire(new OnDuelistHeal(ToPluginPlayer(), newHealth - currentHealth));
+                _ = PluginManager.Events.Fire(new OnDuelistHeal(ToPluginPlayer(), source, newHealth - currentHealth));
             }
         }
         else {
@@ -532,7 +544,7 @@ public class CombatDuelSubCircle {
             // Sandboxed wizards land here too.
             var healthGained = ParticipantGameStats.m_currentHitpoints - currentHealth;
             if (_wizard is null && healthGained > 0 && ToPluginCreature() is { } creature) {
-                _ = PluginManager.Events.Fire(new OnDuelistHeal(creature, healthGained));
+                _ = PluginManager.Events.Fire(new OnDuelistHeal(creature, source, healthGained));
             }
         }
     }
@@ -567,11 +579,11 @@ public class CombatDuelSubCircle {
         CombatPipPayment.ClearSchoolPips(ourPipCount);
     }
 
-    internal void Reshuffle() {
+    internal void Reshuffle(IDuelist source) {
         _combatDeck.Reshuffle();
 
         if (ToPluginCaster() is { } duelist) {
-            _ = PluginManager.Events.Fire(new OnDuelistReshuffle(duelist));
+            _ = PluginManager.Events.Fire(new OnDuelistReshuffle(duelist, source));
         }
     }
 

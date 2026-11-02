@@ -34,12 +34,13 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/23/2026
+ * Last Updated: 11/01/2026
  */
 
 using System.Collections.Generic;
 using Imlight.Common;
 using Imlight.CoreLib.Game.Spells;
+using Imlight.PluginApi;
 using Imcodec.ObjectProperty.TypeCache;
 using System;
 using System.Linq;
@@ -140,7 +141,7 @@ internal static class CombatEffectApplicator {
                 break;
             case kSpellEffects.kInstantKill:
             case kSpellEffects.kKillCreature:
-                cinematicTime += ApplyKillCreatureEffect(effect, targets);
+                cinematicTime += ApplyKillCreatureEffect(effect, caster, targets);
                 break;
             case kSpellEffects.kModifyPips:
                 ApplyModifyPipsEffect(effect, targets);
@@ -152,7 +153,7 @@ internal static class CombatEffectApplicator {
                 CombatShadowPips.ApplyModifyShadowPips(effect, targets);
                 break;
             case kSpellEffects.kMaxHealthDamage:
-                cinematicTime += ApplyMaxHealthDamageEffect(effect, targets);
+                cinematicTime += ApplyMaxHealthDamageEffect(effect, caster, targets);
                 break;
             case kSpellEffects.kPacify:
             case kSpellEffects.kTaunt:
@@ -164,7 +165,7 @@ internal static class CombatEffectApplicator {
                 ApplyAddSpellEffect(effect, targets);
                 break;
             case kSpellEffects.kReshuffle:
-                ApplyReshuffleEffect(targets[0]);
+                ApplyReshuffleEffect(targets[0], caster);
                 break;
             case kSpellEffects.kRemoveCharm:
             case kSpellEffects.kRemoveWard:
@@ -190,7 +191,7 @@ internal static class CombatEffectApplicator {
                 cinematicTime += CombatDamageModifiers.Hang(effect, targets, context);
                 break;
             case var _ when CombatPercentHeals.Handles(effect.m_effectType):
-                CombatPercentHeals.Apply(effect, targets);
+                CombatPercentHeals.Apply(effect, caster, targets);
                 break;
             case var _ when CombatOverTimeDurations.Handles(effect.m_effectType):
                 cinematicTime += CombatOverTimeDurations.Apply(effect, targets);
@@ -237,6 +238,9 @@ internal static class CombatEffectApplicator {
         var bubbleDamageIncrease = GetGlobalEffectDamageModifier(duel, effect.m_sDamageType);
         damageFromCaster = (int) Math.Floor(damageFromCaster * (1 + bubbleDamageIncrease));
 
+        // Taken now: a circle can change hands before the last tick.
+        var source = caster.ToPluginCaster();
+
         foreach (var target in targets) {
             var targetSpecificDamage = damageFromCaster;
 
@@ -253,6 +257,7 @@ internal static class CombatEffectApplicator {
             effectClone.m_effectParam = reducedDamage;
             effectClone.m_numRounds = Math.Max(effect.m_numRounds, 1);
             effectClone.m_paramPerRound = 0;
+            CombatHangingEffects.SetOverTimeSource(effectClone, source);
             target._hangingEffects.Add(effectClone);
         }
 
@@ -278,6 +283,9 @@ internal static class CombatEffectApplicator {
         var bubbleHealIncrease = GetGlobalEffectHealingModifier(duel);
         healFromCaster = (int) Math.Ceiling(healFromCaster * (1 + bubbleHealIncrease));
 
+        // Taken now: a circle can change hands before the last tick.
+        var source = caster.ToPluginCaster();
+
         foreach (var target in targets) {
             // Calculate heal increase from target stats
             var percentIncomingHealIncrease = GetPercentIncomingHealIncrease(target);
@@ -288,6 +296,7 @@ internal static class CombatEffectApplicator {
             effectClone.m_effectParam = healPerTarget;
             effectClone.m_numRounds = Math.Max(effect.m_numRounds, 1);
             effectClone.m_paramPerRound = 0;
+            CombatHangingEffects.SetOverTimeSource(effectClone, source);
             target._hangingEffects.Add(effectClone);
         }
 
@@ -300,7 +309,7 @@ internal static class CombatEffectApplicator {
                                                 CombatDuelSubCircle[] targets) {
         var (cinematicTime, damageDealt) = ApplyDamageEffect(effect, charms, caster, targets);
         var casterHealTotal = (int) Math.Floor(damageDealt * effect.m_healModifier);
-        DoHealToTarget(caster, casterHealTotal);
+        DoHealToTarget(caster, casterHealTotal, caster.ToPluginCaster());
 
         return cinematicTime;
     }
@@ -333,6 +342,7 @@ internal static class CombatEffectApplicator {
         damageFromCaster = (int) Math.Floor(damageFromCaster * critMultiplier);
 
         // Apply damage to each target
+        var source = caster.ToPluginCaster();
         var damageDealt = 0;
         foreach (var target in targets) {
             var damage = damageFromCaster;
@@ -345,7 +355,7 @@ internal static class CombatEffectApplicator {
             damage = CombatWards.GetIncomingDamageFromWards(wards, damage);
             damage = CombatDamageModifiers.ApplyIncomingCaps(wards, damage);
 
-            damageDealt += DoDamageToTarget(target, damage, finalSchool, armorPiercing);
+            damageDealt += DoDamageToTarget(target, damage, finalSchool, source, armorPiercing);
 
             CombatWards.RemoveSpentWards(target, wards);
         }
@@ -376,8 +386,9 @@ internal static class CombatEffectApplicator {
         healFromCaster = (int) Math.Ceiling(healFromCaster * critMultiplier);
 
         // Apply heal to each target
+        var source = caster.ToPluginCaster();
         foreach (var target in targets) {
-            _ = DoHealToTarget(target, healFromCaster);
+            _ = DoHealToTarget(target, healFromCaster, source);
         }
     }
 
@@ -391,8 +402,8 @@ internal static class CombatEffectApplicator {
         }
     }
 
-    private static void ApplyReshuffleEffect(CombatDuelSubCircle caster) 
-        => caster.Reshuffle();
+    private static void ApplyReshuffleEffect(CombatDuelSubCircle target, CombatDuelSubCircle caster) 
+        => target.Reshuffle(caster.ToPluginCaster());
 
     private static float ApplyRemoveHangingEffect(SpellEffect effect, CombatDuelSubCircle[] targets) {
         var kinds = CombatHangingEffects.GetKinds(effect.m_effectType);
@@ -480,9 +491,10 @@ internal static class CombatEffectApplicator {
         return targets.Count(x => x.IsAlive) * CombatHangingEffects.HANGING_EFFECT_ADD_TIME;
     }
 
-    private static float ApplyMaxHealthDamageEffect(SpellEffect effect, CombatDuelSubCircle[] targets) {
+    private static float ApplyMaxHealthDamageEffect(SpellEffect effect, CombatDuelSubCircle caster, CombatDuelSubCircle[] targets) {
         // Deals a percentage of the target's maximum health; m_effectParam is the percent.
         var cinematicTime = 0.0f;
+        var source = caster.ToPluginCaster();
         foreach (var target in targets) {
             if (!target.IsAlive) {
                 continue;
@@ -490,7 +502,7 @@ internal static class CombatEffectApplicator {
 
             var maxHealth = target.ParticipantGameStats.m_baseHitpoints;
             var damage = (int) Math.Floor(maxHealth * (effect.m_effectParam / 100.0f));
-            target.DamageParticipant(damage);
+            target.DamageParticipant(damage, source);
         }
 
         return cinematicTime;
@@ -535,9 +547,10 @@ internal static class CombatEffectApplicator {
         }
     }
 
-    private static float ApplyKillCreatureEffect(SpellEffect effect, CombatDuelSubCircle[] targets) {
+    private static float ApplyKillCreatureEffect(SpellEffect effect, CombatDuelSubCircle caster, CombatDuelSubCircle[] targets) {
         // Kills the effect's targets outright; the round cleanup sends MSG_COMBATDEATH for the corpse.
         // kKillCreature only kills the named creature: m_effectParam is the template id to match.
+        var source = caster.ToPluginCaster();
         foreach (var target in targets) {
             if (target is null || target.ParticipantObject is null || !target.IsAlive) {
                 continue;
@@ -548,7 +561,7 @@ internal static class CombatEffectApplicator {
                 continue;
             }
 
-            target.DamageParticipant(target.ParticipantGameStats.m_currentHitpoints);
+            target.DamageParticipant(target.ParticipantGameStats.m_currentHitpoints, source);
         }
 
         return 0.0f;
@@ -570,6 +583,7 @@ internal static class CombatEffectApplicator {
         var stunResistRoll = context.StunResistRoll;
         var cinematicName = SpellFactory.GetBaseSpellName(context.SpellTemplateId);
         var cinematicTime = 0.0f;
+        var source = caster.ToPluginCaster();
 
         foreach (var target in targets) {
             if (!target.IsAlive) {
@@ -593,7 +607,7 @@ internal static class CombatEffectApplicator {
                 continue;
             }
 
-            if (!target.TryStun(Math.Max(1, effect.m_effectParam))) {
+            if (!target.TryStun(Math.Max(1, effect.m_effectParam), source)) {
                 cinematicTime += SpellCinematics.GetStunImmuneTime(cinematicName);
                 LogStunAttempt(caster, target, stunResistRoll, resist, "immune");
 
@@ -613,12 +627,14 @@ internal static class CombatEffectApplicator {
     }
 
     private static void ApplyMindControlEffect(SpellEffect effect, CombatDuelSubCircle caster, CombatDuelSubCircle[] targets) {
+        var source = caster.ToPluginCaster();
+
         foreach (var target in targets) {
             if (!target.IsAlive) {
                 continue;
             }
 
-            var controlled = target.TryMindControl(Math.Max(1, effect.m_effectParam), caster.CurrentTeam);
+            var controlled = target.TryMindControl(Math.Max(1, effect.m_effectParam), caster.CurrentTeam, source);
             Logger.Debug("Duel {0} | Slot {1} | Mind control {2} turns | Team {3} | {4}",
                 Logger.Args(caster._duelActor.Duel.m_duelID.Full, target.SlotIndex, effect.m_effectParam,
                     target.CombatParticipant.m_teamID, controlled ? "controlled" : "failed"));
@@ -693,7 +709,7 @@ internal static class CombatEffectApplicator {
         return heal;
     }
 
-    private static int DoDamageToTarget(CombatDuelSubCircle target, int damage, string damageType, int armorPiercing = 0) {
+    private static int DoDamageToTarget(CombatDuelSubCircle target, int damage, string damageType, IDuelist source, int armorPiercing = 0) {
         // Calculate damage reduction from target stats
         var damageReductionFlat = GetFlatDamageReduction(target, damageType);
         var damageReductionPercent = CombatDamageModifiers.PierceResist(GetPercentDamageReduction(target, damageType), armorPiercing);
@@ -702,15 +718,15 @@ internal static class CombatEffectApplicator {
         // Ensure that damage isn't negative.
         reducedDamage = Math.Max(reducedDamage, 0);
 
-        target.DamageParticipant(reducedDamage);
+        target.DamageParticipant(reducedDamage, source);
 
         return reducedDamage;
     }
 
-    private static int DoHealToTarget(CombatDuelSubCircle target, int heal) {
+    private static int DoHealToTarget(CombatDuelSubCircle target, int heal, IDuelist source) {
         var percentIncomingHealIncrease = GetPercentIncomingHealIncrease(target);
         heal = (int) Math.Ceiling(heal * (1 + percentIncomingHealIncrease));
-        target.HealParticipant(heal);
+        target.HealParticipant(heal, source);
 
         return heal;
     }

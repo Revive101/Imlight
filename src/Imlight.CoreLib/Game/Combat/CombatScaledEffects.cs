@@ -37,7 +37,7 @@
  *
  * Created by: Jay
  * Version: KALI 1.0
- * Last Updated: 10/23/2026
+ * Last Updated: 11/01/2026
  */
 
 using System;
@@ -152,7 +152,7 @@ internal static class CombatScaledEffects {
 
             // A negative percent takes health straight off, as the client's health change does.
             if (amount < 0) {
-                target.DamageParticipant(-amount);
+                target.DamageParticipant(-amount, caster.ToPluginCaster());
 
                 continue;
             }
@@ -173,9 +173,10 @@ internal static class CombatScaledEffects {
         }
 
         var heal = spent.Count * effect.m_effectParam + effect.m_paramPerRound;
+        var source = caster.ToPluginCaster();
         foreach (var target in targets) {
             if (target.IsAlive) {
-                target.HealParticipant(heal);
+                target.HealParticipant(heal, source);
             }
         }
 
