@@ -951,6 +951,19 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         SendToSocket(serverTransfer);
     }
 
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_TRANSFER_INSTANCE))]
+    private void ReceiveTransferInstance(GAME_5_PROTOCOL.MSG_TRANSFER_INSTANCE message) {
+        // The realm window's "Go To Area" button sends this. The instance list in MSG_REALM_INFO_QUERY is empty,
+        // so there is no area to move to; the client only reports the failure when Error is not zero.
+        Logger.Debug("Session {SessionId} asked to move to zone instance {ZoneId}, which is not supported.",
+            Logger.Args(SessionActor.SessionID, message.ZoneID));
+
+        SendToSocket(new GAME_5_PROTOCOL.MSG_TRANSFER_INSTANCE {
+            ZoneID = message.ZoneID,
+            Error = 1,
+        });
+    }
+
     private void SendTransferRealmsError(string realmName) {
         // The client's realm options only report a failed transfer when Error is not zero.
         SendToSocket(new GAME_5_PROTOCOL.MSG_TRANSFER_REALMS {
