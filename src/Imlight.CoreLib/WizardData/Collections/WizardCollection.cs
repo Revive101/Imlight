@@ -24,6 +24,7 @@ using System.Linq;
 using Imcodec.Math;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
+using Imlight.CoreLib.Game.Pet;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models.Player;
@@ -681,6 +682,7 @@ public static class WizardCollection {
         var items = session.Query<WizClientObjectItem>(collectionName: WizardItemCollection.CollectionName)
             .Where(x => x.m_characterId == wizard.CharId)
             .ToList();
+        AlignPetBehaviors(wizard, items);
         wizard.EquipmentBehavior.EquippedItems = [.. items
             .Where(i => wizard.EquipmentBehavior.EquippedItemIds
             .Any(e => i.m_globalID == e))
@@ -696,6 +698,11 @@ public static class WizardCollection {
         var items = session.Query<WizClientObjectItem>(collectionName: WizardItemCollection.CollectionName)
             .Where(x => x.m_characterId == wizard.CharId)
             .ToList();
+
+        // Save the repaired pets so the fix only runs once per character.
+        if (AlignPetBehaviors(wizard, items)) {
+            session.SaveChanges();
+        }
 
         wizard.InventoryBehavior.Items = [.. items
             .Where(i => wizard.InventoryBehavior.InventoryItemIds
@@ -777,6 +784,23 @@ public static class WizardCollection {
         wizard.AfterDatabaseLoad();
 
         return wizard;
+    }
+
+    /// <summary>
+    /// Puts each pet item's behaviors in its template's order. The client rejects the whole
+    /// character when a pet's behaviors are out of order.
+    /// </summary>
+    /// <returns>True if any pet was changed.</returns>
+    private static bool AlignPetBehaviors(Wizard wizard, List<WizClientObjectItem> items) {
+        var alignedCount = items.Count(PetFactory.TryAlignBehaviorsToTemplate);
+        if (alignedCount == 0) {
+            return false;
+        }
+
+        Logger.Information("Put the behaviors of {0} pet items of player {1} in template order.",
+            Logger.Args(alignedCount, wizard.CharId));
+
+        return true;
     }
 
     private static void MigrateMisplacedInventoryItems(Wizard wizard) {

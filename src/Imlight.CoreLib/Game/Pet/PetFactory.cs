@@ -92,20 +92,66 @@ public class PetFactory : RootDirectoryResourceSingleton<PetFactory>, IMemoryStr
             m_characterId = (GID) ownerId,
             m_globalID = RandomGen.GenerateGUID(),
             m_templateID = template.m_templateID,
-            m_inactiveBehaviors = [
-                new ClientPetItemBehavior() {
-                    m_level = (byte) (preHatch ? 1 : 0),
-                    m_XP = 0,
-                    m_hatchedTimeSecs = (uint) (preHatch ? 0 : parsedHatchRate),
-                },
-                new ClientPetNameBehavior() {
-                    m_eRace = petItemBehaviorTemplate.m_eRace,
-                    m_eGender = petItemBehaviorTemplate.m_eGender,
-                }
-            ]
         };
 
+        // The client builds the item's behaviors from the template and loads them by index, so they
+        // have to follow the template's order. Many pet templates put PetNameBehavior first.
+        CoreObjectFactory.InitializeCoreObjectBehaviors(pet, template);
+        if (!CoreObjectFactory.FindBehaviorInstance<ClientPetItemBehavior>(pet, out var petItem)
+            || !CoreObjectFactory.FindBehaviorInstance<ClientPetNameBehavior>(pet, out var petName)) {
+            Logger.Error("Pet template with ID {0} did not give the pet both {1} and {2}.",
+                Logger.Args(templateId, nameof(ClientPetItemBehavior), nameof(ClientPetNameBehavior)));
+
+            return null;
+        }
+
+        petItem.m_level = (byte) (preHatch ? 1 : 0);
+        petItem.m_XP = 0;
+        petItem.m_hatchedTimeSecs = (uint) (preHatch ? 0 : parsedHatchRate);
+        petName.m_eRace = petItemBehaviorTemplate.m_eRace;
+        petName.m_eGender = petItemBehaviorTemplate.m_eGender;
+
         return pet;
+    }
+
+    /// <summary>
+    /// Puts a stored pet item's behaviors in its template's order. Pets made before
+    /// <see cref="CreatePet"/> followed the template always stored the item behavior and then the
+    /// name behavior, which the client misreads when the template orders them differently.
+    /// </summary>
+    /// <param name="pet">The stored item. Items that are not pets are left alone.</param>
+    /// <returns>True if the behaviors were reordered.</returns>
+    public static bool TryAlignBehaviorsToTemplate(WizClientObjectItem pet) {
+        if (pet?.m_inactiveBehaviors is null
+            || !CoreObjectFactory.FindBehaviorInstance<ClientPetItemBehavior>(pet, out _)) {
+            return false;
+        }
+
+        var templateId = (uint) pet.m_templateID;
+        var template = s_petTemplates.GetValueOrDefault(templateId) ?? CoreObjectFactory.GetCoreTemplate(templateId);
+        if (template is null) {
+            return false;
+        }
+
+        // Keep the pet's own behavior instances and fill the template's other slots with fresh ones.
+        var aligned = CoreObjectFactory.InitializeCoreObjectBehaviors(new WizClientObjectItem(), template).m_inactiveBehaviors;
+        var unplaced = pet.m_inactiveBehaviors.Where(behavior => behavior is not null).ToList();
+        for (var i = 0; i < aligned.Count; i++) {
+            var own = unplaced.FirstOrDefault(behavior => behavior.GetType() == aligned[i]?.GetType());
+            if (own is not null) {
+                aligned[i] = own;
+                unplaced.Remove(own);
+            }
+        }
+
+        // Behaviors the template does not list go after its slots, where the client does not pair them.
+        aligned.AddRange(unplaced);
+        if (aligned.Select(behavior => behavior?.GetType()).SequenceEqual(pet.m_inactiveBehaviors.Select(behavior => behavior?.GetType()))) {
+            return false;
+        }
+
+        pet.m_inactiveBehaviors = aligned;
+        return true;
     }
 
     /// <summary>
