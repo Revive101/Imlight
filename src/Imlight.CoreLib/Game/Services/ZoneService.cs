@@ -912,6 +912,7 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         catch {
             Logger.Error("Failed to create player key for realm transfer to {Realm}.",
                 Logger.Args(message.RealmName));
+            SendTransferRealmsError(message.RealmName);
 
             return;
         }
@@ -919,11 +920,13 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         if (!keyRsp.Success) {
             Logger.Warning("Realm transfer to {Realm} failed; realm not found.",
                 Logger.Args(message.RealmName));
+            SendTransferRealmsError(message.RealmName);
 
             return;
         }
 
-        // Send MSG_SERVERTRANSFER to redirect the client to the new game server.
+        // Send MSG_SERVERTRANSFER to redirect the client to the new game server. The client only uses the
+        // fallback when it cannot connect to the target, so the fallback is the server and zone the player is leaving.
         var serverTransfer = new GAME_5_PROTOCOL.MSG_SERVERTRANSFER {
             IP = keyRsp.IP,
             TCPPort = keyRsp.Port,
@@ -939,13 +942,35 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
             SessionID = 0,
             TargetPlayerID = wizard.CharId,
             TransitionID = 1,
-            FallbackIP = keyRsp.IP,
-            FallbackTCPPort = keyRsp.Port,
-            FallbackUDPPort = keyRsp.Port,
+            FallbackIP = wizard.GameServerIp,
+            FallbackTCPPort = wizard.GameServerPort,
+            FallbackUDPPort = wizard.GameServerPort,
             FallbackZone = wizard.Zone,
-            FallbackZoneID = new Imcodec.Types.GID((ulong) keyRsp.Port)
+            FallbackZoneID = _currentDynamicZoneId
         };
         SendToSocket(serverTransfer);
+    }
+
+    private void SendTransferRealmsError(string realmName) {
+        // The client's realm options only report a failed transfer when Error is not zero.
+        SendToSocket(new GAME_5_PROTOCOL.MSG_TRANSFER_REALMS {
+            RealmName = realmName,
+            Error = 1,
+        });
+    }
+
+    [MessageHandler(typeof(WIZARD2_53_PROTOCOL.MSG_CLIENTZONED))]
+    private void ReceiveClientZoned(WIZARD2_53_PROTOCOL.MSG_CLIENTZONED message) {
+        // The client sends this after it enters a zone, with ZoneNameID set to a hash of the zone name.
+        var zoneName = GetActiveWizard()?.Zone;
+        if (zoneName is null) {
+            return;
+        }
+
+        if (message.ZoneNameID != StringHash.Compute(zoneName)) {
+            Logger.Debug("Session {SessionId} reported zone ID {ZoneNameId}, which is not the hash of {Zone}.",
+                Logger.Args(SessionActor.SessionID, message.ZoneNameID, zoneName));
+        }
     }
 
     [MessageHandler(typeof(GAME2_55_PROTOCOL.MSG_CURRENTREALM))]
