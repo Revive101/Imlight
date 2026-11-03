@@ -961,14 +961,15 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
 
     [MessageHandler(typeof(WIZARD2_53_PROTOCOL.MSG_CLIENTZONED))]
     private void ReceiveClientZoned(WIZARD2_53_PROTOCOL.MSG_CLIENTZONED message) {
-        // The client sends this after it enters a zone, with ZoneNameID set to a hash of the zone name.
+        // The client sends this after it enters a zone. ZoneNameID is the client's StringHash of the zone it
+        // loaded, so a different value means the client and the server disagree about where the player is.
         var zoneName = GetActiveWizard()?.Zone;
         if (zoneName is null) {
             return;
         }
 
         if (message.ZoneNameID != StringHash.Compute(zoneName)) {
-            Logger.Debug("Session {SessionId} reported zone ID {ZoneNameId}, which is not the hash of {Zone}.",
+            Logger.Warning("Session {SessionId} entered zone ID {ZoneNameId}, but the server has it in {Zone}.",
                 Logger.Args(SessionActor.SessionID, message.ZoneNameID, zoneName));
         }
     }
