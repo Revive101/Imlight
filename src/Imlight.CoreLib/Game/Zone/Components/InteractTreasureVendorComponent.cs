@@ -37,10 +37,12 @@ using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.Types;
 using Imlight.Common;
+using Imlight.CoreLib.Game.Spells;
 using Imlight.CoreLib.Game.WizBang;
 using Imlight.CoreLib.Game.World;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.CoreLib.WizardData.Models.World;
@@ -107,9 +109,25 @@ internal sealed class InteractTreasureVendorComponent(ZoneEntity entity) : ZoneE
     public string GetSpellName(uint spellHash)
         => _inventory.Find(x => StringHash.Compute(x.SpellName) == spellHash)?.SpellName;
 
+    /// <summary>
+    /// Gets the gold price of a spell this vendor sells.
+    /// A SpiralDB price of 0 falls back to the spell template's m_baseCost, which is also the
+    /// price the client shows: MSG_TREASURESHOPLIST carries only the spell names.
+    /// </summary>
     public int GetSpellPrice(string spellName) {
         var entry = _inventory.Find(x => x.SpellName == spellName);
-        return entry?.Price ?? 0;
+        if (entry is null) {
+            return 0;
+        }
+
+        if (entry.Price > 0) {
+            return entry.Price;
+        }
+
+        var templateId = SpellFactory.GetTemplateIdByHash(StringHash.Compute(spellName));
+        return templateId != 0 && CoreObjectFactory.GetCoreTemplate(templateId) is SpellTemplate spellTemplate
+            ? spellTemplate.m_baseCost
+            : 0;
     }
 
     /// <summary>
