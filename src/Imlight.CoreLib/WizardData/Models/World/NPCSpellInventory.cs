@@ -21,16 +21,17 @@ using System.Collections.Generic;
 namespace Imlight.CoreLib.WizardData.Models.World;
 
 public class NPCSpellEntry {
-    
+
     public ulong TemplateID { get; set; }
     public ulong RequiredSpellID { get; set; }
     public int Level { get; set; }
-    
+    public int TrainingPoints { get; set; } = 1;
+
 }
 
 public class NPCSpellInventory {
-    
+
     public ulong TemplateID { get; set; }
     public List<NPCSpellEntry> Spells { get; set; }
-    
+
 }
