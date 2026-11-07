@@ -14,28 +14,28 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * ========================================================================
  * WIZARD SERVICE
  * ========================================================================
- * 
+ *
  * PURPOSE:
- * Manages wizard character state, including location tracking, 
+ * Manages wizard character state, including location tracking,
  * level management, and game state synchronization.
- * 
+ *
  * USAGE EXAMPLE:
- * Internal service handling wizard-specific interactions within 
+ * Internal service handling wizard-specific interactions within
  * the game server session.
- * 
+ *
  * NOTE:
  * - Updates wizard location and orientation
  * - Manages level-up mechanics and stat updates
  * - Provides internal wizard state management
- * 
+ *
  * TODO:
  * - Enhance level-up stat calculation
  * - Review location and orientation compression logic
- * 
+ *
  * Created by: Jooty, Joji
  * Version: KALI 1.0
  * Last Updated: 10/25/2026
@@ -156,6 +156,11 @@ internal class WizardService(SessionActor sessionActor) : MessageService(session
         };
         SendToSocket(petEnergyMessage);
 
+        // Update training points.
+        SendToSocket(
+            new WIZARD_12_PROTOCOL.MSG_UPDATETRAINING { TrainingPoints = _activeWizard.MagicSchoolBehavior.TrainingPoints }
+        );
+
         AnnounceLevelChange();
     }
 
@@ -212,6 +217,11 @@ internal class WizardService(SessionActor sessionActor) : MessageService(session
             };
             SendToSocket(petEnergyMessage);
 
+            // Update training points.
+            SendToSocket(
+                new WIZARD_12_PROTOCOL.MSG_UPDATETRAINING { TrainingPoints = _activeWizard.MagicSchoolBehavior.TrainingPoints }
+            );
+
             AnnounceLevelChange();
         }
 
@@ -253,5 +263,5 @@ internal class WizardService(SessionActor sessionActor) : MessageService(session
     }
 
     #endregion
-    
+
 }

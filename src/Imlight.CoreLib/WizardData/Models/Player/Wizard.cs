@@ -276,6 +276,17 @@ public class Wizard {
         // Persistent save.
         WizardCollection.UpdateCharacterLevel(this);
 
+        // Add a training point every four levels, for levels 1-20, or every five levels, for levels 20+.
+        var trainingPoints = 0;
+        for (var lvl = currentLevel + 1; lvl <= level; lvl++) {
+            if (lvl <= 20 ? lvl % 4 == 0 : lvl % 5 == 0) {
+                trainingPoints++;
+            }
+        }
+        if (trainingPoints > 0) {
+            UpdateTrainingPoints(MagicSchoolBehavior.TrainingPoints + trainingPoints);
+        }
+
         return true;
     }
 
@@ -1864,7 +1875,7 @@ public class Wizard {
             InventoryBehavior.Items.Add(cObj);
         }
 
-        // The default pet must be created through the pet factory. 
+        // The default pet must be created through the pet factory.
         var defaultPet = PetFactory.CreateHatchedPet(CharId, _defaultPetTemplateId);
         if (defaultPet is null) {
             Logger.Error("Could not create the starting pet (template {TemplateId}) for character {CharId}.",
