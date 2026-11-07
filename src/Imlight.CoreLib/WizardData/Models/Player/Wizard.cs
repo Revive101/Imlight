@@ -264,28 +264,22 @@ public class Wizard {
         var manaDifference = newBaseStats.m_mana - oldBaseStats.m_mana;
         var powerPipDifference = newBaseStats.m_pipChance - oldBaseStats.m_pipChance;
         var energyDifference = newBaseStats.m_petEnergy - oldBaseStats.m_petEnergy;
+        var trainingPointsDifference = newBaseStats.m_trainingPoints - oldBaseStats.m_trainingPoints;
 
         GameStats.m_baseHitpoints = Math.Max(0, GameStats.m_baseHitpoints + healthDifference);
         GameStats.m_baseMana = Math.Max(0, GameStats.m_baseMana + manaDifference);
         GameStats.m_powerPipBase = Math.Max(0, GameStats.m_powerPipBase + powerPipDifference);
         GameStats.m_energyMax = Math.Max(0, GameStats.m_energyMax + energyDifference);
 
+        if (trainingPointsDifference > 0) {
+            UpdateTrainingPoints(MagicSchoolBehavior.TrainingPoints + trainingPointsDifference);
+        }
+
         // Don't reset XP - preserve overflow XP when leveling up.
         // XP is managed by AddExperiencePoints/RemoveExperiencePoints.
 
         // Persistent save.
         WizardCollection.UpdateCharacterLevel(this);
-
-        // Add a training point every four levels, for levels 1-20, or every five levels, for levels 20+.
-        var trainingPoints = 0;
-        for (var lvl = currentLevel + 1; lvl <= level; lvl++) {
-            if (lvl <= 20 ? lvl % 4 == 0 : lvl % 5 == 0) {
-                trainingPoints++;
-            }
-        }
-        if (trainingPoints > 0) {
-            UpdateTrainingPoints(MagicSchoolBehavior.TrainingPoints + trainingPoints);
-        }
 
         return true;
     }
