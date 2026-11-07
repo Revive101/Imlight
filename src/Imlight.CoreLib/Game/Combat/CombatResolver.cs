@@ -18,21 +18,21 @@
  * ========================================================================
  * COMBAT ACTION RESOLUTION SYSTEM
  * ========================================================================
- * 
+ *
  * PURPOSE:
  * Serves as the entry point for resolving all combat actions, coordinating
  * the sequence of spells cast during a round and implementing the core
  * mathematical resolution of combat effects.
- * 
+ *
  * USAGE EXAMPLE:
  * var resolver = new CombatResolver(duel, subCircles);
  * resolver.Reset();
  * resolver.AddCombatMove(CombatMoveType.Attack, caster, target, spell);
  * float cinematicTime = resolver.ApplyQueuedCombatActions(out combatActionListObj);
- * 
+ *
  * NOTE:
  * This system works in conjunction with several specialized combat classes:
- * 
+ *
  * - CombatDuelComponent:    Orchestrates the overall duel, manages participants and phases
  * - CombatResolver:         Processes and resolves combat actions during the execution phase
  * - CombatDuelSubCircle:    Handles individual participant state and position
@@ -42,10 +42,10 @@
  * - CombatWards:            Handles defensive modifiers that affect incoming damage
  * - CombatDeck:             Controls spell deck management, drawing and discarding
  * - CombatEffectStack:      Tracks random/variable effect selection using bit-packing
- * 
+ *
  * The resolver determines hit/fizzle mechanics, processes spell accuracy,
  * manages the execution order, and coordinates timing of animations.
- * 
+ *
  * Created by: Jooty
  * Version: KALI 1.0
  * Last Updated: 10/25/2026
@@ -68,24 +68,24 @@ using Imcodec.Cryptography;
 namespace Imlight.CoreLib.Game.Combat;
 
 public class QueuedCombatAction {
-    
+
     public CombatDuelSubCircle SpellCaster;
     public CombatDuelSubCircle SelectedTarget;
     public Spell Spell;
     public SpellTemplate SpellTemplate;
-    
+
 }
 
 /// <summary>
 /// Processes and resolves combat actions during the execution phase of a duel round.
 /// </summary>
 /// <remarks>
-/// Responsible for determining the order of combat actions, handling fizzles, and coordinating 
-/// the effects of spells on targets. Manages the flow of a combat turn by processing queued 
+/// Responsible for determining the order of combat actions, handling fizzles, and coordinating
+/// the effects of spells on targets. Manages the flow of a combat turn by processing queued
 /// actions and calculating cinematic timing for visual feedback.
 /// </remarks>
 public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
-    
+
     private const float EXECUTION_PHASE_FIXED_OVERHEAD_SECONDS = 1.0f;
 
     private readonly Duel _duel = duel;
@@ -110,7 +110,7 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
     /// <param name="combatActionListObj">The object that will hold the list of combat actions.</param>
     /// <returns>The total cinematic time for the actions applied.</returns>
     public float ApplyQueuedCombatActions(out CombatActionListObj combatActionListObj) {
-        Logger.Debug("Duel {0} | Applying combat actions..", 
+        Logger.Debug("Duel {0} | Applying combat actions..",
             Logger.Args(_duel.m_duelID.Full, _duel.m_roundNum));
 
         combatActionListObj = new CombatActionListObj { m_actionList = [] };
@@ -488,7 +488,7 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
         spellAccuracy = ConsumeHangingAccuracyEffects(spellAccuracy, caster, spell.m_magicSchoolID);
 
         var hitChance = Random.Shared.Next(0, 100);
-        
+
         return hitChance <= spellAccuracy;
     }
 
@@ -533,8 +533,12 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
             caster.DiscardCard(action.m_spell);
         }
 
-        // Deduce the players mana by the rank of the spell.
-        caster.DeductMana(action.m_spell.m_pipCost.m_spellRank);
+        // Deduce the player's mana by the rank of the spell.
+        // The client sync is delayed to prevent revealing if a spell fizzles or not
+        // before the animation plays.
+        var spellName = SpellFactory.GetBaseSpellName(action.m_spell.m_templateID);
+        var manaSyncDelay = SpellCinematics.GetCastTime(spellName);
+        caster.DeductMana(action.m_spell.m_pipCost.m_spellRank, manaSyncDelay);
         CombatShadowPips.DeductShadowPips(caster, action.m_spell);
 
         // X-pip spells spend what they used (same GetXPipCost that chose the tier).

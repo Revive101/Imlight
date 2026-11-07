@@ -461,7 +461,7 @@ public class CombatDuelSubCircle {
         }
     }
 
-    internal void DeductMana(int mana) {
+    internal void DeductMana(int mana, float clientSyncDelaySeconds = 0f) {
         // If the participant is a player, update their mana.
         // Creature's don't have mana.
         if (_wizard is not null && IsSandboxed) {
@@ -479,12 +479,7 @@ public class CombatDuelSubCircle {
             _wizard.UpdateMana(newMana);
 
             // Update the client mana display.
-            ParticipantActor?.Tell(
-                new WIZARD_12_PROTOCOL.MSG_UPDATEMANA {
-                    Mana = newMana,
-                    MaxMana = _wizard.GameStats.GetClientTypeAlternative().m_baseMana
-                }
-            );
+            _duelActor?.ScheduleManaSync(this, newMana, clientSyncDelaySeconds);
         }
     }
 
