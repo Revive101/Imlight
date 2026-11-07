@@ -18,27 +18,27 @@
  * ========================================================================
  * COMBAT DUEL SYSTEM
  * ========================================================================
- * 
+ *
  * PURPOSE:
  * Manages turn-based combat encounters between players and creatures.
  * This component is responsible for handling duel initiation, combat moves,
  * and duel resolution. It also manages the duel state and participant data.
- * 
+ *
  * USAGE EXAMPLE:
  * This component may activate from an NpcComponent on a dueling creature.
  * It may also activate as a result of `ResStartDuel` from a trigger.
- * 
+ *
  * NOTE:
  * This class is merely the director of the duel. The actual combat logic is
  * all handled within the `Imlight.CoreLib.Game.Combat` namespace.
  * Start at the `CombatResolver` class and work your way down.
  * Tutorial duels are scripted by the `TutorialDuelDirector` in that namespace.
  * Combat positions are determined by sigil templates, with specific subcircle positions.
- * 
+ *
  * TODO:
  * - Implementation of creature stunning functionality
  * - Calculate the correct damage percent max as a limit function
- * 
+ *
  * Created by: Jooty
  * Version: KALI 1.0
  * Last Updated: 10/25/2026
@@ -79,7 +79,7 @@ namespace Imlight.CoreLib.Game.Zone.Components;
 /// <remarks>
 /// Acts as the central orchestrator for the combat system, handling messaging between
 /// all participants, managing combat state transitions, and coordinating the various
-/// phases of combat (planning, execution, resolution). The component creates and 
+/// phases of combat (planning, execution, resolution). The component creates and
 /// positions subcircles according to sigil templates and maintains combat state
 /// including team assignments, turn order, and participant status.
 /// </remarks>
@@ -710,6 +710,36 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
     internal static void OnMinionRemoved(CombatDuelSubCircle circle)
         => circle.RemoveParticipant();
+
+    internal void ScheduleManaSync(CombatDuelSubCircle caster, int newMana, float castDelaySeconds) {
+        // This action's cast begins at its cinematic offset; add the cast duration to land at its end.
+        var delay = CurrentActionCinematicOffsetSeconds + Math.Max(0f, castDelaySeconds);
+        Timers.StartSingleTimer(
+            $"manaSync_{Guid.NewGuid():N}",
+            new ZONE_102_PROTOCOL.MSG_DEFERREDMANASYNC { Caster = caster, NewMana = newMana },
+            TimeSpan.FromSeconds(delay)
+        );
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_DEFERREDMANASYNC))]
+    private void ReceiveDeferredManaSync(ZONE_102_PROTOCOL.MSG_DEFERREDMANASYNC message) {
+        // Drop if the duel ended or restarted during the cast animation.
+        if (!_isActive || message.Caster is null || Array.IndexOf(SubCircles, message.Caster) < 0) {
+            return;
+        }
+
+        var caster = message.Caster;
+        if (caster.ParticipantActor is null || caster._wizard is null) {
+            return;
+        }
+
+        caster.ParticipantActor.Tell(
+            new WIZARD_12_PROTOCOL.MSG_UPDATEMANA {
+                Mana = message.NewMana,
+                MaxMana = caster._wizard.GameStats.GetClientTypeAlternative().m_baseMana
+            }
+        );
+    }
 
     [MessageHandler(typeof(GROUP_109_PROTOCOL.MSG_JOINRESERVEDDUEL))]
     private void ReceiveJoinReservedDuel(GROUP_109_PROTOCOL.MSG_JOINRESERVEDDUEL message) {

@@ -18,24 +18,24 @@
  * ========================================================================
  * COMBAT PARTICIPANT CONTROLLER
  * ========================================================================
- * 
+ *
  * PURPOSE:
  * Manages individual participant data and state within a duel, providing
  * methods to modify health, mana, pips, and track spell effects on the participant.
- * 
+ *
  * USAGE EXAMPLE:
  * var subCircle = new CombatDuelSubCircle(duelActor, radius, rotation, color, index);
  * subCircle.AssignParticipant(actor, participantObject);
  * subCircle.DamageParticipant(damage);
- * 
+ *
  * NOTE:
  * Each subcircle handles deck management, spell casting costs, and
  * participant-specific stat calculations during effect resolution.
- * 
+ *
  * TODO:
  * - This should derive from ZoneEntityComponent
  * - Check if creature can be stunned
- * 
+ *
  * Created by: Jooty
  * Version: KALI 1.0
  * Last Updated: 10/25/2026
@@ -62,7 +62,7 @@ using System.Threading.Tasks;
 namespace Imlight.CoreLib.Game.Combat;
 
 internal enum CombatSlotType {
-    
+
     Creature,
     Player
 
@@ -72,13 +72,13 @@ internal enum CombatSlotType {
 /// Represents a position in the combat duel for a single participant, managing their combat state, spells, and effects.
 /// </summary>
 /// <remarks>
-/// Each subcircle maintains a participant's combat data including their position in the duel, stats, cards, pips, 
+/// Each subcircle maintains a participant's combat data including their position in the duel, stats, cards, pips,
 /// and hanging effects. It provides methods to manipulate the participant's state through damage, healing, and
 /// spell effects. Subcircles are assigned to either the player or monster team and positioned within the duel
 /// according to the sigil template.
 /// </remarks>
 public class CombatDuelSubCircle {
-    
+
     private const float AGGRO_TIME_IN_SECONDS = 0.75f;
     internal const byte MAX_PIP_COUNT = 7;
     private const byte PLAYER_HAND_SIZE = 7;
@@ -461,7 +461,7 @@ public class CombatDuelSubCircle {
         }
     }
 
-    internal void DeductMana(int mana) {
+    internal void DeductMana(int mana, float clientSyncDelaySeconds = 0f) {
         // If the participant is a player, update their mana.
         // Creature's don't have mana.
         if (_wizard is not null && IsSandboxed) {
@@ -477,6 +477,9 @@ public class CombatDuelSubCircle {
 
             // Update the mana of the player.
             _wizard.UpdateMana(newMana);
+
+            // Update the client mana display.
+            _duelActor?.ScheduleManaSync(this, newMana, clientSyncDelaySeconds);
         }
     }
 
