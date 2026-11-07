@@ -16,20 +16,20 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  *
  * ========================================================================
- * NPC COMPONENT 
+ * NPC COMPONENT
  * ========================================================================
- * 
+ *
  * PURPOSE:
- * Manages core NPC behavior and interaction mechanics, including 
+ * Manages core NPC behavior and interaction mechanics, including
  * combat, proximity detection, and statistical attributes.
- * 
+ *
  * USAGE EXAMPLE:
- * 
+ *
  * NOTE:
  * Supports monster and non-monster NPC configurations.
- * 
+ *
  * TODO:
- * 
+ *
  * Created by: Jooty
  * Version: KALI 1.0
  * Last Updated: 11/01/2026
@@ -75,7 +75,9 @@ internal sealed class NpcComponent : ZoneEntityComponent, IComponentFactory, ICl
     private StatsComponent _statsComponent;
     private CombatCreatureDeckComponent _deckComponent;
 
-    public static bool ShouldAttachToEntity(CoreTemplate template) 
+    private bool IsDefeated => Entity.GetComponentOfType<CombatCreatureAIComponent>()?.IsDefeated == true;
+
+    public static bool ShouldAttachToEntity(CoreTemplate template)
         => template is GameObjectTemplate gameObjectTemplate
         && gameObjectTemplate.m_behaviors.Any(x => x is NPCBehaviorTemplate);
 
@@ -97,10 +99,10 @@ internal sealed class NpcComponent : ZoneEntityComponent, IComponentFactory, ICl
 
         this.IsMonster = _duelistBehaviorTemplate is not null;
         this.Proximity = _duelistBehaviorTemplate?.m_npcProximity ?? 0;
-        
+
         // Try to parse the npcBehaviorTemplate.m_schoolOfFocus to a MagicSchool.
         var parsedSchool = MagicSchool.Balance;
-        if (    _npcBehaviorTemplate.m_schoolOfFocus != "" 
+        if (    _npcBehaviorTemplate.m_schoolOfFocus != ""
             && !Enum.TryParse(_npcBehaviorTemplate.m_schoolOfFocus, out parsedSchool)) {
             Logger.Warning("Creature {Creature} has an unknown magic school {School}.",
                 Logger.Args(Entity.ActiveGameObject.m_debugName, _npcBehaviorTemplate.m_schoolOfFocus));
@@ -151,7 +153,7 @@ internal sealed class NpcComponent : ZoneEntityComponent, IComponentFactory, ICl
             // If the player is in range, trigger the enter events.
             OnProximityEnter(playerObj, playerActor, playerWizard);
             _playersInRange.Add(playerActor);
-        } 
+        }
         else if (!IsInRadius(playerObj, Proximity) && _playersInRange.Contains(playerActor)) {
             _playersInRange.Remove(playerActor);
         }
@@ -188,6 +190,11 @@ internal sealed class NpcComponent : ZoneEntityComponent, IComponentFactory, ICl
             return;
         }
 
+        // After a creature has been defeated, but before it despawns, prevent it from triggering a new combat.
+        if (IsDefeated) {
+            return;
+        }
+
         Sender.Tell(new ZONE_102_PROTOCOL.MSG_QUERYNEARESTDUELTARGETRSP {
             CreatureActor = Entity.SelfRef,
             CreatureObject = Entity.ActiveGameObject,
@@ -202,6 +209,11 @@ internal sealed class NpcComponent : ZoneEntityComponent, IComponentFactory, ICl
         }
 
         if (!IsMonster || playerWizard.IsInCombatGrace || playerWizard.IsInDuel) {
+            return;
+        }
+
+        // After a creature has been defeated, but before it despawns, prevent it from triggering a new combat.
+        if (IsDefeated) {
             return;
         }
 

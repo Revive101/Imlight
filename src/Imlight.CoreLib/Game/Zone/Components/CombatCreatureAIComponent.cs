@@ -18,20 +18,20 @@
  * ========================================================================
  * JOURNEYMAN COMBAT AI
  * ========================================================================
- * 
+ *
  * PURPOSE:
  * Provides AI decision-making for NPCs in combat, handling targeting, spell selection,
  * and behavioral traits based on configurable personality factors.
- * 
+ *
  * USAGE EXAMPLE:
  * // Component is automatically attached to qualifying entities
- * 
+ *
  * NOTE:
  * Requires PathMovementComponent, NpcComponent, and StatsComponent to be attached to the entity.
  * Uses ConfigurationManager for combat behavior settings.
  *
  * TODO:
- * 
+ *
  * Created by: Jooty
  * Version: KALI 1.0
  * Last Updated: 11/01/2026
@@ -98,6 +98,8 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
         => _friendlySubcircles.Any(x => HealthFraction(x.ParticipantGameStats) < _healingThreshold);
     private bool _sentFinalKill;
     private bool _isInDuel;
+
+    internal bool IsDefeated => _sentFinalKill;
 
     public static bool ShouldAttachToEntity(CoreTemplate template)
         => template is GameObjectTemplate gameObjectTemplate
@@ -421,7 +423,7 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
 
             _passReason = "defensive pass roll";
             msg.MoveType = (byte) CombatMoveType.Pass;
-            
+
             return msg;
         }
 
