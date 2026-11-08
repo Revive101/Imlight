@@ -32,27 +32,45 @@
  *
  * Created by: phazejeff
  * Version: KALI 1.0
- * Last Updated: 10/23/2026
+ * Last Updated: 11/08/2026
  */
 
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using Imlight.Common;
+using Imlight.PluginApi;
 using Imlight.PluginApi.Events;
 
 namespace Imlight.CoreLib.Plugins;
 
-internal sealed class PluginEventBus : IEventBus {
+internal sealed class PluginEventBus {
+
+    private sealed record Handler(ImlightPlugin Owner, Action<ImlightEvent> Action);
+
+    private sealed class Scope(PluginEventBus bus, ImlightPlugin owner) : IEventBus {
+
+        public void Subscribe<TEvent>(Action<TEvent> handler) where TEvent : ImlightEvent
+            => bus.Subscribe(owner, handler);
+
+    }
 
     // Each list is immutable, so firing can read it from any actor without locking.
-    private readonly ConcurrentDictionary<Type, ImmutableList<Action<ImlightEvent>>> _handlers = new();
+    private readonly ConcurrentDictionary<Type, ImmutableList<Handler>> _handlers = new();
 
-    public void Subscribe<TEvent>(Action<TEvent> handler) where TEvent : ImlightEvent {
-        ArgumentNullException.ThrowIfNull(handler);
+    /// <summary>
+    /// The event bus a plugin sees, which subscribes handlers under that plugin.
+    /// </summary>
+    public IEventBus For(ImlightPlugin plugin)
+        => new Scope(this, plugin);
 
-        Action<ImlightEvent> wrapped = e => handler((TEvent) e);
-        _ = _handlers.AddOrUpdate(typeof(TEvent), [wrapped], (_, list) => list.Add(wrapped));
+    /// <summary>
+    /// Removes every handler the plugin subscribed.
+    /// </summary>
+    public void RemoveAll(ImlightPlugin plugin) {
+        foreach (var type in _handlers.Keys) {
+            _ = _handlers.AddOrUpdate(type, [], (_, list) => list.RemoveAll(x => x.Owner == plugin));
+        }
     }
 
     /// <summary>
@@ -65,15 +83,23 @@ internal sealed class PluginEventBus : IEventBus {
 
         foreach (var handler in handlers) {
             try {
-                handler(evt);
+                handler.Action(evt);
             }
             catch (Exception ex) {
                 // A broken plugin must never take down the actor that fired the event.
-                Logger.Error("A plugin threw handling {Event}: {Exception}", Logger.Args(evt.GetType().Name, ex));
+                Logger.Error("Plugin {Name} threw handling {Event}: {Exception}",
+                    Logger.Args(handler.Owner.Name, evt.GetType().Name, ex));
             }
         }
 
         return evt;
+    }
+
+    private void Subscribe<TEvent>(ImlightPlugin owner, Action<TEvent> handler) where TEvent : ImlightEvent {
+        ArgumentNullException.ThrowIfNull(handler);
+
+        var wrapped = new Handler(owner, e => handler((TEvent) e));
+        _ = _handlers.AddOrUpdate(typeof(TEvent), [wrapped], (_, list) => list.Add(wrapped));
     }
 
 }

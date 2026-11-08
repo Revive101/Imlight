@@ -104,7 +104,7 @@ public static class PluginManager {
         PluginScheduler scheduler = null;
         try {
             scheduler = new PluginScheduler(system, plugin.Name);
-            plugin.Events = Events;
+            plugin.Events = Events.For(plugin);
             plugin.Commands = Commands.For(plugin);
             plugin.Server = Server;
             plugin.Scheduler = scheduler;
@@ -117,7 +117,8 @@ public static class PluginManager {
             Logger.Information("Enabled plugin {Name} {Version}.", Logger.Args(plugin.Name, plugin.Version));
         }
         catch (Exception ex) {
-            // Don't leave a half-enabled plugin's commands reachable or its tasks running.
+            // Don't leave a half-enabled plugin's handlers firing, commands reachable or tasks running.
+            Events.RemoveAll(plugin);
             Commands.RemoveAll(plugin);
             scheduler?.CancelAll();
             plugin.Npcs?.RemoveAll();
