@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/14/2026
+ * Last Updated: 11/08/2026
  */
 
 using System;
@@ -422,8 +422,12 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity)
             }
         }
 
-        // Get highest priority wizbang for this player, or None to clear.
+        // Get highest priority wizbang for this player, or None to clear. One the priority list does not name, such
+        // as a plugin NPC's, still shows when nothing ranks; PrepQuest and Interactable only rank and have no look.
         var wizBang = WizBangPriority.GetHighestPriorityWizBang(activeWizBangs);
+        if (wizBang == WizBangs.None) {
+            wizBang = activeWizBangs.FirstOrDefault(x => x is not (WizBangs.None or WizBangs.PrepQuest or WizBangs.Interactable));
+        }
 
         // Re-send every tick rather than once per change: a single send can be lost
         // while the client is still building the scene, and retail re-pushes each update.

@@ -20,10 +20,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
+using Imcodec.Math;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.Types;
 using Imlight.Common;
+using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
@@ -97,6 +99,39 @@ internal sealed class ZoneObjectSupervisor(Core.Zone zone) : ZoneEntitySuperviso
         }
 
         Context.Watch(objectActor);
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_SPAWNPLUGINNPC))]
+    private void ReceiveSpawnPluginNpc(ZONE_102_PROTOCOL.MSG_SPAWNPLUGINNPC message) {
+        var npc = message.Npc;
+        if (npc.IsRemoved) {
+            return;
+        }
+
+        var info = new CoreObjectInfo {
+            m_templateID = npc.Template.m_templateID,
+            m_location = new Vector3(npc.Location.X, npc.Location.Y, npc.Location.Z),
+            m_orientation = new Vector3(0, 0, npc.Orientation),
+            m_fScale = 1,
+            m_zoneTag = $"PluginNpc_{npc.GlobalId}",
+        };
+        var coreObject = CoreObjectFactory.FinalizeCoreObject(info, npc.Template);
+        if (coreObject is null) {
+            Logger.Error("Zone {ZoneName} could not spawn plugin NPC {Npc} (template {TemplateId}).",
+                Logger.Args(Zone.ZoneName, npc.Name, npc.TemplateId));
+            npc.MarkStopped();
+
+            return;
+        }
+
+        // The plugin was handed the ID before the object existed.
+        coreObject.m_globalID = new GID(npc.GlobalId);
+
+        var actor = Context.ActorOf(
+            Props.Create(() => new PluginNpcEntity(coreObject, npc.Template, info, ZoneRef, Zone, npc)),
+            CreateEntityActorName(coreObject));
+        BeginEntityLoad(actor, npc.Name);
+        Context.Watch(actor);
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVETRIGGEROBJECT))]

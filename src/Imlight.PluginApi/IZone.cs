@@ -17,10 +17,11 @@
  *
  * Created by: phazejeff
  * Version: KALI 1.0
- * Last Updated: 10/27/2026
+ * Last Updated: 11/08/2026
  */
 
 using System.Collections.Generic;
+using Imlight.PluginApi.Npcs;
 
 namespace Imlight.PluginApi;
 
@@ -60,5 +61,11 @@ public interface IZone {
     /// and does not change after it is returned.
     /// </summary>
     IReadOnlyList<IDuel> Duels { get; }
+
+    /// <summary>
+    /// The NPCs every plugin has spawned in the zone and not removed. Safe to read from any thread; the list is a
+    /// snapshot and does not change after it is returned.
+    /// </summary>
+    IReadOnlyList<INpc> Npcs { get; }
 
 }

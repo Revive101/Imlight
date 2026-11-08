@@ -35,7 +35,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/25/2026
+ * Last Updated: 11/08/2026
  */
 
 using System;
@@ -56,6 +56,7 @@ using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Models.Player;
+using Imlight.PluginApi.Events;
 
 namespace Imlight.CoreLib.Game.Zone.Core;
 
@@ -126,6 +127,8 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     private bool _isLoading;
     private readonly HashSet<IActorRef> _players = [];
     private readonly PluginZone _pluginZone;
+    // Plugin NPCs spawned while the zone loads, held back because their components read the loaded zone data.
+    private readonly List<ZONE_102_PROTOCOL.MSG_SPAWNPLUGINNPC> _pendingPluginNpcs = [];
     private const string IDLE_EXPIRE_TIMER = "instance-idle-expire";
     private const int DEFAULT_INSTANCE_IDLE_MINUTES = 10;
     private const int PUBLIC_ZONE_IDLE_MINUTES = 10; // todo: tune
@@ -385,6 +388,13 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
             foreach (var supervisor in _supervisors) {
                 supervisor.Tell(startMsg);
             }
+
+            foreach (var spawn in _pendingPluginNpcs) {
+                _objectSupervisor.Tell(spawn);
+            }
+            _pendingPluginNpcs.Clear();
+
+            _ = PluginManager.Events.Fire(new OnZoneLoad(_pluginZone));
         }
     }
 
@@ -520,6 +530,17 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_SPAWNENTITY))]
     private void ReceiveSpawnEntity(ZONE_102_PROTOCOL.MSG_SPAWNENTITY message)
         => _objectSupervisor.Forward(message);
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_SPAWNPLUGINNPC))]
+    private void ReceiveSpawnPluginNpc(ZONE_102_PROTOCOL.MSG_SPAWNPLUGINNPC message) {
+        if (_isLoading) {
+            _pendingPluginNpcs.Add(message);
+
+            return;
+        }
+
+        _objectSupervisor.Forward(message);
+    }
 
     #endregion
 

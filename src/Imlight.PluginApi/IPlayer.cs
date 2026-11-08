@@ -17,7 +17,7 @@
  *
  * Created by: phazejeff
  * Version: KALI 1.0
- * Last Updated: 10/23/2026
+ * Last Updated: 11/08/2026
  */
 
 using System.Collections.Generic;
@@ -118,6 +118,12 @@ public interface IPlayer : IDuelist {
     /// Shows a server message to the player. Safe to call from any thread.
     /// </summary>
     void SendMessage(string message);
+
+    /// <summary>
+    /// Shows the player a message box they have to close, with the title above the text. Line breaks in the text are
+    /// kept. Safe to call from any thread.
+    /// </summary>
+    void ShowMessageBox(string title, string text);
 
     // Every setter below saves the change and updates the player's client.
 

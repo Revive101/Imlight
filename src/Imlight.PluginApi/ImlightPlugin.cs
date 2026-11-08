@@ -35,12 +35,13 @@
  *
  * Created by: phazejeff
  * Version: KALI 1.0
- * Last Updated: 10/23/2026
+ * Last Updated: 11/08/2026
  */
 
 using System.IO;
 using Imlight.PluginApi.Commands;
 using Imlight.PluginApi.Events;
+using Imlight.PluginApi.Npcs;
 using Imlight.PluginApi.Scheduling;
 
 namespace Imlight.PluginApi;
@@ -84,6 +85,11 @@ public abstract class ImlightPlugin {
     /// Writes to the server log, labelled with this plugin's name.
     /// </summary>
     public IPluginLogger Logger { get; internal set; } = null!;
+
+    /// <summary>
+    /// Spawns this plugin's NPCs.
+    /// </summary>
+    public INpcManager Npcs { get; internal set; } = null!;
 
     /// <summary>
     /// This plugin's own folder for configs and other data it keeps between runs, created on first use.

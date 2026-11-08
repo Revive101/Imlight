@@ -35,7 +35,7 @@
  *
  * Created by: phazejeff
  * Version: KALI 1.0
- * Last Updated: 11/01/2026
+ * Last Updated: 11/08/2026
  */
 
 using System.Collections.Concurrent;
@@ -49,6 +49,7 @@ using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.PluginApi;
+using Imlight.PluginApi.Npcs;
 
 namespace Imlight.CoreLib.Plugins;
 
@@ -62,6 +63,10 @@ internal sealed class PluginZone(string name, bool isInstance, IActorRef zoneAct
     private volatile ImmutableList<IPlayer> _players = [];
     private ImmutableList<ICreature> _creatures = [];
     private ImmutableList<IDuel> _duels = [];
+    // Guards _npcs with _closed, so an NPC cannot be added to a zone that has already let go of its NPCs.
+    private readonly Lock _npcLock = new();
+    private ImmutableList<INpc> _npcs = [];
+    private bool _closed;
 
     public string Name => name;
 
@@ -72,6 +77,8 @@ internal sealed class PluginZone(string name, bool isInstance, IActorRef zoneAct
     public IReadOnlyList<ICreature> Creatures => Volatile.Read(ref _creatures);
 
     public IReadOnlyList<IDuel> Duels => Volatile.Read(ref _duels);
+
+    public IReadOnlyList<INpc> Npcs => Volatile.Read(ref _npcs);
 
     /// <summary>
     /// Every running zone. Safe to enumerate from any thread.
@@ -97,6 +104,18 @@ internal sealed class PluginZone(string name, bool isInstance, IActorRef zoneAct
         _ = s_zones.TryRemove(new KeyValuePair<IActorRef, PluginZone>(zoneActor, this));
         _players = [];
         Volatile.Write(ref _creatures, []);
+
+        // The entities stop with the zone, but one that never got to attach would not mark its NPC.
+        ImmutableList<INpc> npcs;
+        lock (_npcLock) {
+            _closed = true;
+            npcs = _npcs;
+            Volatile.Write(ref _npcs, []);
+        }
+
+        foreach (var npc in npcs) {
+            ((PluginNpc) npc).MarkStopped();
+        }
 
         // A sigil has no stop hook, so a duel cut off by the zone unloading is ended here.
         foreach (var duel in Interlocked.Exchange(ref _duels, [])) {
@@ -133,6 +152,32 @@ internal sealed class PluginZone(string name, bool isInstance, IActorRef zoneAct
 
     public void RemoveDuel(PluginDuel duel)
         => ImmutableInterlocked.Update(ref _duels, x => x.Remove(duel));
+
+    /// <summary>
+    /// Lists an NPC in this zone, and returns false if the zone has closed.
+    /// </summary>
+    public bool AddNpc(PluginNpc npc) {
+        lock (_npcLock) {
+            if (_closed) {
+                return false;
+            }
+
+            Volatile.Write(ref _npcs, _npcs.Add(npc));
+
+            return true;
+        }
+    }
+
+    public void RemoveNpc(PluginNpc npc) {
+        lock (_npcLock) {
+            Volatile.Write(ref _npcs, _npcs.Remove(npc));
+        }
+    }
+
+    /// <summary>
+    /// Sends a message to the zone actor.
+    /// </summary>
+    public void Send(object message) => zoneActor.Tell(message, null);
 
     /// <summary>
     /// Sends a message through the zone's broadcast, as if the zone itself sent it.

@@ -17,7 +17,7 @@
  *
  * Created by: phazejeff
  * Version: KALI 1.0
- * Last Updated: 10/23/2026
+ * Last Updated: 11/08/2026
  */
 
 using System;
@@ -101,6 +101,13 @@ internal sealed class PluginPlayer(Wizard wizard, IActorRef sessionActor, IZone 
 
     public void SendMessage(string message)
         => sessionActor.Tell(new EXTENDEDBASE_2_PROTOCOL.MSG_SERVERMESSAGE { Message = message });
+
+    // The client breaks lines on <br> tags, not line breaks.
+    public void ShowMessageBox(string title, string text)
+        => sessionActor.Tell(new EXTENDEDBASE_2_PROTOCOL.MSG_SERVERMESSAGE {
+            Message = $"{title}<br><br>{text.ReplaceLineEndings("<br>")}",
+            Modal = 1
+        });
 
     public void SetLevel(int level) {
         ArgumentOutOfRangeException.ThrowIfLessThan(level, 1);

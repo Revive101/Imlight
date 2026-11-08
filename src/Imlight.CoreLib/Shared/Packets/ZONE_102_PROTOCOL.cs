@@ -30,6 +30,8 @@ using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.CoreLib.Game.Zone.Components;
+using Imlight.CoreLib.Game.Zone.Supervisors;
+using Imlight.CoreLib.Plugins;
 using Imcodec.MessageLayer;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.Types;
@@ -1628,6 +1630,40 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public float? Aggressiveness;
         public float? Selfishness;
         public float? Proximity;
+
+    }
+
+    /// <summary>
+    /// Sent by plugins to a zone: once the zone has loaded, its <see cref="ZoneObjectSupervisor"/> spawns the NPC.
+    /// </summary>
+    public sealed class MSG_SPAWNPLUGINNPC : IServerMessage {
+
+        public byte MessageOrder { get; } = 106;
+        public byte ServiceID { get; } = 102;
+
+        internal PluginNpc Npc;
+
+    }
+
+    /// <summary>
+    /// Sent by plugins to an NPC they spawned: its <see cref="PluginNpcComponent"/> removes it from the zone.
+    /// </summary>
+    public sealed class MSG_REMOVEPLUGINNPC : IServerMessage {
+
+        public byte MessageOrder { get; } = 107;
+        public byte ServiceID { get; } = 102;
+
+    }
+
+    /// <summary>
+    /// Sent by plugins to an NPC they spawned: its <see cref="PluginNpcComponent"/> puts it in the state.
+    /// </summary>
+    public sealed class MSG_SETPLUGINNPCSTATE : IServerMessage {
+
+        public byte MessageOrder { get; } = 108;
+        public byte ServiceID { get; } = 102;
+
+        public string State;
 
     }
 

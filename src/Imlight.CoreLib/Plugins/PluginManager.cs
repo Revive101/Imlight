@@ -34,7 +34,7 @@
  *
  * Created by: phazejeff
  * Version: KALI 1.0
- * Last Updated: 10/23/2026
+ * Last Updated: 11/08/2026
  */
 
 using System;
@@ -109,6 +109,7 @@ public static class PluginManager {
             plugin.Server = Server;
             plugin.Scheduler = scheduler;
             plugin.Logger = new PluginLogger(plugin.Name);
+            plugin.Npcs = new PluginNpcManager(plugin);
             plugin.DataFolderPath = Path.Combine(directory, ToFolderName(plugin.Name));
             plugin.OnEnable();
             s_plugins.Add(plugin);
@@ -119,6 +120,7 @@ public static class PluginManager {
             // Don't leave a half-enabled plugin's commands reachable or its tasks running.
             Commands.RemoveAll(plugin);
             scheduler?.CancelAll();
+            plugin.Npcs?.RemoveAll();
             Logger.Error("Plugin {Type} failed to enable: {Exception}", Logger.Args(plugin.GetType().Name, ex));
         }
     }
