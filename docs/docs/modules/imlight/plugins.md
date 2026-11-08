@@ -67,6 +67,7 @@ public sealed class GreeterPlugin : ImlightPlugin {
 | `OnCreatureDespawn` | No | When a creature has left its zone for any reason, including after it dies and when the zone unloads. Fires once for every creature that fired `OnCreatureSpawn`. Calls on the creature do nothing by this point. |
 | `OnCreatureDeath` | No | When a defeated creature is removed from its duel at the end of a round, or a creature in a duel is despawned. `OnCreatureDespawn` follows. `Source` is who landed the killing blow, and is null if it was despawned. Not fired for creatures removed alive, such as the winners of a duel. |
 | `OnCreatureLoot` | Yes | When a defeated creature's loot has been rolled for a duel winner, before any of it is given, once per creature for each winner. Fires for every creature, with empty loot if it has no drop table or nothing dropped. Handlers can set `Gold`, `Experience`, `TrainingPoints` and `GrantsPotionSlot`, and edit the `Items` list of items, reagents, spells and treasure cards, as in `e.Items.Add(new LootItem(templateId, 3))`. The player gets what is left after every handler runs, and can end up with less, such as when a reagent stack is full. The creature is gone by now, so it comes as `CreatureTemplateId` and `CreatureName`. Cancelling gives nothing from that creature and shows no loot popup; the experience earned from pips is unaffected. |
+| `OnZoneLoad` | No | When a zone, including each instance, has finished loading. The place to spawn [NPCs](#npcs) that should always be in a zone. |
 | `OnDuelStart` | No | When a duel has been created with its starting participants, before the first round. `Zone.Duels` already includes it. |
 | `OnDuelRoundStart` | No | When a new round begins, before its planning phase. `Duel.Round` is already the new round. Creatures may already be choosing their moves. |
 | `OnDuelEnd` | No | Once when a duel is decided, before rewards and before `OnPlayerDeath`. `Winners` holds the players on the winning side, and is empty if the creatures won or a PvP match drew. `Duel.Players` and `Duel.Creatures` still hold who was left. |
@@ -212,6 +213,36 @@ Events.Subscribe<OnCreatureLoot>(evt => {
 ```
 
 To go the other way, `GetSpell(name)` takes a spell's internal name, matched exactly, and `FindItems` takes an item's internal name, matched case-insensitively. `FindItems` returns a list, as several items can share a name. English item names cannot be searched. All of these return null or an empty list for something that does not exist.
+
+## NPCs
+
+`Npcs.Spawn` puts an NPC in a zone, built from any game object template that can be shown, such as a placed NPC's. Give it an interaction to make players able to talk to it, and a wizbang to mark it over its head:
+
+```csharp
+Events.Subscribe<OnZoneLoad>(e => {
+    if (e.Zone.Name != "WizardCity/WC_Hub") {
+        return;
+    }
+    var npc = Npcs.Spawn(e.Zone, GuideTemplateId, new Vector3(100, 200, 0), name: "Town Guide");
+    npc.SetInteraction(i => i.Say($"Welcome, {i.Player.Name}!"));
+    npc.SetWizBang(NpcWizBang.StartQuest);
+});
+```
+
+NPCs never fight or move, and are never saved: one lives until it is `Remove`d or its zone unloads, so spawn it again in `OnZoneLoad`, which fires each time a zone finishes loading. A spawn made while the zone is still loading appears once it has loaded. `Npcs.Spawned` lists your plugin's NPCs, and `IZone.Npcs` every plugin's NPCs in that zone. Every `INpc` call is safe from any thread.
+
+| Method | Behaviour |
+| --- | --- |
+| `SetInteraction(handler)` | Runs the handler when a player interacts with the NPC, or makes it not interactable when null. A player already near the NPC sees the change the next time they walk up to it. |
+| `SetWizBang(wizBang)` | Sets the icon over its head. It shows only while the NPC is interactable, and nearby players see a change within a second. |
+| `SetState(state)` | Plays an animation state from its template, such as `Idle`. Players who arrive later see the same state. `Off` hides the NPC. |
+| `Remove()` | Removes it from its zone. |
+
+In an interaction, `Say` shows the player a message box headed with the NPC's name. It is a message box rather than the game's dialog window, because the client only shows dialog text from its own string tables. For the same reason, the interaction option is always labelled the client's generic way.
+
+::: warning A custom name does not change the nameplate
+The `name` passed to `Spawn` shows when players interact with the NPC, but the client keeps the template's name over its head, even for a regular NPC template. To show a different name there, use a template with that name.
+:::
 
 ## Commands
 

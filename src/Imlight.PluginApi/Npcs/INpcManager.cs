@@ -43,8 +43,8 @@ public interface INpcManager {
     /// <param name="templateId">The game object template it is built from.</param>
     /// <param name="location">Where it stands.</param>
     /// <param name="orientation">The direction it faces, in radians.</param>
-    /// <param name="name">The name shown over its head and when players interact with it, or null for the
-    /// template's name.</param>
+    /// <param name="name">The name shown when players interact with it, or null for the template's name. The client
+    /// keeps the template's name over its head.</param>
     /// <exception cref="System.ArgumentException">The template is not a game object that can be shown.</exception>
     /// <exception cref="System.InvalidOperationException">The zone has unloaded.</exception>
     INpc Spawn(IZone zone, ulong templateId, Vector3 location, float orientation = 0, string? name = null);
