@@ -264,15 +264,14 @@ public class Wizard {
         var manaDifference = newBaseStats.m_mana - oldBaseStats.m_mana;
         var powerPipDifference = newBaseStats.m_pipChance - oldBaseStats.m_pipChance;
         var energyDifference = newBaseStats.m_petEnergy - oldBaseStats.m_petEnergy;
-        var trainingPointsDifference = newBaseStats.m_trainingPoints - oldBaseStats.m_trainingPoints;
 
         GameStats.m_baseHitpoints = Math.Max(0, GameStats.m_baseHitpoints + healthDifference);
         GameStats.m_baseMana = Math.Max(0, GameStats.m_baseMana + manaDifference);
         GameStats.m_powerPipBase = Math.Max(0, GameStats.m_powerPipBase + powerPipDifference);
         GameStats.m_energyMax = Math.Max(0, GameStats.m_energyMax + energyDifference);
 
-        if (trainingPointsDifference > 0) {
-            UpdateTrainingPoints(MagicSchoolBehavior.TrainingPoints + trainingPointsDifference);
+        if (newBaseStats.m_trainingPoints > 0) {
+            UpdateTrainingPoints(MagicSchoolBehavior.TrainingPoints + newBaseStats.m_trainingPoints);
         }
 
         // Don't reset XP - preserve overflow XP when leveling up.
