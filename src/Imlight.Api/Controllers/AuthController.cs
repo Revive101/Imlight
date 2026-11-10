@@ -28,6 +28,7 @@
 
 
 using Imlight.Api.Auth;
+using Imlight.Api.Common;
 using Imlight.Common;
 using Imlight.CoreLib.WizardData;
 using Imlight.CoreLib.WizardData.Collections;
@@ -61,22 +62,22 @@ public sealed class AuthController : ControllerBase {
     [AllowAnonymous]
     public IActionResult Login([FromBody] LoginRequest request) {
         if (string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Password)) {
-            return BadRequest(new { error = "Username and plaintextPassword are required." });
+            return this.ApiError(400, ApiErrorCode.INVALID_INPUT);
         }
 
         var account = AccountCollection.GetAccountForCharacterList(request.Username);
         if (account is null || !VerifyPassword(request.Password, account.PasswordHash)) {
-            return Unauthorized(new { error = "Invalid username or plaintextPassword." });
+            return this.ApiError(401, ApiErrorCode.INVALID_CREDENTIALS);
         }
 
         if(account.IsLocked || (account.InfractionHistory?.IsCurrentlyBanned ?? false)) {
-            return Unauthorized(new { error = "Account is locked." });
+            return this.ApiError(403, ApiErrorCode.ACCOUNT_LOCKED);
         }
 
         var token = JwtTokenService.GenerateToken(account);
         return Ok(new {
             token,
-            account= MapAccountSummary(account)
+            account = MapAccountSummary(account)
         });
     }
 
@@ -87,23 +88,23 @@ public sealed class AuthController : ControllerBase {
     [AllowAnonymous]
     public IActionResult Register([FromBody] RegisterRequest request) {
         if(!s_allowRegistration) {
-            return StatusCode(403, new { error = "Account registration is currently disabled." });
+            return this.ApiError(403, ApiErrorCode.REGISTRATION_DISABLED);
         }
 
         var username = request.Username?.Trim() ?? string.Empty;
         var password = request.Password?.Trim() ?? string.Empty;
 
         if (string.IsNullOrWhiteSpace(username) || username.Length > s_maxUsernameLength) {
-            return BadRequest(new { error = "Invalid username." });
+            return this.ApiError(400, ApiErrorCode.INVALID_INPUT);
         }
 
         if (password.Length < s_minPasswordLength) {
-            return BadRequest(new { error = "Password must be at least 6 characters long." });
+            return this.ApiError(400, ApiErrorCode.INVALID_INPUT);
         }
 
         var account = DatabaseUtilities.CreateEmbeddedDatabaseAccount(username, "", password);
         if (account is null) {
-            return StatusCode(500, new { error = "Failed to create account. Account already exists." });
+            return this.ApiError(409, ApiErrorCode.ACCOUNT_ALREADY_EXISTS);
         }
 
         var token = JwtTokenService.GenerateToken(account);
@@ -118,7 +119,7 @@ public sealed class AuthController : ControllerBase {
     /// </summary>
     [HttpGet("me")]
     [Authorize]
-    public ActionResult GetMe() {
+    public IActionResult GetMe() {
         var scopes = User.FindAll("scope").Select(c => c.Value).ToList();
         var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
@@ -136,7 +137,7 @@ public sealed class AuthController : ControllerBase {
 
         var account = AccountCollection.GetAccountForCharacterList(accountId);
         if (account is null) {
-            return NotFound(new { error = "Account not found." });
+            return this.ApiError(404, ApiErrorCode.NOT_FOUND, new { msg = "Account not found." });
         }
 
         return Ok(MapAccountSummary(account, scopes));
@@ -148,25 +149,25 @@ public sealed class AuthController : ControllerBase {
     [HttpPost("password")]
     public IActionResult ChangePassword([FromBody] ChangePasswordRequest request) {
         if (string.IsNullOrWhiteSpace(request.CurrentPassword) || string.IsNullOrWhiteSpace(request.NewPassword)) {
-            return BadRequest(new { error = "Current and new passwords are required." });
+            return this.ApiError(400, ApiErrorCode.INVALID_INPUT);
         }
 
         if (request.NewPassword.Length < s_minPasswordLength) {
-            return BadRequest(new { error = "New password must be at least 6 characters." });
+            return this.ApiError(400, ApiErrorCode.INVALID_INPUT);
         }
 
         var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (!ulong.TryParse(idClaim, out var accountId) || accountId == 0) {
-            return BadRequest(new { error = "Cannot change password for a non-account token." });
+            return this.ApiError(400, ApiErrorCode.INVALID_INPUT);
         }
 
         var account = AccountCollection.GetAccountForCharacterList(accountId);
         if (account is null || !VerifyPassword(request.CurrentPassword, account.PasswordHash)) {
-            return Unauthorized(new { error = "Current password is incorrect." });
+            return this.ApiError(401, ApiErrorCode.INVALID_CREDENTIALS);
         }
 
         if (!AccountCollection.ChangePassword(account.Username, request.NewPassword)) {
-            return StatusCode(500, new { error = "Failed to update password." });
+            return this.ApiError(409, ApiErrorCode.GENERIC_ERROR);
         }
 
         return Ok(new { message = "Password updated successfully." });

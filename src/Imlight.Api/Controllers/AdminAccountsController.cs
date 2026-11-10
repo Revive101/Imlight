@@ -22,6 +22,7 @@
 
 using Akka.Actor;
 using Imlight.Api.Auth;
+using Imlight.Api.Common;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Databases;
@@ -96,7 +97,7 @@ public sealed class AdminAccountsController(ActorSystem actorSystem) : Controlle
     public IActionResult GetAccountDetails(ulong accountId) {
         var account = AccountCollection.GetAccountForCharacterList(accountId);
         if (account is null) {
-            return NotFound(new { error = "Account not found." });
+            return this.ApiError(404, ApiErrorCode.NOT_FOUND, new { msg = "Account not found." });
         }
 
         var online = OnlinePlayerCollection.GetOnlinePlayers()
@@ -158,11 +159,11 @@ public sealed class AdminAccountsController(ActorSystem actorSystem) : Controlle
     [Authorize(Policy = ApiScopes.ModerationWrite)]
     public IActionResult KickAccount(ulong accountId) {
         if (!KickOnlineAccountIfConnected(accountId)) {
-            return NotFound(new { error = "Account has no active online session." });
+            return this.ApiError(404, ApiErrorCode.NOT_FOUND, new { msg = "Account has no active online session." });
         }
 
         var caller = User.Identity?.Name ?? "Staff";
-        Common.Logger.Information($"Account {accountId} kicked from server by {caller}");
+        Imlight.Common.Logger.Information($"Account {accountId} kicked from server by {caller}");
 
         return Ok(new { message = "Player kicked from server." });
     }
@@ -174,17 +175,17 @@ public sealed class AdminAccountsController(ActorSystem actorSystem) : Controlle
     [Authorize(Policy = ApiScopes.ModerationWrite)]
     public IActionResult AddInfraction(ulong accountId, [FromBody] AddInfractionRequest request) {
         if (!Enum.TryParse<InfractionType>(request.Type, ignoreCase: true, out var infractionType)) {
-            return BadRequest(new { error = "Invalid infraction type. Use Warn, Mute, or Ban." });
+            return this.ApiError(400, ApiErrorCode.INVALID_INPUT, new { msg = "Invalid infraction type. Use Warn, Mute, or Ban." });
         }
 
         var reason = request.Reason?.Trim() ?? string.Empty;
         if (string.IsNullOrWhiteSpace(reason)) {
-            return BadRequest(new { error = "A reason is required for all infractions." });
+            return this.ApiError(400, ApiErrorCode.INVALID_INPUT, new { msg = "A reason is required for all infractions." });
         }
 
         var account = AccountCollection.GetAccountForCharacterList(accountId);
         if (account is null) {
-            return NotFound(new { error = "Account not found." });
+            return this.ApiError(404, ApiErrorCode.NOT_FOUND, new { msg = "Account not found." });
         }
 
         DateTime? expiration = request.DurationMinutes is > 0
@@ -199,7 +200,7 @@ public sealed class AdminAccountsController(ActorSystem actorSystem) : Controlle
             KickOnlineAccountIfConnected(accountId);
         }
 
-        Common.Logger.Information(
+        Imlight.Common.Logger.Information(
             $"{infractionType} issued to '{account.Username}' ({accountId}) by {moderator}: {reason}");
 
         return Ok(new {
@@ -216,11 +217,11 @@ public sealed class AdminAccountsController(ActorSystem actorSystem) : Controlle
     public IActionResult WaiveInfraction(ulong accountId, ulong infractionId) {
         var infraction = InfractionCollection.GetInfraction(infractionId);
         if (infraction is null || infraction.AccountId != accountId) {
-            return NotFound(new { error = "Infraction not found for this account." });
+            return this.ApiError(404, ApiErrorCode.NOT_FOUND, new { msg = "Infraction not found for this account." });
         }
 
         if (infraction.IsExpired || infraction.WasWaived) {
-            return BadRequest(new { error = "Infraction is already expired or waived." });
+            return this.ApiError(400, ApiErrorCode.INVALID_INPUT, new { msg = "Infraction is already expired or waived." });
         }
 
         var moderator = User.Identity?.Name ?? "Staff";
@@ -228,7 +229,7 @@ public sealed class AdminAccountsController(ActorSystem actorSystem) : Controlle
         infraction.WasWaivedBy = moderator;
         InfractionCollection.UpdateInfraction(infraction);
 
-        Common.Logger.Information($"Infraction {infractionId} on account {accountId} waived by {moderator}");
+        Imlight.Common.Logger.Information($"Infraction {infractionId} on account {accountId} waived by {moderator}");
 
         return Ok(new { message = "Infraction waived." });
     }
@@ -241,7 +242,7 @@ public sealed class AdminAccountsController(ActorSystem actorSystem) : Controlle
     public IActionResult SetLock(ulong accountId, [FromBody] SetLockRequest request) {
         var account = AccountCollection.GetAccountForCharacterList(accountId);
         if (account is null) {
-            return NotFound(new { error = "Account not found." });
+            return this.ApiError(404, ApiErrorCode.NOT_FOUND, new { msg = "Account not found." });
         }
 
         var ok = request.IsLocked
@@ -249,7 +250,7 @@ public sealed class AdminAccountsController(ActorSystem actorSystem) : Controlle
             : AccountCollection.UnlockAccount(account.Username);
 
         if (!ok) {
-            return StatusCode(500, new { error = "Failed to update account lock state." });
+            return this.ApiError(500, ApiErrorCode.GENERIC_ERROR);
         }
 
         if (request.IsLocked) {
@@ -257,7 +258,7 @@ public sealed class AdminAccountsController(ActorSystem actorSystem) : Controlle
         }
 
         var caller = User.Identity?.Name ?? "Staff";
-        Common.Logger.Information($"Account '{account.Username}' lock set to {request.IsLocked} by {caller}");
+        Imlight.Common.Logger.Information($"Account '{account.Username}' lock set to {request.IsLocked} by {caller}");
 
         return Ok(new { message = request.IsLocked ? "Account locked." : "Account unlocked." });
     }
@@ -269,15 +270,15 @@ public sealed class AdminAccountsController(ActorSystem actorSystem) : Controlle
     [Authorize(Policy = ApiScopes.AccountsWrite)]
     public IActionResult SetCrowns(ulong accountId, [FromBody] SetCrownsRequest request) {
         if (request.Crowns < 0) {
-            return BadRequest(new { error = "Crowns cannot be negative." });
+            return this.ApiError(400, ApiErrorCode.INVALID_INPUT);
         }
 
         if (!AccountCollection.UpdateCrowns(accountId, request.Crowns)) {
-            return NotFound(new { error = "Account not found." });
+            return this.ApiError(404, ApiErrorCode.NOT_FOUND, new { msg = "Account not found." });
         }
 
         var caller = User.Identity?.Name ?? "Administrator";
-        Common.Logger.Information($"Account {accountId} Crowns set to {request.Crowns} by {caller}");
+        Imlight.Common.Logger.Information($"Account {accountId} Crowns set to {request.Crowns} by {caller}");
 
         return Ok(new { message = "Crowns updated.", crowns = request.Crowns });
     }
@@ -294,15 +295,15 @@ public sealed class AdminAccountsController(ActorSystem actorSystem) : Controlle
 
         var account = AccountCollection.GetAccountForCharacterList(accountId);
         if (account is null) {
-            return NotFound(new { error = "Account not found." });
+            return this.ApiError(404, ApiErrorCode.NOT_FOUND, new { msg = "Account not found." });
         }
 
         if (!AccountCollection.UpdateAuthLevel(account.Username, newLevel)) {
-            return StatusCode(500, new { error = "Failed to update AuthLevel." });
+            return this.ApiError(500, ApiErrorCode.GENERIC_ERROR);
         }
 
         var caller = User.Identity?.Name ?? "Administrator";
-        Common.Logger.Information($"Account '{account.Username}' AuthLevel changed to {newLevel} by {caller}");
+        Imlight.Common.Logger.Information($"Account '{account.Username}' AuthLevel changed to {newLevel} by {caller}");
 
         return Ok(new { message = "AuthLevel updated.", authLevel = newLevel.ToString() });
     }
@@ -315,7 +316,7 @@ public sealed class AdminAccountsController(ActorSystem actorSystem) : Controlle
     public IActionResult TeleportPlayer(ulong charId, [FromBody] TeleportRequest request) {
         var zoneName = request.ZoneName?.Trim() ?? string.Empty;
         if (string.IsNullOrWhiteSpace(zoneName)) {
-            return BadRequest(new { error = "ZoneName is required." });
+            return this.ApiError(400, ApiErrorCode.INVALID_INPUT, new { msg = "ZoneName is required." });
         }
 
         var onlinePlayer = OnlinePlayerCollection.GetOnlinePlayer(charId);
@@ -327,14 +328,14 @@ public sealed class AdminAccountsController(ActorSystem actorSystem) : Controlle
             });
 
             var caller = User.Identity?.Name ?? "Staff";
-            Common.Logger.Information($"Online character {charId} teleported to '{zoneName}' by {caller}");
+            Imlight.Common.Logger.Information($"Online character {charId} teleported to '{zoneName}' by {caller}");
             return Ok(new { message = $"Teleporting online player to {zoneName}." });
         }
 
         // Player is offline: update their saved zone directly in RavenDB
         var wizard = WizardCollection.GetCharacter(charId);
         if (wizard is null) {
-            return NotFound(new { error = "Character not found." });
+            return this.ApiError(404, ApiErrorCode.NOT_FOUND, new { msg = "Character not found." });
         }
 
         WizardCollection.UpdateCharacterZone(wizard, zoneName, zoneName);

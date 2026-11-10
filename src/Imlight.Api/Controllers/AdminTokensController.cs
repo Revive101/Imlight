@@ -21,6 +21,7 @@
 */
 
 using Imlight.Api.Auth;
+using Imlight.Api.Common;
 using Imlight.Api.Data.Collections;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -59,11 +60,11 @@ public sealed class AdminTokensController : ControllerBase {
     public IActionResult CreateToken([FromBody] CreateTokenRequest request) {
         var name = request.Name?.Trim() ?? string.Empty;
         if (string.IsNullOrWhiteSpace(name) || name.Length > s_maxTokenNameLength) {
-            return BadRequest(new { error = "Token name must be between 1 and 64 characters." });
+            return this.ApiError(400, ApiErrorCode.INVALID_INPUT, new { msg = "Token name must be between 1 and 64 characters." });
         }
 
         if (request.Scopes is null || request.Scopes.Count == 0) {
-            return BadRequest(new { error = "At least one scope must be selected." });
+            return this.ApiError(400, ApiErrorCode.INVALID_INPUT, new { msg = "At least one scope must be selected." });
         }
 
         // Filter out any unknown or duplicate scope strings
@@ -73,7 +74,7 @@ public sealed class AdminTokensController : ControllerBase {
             .ToList();
 
         if (validScopes.Count == 0) {
-            return BadRequest(new { error = "None of the requested scopes are valid." });
+            return this.ApiError(400, ApiErrorCode.INVALID_INPUT, new { msg = "None of the requested scopes are valid." });
         }
 
         DateTime? expiresAt = null;
@@ -92,7 +93,7 @@ public sealed class AdminTokensController : ControllerBase {
             createdByUsername,
             expiresAt);
 
-        Common.Logger.Information($"API token '{token.Name}' ({token.TokenPrefix}) created by {createdByUsername} with scopes [{string.Join(", ", validScopes)}]");
+        Imlight.Common.Logger.Information($"API token '{token.Name}' ({token.TokenPrefix}) created by {createdByUsername} with scopes [{string.Join(", ", validScopes)}]");
 
         return Ok(new {
             token = MapToken(token),
@@ -106,11 +107,11 @@ public sealed class AdminTokensController : ControllerBase {
     [HttpDelete("{tokenId}")]
     public IActionResult RevokeToken(ulong tokenId) {
         if (!ApiTokenCollection.RevokeToken(tokenId)) {
-            return NotFound(new { error = "Token not found." });
+            return this.ApiError(404, ApiErrorCode.NOT_FOUND, new { msg = "Token not found." });
         }
 
         var caller = User.Identity?.Name ?? "Administrator";
-        Common.Logger.Information($"API token {tokenId} revoked by {caller}");
+        Imlight.Common.Logger.Information($"API token {tokenId} revoked by {caller}");
 
         return Ok(new { message = "Token revoked." });
     }

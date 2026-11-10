@@ -76,7 +76,7 @@ public sealed class AuthHandler(
         }
 
         if (!JwtTokenService.TryValidateJwt(bearerToken, out var principal, out var failure) || principal is null) {
-            Common.Logger.Debug($"JWT rejected from {RemoteIp()}: {failure}");
+            Imlight.Common.Logger.Debug($"JWT rejected from {RemoteIp()}: {failure}");
             return Task.FromResult(AuthenticateResult.Fail("Invalid or expired JWT apiToken."));
         }
 
@@ -91,7 +91,7 @@ public sealed class AuthHandler(
 
         // Check Master-Token from Imlight.ini
         if (!string.IsNullOrWhiteSpace(s_masterToken) && s_masterToken.Length < JwtTokenService.s_minSecretLength) {
-            Common.Logger.Warning($"API_MASTER_KEY is configured but shorter than {JwtTokenService.s_minSecretLength} characters.");
+            Imlight.Common.Logger.Warning($"API_MASTER_KEY is configured but shorter than {JwtTokenService.s_minSecretLength} characters.");
         }
 
         else if (!string.IsNullOrWhiteSpace(s_masterToken) &&
@@ -99,7 +99,7 @@ public sealed class AuthHandler(
                 Encoding.UTF8.GetBytes(rawKey),
                 Encoding.UTF8.GetBytes(s_masterToken))) {
             // Every use of the ALMIGHTY master apiToken is logged
-            Common.Logger.Warning($"Master API apiToken used from {RemoteIp()} for {Request.Method} {Request.Path.Value}");
+            Imlight.Common.Logger.Warning($"Master API apiToken used from {RemoteIp()} for {Request.Method} {Request.Path.Value}");
 
 
             var masterClaims = new List<Claim> {
@@ -120,7 +120,7 @@ public sealed class AuthHandler(
         // Check database for a valid API apiToken
         var apiToken = ApiTokenCollection.ValidateToken(rawKey);
         if (apiToken is null) {
-            Common.Logger.Warning($"Rejected invalid, expired or revoked API key from {RemoteIp()}");
+            Imlight.Common.Logger.Warning($"Rejected invalid, expired or revoked API key from {RemoteIp()}");
             return AuthenticateResult.Fail("Invalid, expired, or revoked API key.");
         }
 

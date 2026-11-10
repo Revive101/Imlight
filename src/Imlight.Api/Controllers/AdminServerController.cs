@@ -95,6 +95,7 @@ public sealed class AdminServerController : ControllerBase {
     public IActionResult GetOnlinePlayers() {
         var onlineEntries = OnlinePlayerCollection.GetOnlinePlayers();
         var result = new List<object>(onlineEntries.Length);
+
         foreach (var entry in onlineEntries) {
             var account = AccountCollection.GetAccountForCharacterList(entry.AccountId);
             var wizard = account?.Characters.FirstOrDefault(c => c.CharId == entry.CharacterId)
