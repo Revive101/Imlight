@@ -229,6 +229,9 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
         // echoes it back, otherwise the client restarts the tutorial from stage 0 after a zone reload.
         if (action == "Stage") {
             _tutorialInfo.m_tutorialStage = value;
+            if (GetActiveWizard() is { } wizard) {
+                wizard.TutorialStage = value;
+            }
             Logger.Debug("Tutorial stage advanced to {Stage}.", Logger.Args(value));
 
             return true;
@@ -290,6 +293,7 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
         // the control quests so none leak into the normal world, and move the player to the headmaster's office.
         if (goalName == "SkipTutorialGoal") {
             _tutorialInfo.m_tutorialStage = 99;
+            wizard.TutorialStage = 99;
             RemoveControlQuests(wizard);
             CompleteTutorialIntro(wizard, playerObj);
             EquipStarterWandAndDeck(wizard);

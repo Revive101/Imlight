@@ -40,7 +40,10 @@ internal sealed class ReqUnknown14CA64DEHandler : BaseRequirementHandler<ReqUnkn
 
 internal sealed class ReqTutorialStageHandler : BaseRequirementHandler<ReqTutorialStage> {
 
-    public override bool Evaluate(IRequirementContext context) => UntrackedRequirement.Pass(nameof(ReqTutorialStage));
+    private const int TutorialStartStage = 0;
+
+    public override bool Evaluate(IRequirementContext context)
+        => NumericRequirement.Compare(Requirement, context.GetWizard()?.TutorialStage ?? TutorialStartStage);
 
 }
 
