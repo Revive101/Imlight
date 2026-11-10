@@ -95,6 +95,28 @@ internal static class DialogSpeakers {
         return goal.m_personaName == npc.m_objectName || goal.m_personaName == PersonaOf(npc);
     }
 
+    /// <summary>
+    /// The NPC a persona goal sends the player to, by persona or by the goal's own dialog lines.
+    /// </summary>
+    public static GameObjectTemplate FindPersonaGoalNpc(PersonaGoalTemplate goal) {
+        string personaName = goal.m_personaName;
+        if (string.IsNullOrEmpty(personaName)) {
+            return null;
+        }
+
+        if (FindSpeaker(personaName) is { } speaker) {
+            return speaker;
+        }
+
+        var actorTemplateId = (goal.m_dialogList as ActorDialogList)?.m_dialogs?
+            .SelectMany(dialog => dialog.m_dialogEntries ?? [])
+            .OfType<NPCDialogEntry>()
+            .FirstOrDefault(entry => entry.m_personaName == personaName && entry.m_actorTemplateID != 0)?
+            .m_actorTemplateID ?? 0;
+
+        return actorTemplateId == 0 ? null : CoreObjectFactory.GetCoreTemplate(actorTemplateId) as GameObjectTemplate;
+    }
+
     private static bool NamesNoSpeaker(ActorDialogEntry entry)
         => entry is NPCDialogEntry npcEntry
            && !string.IsNullOrEmpty(npcEntry.m_personaName)

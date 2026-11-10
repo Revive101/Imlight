@@ -67,6 +67,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
     private const string QUEST_COMPLETED_ENTRY = "Complete";
     private const string GOAL_COMPLETE_EVENT_PREFIX = "GoalComplete_";
     private const string GOAL_COMPLETION_DIALOG_TAG = "Completion";
+    private const string GoalHyperlinkDialogTag = "Hyperlink";
     private const string DIALOG_ENTRY_EVENT_COMPLETION = "ENTRY";
 
     private const float FIRST_RUN_XP_SCALE = 1f;
@@ -241,7 +242,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
 
         // Live sends a persona goal's completion dialog first and completes the goal only when the client
         // reports the dialog closed (MSG_COMPLETEDIALOG). Show it now and finish the goal from there.
-        if (FindDialogue(gTemplate.m_dialogList, GOAL_COMPLETION_DIALOG_TAG) is not null) {
+        if (FindGoalCompletionDialogue(gTemplate) is not null) {
             if (_pendingGoalCompletions.Any(p => p.QuestId == questId && p.GoalId == goalId)) {
                 Logger.Debug("Character {CharId} asked again to complete goal {GoalId} of quest {QuestId} while its completion dialog is open; ignoring.",
                     Logger.Args(wizard.CharId, goalId, questId));
@@ -1521,8 +1522,26 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
     private void ShowGoalStartDialogue(GoalTemplate goalTemplate, ulong questId, ulong goalId)
         => ShowDialogue(goalTemplate.m_dialogList, "Prep", "QuestStart", questId, goalId);
 
-    private void ShowGoalCompletionDialogue(GoalTemplate goalTemplate, ulong questId, ulong goalId)
-        => ShowDialogue(goalTemplate.m_dialogList, GOAL_COMPLETION_DIALOG_TAG, "Completion", questId, goalId);
+    private void ShowGoalCompletionDialogue(GoalTemplate goalTemplate, ulong questId, ulong goalId) {
+        var dialog = FindGoalCompletionDialogue(goalTemplate);
+        if (dialog is not null) {
+            SendActorDialog(dialog, "Completion", questId, goalId);
+        }
+    }
+
+    private static ActorDialog FindGoalCompletionDialogue(GoalTemplate goalTemplate) {
+        var completion = FindDialogue(goalTemplate.m_dialogList, GOAL_COMPLETION_DIALOG_TAG);
+        if (completion?.m_dialogEntries is { Count: > 0 }) {
+            return completion;
+        }
+
+        // Side quest data keeps a talk goal's conversation under the hyperlink tag.
+        var hyperlink = goalTemplate is PersonaGoalTemplate
+            ? FindDialogue(goalTemplate.m_dialogList, GoalHyperlinkDialogTag)
+            : null;
+
+        return hyperlink?.m_dialogEntries is { Count: > 0 } ? hyperlink : null;
+    }
 
     private void ShowQuestCompletionDialogue(QuestTemplate questTemplate)
         => ShowDialogue(questTemplate.m_dialogList, "Complete", "QuestComplete");

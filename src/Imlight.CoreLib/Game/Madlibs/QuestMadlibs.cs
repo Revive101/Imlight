@@ -130,6 +130,12 @@ internal static class QuestMadlibs {
             }
         }
 
+        if (string.IsNullOrEmpty(firstName) && string.IsNullOrEmpty(lastName)
+            && gTemplate is PersonaGoalTemplate personaGoal
+            && DialogSpeakers.FindPersonaGoalNpc(personaGoal) is { } personaNpc) {
+            (firstName, lastName) = Locale.GetEnglishNameKeys(personaNpc.m_displayName);
+        }
+
         var madLibs = new MadlibBlock() {
             m_madlibs = [
                 new MadlibArgT_ByteString {
