@@ -18,19 +18,19 @@
  * ========================================================================
  * TRAIN SERVICE
  * ========================================================================
- * 
+ *
  * PURPOSE:
- * Manages player spell training mechanics, including spell learning 
+ * Manages player spell training mechanics, including spell learning
  * and training point management.
- * 
+ *
  * USAGE EXAMPLE:
- * Internal service handling spell training interactions within 
+ * Internal service handling spell training interactions within
  * the game server session.
- * 
+ *
  * NOTE:
- * 
+ *
  * TODO:
- * 
+ *
  * Created by: Joji
  * Version: KALI 1.0
  * Last Updated: 10/25/2026
@@ -50,7 +50,7 @@ using Imcodec.ObjectProperty.TypeCache;
 namespace Imlight.CoreLib.Game.Services;
 
 internal class TrainService(SessionActor sessionActor) : MessageService(sessionActor) {
-    
+
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new TrainService(parentActor));
 
@@ -101,7 +101,7 @@ internal class TrainService(SessionActor sessionActor) : MessageService(sessionA
 
         // Determine if the wizard has enough training points to learn the spell.
         // Wizards that are of the same magic school as the spell they are training have a cost of 0.
-        var spellCost = wizard.MagicSchoolBehavior.MagicSchool.ToString() == spellTemplate.m_sMagicSchoolName ? 0 : 1;
+        var spellCost = wizard.MagicSchoolBehavior.MagicSchool.ToString() == spellTemplate.m_sMagicSchoolName ? 0 : spellEntry.TrainingPoints;
         if (wizard.MagicSchoolBehavior.TrainingPoints < spellCost) {
             Logger.Warning("{Wizard} tried to train spell {SpellId} without enough training points.",
                 Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), spellEntry.TemplateID));

@@ -867,7 +867,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public IActorRef PlayerActor;
         public Wizard PlayerCharacter;
         public CoreObject PlayerObject;
-        public int Reinteract = 0; 
+        public int Reinteract = 0;
 
     }
 
@@ -972,7 +972,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte ServiceID { get; } = 102;
 
     }
-    
+
     public sealed class MSG_REGISTERCRITICALOBJECT : IServerMessage {
 
         public byte MessageOrder { get; } = 49;
@@ -982,7 +982,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
 
     }
 
-    
+
     public sealed class MSG_DELAYEDDELETEOBJECT : IServerMessage {
 
         public byte MessageOrder { get; } = 50;
@@ -1117,6 +1117,20 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
 
         public uint CreatureTid;
         public CombatDuelSubCircle Caster;
+
+    }
+
+    /// <summary>
+    /// Server-internal: tells a duel component to send a caster their post-cast mana once the cast
+    /// animation has played, so the mana drop doesn't reveal a spell's outcome before it animates.
+    /// </summary>
+    public sealed class MSG_DEFERREDMANASYNC : IServerMessage {
+
+        public byte MessageOrder { get; } = 61;
+        public byte ServiceID { get; } = 102;
+
+        public CombatDuelSubCircle Caster;
+        public int NewMana;
 
     }
 

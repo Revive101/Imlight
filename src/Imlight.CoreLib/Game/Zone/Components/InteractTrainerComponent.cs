@@ -18,19 +18,19 @@
  * ========================================================================
  * INTERACT TRAINER
  * ========================================================================
- * 
+ *
  * PURPOSE:
- * Manages spell training interactions for NPCs, dynamically generating 
+ * Manages spell training interactions for NPCs, dynamically generating
  * spell training options based on player characteristics and spell requirements.
- * 
+ *
  * USAGE EXAMPLE:
- * 
+ *
  * NOTE:
  * Dynamically resolves spell training options from NPC spell inventory.
  * Considers player's magic school, level, and existing spellbook.
- * 
+ *
  * TODO:
- * 
+ *
  * Created by: Jooty
  * Version: KALI 1.0
  * Last Updated: 3/18/2025
@@ -64,10 +64,10 @@ internal sealed class InteractTrainerComponent(ZoneEntity entity) : ZoneEntityCo
     public List<NPCSpellEntry> SpellInventory { get; private set; } = [];
     private List<ServiceOptionBase> _serviceOptionBases = [];
 
-    public static bool ShouldAttachToEntity(CoreTemplate template) 
+    public static bool ShouldAttachToEntity(CoreTemplate template)
         // Attach if the template is an NPC and has a spell inventory in Dragon database.
-        => template is GameObjectTemplate goTemplate 
-        && goTemplate.m_behaviors.Any(x => x is NPCBehaviorTemplate) 
+        => template is GameObjectTemplate goTemplate
+        && goTemplate.m_behaviors.Any(x => x is NPCBehaviorTemplate)
         && NpcSpellInventoryCollection.TryGetNpcInventory(goTemplate.m_templateID, out _);
 
     public override void OnStart() {
@@ -110,7 +110,7 @@ internal sealed class InteractTrainerComponent(ZoneEntity entity) : ZoneEntityCo
                 newBase.m_trainingCost = 0;
             }
             else {
-                newBase.m_trainingCost = 1;
+                newBase.m_trainingCost = SpellInventory[i].TrainingPoints;
             }
 
             // Check if wizard has enough training points to train the spell, and if the
