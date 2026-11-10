@@ -35,7 +35,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/25/2026
+ * Last Updated: 11/09/2026
  */
 
 using System.Collections.Generic;
@@ -53,6 +53,7 @@ using Imlight.CoreLib.Game.Requirements.Contexts;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
@@ -72,6 +73,8 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
     // Keyed by the player's actor: CoreObject is a record, so its hash follows its location and a move replaces it.
     private readonly HashSet<IActorRef> _playersInRange = [];
     private readonly Dictionary<Wizard, IActorRef> _playersWithRequirementsMet = [];
+    private static HashSet<string> s_objectsShownByQuests;
+
     private readonly Dictionary<IActorRef, Wizard> _playerIgnoreBecauseDynamod = [];
     private float _renderDistance;
     private bool _doesDistanceCheck = false;
@@ -145,6 +148,12 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
             if (!mod.ModState.Equals(SPAWN_STATE_NAME, System.StringComparison.OrdinalIgnoreCase)) {
                 persistedState = mod.ModState;
             }
+        }
+
+        if (IsHiddenUntilQuestShowsIt(relevantDynaMods)) {
+            _playerIgnoreBecauseDynamod[suspect] = wizard;
+
+            return;
         }
 
         // Determine if this player meets the requirements to see the object.
@@ -315,6 +324,47 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
         => _playersInRange.Contains(player)
         && _playersWithRequirementsMet.ContainsValue(player)
         && !_playerIgnoreBecauseDynamod.ContainsKey(player);
+
+    private bool IsHiddenUntilQuestShowsIt(List<Dynamod> playerDynaMods) {
+        if (Entity.Info is not { m_bUndetectable: true } info) {
+            return false;
+        }
+
+        string zoneTag = info.m_zoneTag;
+
+        return !string.IsNullOrEmpty(zoneTag)
+            && ObjectsShownByQuests().Contains(zoneTag)
+            && !playerDynaMods.Any(mod => SPAWN_STATE_NAME.Equals(mod.ModState, System.StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static HashSet<string> ObjectsShownByQuests() {
+        if (s_objectsShownByQuests is not null) {
+            return s_objectsShownByQuests;
+        }
+
+        var quests = QuestTemplateCollection.GetAllQuests().Where(quest => quest is not null).ToList();
+        var goalResults = quests
+            .SelectMany(quest => quest.m_goals ?? [])
+            .Where(goal => goal is not null)
+            .SelectMany(goal => new[] { goal.m_activateResults, goal.m_completeResults });
+        var shownTags = quests
+            .SelectMany(quest => new[] { quest.m_startResults, quest.m_endResults })
+            .Concat(goalResults)
+            .Where(results => results?.m_results is not null)
+            .SelectMany(results => results.m_results)
+            .OfType<ResAddDynaMod>()
+            .Where(mod => mod.m_bShowsObject || SPAWN_STATE_NAME.Equals(mod.m_dynaModState, System.StringComparison.OrdinalIgnoreCase))
+            .Select(mod => (string) mod.m_dynaModClientTag)
+            .Where(tag => !string.IsNullOrEmpty(tag))
+            .ToHashSet(System.StringComparer.OrdinalIgnoreCase);
+
+        // An empty set means the quests are not loaded yet: do not cache it.
+        if (shownTags.Count > 0) {
+            s_objectsShownByQuests = shownTags;
+        }
+
+        return shownTags;
+    }
 
     private static bool IsDespawnState(string stateName) {
         // A dynamod with no state hides its object for the player, as "Off" does (client triggers use both).
