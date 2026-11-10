@@ -28,7 +28,7 @@
  *
  * TODO:
  *
- * Created by: WonderlandWorkshop with Claude (claude-opus-5-5)
+ * Created by: WonderlandWorkshop
  * Version: KALI 1.0
  * Last Updated: 11/09/2026
  */
