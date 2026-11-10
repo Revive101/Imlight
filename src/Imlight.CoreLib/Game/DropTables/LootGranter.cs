@@ -39,7 +39,7 @@
  * 
  * Created by: Jay
  * Version: KALI 1.0
- * Last Updated: 10/14/2026
+ * Last Updated: 11/09/2026
  */
 
 using System;
@@ -209,7 +209,7 @@ public static class LootGranter {
         // That's it. The SessionActor will inform the game client, and level them up if needed.
     }
 
-    private static void UpdateWizardTP(IActorRef playerActor, Wizard wizard, int tpDelta) {
+    internal static void UpdateWizardTP(IActorRef playerActor, Wizard wizard, int tpDelta) {
         if (tpDelta == 0) {
             return;
         }

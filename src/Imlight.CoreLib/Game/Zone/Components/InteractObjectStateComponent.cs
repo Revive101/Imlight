@@ -42,7 +42,7 @@
  * TODO:
  *
  * Version: KALI 1.0
- * Last Updated: 10/25/2026
+ * Last Updated: 11/09/2026
  */
 
 using System;
@@ -132,7 +132,10 @@ internal sealed class InteractObjectStateComponent(ZoneEntity entity)
         var current = Zone.ScriptState.GetObjectState(ObjectName);
         foreach (var option in GetStateOptions(Entity.Template as GameObjectTemplate)) {
             if (IsGoalOption(option)) {
-                Apply(option, playerActor, playerObject);
+                if (!IsForAnotherZone(option)) {
+                    Apply(option, playerActor, playerObject);
+                }
+
                 continue;
             }
 
@@ -154,6 +157,10 @@ internal sealed class InteractObjectStateComponent(ZoneEntity entity)
             Apply(option, playerActor, playerObject);
         }
     }
+
+    private bool IsForAnotherZone(InteractOptionTemplate option)
+        => Requirements(option)?.m_requirements?.OfType<ReqInZone>()
+            .Any(requirement => !requirement.m_applyNOT && requirement.m_zoneName != Zone?.ZonePath) == true;
 
     /// <summary>
     /// True when a use already put the object into the state one of its quest-goal options puts it in.

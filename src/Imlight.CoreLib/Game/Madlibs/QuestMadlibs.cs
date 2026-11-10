@@ -32,7 +32,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 08/21/2026
+ * Last Updated: 11/09/2026
  */
 
 using Imcodec.ObjectProperty.TypeCache;
@@ -219,11 +219,11 @@ internal static class QuestMadlibs {
                 },
                 new MadlibArgT_int {
                     m_madlibToken = "TOTAL",
-                    m_madlibArgument = gTemplate.m_tallyCounter?.m_count ?? 0
+                    m_madlibArgument = GoalTotals.Of(gTemplate)
                 },
                 new MadlibArgT_int {
                     m_madlibToken = "SUBSCRIBER_TOTAL",
-                    m_madlibArgument = gTemplate.m_tallyCounter?.m_count ?? 0
+                    m_madlibArgument = GoalTotals.Of(gTemplate)
                 }
             ],
             m_blockToken = "GOAL"

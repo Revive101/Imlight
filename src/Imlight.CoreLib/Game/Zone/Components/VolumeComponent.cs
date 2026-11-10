@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/26/2026
+ * Last Updated: 11/09/2026
  */
 
 using Akka.Actor;
@@ -50,6 +50,8 @@ using System.Linq;
 namespace Imlight.CoreLib.Game.Zone.Components;
 
 internal sealed class VolumeComponent(ZoneEntity entity) : ZoneEntityComponent(entity), IComponentFactory {
+
+    private const string EnterEventPrefix = "Enter_";
 
     // Keyed by the player's actor: a CoreObject is a record, so its hash changes with every move.
     private readonly HashSet<IActorRef> _playersInRange = [];
@@ -100,7 +102,7 @@ internal sealed class VolumeComponent(ZoneEntity entity) : ZoneEntityComponent(e
             foreach (var goal in quest.m_goals) {
                 if (goal is not WaypointGoalTemplate waypointGoal
                     || string.IsNullOrEmpty(waypointGoal.m_proximityTag)
-                    || waypointGoal.m_proximityTag != volumeName) {
+                    || !ProximityTagNamesVolume(waypointGoal.m_proximityTag, volumeName)) {
                     continue;
                 }
 
@@ -114,6 +116,9 @@ internal sealed class VolumeComponent(ZoneEntity entity) : ZoneEntityComponent(e
             }
         }
     }
+
+    private static bool ProximityTagNamesVolume(string proximityTag, string volumeName)
+        => proximityTag == volumeName || proximityTag == EnterEventPrefix + volumeName;
 
     private bool IsBox
         => _volume.m_radius <= 0 && _volume.m_length > 0 && _volume.m_width > 0;

@@ -35,7 +35,7 @@
  *
  * Created by: Jay
  * Version: KALI 1.0
- * Last Updated: 10/23/2026
+ * Last Updated: 11/09/2026
  */
 
 using System;
@@ -82,6 +82,17 @@ internal static class DialogSpeakers {
         }
 
         return entry.m_actorTemplateID == npc.m_templateID;
+    }
+
+    /// <summary>
+    /// True when a persona goal targets the NPC, by the persona on its questing behavior or by its object name.
+    /// </summary>
+    public static bool IsPersonaGoalTarget(PersonaGoalTemplate goal, GameObjectTemplate npc) {
+        if (string.IsNullOrEmpty(goal.m_personaName)) {
+            return false;
+        }
+
+        return goal.m_personaName == npc.m_objectName || goal.m_personaName == PersonaOf(npc);
     }
 
     private static bool NamesNoSpeaker(ActorDialogEntry entry)

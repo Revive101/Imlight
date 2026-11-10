@@ -36,14 +36,16 @@
  *
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/25/2026
+ * Last Updated: 11/09/2026
  */
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty.TypeCache;
+using Imlight.CoreLib.Game.Madlibs;
 using Imlight.CoreLib.Game.WizBang;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Packets;
@@ -66,6 +68,7 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
     public string DisplayKey => null;
 
     private readonly Dictionary<string, List<GoalTemplate>> _usageGoalsByQuest = [];
+    private bool _goalsSpanSeveralZones;
 
     public static bool ShouldAttachToEntity(CoreTemplate template)
         => template is GameObjectTemplate gameObjectTemplate
@@ -122,6 +125,13 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
                 goalList.Add(goal);
             }
         }
+
+        _goalsSpanSeveralZones = _usageGoalsByQuest.Values
+            .SelectMany(goals => goals)
+            .Select(goal => (string) goal.m_destinationZone)
+            .Where(zone => !string.IsNullOrEmpty(zone))
+            .Distinct()
+            .Count() > 1;
     }
 
     public void OnServiceInteraction(IActorRef playerActor, Wizard playerCharacter, CoreObject playerObject, uint serviceOptionIndex) {
@@ -136,7 +146,7 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
         foreach (var (quest, goal, goalProgress) in activeGoals) {
             // Two goals that share a completion dialog show it once.
             var suppressDialog = false;
-            var willComplete = goalProgress.CurrentProgress + 1 >= (goal.m_tallyCounter?.m_count ?? 1);
+            var willComplete = goalProgress.CurrentProgress + 1 >= Math.Max(GoalTotals.Of(goal), 1);
             var dialogKey = CompletionDialogKey(goal);
             if (willComplete && dialogKey is not null) {
                 suppressDialog = !shownDialogs.Add(dialogKey);
@@ -155,7 +165,7 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
         // run when it is used for the goal.
         Entity.GetComponentOfType<InteractObjectStateComponent>()?.ApplyGoalOptions(playerActor, playerObject);
 
-        var goalMax = activeGoals.Max(g => g.Goal.m_tallyCounter?.m_count ?? 1);
+        var goalMax = activeGoals.Max(g => Math.Max(GoalTotals.Of(g.Goal), 1));
 
         // Collection goals (tally count > 1, e.g. the Triton cogs) consume the object:
         // each use removes that instance from the world. Single-use objects (levers,
@@ -223,6 +233,10 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
             }
 
             foreach (var goal in goals) {
+                if (_goalsSpanSeveralZones && !IsGoalForThisZone(goal)) {
+                    continue;
+                }
+
                 var goalProgress = quest.GoalProgress.FirstOrDefault(gp =>
                     IsActiveUsageGoal(gp, goal.m_goalName));
 
@@ -234,6 +248,9 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
 
         return result;
     }
+
+    private bool IsGoalForThisZone(GoalTemplate goal)
+        => string.IsNullOrEmpty(goal.m_destinationZone) || goal.m_destinationZone == Zone?.ZonePath;
 
     private static string CompletionDialogKey(GoalTemplate goal) {
         var dialog = (goal.m_dialogList as ActorDialogList)?.m_dialogs?.FirstOrDefault(d => d.m_dialogTag == "Completion");

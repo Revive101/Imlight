@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/25/2026
+ * Last Updated: 11/09/2026
  */
 
 using Akka.Actor;
@@ -381,7 +381,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
 
         wizard.IncrementQuestGoal(qInstance.QuestName, gTemplate.m_goalName);
 
-        var goalMax = gTemplate.m_tallyCounter?.m_count ?? 1;
+        var goalMax = Math.Max(GoalTotals.Of(gTemplate), 1);
         if (gInstance.CurrentProgress >= goalMax) {
             CompleteGoal(qInstance, gTemplate, showCompletionDialogue: !message.SuppressCompletionDialog);
 
@@ -598,7 +598,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
                 state = "done";
             }
             else {
-                var total = gTemplate.m_tallyCounter?.m_count ?? 0;
+                var total = GoalTotals.Of(gTemplate);
                 state = total > 0 ? $"active {gInstance.CurrentProgress}/{total}" : "active";
             }
 
@@ -765,7 +765,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
                     continue;
                 }
 
-                ProcessCombatGoal(wizard, qInstance, bountyGoal, message.MobAdjectives, foughtWithGroupMate);
+                ProcessCombatGoal(wizard, qInstance, bountyGoal, message.AdjectivesPerDefeatedMob, foughtWithGroupMate);
             }
         }
     }
@@ -1189,9 +1189,9 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             GoalStatus = 0,                      // *** ACTIVE on retail captures ***
             GoalCount = gInstance.CurrentProgress,
             UseTally = (byte) (gTemplate.m_tallyCounter is not null ? 1 : 0),
-            GoalTotal = gTemplate.m_tallyCounter?.m_count ?? 0,
+            GoalTotal = GoalTotals.Of(gTemplate),
             TallyText = gTemplate.m_tallyCounter?.m_descriptor ?? "",
-            SubscriberGoalTotal = gTemplate.m_tallyCounter?.m_count ?? 0,
+            SubscriberGoalTotal = GoalTotals.Of(gTemplate),
             SendType = sendType,                 // 0=resume/start-of-zone, 1=start, 2=progress
             GoalMadlibs = madLibData,
             ClientTags = clientTagData,
@@ -1225,22 +1225,19 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
     private void ProcessCombatGoal(Wizard wizard,
                                    QuestInstance qInstance,
                                    BountyGoalTemplate goalTemplate,
-                                   string[] defeatedMobAdjectives,
+                                   string[][] adjectivesPerDefeatedMob,
                                    bool foughtWithGroupMate) {
         var shouldIncrement = goalTemplate.m_goalType == GOAL_TYPE.GOAL_TYPE_BOUNTY;
         var goalMobAdjectives = goalTemplate.m_npcAdjectives ?? [];
 
-        // Check to see if the defeated mob matches the goal's NPC adjectives.
-        if (!defeatedMobAdjectives.Any(adjective => goalMobAdjectives.Contains(adjective))) {
+        var matchCount = adjectivesPerDefeatedMob.Count(mobAdjectives
+            => mobAdjectives.Any(adjective => goalMobAdjectives.Contains(adjective)));
+        if (matchCount == 0) {
             return;
         }
 
-        // If there were, determine how many of the adjectives matched.
-        // We'll increment by that amount.
-        var matchCount = defeatedMobAdjectives.Count(adjective => goalMobAdjectives.Contains(adjective));
-
         if (goalTemplate.m_goalType == GOAL_TYPE.GOAL_TYPE_BOUNTYCOLLECT) {
-            var chance = goalTemplate.m_tallyCounter?.m_percentChance ?? DEFAULT_KILL_COLLECT_CHANCE;
+            var chance = KillCollectChance(goalTemplate);
             shouldIncrement = new Random().NextDouble() <= chance;
 
             // todo: live's bonus size is unknown; a group win gets one more roll at the same chance.
@@ -1255,7 +1252,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
                 wizard.IncrementQuestGoal(qInstance.QuestName, goalTemplate.m_goalName);
             }
 
-            var goalMax = goalTemplate.m_tallyCounter?.m_count ?? 0;
+            var goalMax = GoalTotals.Of(goalTemplate);
             var gInstance = qInstance.GoalProgress.FirstOrDefault(g => g.GoalName == goalTemplate.m_goalName);
 
             if (gInstance != null && gInstance.CurrentProgress >= goalMax) {
@@ -1266,6 +1263,13 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
 
             SendGoalMessage(goalTemplate, qInstance, 2);
         }
+    }
+
+    private static double KillCollectChance(GoalTemplate goalTemplate) {
+        // The data mixes fractions (1.0) with whole percentages (90).
+        var chance = goalTemplate.m_tallyCounter?.m_percentChance ?? DEFAULT_KILL_COLLECT_CHANCE;
+
+        return chance > 1 ? chance / 100.0 : chance;
     }
 
     private string GetPatronIconFromGoal(GoalTemplate gTemplate) {
