@@ -153,6 +153,7 @@ public class Wizard {
     [JsonIgnore] internal DynamodSet DynamodSet { get; set; }
     [JsonIgnore] internal bool IsInCombatGrace { get; set; }
     [JsonIgnore] internal bool IsInDuel { get; set; }
+    [JsonIgnore] public int TutorialStage { get; set; }
 
     /// <summary>
     /// Tracks the current emote state of the player during this session.
@@ -1864,7 +1865,7 @@ public class Wizard {
             InventoryBehavior.Items.Add(cObj);
         }
 
-        // The default pet must be created through the pet factory. 
+        // The default pet must be created through the pet factory.
         var defaultPet = PetFactory.CreateHatchedPet(CharId, _defaultPetTemplateId);
         if (defaultPet is null) {
             Logger.Error("Could not create the starting pet (template {TemplateId}) for character {CharId}.",
