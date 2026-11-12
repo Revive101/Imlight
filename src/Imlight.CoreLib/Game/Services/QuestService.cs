@@ -1228,7 +1228,6 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
                                    BountyGoalTemplate goalTemplate,
                                    string[][] adjectivesPerDefeatedMob,
                                    bool foughtWithGroupMate) {
-        var shouldIncrement = goalTemplate.m_goalType == GOAL_TYPE.GOAL_TYPE_BOUNTY;
         var goalMobAdjectives = goalTemplate.m_npcAdjectives ?? [];
 
         var matchCount = adjectivesPerDefeatedMob.Count(mobAdjectives
@@ -1237,19 +1236,31 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             return;
         }
 
+        var creditCount = goalTemplate.m_goalType == GOAL_TYPE.GOAL_TYPE_BOUNTY ? matchCount : 0;
         if (goalTemplate.m_goalType == GOAL_TYPE.GOAL_TYPE_BOUNTYCOLLECT) {
             var chance = KillCollectChance(goalTemplate);
-            shouldIncrement = new Random().NextDouble() <= chance;
+            var random = Random.Shared;
+            var gotGroupCredit = false;
 
-            // todo: live's bonus size is unknown; a group win gets one more roll at the same chance.
-            if (!shouldIncrement && foughtWithGroupMate && new Random().NextDouble() <= chance) {
-                shouldIncrement = true;
+            // Each defeated mob that matches the goal rolls for its own drop.
+            for (int i = 0; i < matchCount; i++) {
+                if (random.NextDouble() <= chance) {
+                    creditCount++;
+                }
+                // todo: live's bonus size is unknown; a group win gets one more roll at the same chance.
+                else if (foughtWithGroupMate && random.NextDouble() <= chance) {
+                    creditCount++;
+                    gotGroupCredit = true;
+                }
+            }
+
+            if (gotGroupCredit) {
                 SendToSocket(new WIZARD_12_PROTOCOL.MSG_GROUPQUESTCREDIT());
             }
         }
 
-        if (shouldIncrement) {
-            for (int i = 0; i < matchCount; i++) {
+        if (creditCount > 0) {
+            for (int i = 0; i < creditCount; i++) {
                 wizard.IncrementQuestGoal(qInstance.QuestName, goalTemplate.m_goalName);
             }
 
