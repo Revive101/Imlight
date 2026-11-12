@@ -18,25 +18,25 @@
  * ========================================================================
  * SOCKET LISTENER
  * ========================================================================
- * 
+ *
  * PURPOSE:
  * Manages socket-level packet receiving, frame reassembly and decoding, and
  * rate-limiting for network sessions using a token bucket algorithm.
- * 
+ *
  * USAGE EXAMPLE:
  * // Socket listener is typically created by SessionActor
  * // Handles network packet reception and processing
- * 
+ *
  * NOTE:
  * - Implements token bucket rate limiting
  * - One socket read can hold several frames or part of one; MessageStreamDecoder keeps the tail
- * 
+ *
  * TODO:
  * - Hardcoded suppressed packets list, consider making it configurable
- * 
+ *
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 11/09/2026
+ * Last Updated: 10/25/2026
  */
 
 using System;
@@ -190,7 +190,7 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
             if (bytesReceived <= 0) {
                 // If the bytes transferred is 0, the socket has disconnected.
                 DisposeAfterSocketEnded();
-                
+
                 return;
             }
 
@@ -206,7 +206,7 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
             foreach (var packet in packets) {
                 if (IsCriticalPacket(packet)) {
                     _tokenBucket.Spend();
-                } else if (!IsExemptFromRateLimit(packet) && !_tokenBucket.TryAcquire()) {
+                } else if (!_tokenBucket.TryAcquire()) {
                     Logger.Debug("SessionActor {SessionId} is over its message rate limit; dropped {MessageName}.",
                         Logger.Args(_sessionid, GetScopedMessageName(packet)));
 
@@ -285,13 +285,6 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
             or WIZARDHOUSING_50_PROTOCOL.MSG_REQUESTHOUSINGZONE
             or LOGIN_7_PROTOCOL.MSG_USER_VALIDATE
             or LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_V3;
-
-    // The client checks quest requirements in batches, one message per requirement. Normal play produces
-    // bursts of 150 or more in a second, as many as the whole bucket holds, so counting them would disconnect
-    // well-behaved clients. The server does nothing with these messages today, and MaxFramesPerRead still bounds a read.
-    // todo: should this stay exempt once the server evaluates and answers these requirements?
-    private static bool IsExemptFromRateLimit(IMessage packet)
-        => packet is GAME_5_PROTOCOL.MSG_REQASKSERVER;
 
     private static string GetScopedMessageName(IMessage packet)
         => packet

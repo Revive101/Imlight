@@ -342,21 +342,24 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
             return s_objectsShownByQuests;
         }
 
-        var quests = QuestTemplateCollection.GetAllQuests().Where(quest => quest is not null).ToList();
-        var goalResults = quests
-            .SelectMany(quest => quest.m_goals ?? [])
-            .Where(goal => goal is not null)
-            .SelectMany(goal => new[] { goal.m_activateResults, goal.m_completeResults });
-        var shownTags = quests
-            .SelectMany(quest => new[] { quest.m_startResults, quest.m_endResults })
-            .Concat(goalResults)
-            .Where(results => results?.m_results is not null)
-            .SelectMany(results => results.m_results)
-            .OfType<ResAddDynaMod>()
-            .Where(mod => mod.m_bShowsObject || SPAWN_STATE_NAME.Equals(mod.m_dynaModState, System.StringComparison.OrdinalIgnoreCase))
-            .Select(mod => (string) mod.m_dynaModClientTag)
-            .Where(tag => !string.IsNullOrEmpty(tag))
-            .ToHashSet(System.StringComparer.OrdinalIgnoreCase);
+        var shownTags = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+        foreach (var quest in QuestTemplateCollection.GetAllQuests()) {
+            if (quest is null) {
+                continue;
+            }
+
+            AddShownTags(quest.m_startResults, shownTags);
+            AddShownTags(quest.m_endResults, shownTags);
+
+            foreach (var goal in quest.m_goals ?? []) {
+                if (goal is null) {
+                    continue;
+                }
+
+                AddShownTags(goal.m_activateResults, shownTags);
+                AddShownTags(goal.m_completeResults, shownTags);
+            }
+        }
 
         // An empty set means the quests are not loaded yet: do not cache it.
         if (shownTags.Count > 0) {
@@ -364,6 +367,30 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
         }
 
         return shownTags;
+    }
+
+    /// <summary>
+    /// Adds the client tag of each dynamod in the results that shows its object.
+    /// </summary>
+    private static void AddShownTags(ResultList results, HashSet<string> shownTags) {
+        if (results?.m_results is null) {
+            return;
+        }
+
+        foreach (var result in results.m_results) {
+            if (result is not ResAddDynaMod mod) {
+                continue;
+            }
+
+            string tag = mod.m_dynaModClientTag;
+            if (string.IsNullOrEmpty(tag)) {
+                continue;
+            }
+
+            if (mod.m_bShowsObject || SPAWN_STATE_NAME.Equals(mod.m_dynaModState, System.StringComparison.OrdinalIgnoreCase)) {
+                shownTags.Add(tag);
+            }
+        }
     }
 
     private static bool IsDespawnState(string stateName) {
