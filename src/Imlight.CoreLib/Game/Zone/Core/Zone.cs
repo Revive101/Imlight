@@ -105,6 +105,11 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     /// </summary>
     public ZoneScriptState ScriptState { get; }
 
+    /// <summary>
+    /// The discoverable teleporter stones and pads of this zone instance and who has found them.
+    /// </summary>
+    public TeleporterEndpoints TeleporterEndpoints { get; } = new();
+
     public ITimerScheduler Timers { get; set; }
 
     private readonly uint _dynamicZoneId;

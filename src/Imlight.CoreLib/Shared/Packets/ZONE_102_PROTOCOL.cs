@@ -1585,4 +1585,17 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
 
     }
 
+    /// <summary>
+    /// Sent by a teleporter endpoint to itself to show a player its look again, once the client has had time to build it.
+    /// </summary>
+    public sealed class MSG_TELEPORTERLOOKREFRESH : IServerMessage {
+
+        public byte MessageOrder { get; } = 104;
+        public byte ServiceID { get; } = 102;
+
+        public IActorRef PlayerActor;
+        public int Step;
+
+    }
+
 }
