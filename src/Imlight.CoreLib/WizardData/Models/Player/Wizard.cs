@@ -271,6 +271,10 @@ public class Wizard {
         GameStats.m_powerPipBase = Math.Max(0, GameStats.m_powerPipBase + powerPipDifference);
         GameStats.m_energyMax = Math.Max(0, GameStats.m_energyMax + energyDifference);
 
+        if (newBaseStats.m_trainingPoints > 0) {
+            UpdateTrainingPoints(MagicSchoolBehavior.TrainingPoints + newBaseStats.m_trainingPoints);
+        }
+
         // Don't reset XP - preserve overflow XP when leveling up.
         // XP is managed by AddExperiencePoints/RemoveExperiencePoints.
 
