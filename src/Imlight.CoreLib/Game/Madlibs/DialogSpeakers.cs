@@ -35,7 +35,7 @@
  *
  * Created by: Jay
  * Version: KALI 1.0
- * Last Updated: 10/23/2026
+ * Last Updated: 11/09/2026
  */
 
 using System;
@@ -82,6 +82,39 @@ internal static class DialogSpeakers {
         }
 
         return entry.m_actorTemplateID == npc.m_templateID;
+    }
+
+    /// <summary>
+    /// True when a persona goal targets the NPC, by the persona on its questing behavior or by its object name.
+    /// </summary>
+    public static bool IsPersonaGoalTarget(PersonaGoalTemplate goal, GameObjectTemplate npc) {
+        if (string.IsNullOrEmpty(goal.m_personaName)) {
+            return false;
+        }
+
+        return goal.m_personaName == npc.m_objectName || goal.m_personaName == PersonaOf(npc);
+    }
+
+    /// <summary>
+    /// The NPC a persona goal sends the player to, by persona or by the goal's own dialog lines.
+    /// </summary>
+    public static GameObjectTemplate FindPersonaGoalNpc(PersonaGoalTemplate goal) {
+        string personaName = goal.m_personaName;
+        if (string.IsNullOrEmpty(personaName)) {
+            return null;
+        }
+
+        if (FindSpeaker(personaName) is { } speaker) {
+            return speaker;
+        }
+
+        var actorTemplateId = (goal.m_dialogList as ActorDialogList)?.m_dialogs?
+            .SelectMany(dialog => dialog.m_dialogEntries ?? [])
+            .OfType<NPCDialogEntry>()
+            .FirstOrDefault(entry => entry.m_personaName == personaName && entry.m_actorTemplateID != 0)?
+            .m_actorTemplateID ?? 0;
+
+        return actorTemplateId == 0 ? null : CoreObjectFactory.GetCoreTemplate(actorTemplateId) as GameObjectTemplate;
     }
 
     private static bool NamesNoSpeaker(ActorDialogEntry entry)

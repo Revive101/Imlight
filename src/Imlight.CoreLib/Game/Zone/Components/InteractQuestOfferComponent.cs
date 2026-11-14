@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/23/2026
+ * Last Updated: 11/09/2026
  */
 
 using System;
@@ -293,7 +293,7 @@ internal sealed class InteractQuestOfferComponent(ZoneEntity entity)
                 m_personaName = "",
                 m_goalType = (int) goal.m_goalType,
                 m_goalCount = 0,
-                m_goalTotal = goal.m_tallyCounter?.m_count ?? 0,
+                m_goalTotal = GoalTotals.Of(goal),
                 m_useTally = goal.m_tallyCounter is not null,
                 m_tallyText = goal.m_tallyCounter?.m_descriptor ?? string.Empty,
                 m_tallyText2 = goal.m_tallyCounter?.m_descriptor2 ?? string.Empty,

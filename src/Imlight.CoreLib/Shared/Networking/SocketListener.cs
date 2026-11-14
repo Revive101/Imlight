@@ -18,22 +18,22 @@
  * ========================================================================
  * SOCKET LISTENER
  * ========================================================================
- * 
+ *
  * PURPOSE:
  * Manages socket-level packet receiving, frame reassembly and decoding, and
  * rate-limiting for network sessions using a token bucket algorithm.
- * 
+ *
  * USAGE EXAMPLE:
  * // Socket listener is typically created by SessionActor
  * // Handles network packet reception and processing
- * 
+ *
  * NOTE:
  * - Implements token bucket rate limiting
  * - One socket read can hold several frames or part of one; MessageStreamDecoder keeps the tail
- * 
+ *
  * TODO:
  * - Hardcoded suppressed packets list, consider making it configurable
- * 
+ *
  * Created by: Jooty
  * Version: KALI 1.0
  * Last Updated: 10/25/2026
@@ -190,7 +190,7 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
             if (bytesReceived <= 0) {
                 // If the bytes transferred is 0, the socket has disconnected.
                 DisposeAfterSocketEnded();
-                
+
                 return;
             }
 

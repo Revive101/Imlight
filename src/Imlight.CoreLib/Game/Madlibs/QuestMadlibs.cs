@@ -32,7 +32,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 08/21/2026
+ * Last Updated: 11/10/2026
  */
 
 using Imcodec.ObjectProperty.TypeCache;
@@ -124,10 +124,16 @@ internal static class QuestMadlibs {
                     var npcTemplate = CoreObjectFactory.GetCoreTemplate(templateId);
                     if (npcTemplate is GameObjectTemplate npcGameObjectTemplate) {
                         var npcFullname = npcGameObjectTemplate.m_displayName;
-                        (firstName, lastName) = Locale.GetEnglishNameKeys(npcFullname);
+                        (firstName, lastName) = GetGoalNameKeys(npcFullname);
                     }
                 }
             }
+        }
+
+        if (string.IsNullOrEmpty(firstName) && string.IsNullOrEmpty(lastName)
+            && gTemplate is PersonaGoalTemplate personaGoal
+            && DialogSpeakers.FindPersonaGoalNpc(personaGoal) is { } personaNpc) {
+            (firstName, lastName) = GetGoalNameKeys(personaNpc.m_displayName);
         }
 
         var madLibs = new MadlibBlock() {
@@ -166,6 +172,15 @@ internal static class QuestMadlibs {
         };
 
         return madLibs;
+    }
+
+    private static (string FirstName, string LastName) GetGoalNameKeys(string displayName) {
+        var (firstName, lastName) = Locale.GetEnglishNameKeys(displayName);
+
+        // A name whose parts have no locale keys of their own (Dorothy Gale) is shown whole.
+        return string.IsNullOrEmpty(firstName) && string.IsNullOrEmpty(lastName)
+            ? (displayName ?? string.Empty, string.Empty)
+            : (firstName, lastName);
     }
 
     private static MadlibArgT_ByteString[] GetTallyArguments(GoalTemplate gTemplate)
@@ -219,11 +234,11 @@ internal static class QuestMadlibs {
                 },
                 new MadlibArgT_int {
                     m_madlibToken = "TOTAL",
-                    m_madlibArgument = gTemplate.m_tallyCounter?.m_count ?? 0
+                    m_madlibArgument = GoalTotals.Of(gTemplate)
                 },
                 new MadlibArgT_int {
                     m_madlibToken = "SUBSCRIBER_TOTAL",
-                    m_madlibArgument = gTemplate.m_tallyCounter?.m_count ?? 0
+                    m_madlibArgument = GoalTotals.Of(gTemplate)
                 }
             ],
             m_blockToken = "GOAL"

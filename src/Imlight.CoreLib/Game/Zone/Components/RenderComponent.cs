@@ -35,7 +35,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/25/2026
+ * Last Updated: 11/09/2026
  */
 
 using System.Collections.Generic;
@@ -53,6 +53,7 @@ using Imlight.CoreLib.Game.Requirements.Contexts;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
@@ -72,6 +73,8 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
     // Keyed by the player's actor: CoreObject is a record, so its hash follows its location and a move replaces it.
     private readonly HashSet<IActorRef> _playersInRange = [];
     private readonly Dictionary<Wizard, IActorRef> _playersWithRequirementsMet = [];
+    private static HashSet<string> s_objectsShownByQuests;
+
     private readonly Dictionary<IActorRef, Wizard> _playerIgnoreBecauseDynamod = [];
     private float _renderDistance;
     private bool _doesDistanceCheck = false;
@@ -145,6 +148,12 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
             if (!mod.ModState.Equals(SPAWN_STATE_NAME, System.StringComparison.OrdinalIgnoreCase)) {
                 persistedState = mod.ModState;
             }
+        }
+
+        if (IsHiddenUntilQuestShowsIt(relevantDynaMods)) {
+            _playerIgnoreBecauseDynamod[suspect] = wizard;
+
+            return;
         }
 
         // Determine if this player meets the requirements to see the object.
@@ -315,6 +324,74 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
         => _playersInRange.Contains(player)
         && _playersWithRequirementsMet.ContainsValue(player)
         && !_playerIgnoreBecauseDynamod.ContainsKey(player);
+
+    private bool IsHiddenUntilQuestShowsIt(List<Dynamod> playerDynaMods) {
+        if (Entity.Info is not { m_bUndetectable: true } info) {
+            return false;
+        }
+
+        string zoneTag = info.m_zoneTag;
+
+        return !string.IsNullOrEmpty(zoneTag)
+            && ObjectsShownByQuests().Contains(zoneTag)
+            && !playerDynaMods.Any(mod => SPAWN_STATE_NAME.Equals(mod.ModState, System.StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static HashSet<string> ObjectsShownByQuests() {
+        if (s_objectsShownByQuests is not null) {
+            return s_objectsShownByQuests;
+        }
+
+        var shownTags = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+        foreach (var quest in QuestTemplateCollection.GetAllQuests()) {
+            if (quest is null) {
+                continue;
+            }
+
+            AddShownTags(quest.m_startResults, shownTags);
+            AddShownTags(quest.m_endResults, shownTags);
+
+            foreach (var goal in quest.m_goals ?? []) {
+                if (goal is null) {
+                    continue;
+                }
+
+                AddShownTags(goal.m_activateResults, shownTags);
+                AddShownTags(goal.m_completeResults, shownTags);
+            }
+        }
+
+        // An empty set means the quests are not loaded yet: do not cache it.
+        if (shownTags.Count > 0) {
+            s_objectsShownByQuests = shownTags;
+        }
+
+        return shownTags;
+    }
+
+    /// <summary>
+    /// Adds the client tag of each dynamod in the results that shows its object.
+    /// </summary>
+    private static void AddShownTags(ResultList results, HashSet<string> shownTags) {
+        if (results?.m_results is null) {
+            return;
+        }
+
+        foreach (var result in results.m_results) {
+            if (result is not ResAddDynaMod mod) {
+                continue;
+            }
+
+            string tag = mod.m_dynaModClientTag;
+            if (string.IsNullOrEmpty(tag)) {
+                continue;
+            }
+
+            if (mod.m_bShowsObject || SPAWN_STATE_NAME.Equals(mod.m_dynaModState, System.StringComparison.OrdinalIgnoreCase)) {
+                shownTags.Add(tag);
+            }
+        }
+    }
 
     private static bool IsDespawnState(string stateName) {
         // A dynamod with no state hides its object for the player, as "Off" does (client triggers use both).

@@ -34,7 +34,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/25/2026
+ * Last Updated: 11/09/2026
  */
 
 using System.Collections.Generic;
@@ -59,6 +59,8 @@ internal class DynaModService(SessionActor sessionActor) : MessageService(sessio
 
     // Live opens the full list with an empty mod at index 1, then numbers the mods after it.
     private const int SENTINEL_INDEX = 1;
+
+    private const string ShowObjectState = "On";
 
     private int _addIndex = 1;
 
@@ -114,7 +116,10 @@ internal class DynaModService(SessionActor sessionActor) : MessageService(sessio
 
         var zoneName = message.DynaMod.m_zoneName;
         var dynaModClientTag = message.DynaMod.m_dynaModClientTag;
-        var dynaModState = message.DynaMod.m_dynaModState;
+        string dynaModState = message.DynaMod.m_dynaModState;
+        if (message.DynaMod.m_bShowsObject && string.IsNullOrEmpty(dynaModState)) {
+            dynaModState = ShowObjectState;
+        }
 
         wizard.AddDynamod(zoneName, dynaModClientTag, dynaModState);
 

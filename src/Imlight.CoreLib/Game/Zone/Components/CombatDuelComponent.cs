@@ -41,7 +41,7 @@
  *
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 10/25/2026
+ * Last Updated: 11/09/2026
  */
 
 using System;
@@ -1927,7 +1927,6 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         Duel.m_duelPhase = kDuelPhase.kPhase_Victory;
         SendCombatPhase((byte) Duel.m_duelPhase);
 
-        var adjectivesOfDefeatedMobs = new List<string>();
         var adjectivesPerDefeatedMob = new List<List<string>>();
         var templateIdsOfDefeatedMobs = new List<ulong>();
         EnactActionOnSubCircles(circle => {
@@ -1943,7 +1942,6 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
                 }
 
                 var mobAdjectives = gameObjectTemplate.m_adjectiveList;
-                adjectivesOfDefeatedMobs.AddRange(mobAdjectives.Select(a => (string)a));
                 adjectivesPerDefeatedMob.Add([.. mobAdjectives]);
                 templateIdsOfDefeatedMobs.Add(gameObjectTemplate.m_templateID);
             }
@@ -1967,7 +1965,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
             var victoryMsg = new COMBAT_106_PROTOCOL.MSG_COMBATWIN() {
                 UsedPips = circle._usedPipsForExperienceGain,
-                MobAdjectives = [.. adjectivesOfDefeatedMobs],
+                AdjectivesPerDefeatedMob = [.. adjectivesPerDefeatedMob.Select(adjectives => adjectives.ToArray())],
                 MobTemplateIds = [.. templateIdsOfDefeatedMobs],
                 AllyCharIds = [.. allyCharIds],
             };

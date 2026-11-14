@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/27/2026
+ * Last Updated: 11/09/2026
  */
 
 using System;
@@ -43,6 +43,7 @@ using Akka.Actor;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
+using Imlight.CoreLib.Game.Madlibs;
 using Imlight.CoreLib.Game.WizBang;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
@@ -90,7 +91,6 @@ internal sealed class InteractPersonaGoalComponent(ZoneEntity entity)
     private readonly Dictionary<string, List<PersonaGoalTemplate>> _personaGoalsByQuest = [];
     private readonly Dictionary<ulong, DateTime> _lastWizBangUpdate = [];
     private readonly Dictionary<ulong, PlayerPersonaGoalState> _cachedPlayerStates = [];
-    private string _npcName;
 
     public static bool ShouldAttachToEntity(CoreTemplate template) {
         if (template is not GameObjectTemplate goTemplate ||
@@ -100,14 +100,12 @@ internal sealed class InteractPersonaGoalComponent(ZoneEntity entity)
             return false;
         }
 
-        var npcName = goTemplate.m_objectName;
-
         // Check if this NPC is referenced as a persona goal target in any quest.
         return QuestTemplateCollection
             .GetAllQuests()
             .Where(x => x is not null)
             .SelectMany(quest => quest.m_goals.OfType<PersonaGoalTemplate>())
-            .Any(goal => goal.m_personaName == npcName);
+            .Any(goal => DialogSpeakers.IsPersonaGoalTarget(goal, goTemplate));
     }
 
     /// <summary>
@@ -154,8 +152,8 @@ internal sealed class InteractPersonaGoalComponent(ZoneEntity entity)
     }
 
     public override void OnStart() {
-        if (Entity.Template is GameObjectTemplate goTemplate) {
-            _npcName = goTemplate.m_objectName;
+        if (Entity.Template is not GameObjectTemplate goTemplate) {
+            return;
         }
 
         // Cache all persona goals that reference this NPC.
@@ -166,7 +164,7 @@ internal sealed class InteractPersonaGoalComponent(ZoneEntity entity)
 
         foreach (var questTemplate in questTemplates) {
             foreach (var goal in questTemplate.m_goals.OfType<PersonaGoalTemplate>()) {
-                if (goal.m_personaName != _npcName) {
+                if (!DialogSpeakers.IsPersonaGoalTarget(goal, goTemplate)) {
                     continue;
                 }
 
